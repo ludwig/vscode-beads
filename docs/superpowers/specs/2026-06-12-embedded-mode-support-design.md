@@ -103,11 +103,17 @@ server. For embedded there is no server:
   `startDoltServer` / `stopDoltServer`** and never enters server-polling.
   Status = `running` (ready) when the CLI is compatible and the repo is
   initialized; otherwise `not_initialized`.
-- **No command gating needed.** The 5 contributed commands
-  (`switchProject`, `openBeadsPanel`, `openBeadDetails`, `refresh`,
-  `copyBeadId`) are none of them server-lifecycle, so there is no user-facing
-  "start/stop server" affordance to hide. The server lifecycle is driven
-  *internally* by the manager — the embedded fix is therefore internal only.
+- **Status & polling come for free** via the CLI backend: its `getChangeToken()`
+  returns `null` (so the manager's change-polling no-ops) and `probeLive()` is
+  just a compatibility check (no server), so `getBackendStatus` reports
+  `running` without any server interaction.
+- **One affordance to guard:** the 5 *palette* commands (`switchProject`,
+  `openBeadsPanel`, `openBeadDetails`, `refresh`, `copyBeadId`) are not
+  server-lifecycle, but there is an internally-registered `beads.startDoltServer`
+  command wired to a webview "Start Dolt Server" button. With the CLI backend,
+  embedded status is `running` so the button does not surface — but the command
+  handler still gets a defensive guard: on an embedded project it shows an
+  informational message instead of calling `bd dolt start`.
 - This is the direct #77 fix: the error originated from the manager driving
   `BeadsDoltBackend.ensureServerRunning → bd dolt start`; embedded repos never
   instantiate that backend.
