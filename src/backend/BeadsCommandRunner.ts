@@ -113,10 +113,24 @@ export class BeadsCommandRunner implements BeadsBackend {
 
   async show(id: string): Promise<BeadsIssue | null> {
     const result = await this.runReadJson(["show", id, "--json"], { cacheTtlMs: 250 });
-    if (Array.isArray(result)) {
-      return (result[0] as BeadsIssue | undefined) ?? null;
+    const issue = Array.isArray(result)
+      ? (result[0] as BeadsIssue | undefined) ?? null
+      : (result as BeadsIssue) ?? null;
+    if (!issue) return null;
+
+    // `bd show --json` returns comment_count but not the comments array. Fetch
+    // them only when some exist, and sequentially after show() — in embedded
+    // mode a second concurrent `bd` process contends on the Dolt file lock and
+    // triggers the lock-retry backoff, so firing show+comments in parallel was
+    // the slow path. Most beads have zero comments → one cold spawn, not two
+    // (vs-266).
+    if (issue.comments === undefined && (issue.comment_count ?? 0) > 0) {
+      issue.comments = await this.listComments(id).catch((err) => {
+        this.log.trace(`Failed to fetch comments for ${id}: ${err}`);
+        return [];
+      });
     }
-    return (result as BeadsIssue) ?? null;
+    return issue;
   }
 
   async create(args: CreateIssueArgs): Promise<BeadsIssue> {
