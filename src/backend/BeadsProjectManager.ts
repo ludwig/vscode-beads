@@ -1,6 +1,7 @@
 import * as crypto from "crypto";
 import { execFile } from "child_process";
 import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
 import * as util from "util";
 import * as vscode from "vscode";
@@ -9,8 +10,9 @@ import { resolveEnvVariables } from "../utils/resolve-env-variables";
 import { BeadsBackend } from "./BeadsBackend";
 import { BeadsDoltBackend } from "./BeadsDoltBackend";
 import { BeadsCommandRunner } from "./BeadsCommandRunner";
-import { CONFIG_NAMESPACE } from "../constants";
+import { CONFIG_NAMESPACE, DEFAULT_PROJECTS_ROOT } from "../constants";
 import { backendKindForMode, createDoltModeProbe, detectDoltMode } from "./doltMode";
+import { parseConfiguredPrefix } from "./projectPrefix";
 import { Bead, BeadsProject } from "./types";
 
 const ACTIVE_PROJECT_KEY = "beads.activeProjectId";
@@ -89,6 +91,13 @@ export class BeadsProjectManager implements vscode.Disposable {
     );
     for (const project of workspaceProjects) {
       if (project && !discoveredById.has(project.id)) discoveredById.set(project.id, project);
+    }
+
+    // Additive: fold in every project under the default beads root that isn't
+    // already discovered above. Configured/env/workspace sources win on dedup
+    // so their richer `source` label is preserved.
+    for (const project of await this.discoverProjectsUnderRoot(DEFAULT_PROJECTS_ROOT)) {
+      if (!discoveredById.has(project.id)) discoveredById.set(project.id, project);
     }
 
     const discoveredProjects = Array.from(discoveredById.values()).sort((a, b) => a.name.localeCompare(b.name));
@@ -310,15 +319,72 @@ export class BeadsProjectManager implements vscode.Disposable {
     if (!projectProbe) return null;
 
     const folderName = this.getProjectDisplayName(rootPath, projectProbe.beadsDir);
+    const prefix = await this.resolveProjectPrefix(projectProbe.beadsDir, rootPath);
 
     return {
       id: this.generateProjectId(projectProbe.beadsDir),
       name: folderName,
       rootPath,
+      displayPath: this.toDisplayPath(rootPath),
       beadsDir: projectProbe.beadsDir,
       backendStatus: "running",
       source,
+      prefix,
     };
+  }
+
+  /** Home-abbreviated absolute path (e.g. `~/beads/vs`) for compact display. */
+  private toDisplayPath(absolutePath: string): string {
+    const home = os.homedir();
+    if (absolutePath === home) return "~";
+    if (absolutePath.startsWith(home + path.sep)) return "~" + absolutePath.slice(home.length);
+    return absolutePath;
+  }
+
+  /**
+   * Discover every immediate child of `root` that contains a `.beads`
+   * directory, as a `default`-source project. Returns [] when the root is
+   * missing/unreadable so a non-existent ~/beads is simply a no-op.
+   */
+  private async discoverProjectsUnderRoot(root: string): Promise<BeadsProject[]> {
+    const resolvedRoot = path.resolve(root);
+
+    let entries: fs.Dirent[];
+    try {
+      entries = await fs.promises.readdir(resolvedRoot, { withFileTypes: true });
+    } catch {
+      return [];
+    }
+
+    const candidates = await Promise.all(
+      entries
+        .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
+        .map(async (entry) => {
+          const childPath = path.join(resolvedRoot, entry.name);
+          const beadsStats = await this.tryStat(path.join(childPath, ".beads"));
+          if (!beadsStats?.isDirectory()) return null;
+          return this.createProjectFromInputPath(childPath, "default");
+        })
+    );
+
+    return candidates.filter((project): project is BeadsProject => project !== null);
+  }
+
+  /**
+   * Resolve a project's effective issue prefix: the explicit `issue-prefix`
+   * from `.beads/config.yaml` when set, otherwise the directory name (bd
+   * auto-detects the prefix from the dir name when it isn't configured). Pure
+   * file read — no `bd` spawn — to keep discovery cheap.
+   */
+  private async resolveProjectPrefix(beadsDir: string, rootPath: string): Promise<string> {
+    let contents: string | null = null;
+    try {
+      contents = await fs.promises.readFile(path.join(beadsDir, "config.yaml"), "utf8");
+    } catch {
+      contents = null;
+    }
+
+    return parseConfiguredPrefix(contents) ?? path.basename(rootPath);
   }
 
   private async probeBeadsProject(
