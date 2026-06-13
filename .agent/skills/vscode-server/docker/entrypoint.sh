@@ -7,6 +7,13 @@
 # same fast-iteration story as the old code-server symlink, just inside Linux.
 set -euo pipefail
 
+# Server-mode repos need a Dolt identity: `bd dolt start` calls ensureDoltIdentity,
+# which seeds dolt's global user.name/email from git config. A fresh container has
+# none, so set defaults here (overridable via BEADS_ACTOR/BEADS_EMAIL). Harmless
+# for embedded repos, which never start a server.
+git config --global user.name "${BEADS_ACTOR:-vscode-beads-dev}" 2>/dev/null || true
+git config --global user.email "${BEADS_EMAIL:-dev@vscode-beads.local}" 2>/dev/null || true
+
 ext_dir="${EXT_DIR:-/home/workspace/.dev-exts}"
 mkdir -p "$ext_dir"
 

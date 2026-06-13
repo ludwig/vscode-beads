@@ -18,8 +18,34 @@ USER root
 COPY bd-linux-${BD_ARCH} /usr/local/bin/bd
 RUN chmod +x /usr/local/bin/bd && bd version || true
 
+# Dolt sql-server binary — required only for SERVER-mode repos: `bd dolt start`
+# execs an external `dolt` (doltserver.go LookPath("dolt")), whereas embedded
+# mode uses bd's in-process engine and needs no `dolt`. Official prebuilt
+# release (no build step). Pinned to match the host dolt that creates our
+# server repos — parity over newest.
+ARG DOLT_VERSION=2.1.5
+RUN set -eux; \
+    url="https://github.com/dolthub/dolt/releases/download/v${DOLT_VERSION}/dolt-linux-${BD_ARCH}.tar.gz"; \
+    curl -fsSL "$url" -o /tmp/dolt.tar.gz; \
+    tar -xzf /tmp/dolt.tar.gz -C /tmp; \
+    install -m 0755 "/tmp/dolt-linux-${BD_ARCH}/bin/dolt" /usr/local/bin/dolt; \
+    rm -rf /tmp/dolt.tar.gz "/tmp/dolt-linux-${BD_ARCH}"; \
+    HOME=/tmp dolt version
+# NOTE: validate with HOME=/tmp so root doesn't create a root-owned
+# /home/workspace/.dolt that uid-1000 can't write to at runtime.
+
 COPY entrypoint.sh /usr/local/bin/dev-entrypoint.sh
 RUN chmod +x /usr/local/bin/dev-entrypoint.sh
 
 USER openvscode-server
+
+# Pre-seed Dolt's global identity AS THE RUNTIME USER, so `bd dolt start`'s
+# ensureDoltIdentity finds it already set (`dolt config --global --get`) and
+# never attempts a runtime `dolt config --global` write. This also creates
+# ~/.dolt owned by uid 1000 (HOME=/home/workspace), fixing the root-owned-dir
+# write failure. Overridable at runtime via the entrypoint's git identity.
+RUN HOME=/home/workspace dolt config --global --add user.name "vscode-beads-dev" \
+ && HOME=/home/workspace dolt config --global --add user.email "dev@vscode-beads.local" \
+ && HOME=/home/workspace dolt config --global --list
+
 ENTRYPOINT ["/usr/local/bin/dev-entrypoint.sh"]
