@@ -91,14 +91,29 @@
         "command": "beads.copyBeadId",
         "title": "Beads: Copy Issue ID",
         "icon": "$(copy)"
+      },
+      {
+        "command": "beads.createIssue",
+        "title": "Beads: New Issue",
+        "icon": "$(add)"
       }
     ],
     "menus": {
       "view/title": [
         {
+          "command": "beads.createIssue",
+          "when": "view == beadsDashboard",
+          "group": "navigation@0"
+        },
+        {
           "command": "beads.refresh",
           "when": "view == beadsDashboard",
           "group": "navigation@1"
+        },
+        {
+          "command": "beads.createIssue",
+          "when": "view == beadsPanel",
+          "group": "navigation@0"
         },
         {
           "command": "beads.refresh",

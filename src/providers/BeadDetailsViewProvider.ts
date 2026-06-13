@@ -19,6 +19,7 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
   private currentBeadId: string | null = null;
   private currentProjectId: string | null = null;
   private loadSequence = 0; // Tracks request order to prevent stale responses
+  private createMode = false; // True while the create-bead form is shown
 
   constructor(
     extensionUri: vscode.Uri,
@@ -32,6 +33,10 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
    * Show details for a specific bead
    */
   public async showBead(beadId: string): Promise<void> {
+    if (this.createMode) {
+      this.createMode = false;
+      this.postMessage({ type: "setCreateMode", value: false });
+    }
     this.currentBeadId = beadId;
     this.currentProjectId = this.projectManager.getActiveProject()?.id || null;
 
@@ -47,6 +52,30 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
   }
 
   /**
+   * Reveal the Details view and switch it into create-bead mode (vs-69z).
+   */
+  public startCreate(): void {
+    this.createMode = true;
+    if (this._view) {
+      this._view.show(true); // true = preserve focus
+    }
+    // If the view is already resolved this reaches the webview now; if it is
+    // still resolving, initializeView() re-sends create mode once it is ready.
+    this.postMessage({ type: "setCreateMode", value: true });
+  }
+
+  /**
+   * Re-send create mode after a (re)resolve so a create requested before the
+   * webview was ready is not lost.
+   */
+  protected async initializeView(): Promise<void> {
+    await super.initializeView();
+    if (this.createMode) {
+      this.postMessage({ type: "setCreateMode", value: true });
+    }
+  }
+
+  /**
    * Get the currently displayed bead ID
    */
   public getCurrentBeadId(): string | null {
@@ -58,7 +87,9 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
    */
   public clearBead(): void {
     this.currentBeadId = null;
+    this.createMode = false;
     vscode.commands.executeCommand("setContext", "beads.hasSelectedBead", false);
+    this.postMessage({ type: "setCreateMode", value: false });
     this.postMessage({ type: "setBead", bead: null });
     this.setLoading(false);
   }
@@ -220,6 +251,37 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
 
       case "viewInGraph":
         vscode.commands.executeCommand("beadsGraph.focus");
+        break;
+
+      case "createBead":
+        try {
+          const { title, type, priority, description, design, acceptanceCriteria, assignee, labels } =
+            message.fields;
+          const created = await client.create({
+            title,
+            issue_type: type,
+            priority,
+            description,
+            design,
+            acceptance_criteria: acceptanceCriteria,
+            assignee,
+            labels,
+          });
+          this.createMode = false;
+          this.postMessage({ type: "setCreateMode", value: false });
+          this.projectManager.notifyDataChanged();
+          // Select and show the freshly created bead in all views.
+          await vscode.commands.executeCommand("beads.openBeadDetails", created.id);
+        } catch (err) {
+          vscode.window.showErrorMessage(`Failed to create bead: ${err}`);
+        }
+        break;
+
+      case "cancelCreate":
+        this.createMode = false;
+        this.postMessage({ type: "setCreateMode", value: false });
+        // Restore whatever bead was shown before entering create mode.
+        await this.loadData();
         break;
     }
   }
