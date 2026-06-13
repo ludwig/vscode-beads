@@ -284,16 +284,16 @@ export class BeadsDoltBackend implements BeadsBackend {
   private async loadDependencies(issueId: string): Promise<BeadsIssue["dependencies"]> {
     const rows = await this.query<SqlRow>(`
       SELECT
-        d.depends_on_id AS id,
+        d.depends_on_issue_id AS id,
         d.type AS dependency_type,
         i.issue_type,
         i.title,
         i.status,
         i.priority
       FROM dependencies d
-      LEFT JOIN issues i ON i.id = d.depends_on_id
+      LEFT JOIN issues i ON i.id = d.depends_on_issue_id
       WHERE d.issue_id = ?
-      ORDER BY d.depends_on_id ASC
+      ORDER BY d.depends_on_issue_id ASC
     `, [issueId]);
 
     return rows.map((row) => ({
@@ -317,7 +317,7 @@ export class BeadsDoltBackend implements BeadsBackend {
         i.priority
       FROM dependencies d
       LEFT JOIN issues i ON i.id = d.issue_id
-      WHERE d.depends_on_id = ?
+      WHERE d.depends_on_issue_id = ?
       ORDER BY d.issue_id ASC
     `, [issueId]);
 
