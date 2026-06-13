@@ -771,6 +771,28 @@ textarea {
   max-width: 300px;
 }
 
+.dashboard-build-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  padding: 6px 4px 2px;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 0.78em;
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.75;
+}
+
+.dashboard-build-sha {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.dashboard-build-dirty {
+  color: var(--vscode-gitDecoration-modifiedResourceForeground, var(--vscode-charts-yellow));
+}
+
 .project-dropdown-header {
   padding: 4px 10px;
   font-size: 0.78em;

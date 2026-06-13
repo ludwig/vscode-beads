@@ -40,6 +40,9 @@ interface DashboardViewProps {
   onOpenDoltLog: () => void;
   onOpenProjectFolder: () => void;
   onRetry: () => void;
+  version?: string;
+  buildSha?: string;
+  buildDirty?: boolean;
 }
 
 export function DashboardView({
@@ -57,6 +60,9 @@ export function DashboardView({
   onOpenDoltLog,
   onOpenProjectFolder,
   onRetry,
+  version,
+  buildSha,
+  buildDirty,
 }: DashboardViewProps): React.ReactElement {
   const prefix = deriveIssuePrefix(beads.map((b) => b.id));
   const openBeads = beads.filter((b) => b.status === "open").slice(0, 5);
@@ -223,6 +229,27 @@ export function DashboardView({
             )}
           </div>
         </>
+      )}
+
+      {version && (
+        <div
+          className="dashboard-build-info"
+          title={`Beads v${version}${buildSha && buildSha !== "unknown" ? ` · commit ${buildSha}` : ""}${
+            buildDirty ? " · built with uncommitted changes" : ""
+          }`}
+        >
+          <span className="dashboard-build-version">v{version}</span>
+          {buildSha && buildSha !== "unknown" && (
+            <span className="dashboard-build-sha">
+              {buildSha}
+              {buildDirty && (
+                <span className="dashboard-build-dirty" aria-label="built with uncommitted changes">
+                  ✦
+                </span>
+              )}
+            </span>
+          )}
+        </div>
       )}
     </div>
   );

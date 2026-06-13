@@ -45,7 +45,14 @@ const initialState: AppState = {
   summary: null,
   loading: true,
   error: null,
-  settings: { renderMarkdown: true, userId: "", tooltipHoverDelay: 1000 },
+  settings: {
+    renderMarkdown: true,
+    userId: "",
+    tooltipHoverDelay: 1000,
+    extensionVersion: "",
+    buildSha: "",
+    buildDirty: false,
+  },
   createMode: false,
 };
 
@@ -127,6 +134,9 @@ export function App(): React.ReactElement {
             error={state.error}
             projects={state.projects}
             activeProject={state.project}
+            version={state.settings.extensionVersion}
+            buildSha={state.settings.buildSha}
+            buildDirty={state.settings.buildDirty}
             onSelectProject={(project) =>
               vscode.postMessage({
                 type: "selectProject",

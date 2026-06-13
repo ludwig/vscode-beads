@@ -161,6 +161,9 @@ export interface WebviewSettings {
   renderMarkdown: boolean;
   userId: string;
   tooltipHoverDelay: number; // 0 = disabled
+  extensionVersion: string; // e.g. "0.14.0"
+  buildSha: string; // short git SHA at build time, or "unknown"
+  buildDirty: boolean; // built with uncommitted changes
 }
 
 // Placeholder for graph view (not yet implemented)

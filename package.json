@@ -2,7 +2,7 @@
   "name": "vscode-beads-pm",
   "displayName": "Beads (ludwig)",
   "description": "VS Code extension for managing Beads issues",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "publisher": "ludwig",
   "license": "Apache-2.0",
   "icon": "resources/icon.png",
@@ -168,8 +168,9 @@
     }
   },
   "scripts": {
-    "compile": "bun run compile:extension && bun run compile:webview",
-    "compile:quiet": "bun run compile:extension:quiet && bun run compile:webview:quiet",
+    "compile": "bun run compile:extension && bun run compile:webview && bun run gen:buildinfo",
+    "compile:quiet": "bun run compile:extension:quiet && bun run compile:webview:quiet && bun run gen:buildinfo",
+    "gen:buildinfo": "bun scripts/gen-build-info.mjs",
     "compile:extension": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --target=node18",
     "compile:extension:quiet": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --target=node18 --log-level=error",
     "compile:webview": "esbuild src/webview/index.tsx --bundle --outfile=dist/webview/main.js --format=iife --platform=browser --target=es2020 --loader:.tsx=tsx --loader:.ts=ts --loader:.css=css --loader:.svg=text --define:process.env.NODE_ENV=\\\"production\\\"",
