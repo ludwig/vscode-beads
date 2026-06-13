@@ -146,6 +146,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         return;
       }
 
+      if (project.doltMode === "embedded") {
+        vscode.window.showInformationMessage(
+          `${project.name} uses embedded Dolt — there is no server to start.`
+        );
+        return;
+      }
+
       try {
         const output = await client.startDoltServer();
         log.info(`Started Dolt server for ${project.name}: ${output || "<no output>"}`);
