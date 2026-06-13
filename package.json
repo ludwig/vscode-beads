@@ -130,6 +130,14 @@
     "configuration": {
       "title": "Beads",
       "properties": {
+        "beads.projects": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Additional Beads projects to show beyond the open workspace folders. Each entry is a path to a project root or its .beads directory. Supports ${env:VAR} placeholders."
+        },
         "beads.pathToBd": {
           "type": "string",
           "default": "bd",
