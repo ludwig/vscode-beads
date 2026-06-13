@@ -58,6 +58,20 @@ that the container had open, bring the container down.
 Symptom: `bd <anything>` errors with `Dolt server unreachable at 127.0.0.1:0`
 and repeated `auto-start failed … database "dolt" is locked`.
 
+One-liner (host-side `just` recipes — wrap the dance below):
+
+```bash
+just dolt-ps              # which pid/port holds each repo under ~/beads (server=up/DOWN)
+just dolt-restart vs      # kill the lock holder → bd dolt start → verify (idempotent)
+```
+
+`dolt-restart` accepts a bare repo name under `BEADS_PROJECTS_DIR` (`vs`, `foo`)
+or a path. It finds the holder via the noms `LOCK` (not via bd's recorded port,
+which is exactly what's lost in the orphan case), so it recovers the jam that
+`bd dolt stop` can't ("server is not running").
+
+Manual equivalent, if you need to do it by hand:
+
 ```bash
 cd <repo>
 # 1. Find the orphan holding the lock (note the PID):
@@ -84,3 +98,7 @@ bd list   # should work now
   `bd dolt start` (new PID on a recorded port) → `bd list` worked. Closed
   vs-7s7. Captured the recovery steps above. (`vs` server now running locally;
   stop it before the next `just dev up`.)
+- Wrapped the recovery dance as host-side recipes **`just dolt-ps`** and
+  **`just dolt-restart <repo>`** (vs-rs6). Verified against `vs`: ps shows
+  pid/port per repo; restart kills the lock holder and re-starts via
+  `bd dolt start` (idempotent; clear error on unknown repo).
