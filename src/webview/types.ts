@@ -137,7 +137,8 @@ export type WebviewMessage =
   | { type: "copyBeadId"; beadId: string }
   | { type: "createBead"; fields: CreateBeadFields }
   | { type: "cancelCreate" }
-  | { type: "openFile"; filePath: string; line?: number };
+  | { type: "openFile"; filePath: string; line?: number }
+  | { type: "openExternal"; url: string };
 
 // Human-readable labels
 export const PRIORITY_LABELS: Record<BeadPriority, string> = {

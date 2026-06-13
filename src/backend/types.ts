@@ -223,7 +223,8 @@ export type WebviewToExtensionMessage =
   | { type: "copyBeadId"; beadId: string }
   | { type: "createBead"; fields: CreateBeadFields }
   | { type: "cancelCreate" }
-  | { type: "openFile"; filePath: string; line?: number };
+  | { type: "openFile"; filePath: string; line?: number }
+  | { type: "openExternal"; url: string };
 
 // CLI command result
 export interface CommandResult<T = unknown> {

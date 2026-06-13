@@ -192,6 +192,10 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         await this.handleOpenFile(message.filePath, message.line);
         break;
 
+      case "openExternal":
+        await this.handleOpenExternal(message.url);
+        break;
+
       default:
         await this.handleCustomMessage(message);
     }
@@ -244,6 +248,25 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     } catch (err) {
       vscode.window.showWarningMessage(`File not found: ${filePath}`);
     }
+  }
+
+  /**
+   * Opens an external URL in the system handler. The webview already
+   * allowlists schemes before sending, but we re-validate here so the
+   * extension never hands an untrusted scheme (javascript:, file:, …) to
+   * openExternal.
+   */
+  private async handleOpenExternal(url: string): Promise<void> {
+    let parsed: vscode.Uri;
+    try {
+      parsed = vscode.Uri.parse(url, true);
+    } catch {
+      return;
+    }
+    if (!["http", "https", "mailto"].includes(parsed.scheme.toLowerCase())) {
+      return;
+    }
+    await vscode.env.openExternal(parsed);
   }
 
   /**
