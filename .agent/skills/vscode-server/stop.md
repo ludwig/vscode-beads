@@ -1,11 +1,9 @@
 # Stop Action
 
-Stop all running processes and clean up temp files.
-
-Run the stop script:
+Stop the container and host watch mode.
 
 ```bash
-.agent/skills/vscode-server/scripts/stop.sh
+just dev down
 ```
 
 Report what was stopped to the user.

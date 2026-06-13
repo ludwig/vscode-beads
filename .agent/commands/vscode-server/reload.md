@@ -1,5 +1,5 @@
 ---
-description: Reload code-server browser (project)
+description: Reload openvscode-server browser (project)
 argument-hint: [--devtools]
 allowed-tools: Skill(vscode-server)
 ---

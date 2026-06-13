@@ -1,5 +1,5 @@
 ---
-description: Show code-server status (project)
+description: Show openvscode-server (Docker) status (project)
 allowed-tools: Skill(vscode-server)
 ---
 

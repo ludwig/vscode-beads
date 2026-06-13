@@ -22,9 +22,9 @@ git checkout -b fix/descriptive-name   # or feat/, chore/, etc.
 ```
 Exception: If already on a feature branch and told to continue on it (e.g., multiple beads under one PR).
 
-**Testing workflow with Chrome DevTools MCP**: After building, ask the user to reload code-server and test. Don't automate the reload/test cycle via browser tools - it wastes context.
+**Testing workflow with Chrome DevTools MCP**: After building, ask the user to reload the dev server and test. Don't automate the reload/test cycle via browser tools - it wastes context.
 
-**code-server for testing**: See `docs/code-server-testing.md` - living document for agent reference. Keep it updated with working config and lessons learned.
+**openvscode-server (Docker) for testing**: See `docs/openvscode-docker-testing.md` - living document for agent reference. Keep it updated with working config and lessons learned. Driven by the `vscode-server` skill (`/vscode-server:start|reload|status|stop`).
 
 **Option 1: Extension Development Host (recommended for debugging)**
 

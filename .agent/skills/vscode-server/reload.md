@@ -18,12 +18,12 @@ This bypasses browser cache, ensuring the latest extension code is loaded.
 
 If the `--devtools` flag is present, do a full page close/reopen instead of just reload. This recovers from MCP disconnection (e.g., if you opened DevTools manually).
 
-1. First, get the code-server port:
+1. First, get the openvscode-server host port:
    ```bash
-   .agent/skills/vscode-server/scripts/get-port.sh
+   just dev port
    ```
 2. Try to close the existing page using `mcp__chrome-devtools__close_page` (ignore errors if it fails)
-3. Open a fresh page using `mcp__chrome-devtools__new_page` with URL `http://127.0.0.1:{PORT}/`
+3. Open a fresh page using `mcp__chrome-devtools__new_page` with URL `http://127.0.0.1:{PORT}/?folder=/home/workspace/project`
 4. Do a hard reload with `mcp__chrome-devtools__navigate_page` (type: reload, ignoreCache: true)
 
 **Note**: The `--devtools` flag name is a hint that this is useful when DevTools caused the disconnect.

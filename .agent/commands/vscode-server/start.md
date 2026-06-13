@@ -1,5 +1,5 @@
 ---
-description: Start code-server dev environment (project)
+description: Start openvscode-server (Docker) dev environment (project)
 allowed-tools: Skill(vscode-server)
 ---
 

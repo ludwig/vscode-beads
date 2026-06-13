@@ -3,19 +3,28 @@
 ## Current Stack
 
 ```
-Chrome DevTools MCP + code-server (local, headed)
+Chrome DevTools MCP + openvscode-server (Docker, headed) + embedded bd
 ```
 
 Agent can see and interact with VS Code running in browser. Human watches same window.
+See `docs/openvscode-docker-testing.md` for the harness, driven by the `vscode-server` skill.
+
+> **Why this works now (and didn't before):** OpenVSCode Server in Docker was
+> previously ruled out because the in-container `bd` couldn't connect to a Dolt
+> **sql-server** over its socket. That failure is server-mode-specific. With
+> **embedded Dolt** (in-process engine, `gms_pure_go`, no server/socket — the
+> default in the Gas Town fork), there's nothing to connect to, so the blocker
+> doesn't apply. The container `bd` is cross-compiled with that tag.
 
 ## Workflow
 
 1. Agent writes/edits code
-2. Agent runs build: `bun run compile`
-3. Agent packages: `bun run package`
-4. Agent installs: `code-server --install-extension *.vsix`
-5. **Human reloads window** (saves ~120KB context per reload)
-6. Limited DevTools MCP use for single-feature verification
+2. Host watch mode rebuilds `dist/` (mounted read-only into the container)
+3. **Human reloads browser** (or `/vscode-server:reload`)
+4. Limited DevTools MCP use for single-feature verification
+
+No per-change VSIX packaging/install: the repo is mounted, so a rebuild + browser
+reload is enough.
 
 ## Context Cost Problem
 
@@ -32,7 +41,7 @@ Both Chrome DevTools MCP and Playwright MCP return full accessibility tree (~400
 
 | Capability | How |
 |------------|-----|
-| Extension install | `code-server --install-extension` |
+| Extension install | repo bind-mounted into container (no install step) |
 | Window reload | Command palette (human) |
 | Screenshots | `take_screenshot` |
 | Console logs | `list_console_messages` |
@@ -46,7 +55,8 @@ Both Chrome DevTools MCP and Playwright MCP return full accessibility tree (~400
 | Option | Why Ruled Out |
 |--------|---------------|
 | **vscode.dev** | No local extension support |
-| **OpenVSCode Server (Docker)** | Unix socket blocked in container, bd CLI can't connect |
+| **OpenVSCode Server (Docker) — server-mode bd** | Unix socket blocked in container, bd CLI can't reach the Dolt sql-server. **Revisited:** now the current stack using *embedded* bd (no server/socket). See above. |
+| **code-server** | Pins to an older Node than upstream VS Code; lags current LTS |
 | **Playwright MCP** | Same context bloat as Chrome DevTools MCP |
 | **Browser MCP** | Less capable than Chrome DevTools MCP |
 | **@vscode/test-electron** | Tests API only, not visual UI |

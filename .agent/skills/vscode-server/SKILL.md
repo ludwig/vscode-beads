@@ -6,7 +6,14 @@ allowed-tools: Bash, Read, TaskOutput, mcp__chrome-devtools__new_page, mcp__chro
 
 # VS Code Server Skill
 
-Manage code-server development environment for testing VS Code extensions.
+Manage the openvscode-server (Docker) development environment for testing the
+vscode-beads extension.
+
+Because openvscode-server ships Linux-only, the extension host runs inside a
+container with a baked-in Linux `bd` CLI (cross-compiled from `~/repos/beads`).
+The extension itself is built on the host with native `bun` and mounted into the
+container read-only; host watch mode rebuilds `dist/`, and reloading the browser
+picks up changes.
 
 ## Action Routing
 
@@ -28,27 +35,30 @@ Read the file, then follow its instructions.
 | `/vscode-server:reload [--devtools]` | reload |
 | `/vscode-server:status`              | status |
 
-## Temp Directory
+## Orchestration: `just dev` recipes
 
-Temp files are stored in `/tmp/vscode-dev-<hash>/` where hash is derived from project path:
+All harness logic lives in `just` recipes — the root `Justfile` exposes them as
+the `dev` module (`dev.just`). The skill actions above just drive them.
 
-```bash
-PROJECT_HASH=$(echo "$(pwd)" | md5sum | cut -c1-8)
-TMP_DIR="/tmp/vscode-dev-${PROJECT_HASH}"
-```
+| Recipe | Does |
+| ------ | ---- |
+| `just dev up` | bd → image build → compile → watch → run container (`--force-recreate`) |
+| `just dev down` | stop container + host watch |
+| `just dev status` | container + watch status |
+| `just dev verify` | `bd version` + `bd list --json` inside the container |
+| `just dev doctor` | diagnose the bd/CGO build chain (host vs in-image linkage) |
+| `just dev rebuild` | clean `--no-cache` rebuild when layers go stale |
+| `just dev port` / `logs` / `shell` | port, container logs, container shell |
 
-Files:
+## Config & Primitives (`docker/`)
 
-- `$TMP_DIR/port` - code-server port
-- `$TMP_DIR/watch.pid` - watch mode PID
-- `$TMP_DIR/watch.log` - watch mode output
-
-## Helper Scripts
-
-- `scripts/start-dev-environment.sh` - Start symlink, build, watch, and code-server
-- `scripts/status.sh` - Show status of watch mode and code-server
-- `scripts/stop.sh` - Stop all processes and clean up temp files
-- `scripts/get-port.sh` - Get the code-server port from temp file
+- `.env` - config: `BEADS_WORKSPACE`, `OVS_HOST_PORT`, `BD_ARCH`, `GO_IMAGE`
+  (override per-invocation with shell env — `BEADS_WORKSPACE=… just dev up`)
+- `Dockerfile` - `FROM gitpod/openvscode-server` + baked-in Linux `bd`
+- `entrypoint.sh` - symlinks the mounted extension, launches the server
+- `build-bd.sh` - builds `bd` natively (CGO) in a `golang` container
+- `docker-compose.yml` - service, volumes, port mapping
+- `bd-linux-*` - the built binary (gitignored, ~85MB)
 
 ## DevTools Note
 

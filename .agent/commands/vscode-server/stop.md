@@ -1,5 +1,5 @@
 ---
-description: Stop code-server and watch mode (project)
+description: Stop openvscode-server and watch mode (project)
 allowed-tools: Skill(vscode-server)
 ---
 

@@ -1,11 +1,15 @@
 # Status Action
 
-Check the status of all processes without starting anything.
-
-Run the status script:
+Check the status of the container and host watch mode without starting anything.
 
 ```bash
-.agent/skills/vscode-server/scripts/status.sh
+just dev status
+```
+
+For a deeper check that embedded `bd` works in the container:
+
+```bash
+just dev verify
 ```
 
 Report the output to the user.
