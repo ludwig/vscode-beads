@@ -133,7 +133,7 @@ export class BeadsCommandRunner implements BeadsBackend {
     if (args.acceptance_criteria) cmdArgs.push("--acceptance", args.acceptance_criteria);
     if (args.assignee) cmdArgs.push("--assignee", args.assignee);
 
-    const result = await this.runJson(cmdArgs);
+    const result = await this.runWriteJson(cmdArgs);
     return this.pickSingleIssue(result, "create");
   }
 
@@ -174,26 +174,26 @@ export class BeadsCommandRunner implements BeadsBackend {
     for (const label of args.remove_labels ?? []) cmdArgs.push("--remove-label", label);
     for (const label of args.set_labels ?? []) cmdArgs.push("--set-labels", label);
 
-    const result = await this.runJson(cmdArgs);
+    const result = await this.runWriteJson(cmdArgs);
     return this.pickSingleIssue(result, "update");
   }
 
   async close(args: CloseIssueArgs): Promise<BeadsIssue> {
     const cmdArgs = ["close", args.id, "--json"];
     if (args.reason) cmdArgs.push("--reason", args.reason);
-    const result = await this.runJson(cmdArgs);
+    const result = await this.runWriteJson(cmdArgs);
     return this.pickSingleIssue(result, "close");
   }
 
   async addDependency(args: DependencyArgs): Promise<void> {
     const depType = args.dep_type ?? "blocks";
-    await this.runJson(["dep", "add", args.from_id, args.to_id, "--type", depType, "--json"]);
+    await this.runWriteJson(["dep", "add", args.from_id, args.to_id, "--type", depType, "--json"]);
   }
 
   async removeDependency(args: DependencyArgs): Promise<void> {
     const cmdArgs = ["dep", "remove", args.from_id, args.to_id, "--json"];
     if (args.dep_type) cmdArgs.push("--type", args.dep_type);
-    await this.runJson(cmdArgs);
+    await this.runWriteJson(cmdArgs);
   }
 
   async listComments(id: string): Promise<Array<{ id: string; author: string; text: string; created_at: string }>> {
@@ -206,7 +206,7 @@ export class BeadsCommandRunner implements BeadsBackend {
   async addComment(args: AddCommentArgs): Promise<void> {
     const cmdArgs = ["comments", "add", args.id, args.text, "--json"];
     if (args.author) cmdArgs.push("--author", args.author);
-    await this.runJson(cmdArgs);
+    await this.runWriteJson(cmdArgs);
   }
 
   private async execBd(args: string[], maxBuffer: number): Promise<{ stdout: string; stderr: string }> {
@@ -294,6 +294,17 @@ export class BeadsCommandRunner implements BeadsBackend {
 
       throw new Error(rawMessage);
     }
+  }
+
+  /**
+   * Runs a mutating bd command, then drops the read cache so the next
+   * list/show/comments read reflects the write instead of serving stale
+   * cached JSON to the post-write broadcast refresh (vs-mxq).
+   */
+  private async runWriteJson(args: string[]): Promise<unknown> {
+    const result = await this.runJson(args);
+    this.recentJsonCache.clear();
+    return result;
   }
 
   private async runReadJson(args: string[], options?: { cacheTtlMs?: number }): Promise<unknown> {

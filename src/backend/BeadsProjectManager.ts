@@ -116,6 +116,16 @@ export class BeadsProjectManager implements vscode.Disposable {
     return true;
   }
 
+  /**
+   * Broadcasts a data-changed event so all views re-fetch. Call after a
+   * successful write (update/create/dependency/comment) so sibling views
+   * (panel, dashboard, details) refresh without a manual Refresh — the
+   * write path is otherwise silent (vs-mxq).
+   */
+  notifyDataChanged(): void {
+    this._onDataChanged.fire();
+  }
+
   async refresh(): Promise<void> {
     await this.discoverProjects();
 

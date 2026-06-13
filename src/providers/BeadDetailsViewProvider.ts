@@ -177,7 +177,7 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
             updateArgs.estimated_minutes = estimatedMinutes;
           }
           await client.update(updateArgs as unknown as Parameters<typeof client.update>[0]);
-          // Data will refresh via mutation events
+          this.projectManager.notifyDataChanged();
         } catch (err) {
           vscode.window.showErrorMessage(`Failed to update bead: ${err}`);
         }
@@ -193,7 +193,7 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
             to_id: toId,
             dep_type: message.dependencyType,
           });
-          // Data will refresh via mutation events
+          this.projectManager.notifyDataChanged();
         } catch (err) {
           vscode.window.showErrorMessage(`Failed to add dependency: ${err}`);
         }
@@ -205,7 +205,7 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
             from_id: message.beadId,
             to_id: message.dependsOnId,
           });
-          // Data will refresh via mutation events
+          this.projectManager.notifyDataChanged();
         } catch (err) {
           vscode.window.showErrorMessage(`Failed to remove dependency: ${err}`);
         }
@@ -220,8 +220,8 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
             author,
             text: message.text,
           });
-          // Refresh to show new comment
-          await this.loadData();
+          // Refresh all views to show the new comment
+          this.projectManager.notifyDataChanged();
         } catch (err) {
           vscode.window.showErrorMessage(`Failed to add comment: ${err}`);
         }
