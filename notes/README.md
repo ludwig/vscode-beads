@@ -13,3 +13,6 @@ material, promote it into `docs/`.
 - [openvscode-harness-runbook.md](openvscode-harness-runbook.md) — running the
   openvscode-server (Docker) test harness: lifecycle commands, the `~/beads`
   layout, and Dolt server gotchas (incl. recovering a jammed server-mode repo).
+- [extension-install-runbook.md](extension-install-runbook.md) — packaging the
+  `.vsix` and installing/verifying it in local VS Code (`just package` →
+  `code --install-extension`).

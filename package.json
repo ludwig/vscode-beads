@@ -1,9 +1,9 @@
 {
-  "name": "vscode-beads",
-  "displayName": "Beads",
+  "name": "vscode-beads-pm",
+  "displayName": "Beads (ludwig)",
   "description": "VS Code extension for managing Beads issues",
   "version": "0.13.0",
-  "publisher": "planet57",
+  "publisher": "ludwig",
   "license": "Apache-2.0",
   "icon": "resources/icon.png",
   "files": [
@@ -15,7 +15,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/jdillon/vscode-beads"
+    "url": "https://github.com/ludwig/vscode-beads"
   },
   "engines": {
     "vscode": "^1.85.0"

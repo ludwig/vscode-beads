@@ -16,6 +16,7 @@ import {
 } from "../backend/types";
 import { Logger } from "../utils/logger";
 import { resolveEnvVariables } from "../utils/resolve-env-variables";
+import { CONFIG_NAMESPACE } from "../constants";
 
 export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
   protected _view?: vscode.WebviewView;
@@ -88,7 +89,7 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     this.postMessage({ type: "setProjects", projects });
 
     // Send settings
-    const config = vscode.workspace.getConfiguration("beads");
+    const config = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);
     // User ID: prefer setting, fallback to $USER, then "unknown"
     const rawUserId = config.get<string>("userId", "");
     const userId = resolveEnvVariables(rawUserId || "") || process.env.USER || process.env.USERNAME || "unknown";

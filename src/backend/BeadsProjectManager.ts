@@ -9,6 +9,7 @@ import { resolveEnvVariables } from "../utils/resolve-env-variables";
 import { BeadsBackend } from "./BeadsBackend";
 import { BeadsDoltBackend } from "./BeadsDoltBackend";
 import { BeadsCommandRunner } from "./BeadsCommandRunner";
+import { CONFIG_NAMESPACE } from "../constants";
 import { backendKindForMode, createDoltModeProbe, detectDoltMode } from "./doltMode";
 import { Bead, BeadsProject } from "./types";
 
@@ -293,7 +294,7 @@ export class BeadsProjectManager implements vscode.Disposable {
   }
 
   private getConfiguredProjectPaths(): string[] {
-    const config = vscode.workspace.getConfiguration("beads");
+    const config = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);
     const configured = config.get<string[]>("projects", []);
     return configured.filter((value) => typeof value === "string" && value.trim().length > 0);
   }
@@ -393,7 +394,7 @@ export class BeadsProjectManager implements vscode.Disposable {
 
     const intervalMs = Math.max(
       0,
-      vscode.workspace.getConfiguration("beads").get<number>("refreshInterval", 0)
+      vscode.workspace.getConfiguration(CONFIG_NAMESPACE).get<number>("refreshInterval", 0)
     );
     if (intervalMs === 0) return;
 
@@ -525,7 +526,7 @@ export class BeadsProjectManager implements vscode.Disposable {
   }
 
   private getBdPath(): string {
-    const config = vscode.workspace.getConfiguration("beads");
+    const config = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);
     const configuredBdPath = config.get<string>("pathToBd", "bd") ?? "bd";
     return this.resolveBdPath(resolveEnvVariables(configuredBdPath).trim());
   }
