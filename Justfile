@@ -34,9 +34,31 @@ lint:
 test:
     bun run test
 
-# Build, then package the installable artifact -> vscode-beads-<version>.vsix.
+# Build, then package the installable artifact -> vscode-beads-pm-<version>.vsix.
 package:
     bun run package
+
+alias update := install
+
+# The version stays put across builds (the commit SHA is the build identity),
+# so we --force to overwrite the same version. Installs whatever is committed
+# on the current branch — `git pull` first if you want the merged develop.
+# Verify the right build is live via the Dashboard footer's SHA after reloading.
+# Package and (re)install into the local VS Code, then prompt to reload.
+install:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    command -v code >/dev/null || { echo "the 'code' CLI is not on PATH (VS Code: 'Shell Command: Install code command')" >&2; exit 1; }
+    bun run package
+    vsix=$(ls -t *.vsix 2>/dev/null | head -1)
+    [ -n "$vsix" ] || { echo "no .vsix produced" >&2; exit 1; }
+    code --install-extension "$vsix" --force
+    sha=$(git rev-parse --short HEAD)
+    version=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' package.json | head -1)
+    echo
+    echo "Installed $vsix"
+    echo "Reload VS Code:  Cmd+Shift+P -> 'Developer: Reload Window'"
+    echo "Verify footer:   v${version} · ${sha}"
 
 # --- Dolt server recovery (host-side) -----------------------------------------
 # Server-mode beads repos are each served by exactly one `dolt sql-server`
