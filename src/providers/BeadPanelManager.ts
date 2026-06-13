@@ -17,6 +17,7 @@ import { Logger } from "../utils/logger";
 import { BaseViewProvider } from "./BaseViewProvider";
 import { BeadDetailsViewProvider } from "./BeadDetailsViewProvider";
 import { BeadsPanelViewProvider } from "./BeadsPanelViewProvider";
+import { DashboardViewProvider } from "./DashboardViewProvider";
 import { hostFromPanel } from "./WebviewHost";
 
 interface PanelEntry {
@@ -64,6 +65,18 @@ export class BeadPanelManager implements vscode.Disposable {
 
     const panel = this.createPanel("Issues");
     const provider = new BeadsPanelViewProvider(this.extensionUri, this.projectManager, this.log);
+    provider.attach(hostFromPanel(panel));
+
+    this.track(key, panel, provider);
+  }
+
+  /** Open (or focus) the Dashboard as an editor tab. */
+  public openDashboard(): void {
+    const key = "beadsDashboard";
+    if (this.reveal(key)) return;
+
+    const panel = this.createPanel("Dashboard");
+    const provider = new DashboardViewProvider(this.extensionUri, this.projectManager, this.log);
     provider.attach(hostFromPanel(panel));
 
     this.track(key, panel, provider);

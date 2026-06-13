@@ -171,6 +171,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       panelManager.openIssues();
     }),
 
+    // vs-s56: open the Dashboard as an editor tab.
+    vscode.commands.registerCommand("beads.openDashboardInTab", () => {
+      panelManager.openDashboard();
+    }),
+
     vscode.commands.registerCommand("beads.createIssue", () => {
       if (!projectManager.getActiveProject()) {
         vscode.window.showWarningMessage("No active Beads project");
