@@ -11,6 +11,8 @@ import {
   DependencyArgs,
   UpdateIssueArgs,
 } from "./BeadsBackend";
+import { isEmbeddedLockError } from "./doltErrors";
+import { withLockRetry } from "./retry";
 
 const execFileAsync = util.promisify(execFile);
 const BD_COMMAND_TIMEOUT_MS = 30000;
@@ -243,16 +245,35 @@ export class BeadsCommandRunner implements BeadsBackend {
     }
 
     try {
-      const { stdout } = await this.execBd(args, 10 * 1024 * 1024);
-      const trimmed = stdout.trim();
-      if (!trimmed) return [];
-      return JSON.parse(trimmed);
+      return await withLockRetry(
+        async () => {
+          try {
+            const { stdout } = await this.execBd(args, 10 * 1024 * 1024);
+            const trimmed = stdout.trim();
+            if (!trimmed) return [];
+            return JSON.parse(trimmed);
+          } catch (error) {
+            // Normalize so the retry/classifier see bd's stderr in `.message`,
+            // while preserving the original stderr/stdout for the outer handler.
+            const err = error as Error & { stderr?: string; stdout?: string };
+            const raw = (err.stderr?.trim() || err.stdout?.trim() || err.message || "").trim();
+            throw Object.assign(new Error(raw), { stderr: err.stderr, stdout: err.stdout });
+          }
+        },
+        { isRetryable: isEmbeddedLockError, delaysMs: [100, 300, 600] }
+      );
     } catch (error) {
       const err = error as Error & { stderr?: string; stdout?: string };
       const stderr = err.stderr?.trim() ?? "";
       const stdout = err.stdout?.trim() ?? "";
       const rawMessage = stderr || stdout || err.message;
       this.log.trace(`bd command failed: ${args.join(" ")} :: ${rawMessage}`);
+
+      if (isEmbeddedLockError(rawMessage)) {
+        throw new Error(
+          "Beads database is busy — another `bd` process holds the embedded database lock. Please retry. See Output > Beads for details."
+        );
+      }
 
       if (this.isDoltConnectionError(rawMessage)) {
         if (!recoveryAttempted) {
