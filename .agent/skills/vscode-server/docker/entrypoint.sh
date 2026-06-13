@@ -21,6 +21,12 @@ if [[ -d /ext-src ]]; then
   ln -sfn /ext-src "$ext_dir/planet57.vscode-beads-dev"
 fi
 
+# Generate the multi-root workspace from whatever beads repos are mounted under
+# /home/workspace/projects, so every one shows up in the extension's project
+# switcher. Open the printed ?workspace= URL to load it. Best-effort: a failure
+# here must not stop the server from launching.
+/usr/local/bin/gen-workspace.sh || echo "[entrypoint] gen-workspace failed; continuing"
+
 exec "${OPENVSCODE_SERVER_ROOT}/bin/openvscode-server" \
   --host 0.0.0.0 \
   --port "${OVS_PORT:-3000}" \
