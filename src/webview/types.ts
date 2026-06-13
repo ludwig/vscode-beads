@@ -79,6 +79,9 @@ export interface WebviewSettings {
   renderMarkdown: boolean;
   userId: string;
   tooltipHoverDelay: number; // 0 = disabled
+  extensionVersion: string;
+  buildSha: string;
+  buildDirty: boolean;
 }
 
 // Fields for creating a new bead (camelCase; normalized in the provider)

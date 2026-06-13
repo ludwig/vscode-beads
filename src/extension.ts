@@ -6,6 +6,8 @@
  * - Details: Selected bead details
  */
 
+import * as fs from "fs";
+import * as path from "path";
 import * as vscode from "vscode";
 import { BeadsProjectManager } from "./backend/BeadsProjectManager";
 import { DashboardViewProvider } from "./providers/DashboardViewProvider";
@@ -13,6 +15,7 @@ import { BeadsPanelViewProvider } from "./providers/BeadsPanelViewProvider";
 import { BeadDetailsViewProvider } from "./providers/BeadDetailsViewProvider";
 import { createLogger, Logger } from "./utils/logger";
 import { CONFIG_NAMESPACE } from "./constants";
+import { setAppInfo } from "./appInfo";
 
 let log: Logger;
 let projectManager: BeadsProjectManager;
@@ -31,6 +34,23 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const isDev = ext.extensionPath.includes("-dev") || !ext.extensionPath.includes(".vscode");
   const timestamp = new Date().toISOString();
   log.info(`Activating v${version}${isDev ? " (dev)" : ""} @ ${timestamp}`);
+
+  // Build identity stamped at compile time (dist/build-info.json). Absent in
+  // some dev flows → SHA stays "unknown", which is fine.
+  let buildSha = "unknown";
+  let buildDirty = false;
+  let builtAt: string | null = null;
+  try {
+    const raw = fs.readFileSync(path.join(ext.extensionPath, "dist", "build-info.json"), "utf8");
+    const info = JSON.parse(raw) as { sha?: string; dirty?: boolean; builtAt?: string };
+    buildSha = info.sha || "unknown";
+    buildDirty = info.dirty === true;
+    builtAt = info.builtAt ?? null;
+  } catch {
+    // no build-info.json → leave defaults
+  }
+  setAppInfo({ version, sha: buildSha, dirty: buildDirty, builtAt });
+  log.info(`Build ${buildSha}${buildDirty ? " (dirty)" : ""}`);
 
   const config = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);
   const configuredProjects = config.get<string[]>("projects", []);

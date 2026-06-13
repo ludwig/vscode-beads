@@ -17,6 +17,7 @@ import {
 import { Logger } from "../utils/logger";
 import { resolveEnvVariables } from "../utils/resolve-env-variables";
 import { CONFIG_NAMESPACE } from "../constants";
+import { getAppInfo } from "../appInfo";
 
 export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
   protected _view?: vscode.WebviewView;
@@ -93,12 +94,16 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     // User ID: prefer setting, fallback to $USER, then "unknown"
     const rawUserId = config.get<string>("userId", "");
     const userId = resolveEnvVariables(rawUserId || "") || process.env.USER || process.env.USERNAME || "unknown";
+    const appInfo = getAppInfo();
     this.postMessage({
       type: "setSettings",
       settings: {
         renderMarkdown: config.get<boolean>("renderMarkdown", true),
         userId,
         tooltipHoverDelay: config.get<number>("tooltipHoverDelay", 1000),
+        extensionVersion: appInfo.version,
+        buildSha: appInfo.sha,
+        buildDirty: appInfo.dirty,
       },
     });
 
