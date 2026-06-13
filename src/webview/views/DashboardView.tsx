@@ -23,6 +23,7 @@ import { StatusBadge } from "../common/StatusBadge";
 import { PriorityBadge } from "../common/PriorityBadge";
 import { LabelBadge } from "../common/LabelBadge";
 import { getLabelColorStyle } from "../utils/label-colors";
+import { deriveIssuePrefix } from "../../utils/issue-prefix";
 
 interface DashboardViewProps {
   summary: BeadsSummary | null;
@@ -57,6 +58,7 @@ export function DashboardView({
   onOpenProjectFolder,
   onRetry,
 }: DashboardViewProps): React.ReactElement {
+  const prefix = deriveIssuePrefix(beads.map((b) => b.id));
   const openBeads = beads.filter((b) => b.status === "open").slice(0, 5);
   const blockedBeads = beads.filter((b) => b.status === "blocked").slice(0, 5);
   const inProgressBeads = beads.filter((b) => b.status === "in_progress").slice(0, 5);
@@ -78,6 +80,7 @@ export function DashboardView({
           projects={projects}
           activeProject={activeProject}
           onSelectProject={onSelectProject}
+          prefix={prefix}
         />
         {activeProject && (
           <Dropdown

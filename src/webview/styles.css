@@ -737,6 +737,19 @@ textarea {
   box-sizing: border-box;
 }
 
+.project-dropdown-prefix {
+  flex-shrink: 0;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 0.85em;
+  font-weight: 600;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: var(--border-radius);
+  color: var(--vscode-badge-foreground);
+  background: var(--vscode-badge-background);
+  text-transform: lowercase;
+}
+
 .project-dropdown-name {
   flex: 1;
   overflow: hidden;

@@ -13,12 +13,15 @@ interface ProjectDropdownProps {
   projects: BeadsProject[];
   activeProject: BeadsProject | null;
   onSelectProject: (project: BeadsProject) => void;
+  /** Active issue prefix (e.g. "vs"), derived from the loaded issue IDs. */
+  prefix?: string | null;
 }
 
 export function ProjectDropdown({
   projects,
   activeProject,
   onSelectProject,
+  prefix,
 }: ProjectDropdownProps): React.ReactElement {
   if (projects.length === 0) {
     return (
@@ -34,6 +37,11 @@ export function ProjectDropdown({
 
   const triggerContent = (
     <>
+      {prefix && (
+        <span className="project-dropdown-prefix" title={`Active issue prefix: ${prefix}`}>
+          {prefix}
+        </span>
+      )}
       <span className="project-dropdown-name">
         {activeProject?.name || projects[0]?.name || "Select project"}
       </span>
