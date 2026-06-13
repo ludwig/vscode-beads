@@ -13,6 +13,7 @@ import { BaseViewProvider } from "./BaseViewProvider";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
 import { Bead, BeadsSummary, issueToWebviewBead, BeadStatus, BeadPriority } from "../backend/types";
 import { Logger } from "../utils/logger";
+import { deriveIssuePrefix } from "../utils/issue-prefix";
 
 export class DashboardViewProvider extends BaseViewProvider {
   protected readonly viewType = "beadsDashboard";
@@ -83,6 +84,7 @@ export class DashboardViewProvider extends BaseViewProvider {
       };
 
       this.postMessage({ type: "setSummary", summary });
+      this.projectManager.setActivePrefix(deriveIssuePrefix(issues.map((i) => i.id)));
 
       const openBeads = beads.filter((b) => b.status === "open").slice(0, 5);
       const blockedBeads = beads.filter((b) => b.status === "blocked").slice(0, 5);

@@ -14,6 +14,7 @@ import { BaseViewProvider } from "./BaseViewProvider";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
 import { WebviewToExtensionMessage, Bead, issueToWebviewBead } from "../backend/types";
 import { Logger } from "../utils/logger";
+import { deriveIssuePrefix } from "../utils/issue-prefix";
 
 export class BeadsPanelViewProvider extends BaseViewProvider {
   protected readonly viewType = "beadsPanel";
@@ -63,6 +64,7 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
       }
       const beads = issues.map(issueToWebviewBead).filter((b): b is Bead => b !== null);
       this.postMessage({ type: "setBeads", beads });
+      this.projectManager.setActivePrefix(deriveIssuePrefix(issues.map((i) => i.id)));
       this.setLoading(false);
     } catch (err) {
       if (showLoading) {

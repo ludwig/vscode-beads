@@ -36,6 +36,11 @@ export class BeadsProjectManager implements vscode.Disposable {
   private readonly _onDataChanged = new vscode.EventEmitter<void>();
   public readonly onDataChanged = this._onDataChanged.event;
 
+  /** Active issue prefix (e.g. "vs"), derived from the loaded issue IDs. */
+  private activePrefix: string | null = null;
+  private readonly _onPrefixChanged = new vscode.EventEmitter<string | null>();
+  public readonly onPrefixChanged = this._onPrefixChanged.event;
+
   constructor(context: vscode.ExtensionContext, logger: Logger) {
     this.context = context;
     this.log = logger.child("ProjectManager");
@@ -87,6 +92,24 @@ export class BeadsProjectManager implements vscode.Disposable {
 
   getActiveProject(): BeadsProject | null {
     return this.activeProject;
+  }
+
+  /** The active issue prefix (e.g. "vs"), or null if not yet derived. */
+  getActivePrefix(): string | null {
+    return this.activePrefix;
+  }
+
+  /**
+   * Records the active issue prefix derived from the currently loaded issue
+   * IDs. Fires onPrefixChanged only when the value actually changes so the
+   * status bar refreshes without churn.
+   */
+  setActivePrefix(prefix: string | null): void {
+    if (prefix === this.activePrefix) {
+      return;
+    }
+    this.activePrefix = prefix;
+    this._onPrefixChanged.fire(prefix);
   }
 
   getBackend(): BeadsBackend | null {
@@ -240,6 +263,7 @@ export class BeadsProjectManager implements vscode.Disposable {
     this._onProjectsChanged.dispose();
     this._onActiveProjectChanged.dispose();
     this._onDataChanged.dispose();
+    this._onPrefixChanged.dispose();
   }
 
   private getConfiguredProjectPaths(): string[] {
@@ -430,6 +454,9 @@ export class BeadsProjectManager implements vscode.Disposable {
     this.activePollToken = null;
 
     if (options.emitActiveProjectChanged) {
+      // Clear the prefix so the status bar doesn't show the previous project's
+      // prefix until the new project's issues load and re-derive it.
+      this.setActivePrefix(null);
       this._onActiveProjectChanged.fire(project);
     }
 

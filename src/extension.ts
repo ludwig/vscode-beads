@@ -306,6 +306,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       updateStatusBar();
     }),
 
+    // Refresh the status bar when the active issue prefix is (re-)derived from
+    // the loaded issue IDs, so the prefix surfaces without a project switch.
+    projectManager.onPrefixChanged(() => {
+      updateStatusBar();
+    }),
+
     // Refresh projects when workspace folders change
     vscode.workspace.onDidChangeWorkspaceFolders(async () => {
       log.info("Workspace folders changed, refreshing projects...");
@@ -370,29 +376,34 @@ async function updateStatusBar(): Promise<void> {
 
   const status = await projectManager.getBackendStatus();
 
+  // Surface the active issue prefix (e.g. "vs") in the label so it's always
+  // clear which root is active. Falls back to plain "Beads" until derived.
+  const prefix = projectManager.getActivePrefix();
+  const label = prefix ? `Beads: ${prefix}` : "Beads";
+
   switch (status.state) {
     case "running":
-      statusBar.text = "$(check) Beads";
+      statusBar.text = `$(check) ${label}`;
       statusBar.backgroundColor = undefined;
       statusBar.tooltip = `Beads ready for ${project.name}\n${status.message}\nClick for options`;
       break;
     case "stopped":
-      statusBar.text = "$(circle-slash) Beads";
+      statusBar.text = `$(circle-slash) ${label}`;
       statusBar.backgroundColor = new vscode.ThemeColor("statusBarItem.warningBackground");
       statusBar.tooltip = `Beads unavailable for ${project.name}\n${status.message}\nCheck Output > Beads for details`;
       break;
     case "zombie":
-      statusBar.text = "$(warning) Beads";
+      statusBar.text = `$(warning) ${label}`;
       statusBar.backgroundColor = new vscode.ThemeColor("statusBarItem.errorBackground");
       statusBar.tooltip = `Beads backend unhealthy for ${project.name}\n${status.message}\nCheck Output > Beads for details`;
       break;
     case "not_initialized":
-      statusBar.text = "$(circle-slash) Beads";
+      statusBar.text = `$(circle-slash) ${label}`;
       statusBar.backgroundColor = new vscode.ThemeColor("statusBarItem.warningBackground");
       statusBar.tooltip = `Project not initialized: ${project.name}\n${status.message}`;
       break;
     default:
-      statusBar.text = "$(question) Beads";
+      statusBar.text = `$(question) ${label}`;
       statusBar.backgroundColor = undefined;
       statusBar.tooltip = `Unknown state for ${project.name}\n${status.message}`;
   }
