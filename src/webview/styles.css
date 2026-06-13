@@ -194,7 +194,16 @@ textarea {
   left: 0;
   margin-top: 2px;
   min-width: 100%;
-  background: var(--vscode-dropdown-listBackground);
+  /* Opaque fallback chain: --vscode-dropdown-listBackground is undefined in
+     many themes, which left the menu see-through (vs-k71). Fall back through
+     progressively more universal surface tokens so it's always solid. */
+  background-color: var(
+    --vscode-dropdown-listBackground,
+    var(
+      --vscode-dropdown-background,
+      var(--vscode-menu-background, var(--vscode-editorWidget-background, var(--vscode-editor-background)))
+    )
+  );
   border: 1px solid var(--vscode-dropdown-border);
   border-radius: var(--border-radius);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
