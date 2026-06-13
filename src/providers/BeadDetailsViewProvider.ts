@@ -87,14 +87,11 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
     this.setError(null);
 
     try {
-      // Fetch issue and comments in parallel
-      const [issue, comments] = await Promise.all([
-        client.show(this.currentBeadId),
-        client.listComments(this.currentBeadId).catch((err) => {
-          this.log.trace(`Failed to fetch comments: ${err}`);
-          return [];
-        }),
-      ]);
+      // The backend's show() returns comments inline (SQL backend always; CLI
+      // backend only when comment_count > 0), so we no longer fire a second
+      // concurrent `bd` process for comments — that parallel spawn was the
+      // embedded-mode lock-contention slow path (vs-266).
+      const issue = await client.show(this.currentBeadId);
 
       // Check if a newer request has started - if so, discard this stale response
       if (thisRequest !== this.loadSequence) {
@@ -102,15 +99,9 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
         return;
       }
 
-      const commentsArray = comments || [];
-      this.log.debug(`Loaded ${commentsArray.length} comments for ${this.currentBeadId}`);
       if (issue) {
-        // Merge comments into issue data
-        const issueWithComments = {
-          ...issue,
-          comments: commentsArray as Array<{ id: string; author: string; text: string; created_at: string }>,
-        };
-        const bead = issueToWebviewBead(issueWithComments);
+        this.log.debug(`Loaded ${(issue.comments?.length ?? 0)} comments for ${this.currentBeadId}`);
+        const bead = issueToWebviewBead(issue);
         if (bead) {
           this.postMessage({ type: "setBead", bead });
         } else {

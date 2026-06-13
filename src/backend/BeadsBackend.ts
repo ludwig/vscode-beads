@@ -20,6 +20,7 @@ export interface BeadsIssue {
   dependencies?: BackendBeadDependency[];
   dependents?: BackendBeadDependency[];
   comments?: Array<{ id: string; author: string; text: string; created_at: string }>;
+  comment_count?: number;
 }
 
 export interface CreateIssueArgs {
