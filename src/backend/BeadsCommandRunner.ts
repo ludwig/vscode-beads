@@ -79,7 +79,11 @@ export class BeadsCommandRunner implements BeadsBackend {
   }
 
   async list(): Promise<BeadsIssue[]> {
-    const result = await this.runReadJson(["list", "--json"], { cacheTtlMs: 750 });
+    // `-n 0` = unlimited (bd defaults to --limit 50, which silently hides
+    // older beads), `--all` includes closed issues. Together these bring the
+    // CLI/embedded list to parity with the SQL backend, which returns every
+    // non-ephemeral issue (vs-0bq).
+    const result = await this.runReadJson(["list", "--all", "-n", "0", "--json"], { cacheTtlMs: 750 });
     return Array.isArray(result) ? (result as BeadsIssue[]) : [];
   }
 
