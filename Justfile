@@ -10,6 +10,34 @@
 #   just dev down       # tear it down
 mod dev '.agent/skills/vscode-server/dev.just'
 
+# --- Extension build (thin wrappers over the bun scripts in package.json) ------
+# These exist only so `just` is a consistent entrypoint; package.json remains
+# the source of truth. Run `bun install` first if node_modules is missing.
+
+# List the recipes (default when you run bare `just`).
+default:
+    @just --list
+
+# Build the extension + webview bundles (dist/).
+build:
+    bun run compile
+
+# Watch mode: rebuild extension + webview on change.
+watch:
+    bun run watch
+
+# Lint src/**/*.{ts,tsx}.
+lint:
+    bun run lint
+
+# Run the Jest test suite.
+test:
+    bun run test
+
+# Build, then package the installable artifact -> vscode-beads-<version>.vsix.
+package:
+    bun run package
+
 # --- Dolt server recovery (host-side) -----------------------------------------
 # Server-mode beads repos are each served by exactly one `dolt sql-server`
 # (exclusive noms/LOCK). When one is left orphaned — bd lost the recorded port
