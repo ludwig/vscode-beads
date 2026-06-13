@@ -23,7 +23,7 @@ If the `--devtools` flag is present, do a full page close/reopen instead of just
    just dev port
    ```
 2. Try to close the existing page using `mcp__chrome-devtools__close_page` (ignore errors if it fails)
-3. Open a fresh page using `mcp__chrome-devtools__new_page` with URL `http://127.0.0.1:{PORT}/?folder=/home/workspace/project`
+3. Open a fresh page using `mcp__chrome-devtools__new_page` with URL `http://127.0.0.1:{PORT}/?workspace=/home/workspace/beads-dev.code-workspace`
 4. Do a hard reload with `mcp__chrome-devtools__navigate_page` (type: reload, ignoreCache: true)
 
 **Note**: The `--devtools` flag name is a hint that this is useful when DevTools caused the disconnect.

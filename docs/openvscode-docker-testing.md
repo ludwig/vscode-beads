@@ -26,9 +26,11 @@ Gas Town source (`~/repos/beads`) and bake it into the image, so the container
 ┌─ Docker (linux/arm64) ─────────────────────┐
 │  openvscode-server  (extension host)       │
 │  /usr/local/bin/bd  (Gas Town, cross-built) │
-│  /home/workspace/project  ◄─ BEADS_WORKSPACE │
+│  /home/workspace/projects ◄ BEADS_PROJECTS_DIR │
+│    ├─ vs/   (server)   each scanned →        │
+│    └─ foo/  (embedded) multi-root workspace  │
 └────────────────────────────────────────────┘
-          ▲ http://127.0.0.1:3000/?folder=/home/workspace/project
+   ▲ http://127.0.0.1:3000/?workspace=/home/workspace/beads-dev.code-workspace
        browser (Chrome DevTools MCP)
 ```
 
@@ -37,7 +39,8 @@ Gas Town source (`~/repos/beads`) and bake it into the image, so the container
 - **Docker Desktop** running (Apple Silicon → pulls the linux/arm64 base image).
   `bd` is built inside a `golang` container, so **no host Go toolchain is needed**.
 - **`~/repos/beads`** present (the Gas Town fork). Override with `BEADS_SRC`.
-- A **beads project** to open as the workspace (default `~/beads/vs`).
+- A **parent dir of beads repos** to mount (default `~/beads`). Every repo under
+  it (`*/.beads`), embedded or server mode, is auto-discovered as a project.
 
 ## Quick Start
 
@@ -46,17 +49,20 @@ can take a few minutes.
 
 ```bash
 just dev up          # bd → image build → compile → watch → run container
-just dev verify      # bd version + bd list --json inside the container
+just dev info        # snapshot: host build + container + each project's Dolt mode
+just dev verify      # bd version + bd list --json (first mounted project)
+just dev rescan      # regenerate the workspace after adding/removing a repo
 just dev doctor      # diagnose the bd/CGO build chain if verify fails
 just dev down        # tear down
 
 # override config inline (or edit docker/.env):
-BEADS_WORKSPACE=~/beads/vs OVS_HOST_PORT=3010 just dev up
+BEADS_PROJECTS_DIR=~/beads OVS_HOST_PORT=3010 just dev up
 ```
 
 The `vscode-server` skill wraps these (`/vscode-server:start|reload|status|stop`).
 
-Then open `http://127.0.0.1:3000/?folder=/home/workspace/project` in the browser.
+Then open `http://127.0.0.1:3000/?workspace=/home/workspace/beads-dev.code-workspace`
+in the browser — the generated multi-root workspace with every mounted project.
 
 ## Configuration
 
@@ -64,7 +70,7 @@ Env overrides for the start script:
 
 | Var | Default | Meaning |
 |-----|---------|---------|
-| `BEADS_WORKSPACE` | `~/beads/vs` | Beads repo mounted + opened as the workspace |
+| `BEADS_PROJECTS_DIR` | `~/beads` | Parent dir of beads repos; each `*/.beads` under it becomes a project |
 | `OVS_HOST_PORT` | `3000` | Host port mapped to the container |
 | `BD_ARCH` | `arm64` | Container arch for `bd` (use `amd64` if Docker runs x86) |
 | `BEADS_SRC` | `~/repos/beads` | Source tree for the `bd` cross-build |
@@ -82,8 +88,16 @@ Env overrides for the start script:
 3. **Extension mount**: repo root is bind-mounted read-only at `/ext-src`; the
    entrypoint symlinks it into the server's extensions dir. Host `bun run watch`
    rebuilds `dist/`; reload the browser to pick up changes.
-4. **Workspace**: `BEADS_WORKSPACE` is mounted at `/home/workspace/project`. Dolt
-   data is cross-platform, so the container `bd` reads it directly.
+4. **Workspace**: `BEADS_PROJECTS_DIR` (parent dir) is mounted at
+   `/home/workspace/projects`. The entrypoint runs `gen-workspace.sh`, which
+   scans for `*/.beads` and writes `/home/workspace/beads-dev.code-workspace` —
+   a multi-root workspace listing each repo as a folder and in the
+   `beads.projects` setting, so all of them appear in the project switcher. Dolt
+   data is cross-platform, so the container `bd` reads host-created repos
+   directly. Server-mode repos work too: the image bakes in `dolt` and a
+   pre-seeded Dolt identity, so `bd dolt start` runs the server in-container.
+   After adding/removing a repo, `just dev rescan` regenerates the workspace
+   (then reload the browser) — no container recreate needed.
 
 ## Iteration Loop
 

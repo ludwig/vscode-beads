@@ -21,13 +21,13 @@ bd:
 
 # Build the openvscode-server image (rebuilds bd first)
 build: bd
-    REPO_ROOT="$(git rev-parse --show-toplevel)" {{compose}} build
+    REPO_ROOT="$(git rev-parse --show-toplevel)" BEADS_PROJECTS_DIR="${BEADS_PROJECTS_DIR:-$HOME/beads}" {{compose}} build
 
 # Clean rebuild from scratch — use when image layers go stale or beads is dirty
 rebuild:
     rm -f "{{docker_dir}}/bd-linux-${BD_ARCH:-arm64}" "{{docker_dir}}/bd-linux-${BD_ARCH:-arm64}.sha"
     BD_FORCE=1 GOARCH="${BD_ARCH:-arm64}" GO_IMAGE="${GO_IMAGE:-golang:1.26-bookworm}" "{{docker_dir}}/build-bd.sh"
-    REPO_ROOT="$(git rev-parse --show-toplevel)" {{compose}} build --no-cache
+    REPO_ROOT="$(git rev-parse --show-toplevel)" BEADS_PROJECTS_DIR="${BEADS_PROJECTS_DIR:-$HOME/beads}" {{compose}} build --no-cache
 
 # Compile the extension once (host, native bun)
 compile:
@@ -45,13 +45,14 @@ watch:
 
 # Bring the harness up: build image + extension, run container, print the URL
 up: build compile watch
-    REPO_ROOT="$(git rev-parse --show-toplevel)" {{compose}} up -d --force-recreate
-    @echo "openvscode-server: http://127.0.0.1:${OVS_HOST_PORT:-3000}/?folder=/home/workspace/project"
+    REPO_ROOT="$(git rev-parse --show-toplevel)" BEADS_PROJECTS_DIR="${BEADS_PROJECTS_DIR:-$HOME/beads}" {{compose}} up -d --force-recreate
+    @echo "openvscode-server: http://127.0.0.1:${OVS_HOST_PORT:-3000}/?workspace=/home/workspace/beads-dev.code-workspace"
+    @echo "(opens the generated multi-root workspace — every beads repo under BEADS_PROJECTS_DIR shows in the switcher)"
 
 # Stop the container and host watch mode
 down:
     -pkill -f "bun run watch" 2>/dev/null || true
-    REPO_ROOT="$(git rev-parse --show-toplevel)" {{compose}} down
+    REPO_ROOT="$(git rev-parse --show-toplevel)" BEADS_PROJECTS_DIR="${BEADS_PROJECTS_DIR:-$HOME/beads}" {{compose}} down
 
 # Show status of the container + host watch
 status:
@@ -66,14 +67,65 @@ status:
       echo "not running"
     fi
 
-# The embedded-bd verification: version + list against the mounted workspace
+# Agent snapshot: host build state + container + each mounted project's Dolt mode (read-only, no `docker inspect`)
+info:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    cd "$(git rev-parse --show-toplevel)" 2>/dev/null || true
+    echo "=== host ==="
+    echo "branch:     $(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
+    echo "dist built: $(stat -f '%Sm' -t '%Y-%m-%d %H:%M:%S' dist/webview/main.js 2>/dev/null || echo 'not built — run: just dev compile')"
+    if pgrep -f "bun run watch" >/dev/null; then
+      echo "watch:      running (pid $(pgrep -f 'bun run watch' | head -1))"
+    else
+      echo "watch:      not running"
+    fi
+    echo "=== container ==="
+    if [ -z "$(docker ps -q --filter name={{container}})" ]; then
+      echo "not running — run: just dev up"
+      exit 0
+    fi
+    docker ps --filter name={{container}}
+    echo "bd:         $(docker exec {{container}} bd version 2>/dev/null | head -1 || echo unavailable)"
+    echo "=== mounted beads projects (under /home/workspace/projects) ==="
+    docker exec {{container}} bash -lc '
+      shopt -s nullglob
+      found=0
+      for d in /home/workspace/projects/*/; do
+        d="${d%/}"
+        [ -d "$d/.beads" ] || continue
+        found=1
+        mode=$(sed -n "s/.*\"dolt_mode\"[[:space:]]*:[[:space:]]*\"\([a-z]*\)\".*/\1/p" "$d/.beads/metadata.json" 2>/dev/null | head -1)
+        [ -z "$mode" ] && mode="embedded(default)"
+        srv=""
+        if [ "$mode" = "server" ]; then
+          pgrep -f "dolt sql-server" >/dev/null 2>&1 && srv=" — server up" || srv=" — server DOWN"
+        fi
+        count=$( (cd "$d" && bd list --json 2>/dev/null) | grep -c "\"id\":" )
+        printf "  %-34s mode=%s%s  issues~%s\n" "$d" "$mode" "$srv" "$count"
+      done
+      if [ "$found" = 0 ]; then echo "  (none found)"; fi
+    '
+
+# The in-container bd verification: version + list against the first mounted project
 verify:
     #!/usr/bin/env bash
     set -e
     echo "--- bd version (in container) ---"
     docker exec {{container}} bd version
-    echo "--- bd list --json (in container workspace) ---"
-    docker exec -w /home/workspace/project {{container}} bd list --json
+    echo "--- bd list --json (first mounted project) ---"
+    docker exec {{container}} bash -lc '
+      for d in /home/workspace/projects/*/; do
+        d="${d%/}"
+        [ -d "$d/.beads" ] || continue
+        echo "# $d"; (cd "$d" && bd list --json); exit 0
+      done
+      echo "no beads repos under /home/workspace/projects" >&2; exit 1
+    '
+
+# Regenerate the multi-root workspace after adding/removing a repo (then reload the browser; no recreate needed)
+rescan:
+    docker exec {{container}} /usr/local/bin/gen-workspace.sh
 
 # Diagnose the CGO chain: linkage of host-side vs in-image bd
 doctor:

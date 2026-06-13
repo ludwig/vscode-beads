@@ -35,7 +35,8 @@ RUN set -eux; \
 # /home/workspace/.dolt that uid-1000 can't write to at runtime.
 
 COPY entrypoint.sh /usr/local/bin/dev-entrypoint.sh
-RUN chmod +x /usr/local/bin/dev-entrypoint.sh
+COPY gen-workspace.sh /usr/local/bin/gen-workspace.sh
+RUN chmod +x /usr/local/bin/dev-entrypoint.sh /usr/local/bin/gen-workspace.sh
 
 USER openvscode-server
 
