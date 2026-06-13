@@ -1,0 +1,35 @@
+# openvscode-server dev harness for the vscode-beads extension.
+#
+# Driven by the vscode-server skill scripts, which export REPO_ROOT,
+# BEADS_WORKSPACE, OVS_HOST_PORT and BD_ARCH before invoking compose.
+# Can also be run standalone:
+#   REPO_ROOT=$(git rev-parse --show-toplevel) \
+#   BEADS_WORKSPACE=$HOME/beads/vs \
+#   docker compose -f .agent/skills/vscode-server/docker/docker-compose.yml up --build
+name: vscode-beads-dev
+
+services:
+  openvscode:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BD_ARCH: ${BD_ARCH:-arm64}
+    image: vscode-beads-dev:latest
+    container_name: vscode-beads-dev
+    ports:
+      - "${OVS_HOST_PORT:-3000}:3000"
+    environment:
+      - OVS_PORT=3000
+    volumes:
+      # Repo root mounted read-only as the extension source. Host `bun run
+      # watch` rebuilds dist/; reload the browser to pick up changes.
+      - ${REPO_ROOT:?set REPO_ROOT}:/ext-src:ro
+      # A beads project to open as the workspace. Point at any bd repo; its
+      # Dolt data is cross-platform, so the Linux container `bd` can read it.
+      - ${BEADS_WORKSPACE:?set BEADS_WORKSPACE}:/home/workspace/project
+      # NOTE: the extensions dir (/home/workspace/.dev-exts) is intentionally
+      # NOT a named volume — Docker creates volume mountpoints owned by root,
+      # but the server runs as uid 1000 and must write a symlink + cache there.
+      # Leaving it in the container's writable layer keeps it user-owned. It only
+      # holds a symlink to /ext-src + VS Code's cache, so it's fine to be ephemeral.

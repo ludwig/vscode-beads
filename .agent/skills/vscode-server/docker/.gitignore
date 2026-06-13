@@ -1,0 +1,4 @@
+# Cross-compiled bd binaries (~85MB, regenerate with build-bd.sh)
+bd-linux-*
+# Default scratch workspace if used
+.dev-workspace/
