@@ -105,7 +105,7 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
             id: message.beadId,
             ...message.updates,
           });
-          // Data will refresh via mutation events
+          this.projectManager.notifyDataChanged();
         } catch (err) {
           vscode.window.showErrorMessage(`Failed to update bead: ${err}`);
         }
