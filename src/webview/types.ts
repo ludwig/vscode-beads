@@ -59,8 +59,11 @@ export interface BeadsProject {
   id: string;
   name: string;
   rootPath: string;
+  displayPath?: string;
   beadsDir: string;
-  source?: "workspace" | "setting" | "env";
+  source?: "workspace" | "setting" | "env" | "default";
+  /** Effective issue prefix (explicit config value, or the dir name). */
+  prefix?: string;
   dbPath?: string;
   backendStatus: "running" | "stopped" | "unknown";
   backendPid?: number;

@@ -771,14 +771,54 @@ textarea {
   max-width: 300px;
 }
 
+.project-dropdown-header {
+  padding: 4px 10px;
+  font-size: 0.78em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--vscode-descriptionForeground);
+}
+
 .project-dropdown-item {
   gap: 8px;
+  /* Two-line content (name + path): keep the prefix badge on the name line. */
+  align-items: flex-start;
+}
+
+.project-dropdown-item-prefix {
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 0.85em;
+  font-weight: 600;
+  line-height: 1.4;
+  padding: 2px 6px;
+  border-radius: var(--border-radius);
+  color: var(--vscode-badge-foreground);
+  background: var(--vscode-badge-background);
+  text-transform: lowercase;
+}
+
+.project-dropdown-item-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
 }
 
 .project-dropdown-item-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.project-dropdown-item-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.82em;
+  color: var(--vscode-descriptionForeground);
 }
 
 .projects-panel {

@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Auto-discover Beads projects under `~/beads/` (each child dir with a `.beads/`), additively alongside workspace folders, the `beads.projects` setting, and `$BEADS_DIR` (vs-3r2)
+- Project switcher menu now labels each entry as a bead directory, showing its home-abbreviated path and an issue-prefix badge (rendered as `prefix-` to read like an issue ID); prefix resolved cheaply during discovery from `.beads/config.yaml`, else the dir name (vs-3r2)
+- Declared the `beads.projects` setting in the configuration schema so it appears in the Settings UI with validation (vs-b7o)
 - Create issues from the UI: a "New Issue" button on the Issues/Dashboard views and a `beads.createIssue` command open a create form in the Details view (vs-69z)
 - Surface the active issue prefix (e.g. `vs`), derived from the loaded issue IDs, in the project dropdown trigger and the status bar so it's always clear which root is active (vs-kmt)
 

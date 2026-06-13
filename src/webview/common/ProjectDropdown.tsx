@@ -38,8 +38,8 @@ export function ProjectDropdown({
   const triggerContent = (
     <>
       {prefix && (
-        <span className="project-dropdown-prefix" title={`Active issue prefix: ${prefix}`}>
-          {prefix}
+        <span className="project-dropdown-prefix" title={`Active issue prefix — IDs look like ${prefix}-123`}>
+          {prefix}-
         </span>
       )}
       <span className="project-dropdown-name">
@@ -56,6 +56,7 @@ export function ProjectDropdown({
       menuClassName="project-dropdown-menu"
       title={activeProject?.rootPath}
     >
+      <div className="project-dropdown-header">Bead directory</div>
       {projects.map((project) => (
         <DropdownItem
           key={`${project.id}:${project.rootPath}`}
@@ -64,7 +65,18 @@ export function ProjectDropdown({
           onClick={() => handleSelect(project)}
           title={project.rootPath}
         >
-          <span className="project-dropdown-item-name">{project.name}</span>
+          {project.prefix && (
+            <span
+              className="project-dropdown-item-prefix"
+              title={`Issue prefix — IDs look like ${project.prefix}-123`}
+            >
+              {project.prefix}-
+            </span>
+          )}
+          <span className="project-dropdown-item-text">
+            <span className="project-dropdown-item-name">{project.name}</span>
+            <span className="project-dropdown-item-path">{project.displayPath ?? project.rootPath}</span>
+          </span>
         </DropdownItem>
       ))}
     </Dropdown>

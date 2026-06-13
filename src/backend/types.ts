@@ -113,8 +113,15 @@ export interface BeadsProject {
   id: string; // Stable ID (hash of db path or root path)
   name: string; // Human-friendly label (folder name or config display name)
   rootPath: string; // Project root (VS Code workspace folder)
+  displayPath?: string; // Home-abbreviated rootPath (e.g. "~/beads/vs") for the switcher
   beadsDir: string; // Path to .beads directory
-  source?: "workspace" | "setting" | "env";
+  source?: "workspace" | "setting" | "env" | "default";
+  /**
+   * Effective issue prefix: the explicit `issue-prefix` from
+   * `.beads/config.yaml`, or the directory name when auto-detected. Always set
+   * for discovered projects so the switcher can label every entry.
+   */
+  prefix?: string;
   dbPath?: string; // Path to beads.db (if discovered)
   backendStatus: "running" | "stopped" | "unknown";
   backendPid?: number;
