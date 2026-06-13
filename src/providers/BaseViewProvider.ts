@@ -18,13 +18,15 @@ import { Logger } from "../utils/logger";
 import { resolveEnvVariables } from "../utils/resolve-env-variables";
 import { CONFIG_NAMESPACE } from "../constants";
 import { getAppInfo } from "../appInfo";
+import { WebviewHost, hostFromView } from "./WebviewHost";
 
 export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
-  protected _view?: vscode.WebviewView;
+  protected _host?: WebviewHost;
   protected readonly extensionUri: vscode.Uri;
   protected readonly projectManager: BeadsProjectManager;
   protected readonly log: Logger;
   protected abstract readonly viewType: string;
+  private readonly disposables: vscode.Disposable[] = [];
 
   constructor(
     extensionUri: vscode.Uri,
@@ -41,9 +43,18 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     _context: vscode.WebviewViewResolveContext,
     _token: vscode.CancellationToken
   ): void {
-    this._view = webviewView;
+    this.attach(hostFromView(webviewView));
+  }
 
-    webviewView.webview.options = {
+  /**
+   * Binds this provider to a webview host — either a sidebar `WebviewView`
+   * (via resolveWebviewView) or an editor-area `WebviewPanel` (via the panel
+   * manager). All wiring below is identical for both hosts.
+   */
+  public attach(host: WebviewHost): void {
+    this._host = host;
+
+    host.webview.options = {
       enableScripts: true,
       localResourceRoots: [
         vscode.Uri.joinPath(this.extensionUri, "dist"),
@@ -51,30 +62,49 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
       ],
     };
 
-    webviewView.webview.html = this.getHtmlForWebview(webviewView.webview);
+    host.webview.html = this.getHtmlForWebview(host.webview);
 
     // Handle messages from the webview
-    webviewView.webview.onDidReceiveMessage(async (message: WebviewToExtensionMessage) => {
-      await this.handleMessage(message);
-    });
+    this.disposables.push(
+      host.webview.onDidReceiveMessage(async (message: WebviewToExtensionMessage) => {
+        await this.handleMessage(message);
+      })
+    );
 
-    // Refresh data when the view becomes visible again (e.g., after being hidden)
-    webviewView.onDidChangeVisibility(() => {
-      if (webviewView.visible) {
-        this.initializeView();
-      }
-    });
+    // Refresh data when the host becomes visible again (e.g., after being hidden)
+    this.disposables.push(
+      host.onDidChangeVisibility(() => {
+        if (host.visible) {
+          this.initializeView();
+        }
+      })
+    );
+
+    // Tear down per-host subscriptions when the host goes away (panel closed).
+    this.disposables.push(host.onDidDispose(() => this.dispose()));
 
     // Note: We don't call initializeView() here because the webview's React app
     // hasn't loaded yet. Instead, we wait for the "ready" message from the webview
     // (handled in handleMessage) which indicates the app is ready to receive data.
   }
 
+  /** Releases per-host subscriptions. Safe to call more than once. */
+  public dispose(): void {
+    for (const d of this.disposables.splice(0)) {
+      try {
+        d.dispose();
+      } catch {
+        /* ignore */
+      }
+    }
+    this._host = undefined;
+  }
+
   /**
    * Initializes the view with current data
    */
   protected async initializeView(): Promise<void> {
-    if (!this._view) {
+    if (!this._host) {
       return;
     }
 
@@ -108,7 +138,7 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     });
 
     // Load view-specific data only for visible views.
-    if (this._view.visible) {
+    if (this._host.visible) {
       await this.loadData("initial");
     }
   }
@@ -273,8 +303,8 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
    * Sends a message to the webview
    */
   protected postMessage(message: ExtensionToWebviewMessage): void {
-    if (this._view) {
-      this._view.webview.postMessage(message);
+    if (this._host) {
+      this._host.webview.postMessage(message);
     }
   }
 
@@ -306,7 +336,7 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
    * Triggers a refresh of the view
    */
   public refresh(): void {
-    if (!this._view?.visible) {
+    if (!this._host?.visible) {
       return;
     }
 
@@ -322,7 +352,7 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
   }
 
   public hardRefresh(): void {
-    if (!this._view?.visible) {
+    if (!this._host?.visible) {
       return;
     }
 
@@ -339,7 +369,7 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
    * Triggers a refresh intended for active project switches.
    */
   public refreshForProjectChange(): void {
-    if (!this._view?.visible) {
+    if (!this._host?.visible) {
       return;
     }
 

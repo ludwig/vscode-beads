@@ -13,6 +13,7 @@ import { BeadsProjectManager } from "./backend/BeadsProjectManager";
 import { DashboardViewProvider } from "./providers/DashboardViewProvider";
 import { BeadsPanelViewProvider } from "./providers/BeadsPanelViewProvider";
 import { BeadDetailsViewProvider } from "./providers/BeadDetailsViewProvider";
+import { BeadPanelManager } from "./providers/BeadPanelManager";
 import { createLogger, Logger } from "./utils/logger";
 import { CONFIG_NAMESPACE } from "./constants";
 import { setAppInfo } from "./appInfo";
@@ -22,6 +23,7 @@ let projectManager: BeadsProjectManager;
 let dashboardProvider: DashboardViewProvider;
 let beadsPanelProvider: BeadsPanelViewProvider;
 let detailsProvider: BeadDetailsViewProvider;
+let panelManager: BeadPanelManager;
 let statusBar: vscode.StatusBarItem;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
@@ -89,6 +91,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     log
   );
 
+  // Manages bead webviews opened as editor tabs (vs-ask, vs-fx4).
+  panelManager = new BeadPanelManager(context.extensionUri, projectManager, log);
+  context.subscriptions.push(panelManager);
+
   // Register webview providers
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider("beadsDashboard", dashboardProvider, {
@@ -147,6 +153,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         detailsProvider.showBead(beadId);
         beadsPanelProvider.setSelectedBead(beadId);
       }
+    }),
+
+    // vs-ask: open a bead's Details as an editor tab. With no argument, use the
+    // bead currently shown in the sidebar Details view.
+    vscode.commands.registerCommand("beads.openBeadInTab", async (beadId?: string) => {
+      const targetId = beadId ?? detailsProvider.getCurrentBeadId() ?? undefined;
+      if (!targetId) {
+        vscode.window.showInformationMessage("Select a bead first, then open it in a tab.");
+        return;
+      }
+      panelManager.openBeadDetails(targetId);
+    }),
+
+    // vs-fx4: open the Issues list as an editor tab.
+    vscode.commands.registerCommand("beads.openIssuesInTab", () => {
+      panelManager.openIssues();
     }),
 
     vscode.commands.registerCommand("beads.createIssue", () => {

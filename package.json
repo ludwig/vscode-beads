@@ -96,6 +96,16 @@
         "command": "beads.createIssue",
         "title": "Beads: New Issue",
         "icon": "$(add)"
+      },
+      {
+        "command": "beads.openBeadInTab",
+        "title": "Beads: Open Issue in Editor Tab",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "beads.openIssuesInTab",
+        "title": "Beads: Open Issues in Editor Tab",
+        "icon": "$(link-external)"
       }
     ],
     "menus": {
@@ -119,6 +129,16 @@
           "command": "beads.refresh",
           "when": "view == beadsPanel",
           "group": "navigation@1"
+        },
+        {
+          "command": "beads.openIssuesInTab",
+          "when": "view == beadsPanel",
+          "group": "navigation@2"
+        },
+        {
+          "command": "beads.openBeadInTab",
+          "when": "view == beadsDetails && beads.hasSelectedBead",
+          "group": "navigation@0"
         },
         {
           "command": "beads.copyBeadId",

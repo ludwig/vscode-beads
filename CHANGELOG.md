@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Open a bead's Details as an editor tab — `beads.openBeadInTab` and a Details-view title action open the bead in the editor area (alongside code, multiple beads at once), de-duped so reopening the same bead focuses its tab (vs-ask)
+- Open the Issues list as an editor tab — `beads.openIssuesInTab` and an Issues-view title action open the filterable list in the editor area, de-duped to a single tab (vs-fx4)
 - Dashboard now shows build identity — `v<version> · <short-sha>✦` (✦ = built with uncommitted changes), stamped into `dist/build-info.json` at compile time and read at activation, so it's clear exactly which build is installed (vs-c9z)
 - Auto-discover Beads projects under `~/beads/` (each child dir with a `.beads/`), additively alongside workspace folders, the `beads.projects` setting, and `$BEADS_DIR` (vs-3r2)
 - Project switcher menu now labels each entry as a bead directory, showing its home-abbreviated path and an issue-prefix badge (rendered as `prefix-` to read like an issue ID); prefix resolved cheaply during discovery from `.beads/config.yaml`, else the dir name (vs-3r2)

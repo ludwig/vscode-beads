@@ -44,8 +44,8 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
     vscode.commands.executeCommand("setContext", "beads.hasSelectedBead", true);
 
     // Auto-expand the details panel
-    if (this._view) {
-      this._view.show(true); // true = preserve focus
+    if (this._host) {
+      this._host.reveal(true); // true = preserve focus
     }
 
     // Optimistic paint (vs-7s7): render the fields already known from the list
@@ -66,8 +66,8 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
    */
   public startCreate(): void {
     this.createMode = true;
-    if (this._view) {
-      this._view.show(true); // true = preserve focus
+    if (this._host) {
+      this._host.reveal(true); // true = preserve focus
     }
     // If the view is already resolved this reaches the webview now; if it is
     // still resolving, initializeView() re-sends create mode once it is ready.
