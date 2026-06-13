@@ -8,6 +8,8 @@ import { Logger } from "../utils/logger";
 import { resolveEnvVariables } from "../utils/resolve-env-variables";
 import { BeadsBackend } from "./BeadsBackend";
 import { BeadsDoltBackend } from "./BeadsDoltBackend";
+import { BeadsCommandRunner } from "./BeadsCommandRunner";
+import { backendKindForMode, createDoltModeProbe, detectDoltMode } from "./doltMode";
 import { BeadsProject } from "./types";
 
 const ACTIVE_PROJECT_KEY = "beads.activeProjectId";
@@ -364,6 +366,11 @@ export class BeadsProjectManager implements vscode.Disposable {
     }, intervalMs);
   }
 
+  private async runBdDoltShow(bdPath: string, cwd: string): Promise<string> {
+    const { stdout } = await execFileAsync(bdPath, ["dolt", "show"], { cwd });
+    return stdout;
+  }
+
   private async tryStat(target: string): Promise<fs.Stats | null> {
     try {
       return await fs.promises.stat(target);
@@ -389,13 +396,25 @@ export class BeadsProjectManager implements vscode.Disposable {
 
     const bdPath = this.getBdPath();
 
-    this.backend = new BeadsDoltBackend({
+    const probe = createDoltModeProbe({
+      beadsDir: project.beadsDir,
+      doltShow: () => this.runBdDoltShow(bdPath, project.rootPath),
+    });
+    const mode = await detectDoltMode(probe);
+    project.doltMode = mode;
+    this.log.info(`Project ${project.name} uses ${mode} Dolt mode`);
+
+    const backendParams = {
       bdPath,
       cwd: project.rootPath,
       beadsDir: project.beadsDir,
       log: this.log,
       minSupportedVersion: "0.51.0",
-    });
+    };
+    this.backend =
+      backendKindForMode(mode) === "sql"
+        ? new BeadsDoltBackend(backendParams)
+        : new BeadsCommandRunner(backendParams);
 
     project.backendStatus = "unknown";
     this.activePollToken = null;

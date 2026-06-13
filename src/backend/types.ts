@@ -16,6 +16,8 @@
  * - 0: Critical/P0, 1: High/P1, 2: Medium/P2, 3: Low/P3, 4: None/P4
  */
 
+import type { DoltMode } from "./doltMode";
+
 // Bead status values used in the UI
 // Matches beads canonical statuses: open, in_progress, blocked, closed
 export type BeadStatus = "open" | "in_progress" | "blocked" | "closed";
@@ -112,6 +114,7 @@ export interface BeadsProject {
   dbPath?: string; // Path to beads.db (if discovered)
   backendStatus: "running" | "stopped" | "unknown";
   backendPid?: number;
+  doltMode?: DoltMode; // Detected on activation: "embedded" | "server"
 }
 
 // Result from `bd info --json`
