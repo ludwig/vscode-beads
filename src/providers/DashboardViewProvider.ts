@@ -84,6 +84,9 @@ export class DashboardViewProvider extends BaseViewProvider {
       };
 
       this.postMessage({ type: "setSummary", summary });
+      // Cache the full list (not just the dashboard slice) so selecting a bead
+      // from the dashboard also paints instantly before `bd show` (vs-7s7).
+      this.projectManager.cacheBeadList(beads);
       this.projectManager.setActivePrefix(deriveIssuePrefix(issues.map((i) => i.id)));
 
       const openBeads = beads.filter((b) => b.status === "open").slice(0, 5);

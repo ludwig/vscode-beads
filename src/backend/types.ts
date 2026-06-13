@@ -71,6 +71,9 @@ export interface Bead {
   // UI-specific fields (not from CLI)
   sortOrder?: number;
   statusColumn?: string;
+  // True while this bead was painted optimistically from the list row and the
+  // authoritative `bd show` (deps + comments) has not yet returned (vs-7s7).
+  partial?: boolean;
 }
 
 // Comment on a bead

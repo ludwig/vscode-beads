@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Performance
 
 - Selecting a bead no longer spawns a second concurrent `bd` process for comments when there are none, avoiding embedded-Dolt lock contention (vs-266)
+- Details pane now paints the fields already known from the list row (title/status/priority/description/labels/type/assignee) the instant a bead is selected, then reconciles deps/comments when `bd show` returns — no full-pane loading flash on a cold embedded spawn (vs-7s7)
 
 ## [0.13.0] - 2026-03-20
 
