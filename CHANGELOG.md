@@ -7,9 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Create issues from the UI: a "New Issue" button on the Issues/Dashboard views and a `beads.createIssue` command open a create form in the Details view (vs-69z)
+
+### Changed
+
+- Issues list now shows all beads (open and closed) instead of the newest 50 — the CLI backend no longer inherits bd's default `--limit 50` (vs-0bq)
+
 ### Fixed
 
 - `beads.userId` and `beads.pathToBd` now expand `${env:VAR}` placeholders (#60)
+- Edits now refresh sibling views (panel, dashboard, details) immediately instead of waiting for a manual Refresh (vs-mxq)
+- Restored a valid TypeScript `module`/`moduleResolution` pairing so `tsc` type-checks again
+
+### Performance
+
+- Selecting a bead no longer spawns a second concurrent `bd` process for comments when there are none, avoiding embedded-Dolt lock contention (vs-266)
 
 ## [0.13.0] - 2026-03-20
 

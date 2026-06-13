@@ -78,6 +78,18 @@ export interface WebviewSettings {
   tooltipHoverDelay: number; // 0 = disabled
 }
 
+// Fields for creating a new bead (camelCase; normalized in the provider)
+export interface CreateBeadFields {
+  title: string;
+  type?: string;
+  priority?: BeadPriority;
+  description?: string;
+  design?: string;
+  acceptanceCriteria?: string;
+  assignee?: string;
+  labels?: string[];
+}
+
 // Messages from extension to webview
 export type ExtensionMessage =
   | { type: "setViewType"; viewType: string }
@@ -90,6 +102,7 @@ export type ExtensionMessage =
   | { type: "setLoading"; loading: boolean }
   | { type: "setError"; error: string | null }
   | { type: "setSettings"; settings: WebviewSettings }
+  | { type: "setCreateMode"; value: boolean }
   | { type: "refresh" }
   | { type: "showToast"; text: string };
 
@@ -113,6 +126,8 @@ export type WebviewMessage =
   | { type: "openBeadDetails"; beadId: string }
   | { type: "viewInGraph"; beadId: string }
   | { type: "copyBeadId"; beadId: string }
+  | { type: "createBead"; fields: CreateBeadFields }
+  | { type: "cancelCreate" }
   | { type: "openFile"; filePath: string; line?: number };
 
 // Human-readable labels

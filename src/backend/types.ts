@@ -158,6 +158,19 @@ export interface DependencyGraph {
   edges: { from: string; to: string; type: DependencyType }[];
 }
 
+// Fields for creating a new bead from the UI (camelCase, normalized to
+// CreateIssueArgs in the provider).
+export interface CreateBeadFields {
+  title: string;
+  type?: string;
+  priority?: BeadPriority;
+  description?: string;
+  design?: string;
+  acceptanceCriteria?: string;
+  assignee?: string;
+  labels?: string[];
+}
+
 // Messages sent from extension to webview
 export type ExtensionToWebviewMessage =
   | { type: "setViewType"; viewType: string }
@@ -171,6 +184,7 @@ export type ExtensionToWebviewMessage =
   | { type: "setLoading"; loading: boolean }
   | { type: "setError"; error: string | null }
   | { type: "setSettings"; settings: WebviewSettings }
+  | { type: "setCreateMode"; value: boolean }
   | { type: "refresh" };
 
 // Messages sent from webview to extension
@@ -193,6 +207,8 @@ export type WebviewToExtensionMessage =
   | { type: "openBeadDetails"; beadId: string }
   | { type: "viewInGraph"; beadId: string }
   | { type: "copyBeadId"; beadId: string }
+  | { type: "createBead"; fields: CreateBeadFields }
+  | { type: "cancelCreate" }
   | { type: "openFile"; filePath: string; line?: number };
 
 // CLI command result

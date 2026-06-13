@@ -17,6 +17,7 @@ import {
 import { DashboardView } from "./views/DashboardView";
 import { IssuesView } from "./views/IssuesView";
 import { DetailsView } from "./views/DetailsView";
+import { CreateBeadForm } from "./views/CreateBeadForm";
 import { Loading } from "./common/Loading";
 import { ToastProvider, triggerToast } from "./common/Toast";
 
@@ -31,6 +32,7 @@ interface AppState {
   loading: boolean;
   error: string | null;
   settings: WebviewSettings;
+  createMode: boolean;
 }
 
 const initialState: AppState = {
@@ -44,6 +46,7 @@ const initialState: AppState = {
   loading: true,
   error: null,
   settings: { renderMarkdown: true, userId: "", tooltipHoverDelay: 1000 },
+  createMode: false,
 };
 
 export function App(): React.ReactElement {
@@ -83,6 +86,9 @@ export function App(): React.ReactElement {
         break;
       case "setSettings":
         setState((prev) => ({ ...prev, settings: message.settings }));
+        break;
+      case "setCreateMode":
+        setState((prev) => ({ ...prev, createMode: message.value }));
         break;
       case "refresh":
         vscode.postMessage({ type: "refresh" });
@@ -163,6 +169,15 @@ export function App(): React.ReactElement {
         );
 
       case "beadsDetails": {
+        if (state.createMode) {
+          return (
+            <CreateBeadForm
+              userId={state.settings.userId}
+              onCreate={(fields) => vscode.postMessage({ type: "createBead", fields })}
+              onCancel={() => vscode.postMessage({ type: "cancelCreate" })}
+            />
+          );
+        }
         if (!state.selectedBead && !state.loading) {
           return (
             <div className="empty-state compact">

@@ -128,6 +128,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
     }),
 
+    vscode.commands.registerCommand("beads.createIssue", () => {
+      if (!projectManager.getActiveProject()) {
+        vscode.window.showWarningMessage("No active Beads project");
+        return;
+      }
+      detailsProvider.startCreate();
+    }),
+
     vscode.commands.registerCommand("beads.refresh", async () => {
       log.info("Manual refresh triggered");
       await projectManager.refresh();
