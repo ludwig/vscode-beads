@@ -55,7 +55,16 @@ See [docs/development.md](docs/development.md) for build commands, architecture,
 
 ## Installation
 
-Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=planet57.vscode-beads) or [Open VSX](https://open-vsx.org/extension/planet57/vscode-beads), or search "Beads" in VS Code/Cursor/VSCodium Extensions.
+This fork is distributed privately as a `.vsix` (not published to the VS Code
+Marketplace / Open VSX). Build and install it locally:
+
+```bash
+just package                                       # → vscode-beads-pm-<version>.vsix
+code --install-extension vscode-beads-pm-<version>.vsix
+```
+
+See [notes/extension-install-runbook.md](notes/extension-install-runbook.md) for
+the full install + verification steps. The extension id is `ludwig.vscode-beads-pm`.
 
 ## Usage
 

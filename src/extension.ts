@@ -12,6 +12,7 @@ import { DashboardViewProvider } from "./providers/DashboardViewProvider";
 import { BeadsPanelViewProvider } from "./providers/BeadsPanelViewProvider";
 import { BeadDetailsViewProvider } from "./providers/BeadDetailsViewProvider";
 import { createLogger, Logger } from "./utils/logger";
+import { CONFIG_NAMESPACE } from "./constants";
 
 let log: Logger;
 let projectManager: BeadsProjectManager;
@@ -31,7 +32,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const timestamp = new Date().toISOString();
   log.info(`Activating v${version}${isDev ? " (dev)" : ""} @ ${timestamp}`);
 
-  const config = vscode.workspace.getConfiguration("beads");
+  const config = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);
   const configuredProjects = config.get<string[]>("projects", []);
   const workspaceFolders = (vscode.workspace.workspaceFolders ?? []).map((f) => f.uri.fsPath);
   log.debug(`config.pathToBd=${config.get<string>("pathToBd", "bd")}`);

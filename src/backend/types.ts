@@ -17,6 +17,7 @@
  */
 
 import type { DoltMode } from "./doltMode";
+import { LOG_PREFIX } from "../constants";
 
 // Bead status values used in the UI
 // Matches beads canonical statuses: open, in_progress, blocked, closed
@@ -248,7 +249,7 @@ export function normalizeStatus(status: string | undefined): BeadStatus | null {
   if (!status) {
     if (!warnedStatuses.has("__missing__")) {
       warnedStatuses.add("__missing__");
-      console.warn("[vscode-beads] Bead missing status field - skipping");
+      console.warn(`${LOG_PREFIX} Bead missing status field - skipping`);
     }
     return null;
   }
@@ -270,7 +271,7 @@ export function normalizeStatus(status: string | undefined): BeadStatus | null {
     default:
       if (!warnedStatuses.has(status)) {
         warnedStatuses.add(status);
-        console.warn(`[vscode-beads] Unknown bead status "${status}" - skipping`);
+        console.warn(`${LOG_PREFIX} Unknown bead status "${status}" - skipping`);
       }
       return null;
   }
