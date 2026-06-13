@@ -10,7 +10,7 @@ import { BeadsBackend } from "./BeadsBackend";
 import { BeadsDoltBackend } from "./BeadsDoltBackend";
 import { BeadsCommandRunner } from "./BeadsCommandRunner";
 import { backendKindForMode, createDoltModeProbe, detectDoltMode } from "./doltMode";
-import { BeadsProject } from "./types";
+import { Bead, BeadsProject } from "./types";
 
 const ACTIVE_PROJECT_KEY = "beads.activeProjectId";
 const execFileAsync = util.promisify(execFile);
@@ -35,6 +35,15 @@ export class BeadsProjectManager implements vscode.Disposable {
 
   private readonly _onDataChanged = new vscode.EventEmitter<void>();
   public readonly onDataChanged = this._onDataChanged.event;
+
+  /**
+   * Most recently loaded list of beads, keyed by id. Lets the Details view
+   * paint known fields (title/status/priority/description/labels/type/assignee)
+   * the instant a bead is selected, before the cold `bd show` spawn returns
+   * (vs-7s7). Populated by the panel/dashboard after each list(); cleared on
+   * project switch so a stale project's beads are never surfaced.
+   */
+  private cachedBeads = new Map<string, Bead>();
 
   /** Active issue prefix (e.g. "vs"), derived from the loaded issue IDs. */
   private activePrefix: string | null = null;
@@ -97,6 +106,23 @@ export class BeadsProjectManager implements vscode.Disposable {
   /** The active issue prefix (e.g. "vs"), or null if not yet derived. */
   getActivePrefix(): string | null {
     return this.activePrefix;
+  }
+
+  /**
+   * Records the most recently loaded list so selections can paint instantly
+   * from cached row data (vs-7s7). Replaces the previous snapshot wholesale so
+   * beads removed from the list don't linger.
+   */
+  cacheBeadList(beads: Bead[]): void {
+    this.cachedBeads = new Map(beads.map((bead) => [bead.id, bead]));
+  }
+
+  /**
+   * Returns the cached list row for a bead, or null if the list hasn't been
+   * loaded yet (cold cache → caller falls back to the loading state).
+   */
+  getCachedBead(id: string): Bead | null {
+    return this.cachedBeads.get(id) ?? null;
   }
 
   /**
@@ -423,6 +449,10 @@ export class BeadsProjectManager implements vscode.Disposable {
     }
 
     this.activeProject = project;
+
+    // Drop the previous project's list snapshot so a selection in the new
+    // project never paints a stale bead from the old one (vs-7s7).
+    this.cachedBeads.clear();
 
     if (options.persistSelection) {
       await this.context.workspaceState.update(ACTIVE_PROJECT_KEY, project.id);

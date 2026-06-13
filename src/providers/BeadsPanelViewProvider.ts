@@ -64,6 +64,9 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
       }
       const beads = issues.map(issueToWebviewBead).filter((b): b is Bead => b !== null);
       this.postMessage({ type: "setBeads", beads });
+      // Cache the list so the Details view can paint selected beads instantly
+      // before the cold `bd show` spawn returns (vs-7s7).
+      this.projectManager.cacheBeadList(beads);
       this.projectManager.setActivePrefix(deriveIssuePrefix(issues.map((i) => i.id)));
       this.setLoading(false);
     } catch (err) {

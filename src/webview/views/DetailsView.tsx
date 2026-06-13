@@ -302,6 +302,9 @@ export function DetailsView({
   }
 
   const displayBead = { ...bead, ...editedBead };
+  // During the optimistic paint (vs-7s7) the bead carries only list-row fields;
+  // deps/comments aren't loaded yet, so show them as loading rather than "none".
+  const partial = !!bead.partial;
 
   return (
     <div className="bead-details">
@@ -616,7 +619,12 @@ export function DetailsView({
       )}
 
       {/* Dependencies grouped by relationship type */}
-      {(() => {
+      {partial && !editMode ? (
+        <div className="details-section">
+          <h4>Related Issues</h4>
+          <span className="muted">Loading…</span>
+        </div>
+      ) : (() => {
         const dependsOnGroups = groupDependenciesByType(displayBead.dependsOn || []);
         const blocksGroups = groupDependenciesByType(displayBead.blocks || []);
         const hasDependsOn = (displayBead.dependsOn?.length || 0) > 0;
@@ -722,9 +730,12 @@ export function DetailsView({
 
       {/* Comments */}
       <div className="details-section">
-        <h4>Comments ({(displayBead.comments || []).length})</h4>
+        <h4>Comments {partial ? "" : `(${(displayBead.comments || []).length})`}</h4>
         <div className="comments-list">
-          {(displayBead.comments || []).map((comment) => (
+          {partial && (
+            <span className="muted">Loading…</span>
+          )}
+          {!partial && (displayBead.comments || []).map((comment) => (
             <div key={comment.id} className="comment">
               <div className="comment-header">
                 <span className="comment-author">{comment.author}</span>
@@ -737,7 +748,7 @@ export function DetailsView({
               </div>
             </div>
           ))}
-          {(displayBead.comments || []).length === 0 && (
+          {!partial && (displayBead.comments || []).length === 0 && (
             <span className="muted">No comments</span>
           )}
         </div>

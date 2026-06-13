@@ -50,6 +50,9 @@ export interface Bead {
   blocks?: BeadDependency[];
   comments?: BeadComment[];
   sortOrder?: number;
+  // True while this bead was painted optimistically from the list row and the
+  // authoritative `bd show` (deps + comments) has not yet returned (vs-7s7).
+  partial?: boolean;
 }
 
 export interface BeadsProject {

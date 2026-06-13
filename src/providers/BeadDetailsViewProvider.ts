@@ -48,6 +48,16 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
       this._view.show(true); // true = preserve focus
     }
 
+    // Optimistic paint (vs-7s7): render the fields already known from the list
+    // row immediately so the visible update doesn't wait on a cold `bd show`
+    // spawn. Marked `partial` so the webview shows deps/comments as loading
+    // (the list payload lacks them) rather than as "none". loadData() below
+    // fetches the authoritative record and reconciles via a second setBead.
+    const cached = this.projectManager.getCachedBead(beadId);
+    if (cached) {
+      this.postMessage({ type: "setBead", bead: { ...cached, partial: true } });
+    }
+
     await this.loadData();
   }
 
