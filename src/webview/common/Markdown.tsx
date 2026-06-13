@@ -1,14 +1,21 @@
 /**
  * Markdown Component
  *
- * Renders markdown content as HTML using marked.
- * Sanitizes output and applies VS Code-friendly styles.
- * Intercepts link clicks to open relative file paths in VS Code.
+ * Renders markdown content as HTML using `marked`, then sanitizes the output
+ * with DOMPurify before injecting it. The webview CSP already blocks script
+ * execution (`script-src 'nonce-…'`, no `unsafe-inline`); sanitization is
+ * defense-in-depth and strips anything that slips past that guard.
+ *
+ * Link clicks are intercepted and routed through the extension: workspace
+ * file paths open in the editor (`openFile`), safe http(s)/mailto URLs open in
+ * the system handler (`openExternal`), and everything else is ignored.
  */
 
 import React, { useMemo, useCallback } from "react";
 import { marked } from "marked";
+import DOMPurify from "dompurify";
 import { vscode } from "../types";
+import { classifyHref } from "./markdownLinks";
 
 interface MarkdownProps {
   content: string;
@@ -21,33 +28,6 @@ marked.setOptions({
   gfm: true, // GitHub flavored markdown
 });
 
-/**
- * Determines if a URL is a relative file path (not external)
- */
-function isRelativeFilePath(href: string): boolean {
-  // External URLs have a protocol
-  if (/^[a-z][a-z0-9+.-]*:/i.test(href)) {
-    return false;
-  }
-  // Absolute paths or relative paths
-  return true;
-}
-
-/**
- * Parses a file path and optional line anchor
- * e.g., "./src/config.ts#L42" -> { path: "./src/config.ts", line: 42 }
- */
-function parseFilePath(href: string): { path: string; line?: number } {
-  const match = href.match(/^(.+?)(?:#L(\d+))?$/);
-  if (!match) {
-    return { path: href };
-  }
-  return {
-    path: match[1],
-    line: match[2] ? parseInt(match[2], 10) : undefined,
-  };
-}
-
 export function Markdown({ content, className }: MarkdownProps): React.ReactElement {
   const html = useMemo(() => {
     if (!content) return "";
@@ -56,30 +36,29 @@ export function Markdown({ content, className }: MarkdownProps): React.ReactElem
       // Remove empty paragraphs and excessive whitespace
       result = result.replace(/<p>\s*<\/p>/g, "");
       result = result.replace(/(<br\s*\/?>\s*){2,}/g, "<br>");
-      return result;
+      // Sanitize before it ever reaches dangerouslySetInnerHTML.
+      return DOMPurify.sanitize(result);
     } catch {
-      return content;
+      return "";
     }
   }, [content]);
 
   const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    // Find the closest anchor element
-    const target = e.target as HTMLElement;
-    const anchor = target.closest("a");
+    const anchor = (e.target as HTMLElement).closest("a");
     if (!anchor) return;
 
-    const href = anchor.getAttribute("href");
-    if (!href) return;
+    const target = classifyHref(anchor.getAttribute("href"));
+    // We own navigation for every anchor: a webview has nowhere to navigate to,
+    // so the default action is never useful.
+    e.preventDefault();
+    e.stopPropagation();
 
-    // Check if it's a relative file path
-    if (isRelativeFilePath(href)) {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const { path, line } = parseFilePath(href);
-      vscode.postMessage({ type: "openFile", filePath: path, line });
+    if (target.kind === "external") {
+      vscode.postMessage({ type: "openExternal", url: target.url });
+    } else if (target.kind === "file") {
+      vscode.postMessage({ type: "openFile", filePath: target.path, line: target.line });
     }
-    // External URLs will open normally via default browser behavior
+    // kind === "unsafe": ignore.
   }, []);
 
   return (
