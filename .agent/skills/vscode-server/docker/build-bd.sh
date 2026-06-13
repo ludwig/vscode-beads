@@ -35,6 +35,17 @@ if ! docker info &>/dev/null; then
 fi
 
 git_build="$(cd "$BEADS_SRC" && git rev-parse --short HEAD)"
+
+# Skip the (always-cold) CGO compile if the binary already matches beads HEAD.
+# The sidecar stamp records the sha we last built; BD_FORCE=1 bypasses (used by
+# the `rebuild` recipe). Note: tracks committed HEAD only — uncommitted changes
+# in $BEADS_SRC won't trigger a rebuild, so use `just dev rebuild` after those.
+stamp="$out.sha"
+if [[ "${BD_FORCE:-0}" != "1" && -f "$out" && -f "$stamp" && "$(cat "$stamp")" == "$git_build" ]]; then
+  echo "bd up-to-date (beads @ $git_build) — skipping CGO build (BD_FORCE=1 to override)"
+  exit 0
+fi
+
 echo "Building bd (linux/$GOARCH, CGO) from $BEADS_SRC @ $git_build in $GO_IMAGE ..."
 
 # Native build inside the container:
@@ -56,6 +67,7 @@ docker run --rm \
   "$GO_IMAGE" \
   go build -tags gms_pure_go -ldflags "-X main.Build=$git_build" -o "/out/bd-linux-${GOARCH}" ./cmd/bd
 
+echo "$git_build" > "$stamp"
 echo "BD_BUILD:$git_build"
 echo "Wrote $out"
 file "$out" 2>/dev/null || true

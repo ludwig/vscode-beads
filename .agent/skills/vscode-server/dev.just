@@ -23,10 +23,10 @@ bd:
 build: bd
     REPO_ROOT="$(git rev-parse --show-toplevel)" {{compose}} build
 
-# Clean rebuild from scratch — use when image layers go stale
+# Clean rebuild from scratch — use when image layers go stale or beads is dirty
 rebuild:
-    rm -f "{{docker_dir}}/bd-linux-${BD_ARCH:-arm64}"
-    GOARCH="${BD_ARCH:-arm64}" GO_IMAGE="${GO_IMAGE:-golang:1.26-bookworm}" "{{docker_dir}}/build-bd.sh"
+    rm -f "{{docker_dir}}/bd-linux-${BD_ARCH:-arm64}" "{{docker_dir}}/bd-linux-${BD_ARCH:-arm64}.sha"
+    BD_FORCE=1 GOARCH="${BD_ARCH:-arm64}" GO_IMAGE="${GO_IMAGE:-golang:1.26-bookworm}" "{{docker_dir}}/build-bd.sh"
     REPO_ROOT="$(git rev-parse --show-toplevel)" {{compose}} build --no-cache
 
 # Compile the extension once (host, native bun)
