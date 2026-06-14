@@ -310,13 +310,32 @@ export class BeadsProjectManager implements vscode.Disposable {
 
   private async createProjectFromInputPath(inputPath: string, source: BeadsProject["source"]): Promise<BeadsProject | null> {
     const resolvedInput = path.resolve(inputPath);
+    // Auto-discovered children under ~/beads are pre-validated and absences are
+    // expected, so stay silent for `default`. Explicitly-configured paths
+    // (settings / $BEADS_DIR / workspace folder) are user intent — if they
+    // don't resolve, say so instead of vanishing silently.
+    const isExplicit = source !== "default";
     const stats = await this.tryStat(resolvedInput);
-    if (!stats) return null;
+    if (!stats) {
+      if (isExplicit) {
+        this.log.warn(
+          `Skipping ${source} project: path does not exist or is unreadable: ${resolvedInput} (from "${inputPath}")`
+        );
+      }
+      return null;
+    }
 
     const rootPath = path.basename(resolvedInput) === ".beads" ? path.dirname(resolvedInput) : resolvedInput;
     const explicitBeadsDir = path.basename(resolvedInput) === ".beads" ? resolvedInput : undefined;
     const projectProbe = await this.probeBeadsProject(rootPath, explicitBeadsDir);
-    if (!projectProbe) return null;
+    if (!projectProbe) {
+      if (isExplicit) {
+        this.log.warn(
+          `Skipping ${source} project: no Beads project found at ${rootPath} (run 'bd init' there, or fix the configured path)`
+        );
+      }
+      return null;
+    }
 
     const folderName = this.getProjectDisplayName(rootPath, projectProbe.beadsDir);
     const prefix = await this.resolveProjectPrefix(projectProbe.beadsDir, rootPath);
