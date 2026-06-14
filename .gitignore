@@ -11,6 +11,3 @@ tmp/
 .openvscode-server/
 .local/
 .beads/
-
-# Local environment notes (not committed)
-CLAUDE.local.md
