@@ -12,7 +12,7 @@
 import * as vscode from "vscode";
 import { BaseViewProvider } from "./BaseViewProvider";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
-import { WebviewToExtensionMessage, Bead, issueToWebviewBead } from "../backend/types";
+import { WebviewToExtensionMessage, Bead, IssuesFilter, issueToWebviewBead } from "../backend/types";
 import { Logger } from "../utils/logger";
 import { deriveIssuePrefix } from "../utils/issue-prefix";
 
@@ -21,6 +21,31 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
   private static readonly MIN_LOADING_MS = 500;
   private selectedBeadId: string | null = null;
   private loadSequence = 0;
+  // Drill-in filter requested from another view (e.g. a Dashboard card/badge).
+  // Held until the webview is ready so a freshly-focused panel still applies it.
+  private pendingFilter: IssuesFilter | undefined;
+
+  /**
+   * Apply a drill-in filter to the Issues list (empty filter = show all).
+   * Posts immediately when the webview is live; otherwise it's flushed once the
+   * webview signals ready (initializeView).
+   */
+  public applyIssuesFilter(filter: IssuesFilter): void {
+    this.pendingFilter = filter;
+    this.flushFilter();
+  }
+
+  private flushFilter(): void {
+    if (this.pendingFilter !== undefined && this._host?.visible) {
+      this.postMessage({ type: "applyIssuesFilter", filter: this.pendingFilter });
+      this.pendingFilter = undefined;
+    }
+  }
+
+  protected async initializeView(): Promise<void> {
+    await super.initializeView();
+    this.flushFilter();
+  }
 
   constructor(
     extensionUri: vscode.Uri,

@@ -11,6 +11,7 @@ import {
   BeadsProject,
   BeadsSummary,
   ExtensionMessage,
+  IssuesFilter,
   WebviewSettings,
   vscode,
 } from "./types";
@@ -33,6 +34,10 @@ interface AppState {
   error: string | null;
   settings: WebviewSettings;
   createMode: boolean;
+  // Drill-in filter pushed from another view (e.g. a Dashboard card/badge).
+  // `seq` changes on every request so the Issues view re-applies even if the
+  // filter is identical to last time.
+  issuesFilterRequest: { filter: IssuesFilter; seq: number } | null;
 }
 
 const initialState: AppState = {
@@ -54,6 +59,7 @@ const initialState: AppState = {
     buildDirty: false,
   },
   createMode: false,
+  issuesFilterRequest: null,
 };
 
 export function App(): React.ReactElement {
@@ -96,6 +102,15 @@ export function App(): React.ReactElement {
         break;
       case "setCreateMode":
         setState((prev) => ({ ...prev, createMode: message.value }));
+        break;
+      case "applyIssuesFilter":
+        setState((prev) => ({
+          ...prev,
+          issuesFilterRequest: {
+            filter: message.filter,
+            seq: (prev.issuesFilterRequest?.seq ?? 0) + 1,
+          },
+        }));
         break;
       case "refresh":
         vscode.postMessage({ type: "refresh" });
@@ -147,6 +162,9 @@ export function App(): React.ReactElement {
             onSelectBead={(beadId) =>
               vscode.postMessage({ type: "openBeadDetails", beadId })
             }
+            onOpenIssues={(filter) =>
+              vscode.postMessage({ type: "openIssuesWithFilter", filter })
+            }
             onShowStatus={() => vscode.postMessage({ type: "showDoltStatus" })}
             onStartDolt={() => vscode.postMessage({ type: "startDoltServer" })}
             onStopDolt={() => vscode.postMessage({ type: "stopDoltServer" })}
@@ -166,6 +184,7 @@ export function App(): React.ReactElement {
             error={state.error}
             selectedBeadId={state.selectedBeadId}
             tooltipHoverDelay={state.settings.tooltipHoverDelay}
+            issuesFilterRequest={state.issuesFilterRequest}
             onSelectBead={(beadId) =>
               vscode.postMessage({ type: "openBeadDetails", beadId })
             }

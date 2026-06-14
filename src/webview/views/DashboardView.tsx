@@ -7,14 +7,17 @@
  * - Quick access to important beads
  */
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Bead,
   BeadsProject,
   BeadsSummary,
   BeadStatus,
+  IssuesFilter,
   STATUS_COLORS,
+  STATUS_LABELS,
 } from "../types";
+import { ChevronIcon } from "../common/ChevronIcon";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { Loading } from "../common/Loading";
 import { ProjectDropdown } from "../common/ProjectDropdown";
@@ -34,6 +37,7 @@ interface DashboardViewProps {
   activeProject: BeadsProject | null;
   onSelectProject: (project: BeadsProject) => void;
   onSelectBead: (beadId: string) => void;
+  onOpenIssues: (filter: IssuesFilter) => void;
   onShowStatus: () => void;
   onStartDolt: () => void;
   onStopDolt: () => void;
@@ -54,6 +58,7 @@ export function DashboardView({
   activeProject,
   onSelectProject,
   onSelectBead,
+  onOpenIssues,
   onShowStatus,
   onStartDolt,
   onStopDolt,
@@ -64,6 +69,8 @@ export function DashboardView({
   buildSha,
   buildDirty,
 }: DashboardViewProps): React.ReactElement {
+  const [byStatusOpen, setByStatusOpen] = useState(true);
+  const [byLabelOpen, setByLabelOpen] = useState(true);
   const prefix = deriveIssuePrefix(beads.map((b) => b.id));
   const openBeads = beads.filter((b) => b.status === "open").slice(0, 5);
   const blockedBeads = beads.filter((b) => b.status === "blocked").slice(0, 5);
@@ -81,6 +88,19 @@ export function DashboardView({
 
   return (
     <div className="dashboard dashboard-compact">
+      <header className="dashboard-header">
+        <span className="dashboard-header-label">Beads Directory</span>
+        {activeProject && (
+          <button
+            type="button"
+            className="dashboard-header-path"
+            title={activeProject.rootPath}
+            onClick={onOpenProjectFolder}
+          >
+            {activeProject.displayPath ?? activeProject.rootPath}
+          </button>
+        )}
+      </header>
       <div className="dashboard-toolbar">
         <ProjectDropdown
           projects={projects}
@@ -121,49 +141,71 @@ export function DashboardView({
 
       {loading && !error && <Loading />}
 
-      {activeProject && !error && (
-        <div className="dashboard-project-dir">
-          <span className="dashboard-project-dir-label">Project Dir</span>
-          <button
-            className="dashboard-project-dir-link"
-            title={activeProject.rootPath}
-            onClick={onOpenProjectFolder}
-          >
-            <span className="dashboard-project-dir-value">{activeProject.rootPath}</span>
-          </button>
-        </div>
-      )}
-
       {summary && !error && (
         <>
           <div className="summary-section compact">
-            <div className="summary-card total">
+            <button
+              type="button"
+              className="summary-card total"
+              onClick={() => onOpenIssues({})}
+              title="Open all issues"
+            >
               <div className="card-value">{summary.total || 0}</div>
               <div className="card-label">Total</div>
-            </div>
-            <div className="summary-card ready">
+            </button>
+            <button
+              type="button"
+              className="summary-card ready"
+              onClick={() => onOpenIssues({ statuses: ["open"] })}
+              title="Open issues with status: open"
+            >
               <div className="card-value">{summary.readyCount || 0}</div>
               <div className="card-label">Open</div>
-            </div>
-            <div className="summary-card in-progress">
+            </button>
+            <button
+              type="button"
+              className="summary-card in-progress"
+              onClick={() => onOpenIssues({ statuses: ["in_progress"] })}
+              title="Open issues in progress"
+            >
               <div className="card-value">{summary.inProgressCount || 0}</div>
               <div className="card-label">Doing</div>
-            </div>
-            <div className="summary-card blocked">
+            </button>
+            <button
+              type="button"
+              className="summary-card blocked"
+              onClick={() => onOpenIssues({ statuses: ["blocked"] })}
+              title="Open blocked issues"
+            >
               <div className="card-value">{summary.blockedCount || 0}</div>
               <div className="card-label">Blocked</div>
-            </div>
+            </button>
           </div>
 
           <div className="breakdown-section compact">
-            <h3>By Status</h3>
+            <button
+              type="button"
+              className="breakdown-toggle"
+              onClick={() => setByStatusOpen((o) => !o)}
+              aria-expanded={byStatusOpen}
+            >
+              <ChevronIcon open={byStatusOpen} size={12} />
+              <h3>By Status</h3>
+            </button>
+            {byStatusOpen && (
             <div className="breakdown-bars compact">
               {(Object.keys(summary.byStatus) as BeadStatus[]).map((status) => {
                 const count = summary.byStatus[status];
                 const percentage = summary.total > 0 ? (count / summary.total) * 100 : 0;
                 if (count === 0) return null;
                 return (
-                  <div key={status} className="breakdown-bar compact">
+                  <button
+                    key={status}
+                    type="button"
+                    className="breakdown-bar compact"
+                    onClick={() => onOpenIssues({ statuses: [status] })}
+                    title={`Open ${STATUS_LABELS[status]} issues`}
+                  >
                     <div className="bar-label compact">
                       <StatusBadge status={status} size="small" />
                       <span className="bar-count">{count}</span>
@@ -171,20 +213,36 @@ export function DashboardView({
                     <div className="bar-track">
                       <div className="bar-fill" style={{ width: `${percentage}%`, backgroundColor: STATUS_COLORS[status] }} />
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
+            )}
           </div>
 
           {topLabels.length > 0 && (
             <div className="breakdown-section compact">
-              <h3>By Label</h3>
+              <button
+                type="button"
+                className="breakdown-toggle"
+                onClick={() => setByLabelOpen((o) => !o)}
+                aria-expanded={byLabelOpen}
+              >
+                <ChevronIcon open={byLabelOpen} size={12} />
+                <h3>By Label</h3>
+              </button>
+              {byLabelOpen && (
               <div className="breakdown-bars compact">
                 {topLabels.map(([label, count]) => {
                   const percentage = summary.total > 0 ? (count / summary.total) * 100 : 0;
                   return (
-                    <div key={label} className="breakdown-bar compact">
+                    <button
+                      key={label}
+                      type="button"
+                      className="breakdown-bar compact"
+                      onClick={() => onOpenIssues({ labels: [label] })}
+                      title={`Open issues labeled ${label}`}
+                    >
                       <div className="bar-label compact label">
                         <LabelBadge label={label} />
                         <span className="bar-count">{count}</span>
@@ -195,10 +253,11 @@ export function DashboardView({
                           style={{ width: `${percentage}%`, backgroundColor: getLabelColorStyle(label).backgroundColor }}
                         />
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
+              )}
             </div>
           )}
 
