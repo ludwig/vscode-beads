@@ -10,6 +10,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
 import { BeadsProjectManager } from "./backend/BeadsProjectManager";
+import { IssuesFilter } from "./backend/types";
 import { DashboardViewProvider } from "./providers/DashboardViewProvider";
 import { BeadsPanelViewProvider } from "./providers/BeadsPanelViewProvider";
 import { BeadDetailsViewProvider } from "./providers/BeadDetailsViewProvider";
@@ -116,6 +117,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     vscode.commands.registerCommand("beads.openBeadsPanel", () => {
       vscode.commands.executeCommand("beadsPanel.focus");
+    }),
+
+    // Open the Issues panel pre-filtered to a slice (empty filter = all).
+    // Used by the Dashboard summary cards and breakdown badges. Focus first so
+    // a closed panel resolves its webview, then hand the filter to the provider
+    // (which holds it until the webview is ready).
+    vscode.commands.registerCommand("beads.openIssuesWithFilter", async (filter?: IssuesFilter) => {
+      await vscode.commands.executeCommand("beadsPanel.focus");
+      beadsPanelProvider.applyIssuesFilter(filter ?? {});
     }),
 
     vscode.commands.registerCommand("beads.openBeadDetails", async (beadId?: string) => {

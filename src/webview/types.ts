@@ -112,6 +112,7 @@ export type ExtensionMessage =
   | { type: "setError"; error: string | null }
   | { type: "setSettings"; settings: WebviewSettings }
   | { type: "setCreateMode"; value: boolean }
+  | { type: "applyIssuesFilter"; filter: IssuesFilter }
   | { type: "refresh" }
   | { type: "showToast"; text: string };
 
@@ -138,7 +139,14 @@ export type WebviewMessage =
   | { type: "createBead"; fields: CreateBeadFields }
   | { type: "cancelCreate" }
   | { type: "openFile"; filePath: string; line?: number }
-  | { type: "openExternal"; url: string };
+  | { type: "openExternal"; url: string }
+  | { type: "openIssuesWithFilter"; filter: IssuesFilter };
+
+/** Drill-in filter pushed to the Issues view (see backend/types.ts). */
+export interface IssuesFilter {
+  statuses?: BeadStatus[];
+  labels?: string[];
+}
 
 // Human-readable labels
 export const PRIORITY_LABELS: Record<BeadPriority, string> = {

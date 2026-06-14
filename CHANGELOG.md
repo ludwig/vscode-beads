@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Dashboard summary cards (Total / Open / Doing / Blocked) are now clickable — each opens the Issues view pre-filtered to the matching status (Total shows all) (vs-i06)
+- Dashboard **By Status** and **By Label** breakdown rows are clickable too — drilling into the Issues list filtered to that status or label (vs-gnb)
+- Double-click a column separator in the Issues table to auto-fit that column to its contents (vs-4rt)
+- Compact-rows toggle on the Issues table — a toolbar button packs the bead ID and title onto one line and tightens cell padding for a denser list; the default (ID stacked above title) is unchanged, and the choice persists across reloads (vs-6od)
+- Dashboard now has a header band showing **Beads Directory** + the active project's `~`-abbreviated path (click to open the folder; replaces the old "Project Dir" row), and the **By Status** / **By Label** breakdowns are collapsible — giving the project dropdown breathing room from the section bars (vs-d6g, vs-omk, vs-dys)
 - Open a bead's Details as an editor tab — `beads.openBeadInTab` and a Details-view title action open the bead in the editor area (alongside code, multiple beads at once), de-duped so reopening the same bead focuses its tab (vs-ask)
 - Open the Issues list as an editor tab — `beads.openIssuesInTab` and an Issues-view title action open the filterable list in the editor area, de-duped to a single tab (vs-fx4)
 - Open the Dashboard as an editor tab — `beads.openDashboardInTab` and a Dashboard-view title action open the overview in the editor area, de-duped to a single tab (vs-s56)
@@ -21,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Issues table column header row is shorter (trimmed vertical padding) (vs-4rt)
+- Issues table dates (Updated/Created) render smaller and muted (10px) so they read as secondary metadata instead of out-sizing the title (vs-xe1)
+- Explicitly-configured Beads projects (`beads.projects`, `$BEADS_DIR`, workspace folders) that don't exist or aren't a Beads project are now logged as warnings instead of silently skipped; the `~/beads` auto-scan stays quiet (vs-jse)
+- Reordered Dashboard/Issues view title actions so the share-link (open-in-editor-tab) sits in the middle and Refresh moves to the rightmost edge, matching the Details view where the common op (Copy ID) sits at the edge (vs-qi5)
 - Details-view markdown is now sanitized with DOMPurify before rendering (defense-in-depth atop the webview CSP), and links are routed through the extension: workspace paths open in the editor, http(s)/mailto open in the system handler, and unsafe schemes (`javascript:`, `file:`, …) are dropped (vs-9xx)
 - Rebranded the fork's extension identity: id is now `ludwig.vscode-beads-pm` (`publisher` `planet57`→`ludwig`, `name` `vscode-beads`→`vscode-beads-pm`, `displayName` `Beads`→`Beads (ludwig)`), so this private fork coexists with upstream's build; also corrected `repository.url` (vs-m6k)
 - Issues list now shows all beads (open and closed) instead of the newest 50 — the CLI backend no longer inherits bd's default `--limit 50` (vs-0bq)

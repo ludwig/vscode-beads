@@ -30,6 +30,7 @@ import {
   BeadStatus,
   BeadPriority,
   BeadType,
+  IssuesFilter,
   STATUS_LABELS,
   STATUS_COLORS,
   PRIORITY_COLORS,
@@ -46,7 +47,7 @@ import { TypeBadge } from "../common/TypeBadge";
 import { TypeIcon } from "../common/TypeIcon";
 import { LabelBadge } from "../common/LabelBadge";
 import { FilterChip } from "../common/FilterChip";
-import { Table, Kanban } from "lucide-react";
+import { Table, Kanban, Rows3, Rows2 } from "lucide-react";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { Loading } from "../common/Loading";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
@@ -64,6 +65,8 @@ interface IssuesViewProps {
   error: string | null;
   selectedBeadId: string | null;
   tooltipHoverDelay: number; // 0 = disabled
+  /** Drill-in filter pushed from another view (e.g. a Dashboard card/badge). */
+  issuesFilterRequest?: { filter: IssuesFilter; seq: number } | null;
   onSelectBead: (beadId: string) => void;
   onUpdateBead: (beadId: string, updates: Partial<Bead>) => void;
   onRetry: () => void;
@@ -104,6 +107,7 @@ export function IssuesView({
   error,
   selectedBeadId,
   tooltipHoverDelay,
+  issuesFilterRequest,
   onSelectBead,
   onUpdateBead,
   onRetry,
@@ -121,6 +125,8 @@ export function IssuesView({
     setColumnVisibility,
     columnOrder,
     setColumnOrder,
+    compact,
+    setCompact,
     resetVisibility,
   } = useColumnState({
     defaultSorting: [{ id: "updatedAt", desc: true }],
@@ -219,6 +225,39 @@ export function IssuesView({
   useClickOutside(filterMenuRef, () => setFilterMenuOpen(null), !!filterMenuOpen);
   useClickOutside(columnMenuRef, () => setColumnMenuOpen(false), columnMenuOpen);
 
+  // Apply a drill-in filter pushed from another view (Dashboard card/badge).
+  // Sets the named dimensions (status, labels) and clears the others so the
+  // list matches the clicked slice. Keyed by seq so an identical repeat
+  // request still re-applies.
+  const lastFilterSeq = useRef<number | null>(null);
+  useEffect(() => {
+    if (!issuesFilterRequest || lastFilterSeq.current === issuesFilterRequest.seq) {
+      return;
+    }
+    lastFilterSeq.current = issuesFilterRequest.seq;
+
+    const statuses = issuesFilterRequest.filter.statuses ?? [];
+    const labels = issuesFilterRequest.filter.labels ?? [];
+    setColumnFilters((prev) => {
+      const others = prev.filter((f) => f.id !== "status" && f.id !== "labels");
+      if (statuses.length > 0) others.push({ id: "status", value: statuses });
+      if (labels.length > 0) others.push({ id: "labels", value: labels });
+      return others;
+    });
+    // Reflect a matching status preset in the dropdown when one lines up and
+    // no label filter is in play; otherwise it's a custom filter.
+    const matched =
+      labels.length === 0
+        ? FILTER_PRESETS.find(
+            (p) =>
+              p.statuses.length === statuses.length &&
+              p.statuses.every((s) => statuses.includes(s))
+          )
+        : undefined;
+    setActivePreset(matched ? matched.id : "");
+    setViewMode("table");
+  }, [issuesFilterRequest]);
+
   // Column definitions
   const columns = useMemo(
     () => [
@@ -255,7 +294,7 @@ export function IssuesView({
         size: 200,
         minSize: 100,
         cell: (info) => (
-          <>
+          <span className="title-inner">
             <span
               className={`bead-id ${copiedId === info.row.original.id ? "copied" : ""}`}
               onClick={(e) => {
@@ -268,7 +307,7 @@ export function IssuesView({
               {info.row.original.id}
             </span>
             <span className="bead-title">{info.getValue()}</span>
-          </>
+          </span>
         ),
       }),
       columnHelper.accessor("status", {
@@ -668,6 +707,16 @@ export function IssuesView({
             <Kanban size={14} />
           </button>
         </div>
+        {viewMode === "table" && (
+          <button
+            className={`compact-toggle ${compact ? "active" : ""}`}
+            onClick={() => setCompact((c) => !c)}
+            title={compact ? "Comfortable rows" : "Compact rows"}
+            aria-pressed={compact}
+          >
+            {compact ? <Rows2 size={14} /> : <Rows3 size={14} />}
+          </button>
+        )}
       </div>
 
       {/* Row 2: Filter bar */}
@@ -872,7 +921,7 @@ export function IssuesView({
           )}
           <div className={`beads-table-container ${table.getState().columnSizingInfo.isResizingColumn ? "resizing" : ""}`}>
             <table
-              className="beads-table"
+              className={`beads-table ${compact ? "compact" : ""}`}
               style={{ minWidth: table.getCenterTotalSize() }}
               onContextMenu={(e) => e.preventDefault()}
             >
@@ -883,7 +932,7 @@ export function IssuesView({
                       <th
                         key={header.id}
                         style={{ width: header.getSize() }}
-                        className={`${header.column.getCanSort() ? "sortable" : ""} ${draggedColumn === header.id ? "dragging" : ""} ${dragOverColumn === header.id && draggedColumn !== header.id ? "drag-over" : ""}`}
+                        className={`${header.column.id}-th ${header.column.getCanSort() ? "sortable" : ""} ${draggedColumn === header.id ? "dragging" : ""} ${dragOverColumn === header.id && draggedColumn !== header.id ? "drag-over" : ""}`}
                         onClick={header.column.getToggleSortingHandler()}
                         draggable={!isResizing}
                         onDragStart={(e) => {
@@ -955,6 +1004,29 @@ export function IssuesView({
                             document.addEventListener("touchend", handleTouchEnd);
                           }}
                           onClick={(e) => e.stopPropagation()}
+                          title="Drag to resize · double-click to fit contents"
+                          onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            if (!header.column.getCanResize()) return;
+                            const tableEl = (e.currentTarget as HTMLElement).closest("table");
+                            if (!tableEl) return;
+                            // Cells clip with overflow:hidden, so scrollWidth is the
+                            // full (unclipped) content width incl. padding (border-box).
+                            const id = header.column.id;
+                            const cells = tableEl.querySelectorAll<HTMLElement>(
+                              `.${CSS.escape(id)}-th, .${CSS.escape(id)}-cell`
+                            );
+                            let max = 0;
+                            cells.forEach((c) => {
+                              if (c.scrollWidth > max) max = c.scrollWidth;
+                            });
+                            if (max <= 0) return;
+                            const { minSize = 0, maxSize = Number.MAX_SAFE_INTEGER } =
+                              header.column.columnDef;
+                            const fitted = Math.min(Math.max(max + 2, minSize), maxSize);
+                            table.setColumnSizing((prev) => ({ ...prev, [id]: fitted }));
+                          }}
                         />
                       </th>
                     ))}

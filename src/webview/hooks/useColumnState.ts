@@ -15,6 +15,7 @@ interface PersistedState {
   sorting?: SortingState;
   columnVisibility?: VisibilityState;
   columnOrder?: ColumnOrderState;
+  compact?: boolean;
 }
 
 interface UseColumnStateOptions {
@@ -24,6 +25,8 @@ interface UseColumnStateOptions {
   defaultVisibility?: VisibilityState;
   /** Default column order if none persisted */
   defaultOrder?: ColumnOrderState;
+  /** Default compact (packed rows) mode if none persisted */
+  defaultCompact?: boolean;
 }
 
 interface UseColumnStateReturn {
@@ -33,6 +36,9 @@ interface UseColumnStateReturn {
   setColumnVisibility: React.Dispatch<React.SetStateAction<VisibilityState>>;
   columnOrder: ColumnOrderState;
   setColumnOrder: React.Dispatch<React.SetStateAction<ColumnOrderState>>;
+  /** Packed-rows mode (id + title on one line, tighter padding) */
+  compact: boolean;
+  setCompact: React.Dispatch<React.SetStateAction<boolean>>;
   /** Reset visibility to defaults */
   resetVisibility: () => void;
 }
@@ -60,6 +66,7 @@ export function useColumnState(options: UseColumnStateOptions = {}): UseColumnSt
     defaultSorting = [],
     defaultVisibility = {},
     defaultOrder = [],
+    defaultCompact = false,
   } = options;
 
   // Load persisted state once on mount
@@ -77,10 +84,14 @@ export function useColumnState(options: UseColumnStateOptions = {}): UseColumnSt
     savedState?.columnOrder ?? defaultOrder
   );
 
+  const [compact, setCompact] = useState<boolean>(
+    savedState?.compact ?? defaultCompact
+  );
+
   // Persist state changes to VS Code
   useEffect(() => {
-    vscode.setState({ sorting, columnVisibility, columnOrder });
-  }, [sorting, columnVisibility, columnOrder]);
+    vscode.setState({ sorting, columnVisibility, columnOrder, compact });
+  }, [sorting, columnVisibility, columnOrder, compact]);
 
   const resetVisibility = () => {
     setColumnVisibility(defaultVisibility);
@@ -93,6 +104,8 @@ export function useColumnState(options: UseColumnStateOptions = {}): UseColumnSt
     setColumnVisibility,
     columnOrder,
     setColumnOrder,
+    compact,
+    setCompact,
     resetVisibility,
   };
 }

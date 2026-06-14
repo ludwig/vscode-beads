@@ -1254,8 +1254,9 @@ textarea {
   position: sticky;
   top: 0;
   z-index: 1;
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-xs) var(--spacing-md);
   text-align: left;
+  line-height: 1.3;
   font-weight: 600;
   background-color: var(--vscode-sideBar-background);
   border-bottom: 1px solid var(--vscode-panel-border);
@@ -1322,6 +1323,12 @@ textarea {
 
 /* title-cell overflow handled by table-layout: fixed + td overflow settings */
 
+/* Default: id stacked above title (also used by the Dashboard cards) */
+.title-inner {
+  display: block;
+  min-width: 0;
+}
+
 .bead-id {
   display: block;
   font-size: 10px;
@@ -1350,6 +1357,43 @@ textarea {
 .date-cell {
   color: var(--vscode-descriptionForeground);
   white-space: nowrap;
+}
+
+/* Dates are secondary metadata — smaller + muted so they don't out-weigh titles */
+.beads-table .timestamp {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+}
+
+/* ---- Compact rows (Issues table only) ---------------------------------- */
+/* Pack id + title onto one line and tighten padding so the list reads dense. */
+.beads-table.compact th,
+.beads-table.compact td {
+  padding: var(--spacing-xs) var(--spacing-sm);
+}
+
+.beads-table.compact .title-inner {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+}
+
+.beads-table.compact .bead-id {
+  display: inline;
+  flex: none;
+}
+
+.beads-table.compact .bead-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* icon-only column: drop the side padding and center the glyph when packed */
+.beads-table.compact .icon-cell,
+.beads-table.compact .icon-th {
+  padding-left: var(--spacing-xs);
+  padding-right: var(--spacing-xs);
+  text-align: center;
 }
 
 .labels-cell {
@@ -1527,6 +1571,42 @@ textarea {
   gap: var(--spacing-sm);
 }
 
+.dashboard-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--vscode-panel-border);
+  overflow: hidden;
+}
+
+.dashboard-header-label {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--vscode-descriptionForeground);
+}
+
+.dashboard-header-path {
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-family: var(--vscode-editor-font-family);
+  font-size: 12px;
+  color: var(--vscode-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.dashboard-header-path:hover {
+  text-decoration: underline;
+}
+
 .dashboard-toolbar {
   display: flex;
   align-items: center;
@@ -1633,52 +1713,6 @@ textarea {
   gap: 6px;
 }
 
-.dashboard-project-dir {
-  min-height: 28px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  overflow: hidden;
-  text-align: left;
-}
-
-.dashboard-project-dir-link {
-  display: inline-flex;
-  align-items: center;
-  min-width: 0;
-  max-width: 100%;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: inherit;
-}
-
-.dashboard-project-dir-label {
-  flex-shrink: 0;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--vscode-descriptionForeground);
-}
-
-.dashboard-project-dir-value {
-  font-family: inherit;
-  display: inline-block;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--vscode-foreground);
-  background: transparent;
-}
-
-.dashboard-project-dir-link:hover .dashboard-project-dir-value {
-  text-decoration: underline;
-}
-
 .summary-section {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
@@ -1686,11 +1720,27 @@ textarea {
 }
 
 .summary-card {
+  display: block;
+  width: 100%;
+  font-family: inherit;
+  color: inherit;
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-md);
   background-color: var(--vscode-sideBar-background);
   border: 1px solid var(--vscode-panel-border);
   text-align: center;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.summary-card:hover {
+  background-color: var(--vscode-list-hoverBackground);
+  border-color: var(--vscode-focusBorder);
+}
+
+.summary-card:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
 }
 
 .summary-card .card-value {
@@ -1737,6 +1787,38 @@ textarea {
   margin-bottom: var(--spacing-md);
 }
 
+/* Collapsible header for By Status / By Label */
+.breakdown-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--vscode-descriptionForeground);
+}
+
+.breakdown-toggle:hover {
+  color: var(--vscode-foreground);
+}
+
+.breakdown-toggle h3 {
+  margin-bottom: 0;
+}
+
+.breakdown-toggle .chevron-icon {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+/* When open, restore the gap between the header and the bars */
+.breakdown-toggle[aria-expanded="true"] {
+  margin-bottom: var(--spacing-md);
+}
+
 .breakdown-bars {
   display: flex;
   flex-direction: column;
@@ -1747,6 +1829,25 @@ textarea {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
+  width: 100%;
+  padding: 2px var(--spacing-xs);
+  margin: 0 calc(-1 * var(--spacing-xs));
+  border: none;
+  border-radius: var(--border-radius);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.breakdown-bar:hover {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+.breakdown-bar:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
 }
 
 .bar-label {
@@ -2907,4 +3008,30 @@ textarea {
 
 .view-toggle button:hover:not(.active) {
   background: var(--vscode-list-hoverBackground);
+}
+
+.compact-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px;
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.compact-toggle:hover:not(.active) {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.compact-toggle.active {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+.compact-toggle svg {
+  display: block;
 }
