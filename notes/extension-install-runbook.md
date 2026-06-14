@@ -7,6 +7,27 @@ For the Docker test environment instead, see
 Per fork policy we do **not** publish to the Marketplace / Open VSX — the `.vsix`
 is the distributable, installed privately. See `CLAUDE.local.md`.
 
+## Quick path — `just install`
+
+One command packages, force-installs, and prints the reload reminder + the
+expected footer SHA to verify the live build:
+
+```bash
+just install          # alias: just update
+# → builds + vsce package, code --install-extension <newest>.vsix --force
+# → prints:  Reload VS Code:  Cmd+Shift+P -> 'Developer: Reload Window'
+#            Verify footer:   v<version> · <short-sha>
+```
+
+It installs **whatever is committed on the current branch** — `git pull` first if
+you want merged `develop`. The version is fixed across builds (the commit SHA is
+the build identity), so `--force` overwrites the same version in place. After it
+finishes, reload the window and confirm the Dashboard footer shows the printed
+SHA. Then jump to [step 3](#3-verify-it-activates) to confirm the views load.
+
+The sections below are the manual breakdown of what `just install` automates, plus
+the upgrade/uninstall and troubleshooting notes.
+
 ## 1. Package
 
 ```bash
@@ -78,3 +99,7 @@ Extension Host log (Cmd+Shift+P → **Developer: Show Logs… → Extension Host
   in-code `beads` config namespace + log prefix into `src/constants.ts`.
   Repackaged as `vscode-beads-pm-0.13.0.vsix`; uninstalled the old
   `planet57.vscode-beads`, installed `ludwig.vscode-beads-pm`.
+- Added the `just install` (alias `just update`) recipe wrapping
+  package → force-install → reload-prompt, now the documented quick path above
+  (PR #18, merged). vs-cuc closed: runbook covers install + verify end-to-end and
+  `just install` is the one-command walkthrough.
