@@ -121,12 +121,12 @@
           "group": "navigation@0"
         },
         {
-          "command": "beads.refresh",
+          "command": "beads.openDashboardInTab",
           "when": "view == beadsDashboard",
           "group": "navigation@1"
         },
         {
-          "command": "beads.openDashboardInTab",
+          "command": "beads.refresh",
           "when": "view == beadsDashboard",
           "group": "navigation@2"
         },
@@ -136,12 +136,12 @@
           "group": "navigation@0"
         },
         {
-          "command": "beads.refresh",
+          "command": "beads.openIssuesInTab",
           "when": "view == beadsPanel",
           "group": "navigation@1"
         },
         {
-          "command": "beads.openIssuesInTab",
+          "command": "beads.refresh",
           "when": "view == beadsPanel",
           "group": "navigation@2"
         },
