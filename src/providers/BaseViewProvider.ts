@@ -228,6 +228,17 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         }
         break;
 
+      case "copyText":
+        if (message.text) {
+          await vscode.env.clipboard.writeText(message.text);
+          vscode.window.setStatusBarMessage(`$(check) Copied ${message.label ?? "text"}`, 2000);
+        }
+        break;
+
+      case "openBeadInTab":
+        vscode.commands.executeCommand("beads.openBeadInTab", message.beadId);
+        break;
+
       case "openFile":
         await this.handleOpenFile(message.filePath, message.line);
         break;

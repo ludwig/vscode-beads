@@ -24,10 +24,11 @@ import {
   type Edge,
 } from "@xyflow/react";
 import { GitBranch, Network, Crosshair } from "lucide-react";
-import { Bead, DependencyGraph, STATUS_COLORS } from "../../types";
+import { Bead, DependencyGraph, STATUS_COLORS, vscode } from "../../types";
 import { Loading } from "../../common/Loading";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { BeadNode, type BeadNodeData } from "./BeadNode";
+import { GraphContextMenu, type GraphContextMenuItem } from "./GraphContextMenu";
 import { layeredLayout, forceLayout, type LayoutEdge } from "./layout";
 import { edgeStyle, neighborhood, EDGE_TYPE_ORDER, EDGE_STYLES } from "./graphModel";
 
@@ -56,6 +57,7 @@ function GraphCanvas({
   const [mode, setMode] = useState<LayoutMode>("layered");
   const [focusEnabled, setFocusEnabled] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [menu, setMenu] = useState<{ x: number; y: number; bead: Bead } | null>(null);
   // Selection is local to the canvas: a single click highlights + becomes the
   // focus root without navigating away (double-click opens details). Falls back
   // to the externally-selected bead until the user clicks a node here.
@@ -203,6 +205,11 @@ function GraphCanvas({
         onNodeDoubleClick={(_, node) => onOpenBead(node.id)}
         onNodeMouseEnter={(_, node) => setHoveredId(node.id)}
         onNodeMouseLeave={() => setHoveredId(null)}
+        onNodeContextMenu={(event, node) => {
+          event.preventDefault();
+          setMenu({ x: event.clientX, y: event.clientY, bead: (node.data as BeadNodeData).bead });
+        }}
+        onPaneClick={() => setMenu(null)}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.1}
@@ -222,8 +229,45 @@ function GraphCanvas({
         />
         <GraphLegend />
       </ReactFlow>
+      {menu && (
+        <GraphContextMenu
+          x={menu.x}
+          y={menu.y}
+          onClose={() => setMenu(null)}
+          items={buildMenuItems(menu.bead, {
+            onFocus: () => {
+              setLocalSelectedId(menu.bead.id);
+              setFocusEnabled(true);
+            },
+          })}
+        />
+      )}
     </div>
   );
+}
+
+function buildMenuItems(bead: Bead, handlers: { onFocus: () => void }): GraphContextMenuItem[] {
+  return [
+    { label: "Focus", onSelect: handlers.onFocus },
+    {
+      label: "Open Details (editor tab)",
+      separatorBefore: true,
+      onSelect: () => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id }),
+    },
+    {
+      label: "Show Details",
+      onSelect: () => vscode.postMessage({ type: "openBeadDetails", beadId: bead.id }),
+    },
+    {
+      label: "Copy ID",
+      separatorBefore: true,
+      onSelect: () => vscode.postMessage({ type: "copyBeadId", beadId: bead.id }),
+    },
+    {
+      label: "Copy title",
+      onSelect: () => vscode.postMessage({ type: "copyText", text: bead.title, label: "title" }),
+    },
+  ];
 }
 
 function GraphLegend(): React.ReactElement {

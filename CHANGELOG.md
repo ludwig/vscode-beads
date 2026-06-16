@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Right-click a bead node in the **Graph** view for a context menu — **Focus** (narrow to its neighborhood), **Open Details** (editor tab), **Show Details** (sidebar), **Copy ID**, **Copy title** (vs-aml)
 - The bottom Beads panel now has an **Open in Editor** button in its in-view nav row — pops the active subview (Issues / Dashboard / Graph) out into an editor tab; the Graph gets its own `beads.openGraphInTab` command + standalone editor route (vs-3bp)
 - New **Graph** tab in the bottom Beads panel — visualizes the dependency graph with bead cards (status-colored) and relationship edges (blocks / parent-child / related / discovered-from, each color+style coded, with a legend). Switch between a **layered** (hierarchical, spline edges) and **force-directed** (freeform) layout; click a node to select, double-click to open its details; pan / zoom / fit / minimap; and a **Focus** toggle narrows to the selected bead's dependency neighborhood. Edges are fetched lazily (one backend call) only when the tab is opened (vs-xlf)
 - Dashboard summary cards (Total / Open / Doing / Blocked) are now clickable — each opens the Issues view pre-filtered to the matching status (Total shows all) (vs-i06)
