@@ -9,6 +9,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, X, Rocket, ListTodo } from "lucide-react";
+import prettyBytes from "pretty-bytes";
 import { Bead, BeadsProject, STATUS_COLORS } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
@@ -34,11 +35,6 @@ interface ProjectSwitcherViewProps {
   buildDirty?: boolean;
   /** Extension-host RSS in bytes (0 = not yet sampled). */
   memoryBytes?: number;
-}
-
-/** Format a byte count as a compact MB figure, e.g. 248 MB. */
-function formatMb(bytes: number): string {
-  return `${Math.round(bytes / (1024 * 1024))} MB`;
 }
 
 const BACKEND_LABELS: Record<string, string> = {
@@ -191,7 +187,7 @@ export function ProjectSwitcherView({
                     className="mono-figure"
                     title="JS heap (heapUsed) of the VS Code extension-host process — shared by all JS extensions, not just Beads. Sampled periodically."
                   >
-                    {formatMb(memoryBytes)}
+                    {prettyBytes(memoryBytes, { binary: true })}
                   </dd>
                 </div>
               )}
