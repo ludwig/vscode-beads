@@ -9,8 +9,10 @@ import {
   CloseIssueArgs,
   CreateIssueArgs,
   DependencyArgs,
+  GraphEdge,
   UpdateIssueArgs,
 } from "./BeadsBackend";
+import { parseDotEdges } from "./graphDot";
 import { isEmbeddedLockError } from "./doltErrors";
 import { withLockRetry } from "./retry";
 
@@ -85,6 +87,13 @@ export class BeadsCommandRunner implements BeadsBackend {
     // non-ephemeral issue (vs-0bq).
     const result = await this.runReadJson(["list", "--all", "-n", "0", "--json"], { cacheTtlMs: 750 });
     return Array.isArray(result) ? (result as BeadsIssue[]) : [];
+  }
+
+  async getDependencyGraph(): Promise<GraphEdge[]> {
+    // `bd list --format dot` emits the whole edge set in a single spawn; there
+    // is no JSON form for the full graph. `--all -n 0` matches list() coverage.
+    const dot = await this.runText(["list", "--all", "-n", "0", "--format", "dot"]);
+    return parseDotEdges(dot);
   }
 
   async info(): Promise<Record<string, unknown>> {

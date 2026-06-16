@@ -42,26 +42,35 @@
           "title": "Beads",
           "icon": "resources/beads-icon.svg"
         }
+      ],
+      "panel": [
+        {
+          "id": "beadsBottomPanel",
+          "title": "Beads",
+          "icon": "resources/beads-icon.svg"
+        }
       ]
     },
     "views": {
       "beads": [
         {
           "type": "webview",
-          "id": "beadsDashboard",
-          "name": "Dashboard",
-          "visibility": "visible"
-        },
-        {
-          "type": "webview",
-          "id": "beadsPanel",
-          "name": "Issues",
+          "id": "beadsProjectSwitcher",
+          "name": "Context",
           "visibility": "visible"
         },
         {
           "type": "webview",
           "id": "beadsDetails",
           "name": "Details",
+          "visibility": "visible"
+        }
+      ],
+      "beadsBottomPanel": [
+        {
+          "type": "webview",
+          "id": "beadsPanelShell",
+          "name": "Beads",
           "visibility": "visible"
         }
       ]
@@ -74,13 +83,30 @@
       },
       {
         "command": "beads.openBeadsPanel",
-        "title": "Beads: Open Issues Panel",
+        "title": "Beads: Show Issues Panel",
         "icon": "$(list-unordered)"
+      },
+      {
+        "command": "beads.pickReadyBead",
+        "title": "Beads: Pick Ready Bead",
+        "icon": "$(rocket)"
       },
       {
         "command": "beads.openBeadDetails",
         "title": "Beads: Open Issue Details",
         "icon": "$(file-text)"
+      },
+      {
+        "command": "beads.navigateBack",
+        "title": "Beads: Back",
+        "icon": "$(arrow-left)",
+        "enablement": "beads.canNavigateBack"
+      },
+      {
+        "command": "beads.navigateForward",
+        "title": "Beads: Forward",
+        "icon": "$(arrow-right)",
+        "enablement": "beads.canNavigateForward"
       },
       {
         "command": "beads.refresh",
@@ -90,7 +116,8 @@
       {
         "command": "beads.copyBeadId",
         "title": "Beads: Copy Issue ID",
-        "icon": "$(copy)"
+        "icon": "$(copy)",
+        "enablement": "beads.hasSelectedBead"
       },
       {
         "command": "beads.createIssue",
@@ -111,49 +138,39 @@
         "command": "beads.openDashboardInTab",
         "title": "Beads: Open Dashboard in Editor Tab",
         "icon": "$(link-external)"
+      },
+      {
+        "command": "beads.openGraphInTab",
+        "title": "Beads: Open Graph in Editor Tab",
+        "icon": "$(link-external)"
       }
     ],
     "menus": {
       "view/title": [
         {
           "command": "beads.createIssue",
-          "when": "view == beadsDashboard",
+          "when": "view == beadsProjectSwitcher",
           "group": "navigation@0"
-        },
-        {
-          "command": "beads.openDashboardInTab",
-          "when": "view == beadsDashboard",
-          "group": "navigation@1"
         },
         {
           "command": "beads.refresh",
-          "when": "view == beadsDashboard",
-          "group": "navigation@2"
-        },
-        {
-          "command": "beads.createIssue",
-          "when": "view == beadsPanel",
-          "group": "navigation@0"
-        },
-        {
-          "command": "beads.openIssuesInTab",
-          "when": "view == beadsPanel",
+          "when": "view == beadsProjectSwitcher",
           "group": "navigation@1"
         },
         {
-          "command": "beads.refresh",
-          "when": "view == beadsPanel",
-          "group": "navigation@2"
+          "command": "beads.navigateBack",
+          "when": "view == beadsDetails",
+          "group": "navigation@0"
         },
         {
-          "command": "beads.openBeadInTab",
-          "when": "view == beadsDetails && beads.hasSelectedBead",
-          "group": "navigation@0"
+          "command": "beads.navigateForward",
+          "when": "view == beadsDetails",
+          "group": "navigation@1"
         },
         {
           "command": "beads.copyBeadId",
-          "when": "view == beadsDetails && beads.hasSelectedBead",
-          "group": "navigation@1"
+          "when": "view == beadsDetails",
+          "group": "navigation@2"
         }
       ]
     },
@@ -214,6 +231,9 @@
     "package": "vsce package"
   },
   "devDependencies": {
+    "@types/d3-force": "^3.0.10",
+    "@types/d3-hierarchy": "^3.1.7",
+    "@types/dagre": "^0.7.54",
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
@@ -230,6 +250,10 @@
   },
   "dependencies": {
     "@tanstack/react-table": "^8.21.3",
+    "@xyflow/react": "^12.11.0",
+    "d3-force": "^3.0.0",
+    "d3-hierarchy": "^3.1.2",
+    "dagre": "^0.8.5",
     "dompurify": "^3.4.10",
     "lucide-react": "^0.563.0",
     "marked": "^17.0.1",

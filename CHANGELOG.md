@@ -7,8 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The dependency **Graph opened in an editor tab** ("Open in Editor") no longer renders empty — the dedicated graph view now pushes nodes + edges proactively instead of relying on a lazy request that raced the tab's first load (vs-e4k)
+
+### Changed
+
+- Polished the sidebar **Active Project** and **Active Bead** sections — each is now an elevated, **collapsible** card; Active Bead reads as a pinned register slot (accent left rail, type icon + status dot); the Active Project meta table now also shows the **bd** CLI version and the **Extension** version (replacing the footer stamp) (vs-si0)
+
 ### Added
 
+- Dashboard now has a collapsed **By Type** breakdown card (above By Label) — bead counts per issue type, each row drills into the Issues list filtered to that type (vs-eif)
+- Epic-type bead nodes in the **Graph** get a purple outline so structural containers stand out (vs-cop)
+- Graph node click gestures — single-click selects, double-click opens Details (sidebar), **triple-click opens the bead in an editor tab** (vs-myc)
+- Right-click a bead node in the **Graph** view for a context menu — **Focus** (narrow to its neighborhood), **Open Details** (editor tab), **Show Details** (sidebar), **Copy ID**, **Copy title** (vs-aml)
+- Right-click an **Issues table** row for the same context menu — **Open Details** (editor tab), **Show Details**, **Focus on Graph**, **Copy ID**, **Copy title** (vs-7mp, vs-czn)
+- **"View in graph" deep-link** — the Details and Issues-table "Focus on Graph" actions now switch the bottom panel to the **Graph** tab and focus that bead's dependency neighborhood (the old standalone-graph command was a dead no-op) (vs-iz8)
+- **Graph "Filtered" toggle** — scope the Graph view to the current Issues filter/search slice (whole board ↔ filtered slice); composes with Focus (filter narrows the candidate set, focus narrows to a neighborhood within it) (vs-v07)
+- **Create dependencies on the Graph canvas** — drag from one bead node to another to draw a dependency (relationship picker: Blocked by / Child of / Related to / Discovered from), and click an existing edge to remove it (vs-caz)
+- **Details view Back/Forward navigation** — browser-style history of viewed beads with title-bar Back/Forward buttons and Alt+←/→; the Active Bead pin follows your traversal instead of staying on the first selection (vs-xzq)
+- New **Tree** tab in the bottom Beads panel — a file-explorer-style hierarchical tree of beads keyed on parent-child relationships (expand/collapse, indentation, a Type label, sortable by Type/Title) with a filter line that narrows to matching beads while keeping the path to them, and a right-click context menu (vs-bw9)
+- Two new **Graph layouts** — **Tree** (tidy hierarchical) and **Radial** — alongside Layered and Force, driven by the dependency structure (blocks + parent-child edges) (vs-28i)
+- **Drag-to-reparent** in the Tree view — drag a bead onto another to make it the parent (drop on empty space to detach to a root); illegal drops onto a node's own descendant are rejected (vs-jb6)
+- **Pick Ready Bead** — a rocket action on the sidebar Context view (and command palette) jumps to a ready-to-work bead (open, no open blocker) and makes it the active bead; repeat to cycle through the ready set (vs-ih1)
+- The bottom Beads panel now has an **Open in Editor** button in its in-view nav row — pops the active subview (Issues / Dashboard / Graph) out into an editor tab; the Graph gets its own `beads.openGraphInTab` command + standalone editor route (vs-3bp)
+- **Auto Layout** button in the Graph toolbar — in force mode it shuffles a fresh layout variant (seeded), in layered mode it re-applies the canonical layout; either way it resets manual drags and fits to view (vs-0wf)
+- New **Graph** tab in the bottom Beads panel — visualizes the dependency graph with bead cards (status-colored) and relationship edges (blocks / parent-child / related / discovered-from, each color+style coded, with a legend). Switch between a **layered** (hierarchical, spline edges) and **force-directed** (freeform) layout; click a node to select, double-click to open its details; pan / zoom / fit / minimap; and a **Focus** toggle narrows to the selected bead's dependency neighborhood. Edges are fetched lazily (one backend call) only when the tab is opened (vs-xlf)
 - Dashboard summary cards (Total / Open / Doing / Blocked) are now clickable — each opens the Issues view pre-filtered to the matching status (Total shows all) (vs-i06)
 - Dashboard **By Status** and **By Label** breakdown rows are clickable too — drilling into the Issues list filtered to that status or label (vs-gnb)
 - Double-click a column separator in the Issues table to auto-fit that column to its contents (vs-4rt)
@@ -23,11 +47,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Declared the `beads.projects` setting in the configuration schema so it appears in the Settings UI with validation (vs-b7o)
 - Create issues from the UI: a "New Issue" button on the Issues/Dashboard views and a `beads.createIssue` command open a create form in the Details view (vs-69z)
 - Surface the active issue prefix (e.g. `vs`), derived from the loaded issue IDs, in the project dropdown trigger and the status bar so it's always clear which root is active (vs-kmt)
+- New consolidated **Beads** panel in the bottom Panel (next to Terminal/Problems): a single surface that hosts the **Dashboard** and **Issues** subviews behind an in-view nav row — clicking a tab swaps the whole area, and a Dashboard card click flips to Issues with that filter applied. Buttons live in the view (nav row), not the panel tab bar, and the panel loads the bead list once to feed both subviews (vs-b2p, vs-b2p.1)
+- Restructured the sidebar: Dashboard and Issues now live in the bottom Panel, and the activity-bar Beads view is slimmed to a dedicated **Project** switcher + **Details** — giving the wide Dashboard/Issues surfaces horizontal room and decluttering the left (vs-b2p, vs-5a8)
+- The sidebar Project view now leads with a header and shows basic context (issue prefix, backend status, project count, build/version) with a friendly empty state; the Details view shows a proper empty state (icon + guidance) instead of a bare line (vs-ed2)
+- Renamed the sidebar context view to **Active Project** and added an **Active Bead** section that pins the currently-selected bead (id + title) with a quick-open button — a reference anchor (and future seed root for the Graph view) (vs-14e)
+- The Dashboard's **By Label** breakdown now starts collapsed (vs-7r5)
+- Moved the Dolt actions (Show Status / Start / Stop / Open Log) from the Dashboard's menu into the **Active Project** view, and dropped the redundant directory header from the Dashboard so it leads with its metrics (vs-6mt)
+- Polished the Dashboard metric cards (accent rail per metric, larger tabular values, hover lift) and gave the Active Project info a defined key/value table (dividers + zebra) (vs-wgw, vs-293)
 
 ### Changed
 
+- Refresh is now a title-bar action on every Beads view (Dashboard, both Issues lists, and Details, which previously had none); removed the redundant in-webview "Refresh" item from the Dashboard's actions menu so reload consistently lives in the view chrome
+- Reorganized view title-bar actions: the New Issue (+) action now lives on the Details toolbar (where the create form opens) instead of Dashboard/Issues; each view keeps its own Open-in-Editor action; on Details, Copy ID sits last (vs-73h)
 - Issues table column header row is shorter (trimmed vertical padding) (vs-4rt)
 - Issues table dates (Updated/Created) render smaller and muted (10px) so they read as secondary metadata instead of out-sizing the title (vs-xe1)
+- Issues table now lets only the Title column expand to fill available width; the other columns stay at their compact fixed sizes instead of inflating, while preserving the badge clip-safe widths (vs-gmj)
 - Explicitly-configured Beads projects (`beads.projects`, `$BEADS_DIR`, workspace folders) that don't exist or aren't a Beads project are now logged as warnings instead of silently skipped; the `~/beads` auto-scan stays quiet (vs-jse)
 - Reordered Dashboard/Issues view title actions so the share-link (open-in-editor-tab) sits in the middle and Refresh moves to the rightmost edge, matching the Details view where the common op (Copy ID) sits at the edge (vs-qi5)
 - Details-view markdown is now sanitized with DOMPurify before rendering (defense-in-depth atop the webview CSP), and links are routed through the extension: workspace paths open in the editor, http(s)/mailto open in the system handler, and unsafe schemes (`javascript:`, `file:`, …) are dropped (vs-9xx)
@@ -37,6 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Task type icon changed from a checked box (which read as "done") to a list (`list-ul`), in the Issues list, Kanban cards, and Details header (vs-3x0)
 
 ### Fixed
+- Timestamps in **server (Dolt) mode** rendered as "just now"/in the future — SQL datetimes lacked a timezone marker and were parsed as local; now normalized to explicit UTC (vs-b9t)
 
 - Issues table no longer clips the right edge of the Type/Status badges (Type and Status columns widened); the Type badge font is a touch smaller, and the leading type icon + badges now sink onto the title line instead of floating in the 1.75-line rows (vs-xy5)
 - Issues-list Type badges now share a width, so the "Type" column and the type filter menu line up instead of reading as ragged (the rare long `merge-request` is an accepted outlier) (vs-b48)
@@ -44,6 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dropdown menus no longer render semi-transparent — the menu background falls back through universal surface tokens when `--vscode-dropdown-listBackground` is undefined (vs-k71)
 - `beads.userId` and `beads.pathToBd` now expand `${env:VAR}` placeholders (#60)
 - Edits now refresh sibling views (panel, dashboard, details) immediately instead of waiting for a manual Refresh (vs-mxq)
+- Relative timestamps no longer say "just now" for up to a minute — only the first 10 seconds read "just now", then "Ns ago" — so the Details footer stops over-reporting "now"
 - Restored a valid TypeScript `module`/`moduleResolution` pairing so `tsc` type-checks again
 
 ### Performance

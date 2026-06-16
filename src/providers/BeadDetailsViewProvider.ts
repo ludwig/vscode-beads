@@ -56,6 +56,14 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
     const cached = this.projectManager.getCachedBead(beadId);
     if (cached) {
       this.postMessage({ type: "setBead", bead: { ...cached, partial: true } });
+    } else {
+      // No cached row to paint optimistically (e.g. a closed bead opened from
+      // the Graph/Tree that the default list excludes). Clear the prior bead now
+      // so the view switches to a loading state for THIS selection immediately,
+      // instead of leaving the stale previous bead (and its comments) on screen
+      // until the cold `bd show` returns (vs-dqc).
+      this.postMessage({ type: "setBead", bead: null });
+      this.setLoading(true);
     }
 
     await this.loadData();
@@ -169,6 +177,20 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
     }
   }
 
+  /**
+   * In an editor tab, bead-to-bead links navigate WITHIN the same tab rather
+   * than escaping to the sidebar Details view (vs-qvt). The sidebar instance
+   * keeps the default routing (via the global command). Everything else falls
+   * through to the shared handler.
+   */
+  protected async handleMessage(message: WebviewToExtensionMessage): Promise<void> {
+    if (this._host?.isEditorTab && message.type === "openBeadDetails") {
+      await this.showBead(message.beadId);
+      return;
+    }
+    await super.handleMessage(message);
+  }
+
   protected async handleCustomMessage(
     message: WebviewToExtensionMessage
   ): Promise<void> {
@@ -260,7 +282,16 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
         break;
 
       case "viewInGraph":
-        vscode.commands.executeCommand("beadsGraph.focus");
+        // Switch the panel to the Graph tab and focus this bead's neighborhood.
+        vscode.commands.executeCommand("beads.viewInGraph", message.beadId);
+        break;
+
+      case "navigateBack":
+        vscode.commands.executeCommand("beads.navigateBack");
+        break;
+
+      case "navigateForward":
+        vscode.commands.executeCommand("beads.navigateForward");
         break;
 
       case "createBead":

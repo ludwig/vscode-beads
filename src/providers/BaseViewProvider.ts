@@ -27,6 +27,10 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
   protected readonly log: Logger;
   protected abstract readonly viewType: string;
   private readonly disposables: vscode.Disposable[] = [];
+  // When set, the webview is pulsed once it signals "ready" — used by editor
+  // tabs opened via BeadPanelManager so a freshly-created tab flashes a
+  // confirmation ring after it mounts (vs-c59).
+  private pulseOnReady = false;
 
   constructor(
     extensionUri: vscode.Uri,
@@ -134,6 +138,8 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         extensionVersion: appInfo.version,
         buildSha: appInfo.sha,
         buildDirty: appInfo.dirty,
+        isEditorTab: this._host?.isEditorTab ?? false,
+        bundleBytes: appInfo.bundleBytes,
       },
     });
 
@@ -155,6 +161,10 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     switch (message.type) {
       case "ready":
         await this.initializeView();
+        if (this.pulseOnReady) {
+          this.pulseOnReady = false;
+          this.pulse();
+        }
         break;
 
       case "refresh":
@@ -176,6 +186,24 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
 
       case "selectBead":
         vscode.commands.executeCommand("beads.openBeadDetails", message.beadId);
+        break;
+
+      case "openViewInTab": {
+        const command = {
+          issues: "beads.openIssuesInTab",
+          dashboard: "beads.openDashboardInTab",
+          graph: "beads.openGraphInTab",
+        }[message.view];
+        vscode.commands.executeCommand(command);
+        break;
+      }
+
+      case "pickReadyBead":
+        vscode.commands.executeCommand("beads.pickReadyBead");
+        break;
+
+      case "showIssues":
+        vscode.commands.executeCommand("beads.openBeadsPanel");
         break;
 
       case "showDoltStatus":
@@ -207,15 +235,52 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         break;
 
       case "viewInGraph":
-        // Focus the graph view and highlight the bead
-        vscode.commands.executeCommand("beadsGraph.focus");
+        // Switch the panel to the Graph tab and focus this bead's neighborhood.
+        vscode.commands.executeCommand("beads.viewInGraph", message.beadId);
         break;
 
       case "copyBeadId":
         if (message.beadId) {
           await vscode.env.clipboard.writeText(message.beadId);
+          // Status-bar confirmation is the default. A few callers (the Details
+          // view, far from the status bar) opt into an in-view toast as well.
           vscode.window.setStatusBarMessage(`$(check) Copied: ${message.beadId}`, 2000);
+          if (message.toast) {
+            this.postMessage({ type: "showToast", text: `Copied ${message.beadId}` });
+          }
         }
+        break;
+
+      case "copyText":
+        if (message.text) {
+          await vscode.env.clipboard.writeText(message.text);
+          vscode.window.setStatusBarMessage(`$(check) Copied ${message.label ?? "text"}`, 2000);
+          if (message.toast) {
+            this.postMessage({ type: "showToast", text: `Copied ${message.label ?? "text"}` });
+          }
+        }
+        break;
+
+      case "copyBeadJson":
+        if (message.beadId) {
+          // Copy the canonical bead record (via the backend) rather than the
+          // possibly-partial in-memory row, so the JSON is faithful.
+          const backend = this.projectManager.getBackend();
+          const issue = backend ? await backend.show(message.beadId) : null;
+          if (issue) {
+            await vscode.env.clipboard.writeText(JSON.stringify(issue, null, 2));
+            vscode.window.setStatusBarMessage(`$(check) Copied JSON: ${message.beadId}`, 2000);
+            if (message.toast) {
+              this.postMessage({ type: "showToast", text: `Copied JSON for ${message.beadId}` });
+            }
+          } else {
+            vscode.window.setStatusBarMessage(`$(error) Could not load ${message.beadId}`, 2000);
+          }
+        }
+        break;
+
+      case "openBeadInTab":
+        vscode.commands.executeCommand("beads.openBeadInTab", message.beadId);
         break;
 
       case "openFile":
@@ -228,6 +293,10 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
 
       case "openIssuesWithFilter":
         await vscode.commands.executeCommand("beads.openIssuesWithFilter", message.filter);
+        break;
+
+      case "startCreate":
+        await vscode.commands.executeCommand("beads.createIssue");
         break;
 
       default:
@@ -334,6 +403,22 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     this.log.error(`${message}: ${err}`);
     // ProjectManager handles notification details - views just update their error state
     this.projectManager.notifyBackendError(err);
+  }
+
+  /**
+   * Flash a confirmation ring in the webview (vs-c59). Used when an editor tab
+   * is revealed so re-opening an already-open tab gives visible feedback.
+   * No-op if the webview isn't live yet — use pulseWhenReady() for that case.
+   */
+  public pulse(): void {
+    if (this._host?.visible) {
+      this.postMessage({ type: "pulse" });
+    }
+  }
+
+  /** Pulse once the webview signals "ready" (for freshly-created tabs). */
+  public pulseWhenReady(): void {
+    this.pulseOnReady = true;
   }
 
   /**

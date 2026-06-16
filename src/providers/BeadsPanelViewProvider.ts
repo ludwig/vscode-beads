@@ -17,13 +17,27 @@ import { Logger } from "../utils/logger";
 import { deriveIssuePrefix } from "../utils/issue-prefix";
 
 export class BeadsPanelViewProvider extends BaseViewProvider {
-  protected readonly viewType = "beadsPanel";
+  // Declared as `string` (not the inferred literal) so subclasses like the
+  // panel shell can override with their own routing key.
+  protected readonly viewType: string = "beadsPanel";
   private static readonly MIN_LOADING_MS = 500;
   private selectedBeadId: string | null = null;
   private loadSequence = 0;
   // Drill-in filter requested from another view (e.g. a Dashboard card/badge).
   // Held until the webview is ready so a freshly-focused panel still applies it.
   private pendingFilter: IssuesFilter | undefined;
+  // Deep-link to focus a bead on the Graph tab, requested from another view
+  // (e.g. the Details "View in graph" action). Held until the webview is ready
+  // so a freshly-focused panel still switches to the Graph tab and focuses it.
+  private pendingShowGraph: string | undefined;
+  private pendingFocusIssues = false;
+  // Set once the Graph/Tree tab asks for the dependency graph, so a project
+  // switch / refresh knows to re-push fresh graph data (not just the bead list).
+  // A dedicated graph view (GraphViewProvider) opts in at construction so the
+  // graph is pushed proactively on every load rather than waiting for the
+  // webview's lazy requestGraph round-trip (which races a freshly-opened editor
+  // tab → empty graph, vs-e4k).
+  protected graphRequested = false;
 
   /**
    * Apply a drill-in filter to the Issues list (empty filter = show all).
@@ -35,6 +49,25 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     this.flushFilter();
   }
 
+  /**
+   * Switch the panel to the Graph tab and focus the given bead's neighborhood.
+   * Posts immediately when the webview is live; otherwise it's flushed once the
+   * webview signals ready (initializeView).
+   */
+  public showGraphForBead(beadId: string): void {
+    this.pendingShowGraph = beadId;
+    this.flushShowGraph();
+  }
+
+  /**
+   * Switch the panel to the Issues tab and pulse a confirmation ring — so
+   * "Show Issues" gives visible feedback even when Issues is already showing.
+   */
+  public focusIssuesTab(): void {
+    this.pendingFocusIssues = true;
+    this.flushFocusIssues();
+  }
+
   private flushFilter(): void {
     if (this.pendingFilter !== undefined && this._host?.visible) {
       this.postMessage({ type: "applyIssuesFilter", filter: this.pendingFilter });
@@ -42,9 +75,25 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     }
   }
 
+  private flushShowGraph(): void {
+    if (this.pendingShowGraph !== undefined && this._host?.visible) {
+      this.postMessage({ type: "showGraph", beadId: this.pendingShowGraph });
+      this.pendingShowGraph = undefined;
+    }
+  }
+
+  private flushFocusIssues(): void {
+    if (this.pendingFocusIssues && this._host?.visible) {
+      this.postMessage({ type: "focusIssuesTab" });
+      this.pendingFocusIssues = false;
+    }
+  }
+
   protected async initializeView(): Promise<void> {
     await super.initializeView();
     this.flushFilter();
+    this.flushShowGraph();
+    this.flushFocusIssues();
   }
 
   constructor(
@@ -68,13 +117,20 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     const client = this.projectManager.getClient();
     if (!client) {
       this.postMessage({ type: "setBeads", beads: [] });
+      this.onBeadsLoaded([]);
       return;
     }
 
     const showLoading = reason === "initial" || reason === "projectChange" || reason === "manualRefresh";
     const loadingStartedAt = showLoading ? Date.now() : 0;
     if (showLoading) {
-      this.postMessage({ type: "setBeads", beads: [] });
+      // Don't blank existing data on a project switch / refresh — keep the prior
+      // rows visible and swap them in place once the new data arrives, so the
+      // view updates instead of flashing to empty. Only the very first load has
+      // nothing to preserve.
+      if (reason === "initial") {
+        this.postMessage({ type: "setBeads", beads: [] });
+      }
       this.setLoading(true);
     }
     this.setError(null);
@@ -93,6 +149,13 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
       // before the cold `bd show` spawn returns (vs-7s7).
       this.projectManager.cacheBeadList(beads);
       this.projectManager.setActivePrefix(deriveIssuePrefix(issues.map((i) => i.id)));
+      this.onBeadsLoaded(beads);
+      // If the Graph/Tree have been viewed this session, refresh their data too
+      // on a project switch / explicit refresh — otherwise they'd keep showing
+      // the previous project's graph (they only fetch lazily on tab open).
+      if (this.graphRequested && reason !== "background") {
+        await this.sendGraph(client);
+      }
       this.setLoading(false);
     } catch (err) {
       if (showLoading) {
@@ -102,7 +165,7 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
         return;
       }
       this.setError(String(err));
-      if (showLoading) {
+      if (reason === "initial") {
         this.postMessage({ type: "setBeads", beads: [] });
       }
       this.handleBackendError("Failed to load beads", err);
@@ -111,6 +174,16 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
         this.setLoading(false);
       }
     }
+  }
+
+  /**
+   * Hook invoked after the bead list is loaded (or cleared when there's no
+   * client). Subclasses override to derive extra payloads from the same list
+   * without spawning a second `bd list` — e.g. the panel shell emits the
+   * Dashboard summary here. Default: no-op.
+   */
+  protected onBeadsLoaded(_beads: Bead[]): void {
+    // no-op
   }
 
   private async waitForMinimumLoading(startedAt: number): Promise<void> {
@@ -146,6 +219,56 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
           "Delete functionality is not yet implemented"
         );
         break;
+
+      // Edge drawn / removed on the Graph canvas (vs-caz). Mirror the Details
+      // view's mapping (reverse swaps from/to), then re-push the graph so the
+      // edge change shows up without the user re-opening the tab.
+      case "addDependency":
+        try {
+          const fromId = message.reverse ? message.targetId : message.beadId;
+          const toId = message.reverse ? message.beadId : message.targetId;
+          await client.addDependency({ from_id: fromId, to_id: toId, dep_type: message.dependencyType });
+          this.projectManager.notifyDataChanged();
+          await this.sendGraph(client);
+        } catch (err) {
+          vscode.window.showErrorMessage(`Failed to add dependency: ${err}`);
+        }
+        break;
+
+      case "removeDependency":
+        try {
+          await client.removeDependency({ from_id: message.beadId, to_id: message.dependsOnId });
+          this.projectManager.notifyDataChanged();
+          await this.sendGraph(client);
+        } catch (err) {
+          vscode.window.showErrorMessage(`Failed to remove dependency: ${err}`);
+        }
+        break;
+
+      case "requestGraph":
+        this.graphRequested = true;
+        await this.sendGraph(client);
+        break;
+    }
+  }
+
+  /**
+   * Assemble and push the dependency graph for the Graph subview. Nodes reuse
+   * the already-loaded bead list (no extra `bd list`); edges come from one
+   * mode-native fetch. Called lazily when the Graph tab opens.
+   */
+  private async sendGraph(client: NonNullable<ReturnType<BeadsProjectManager["getClient"]>>): Promise<void> {
+    try {
+      let nodes = this.projectManager.getCachedBeadList();
+      if (nodes.length === 0) {
+        const issues = await client.list();
+        nodes = issues.map(issueToWebviewBead).filter((b): b is Bead => b !== null);
+        this.projectManager.cacheBeadList(nodes);
+      }
+      const edges = await client.getDependencyGraph();
+      this.postMessage({ type: "setGraph", graph: { nodes, edges } });
+    } catch (err) {
+      this.handleBackendError("Failed to load dependency graph", err);
     }
   }
 }

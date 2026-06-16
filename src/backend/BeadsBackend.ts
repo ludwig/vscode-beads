@@ -1,4 +1,7 @@
 import type { BackendBeadDependency } from "./types";
+import type { GraphEdge } from "./graphDot";
+
+export type { GraphEdge } from "./graphDot";
 
 export interface BeadsIssue {
   id: string;
@@ -88,6 +91,8 @@ export interface BeadsBackend {
   startDoltServer(): Promise<string>;
   stopDoltServer(): Promise<string>;
   list(): Promise<BeadsIssue[]>;
+  /** All dependency edges across the board, fetched in a single call. */
+  getDependencyGraph(): Promise<GraphEdge[]>;
   show(id: string): Promise<BeadsIssue | null>;
   create(args: CreateIssueArgs): Promise<BeadsIssue>;
   update(args: UpdateIssueArgs): Promise<BeadsIssue>;

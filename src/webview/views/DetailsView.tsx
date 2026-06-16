@@ -22,6 +22,7 @@ import {
   TYPE_LABELS,
   getTypeSortOrder,
   sortLabels,
+  vscode,
 } from "../types";
 import { Timestamp } from "../common/Timestamp";
 import { StatusPriorityPill } from "../common/StatusPriorityPill";
@@ -169,6 +170,8 @@ interface DetailsViewProps {
   loading: boolean;
   renderMarkdown?: boolean;
   userId?: string;
+  /** True when this view is already an editor tab — hides the Open-in-tab action. */
+  isEditorTab?: boolean;
   knownAssignees?: string[];
   onUpdateBead: (beadId: string, updates: Partial<Bead>) => void;
   onAddDependency: (beadId: string, targetId: string, dependencyType: DependencyType, reverse: boolean) => void;
@@ -192,6 +195,7 @@ export function DetailsView({
   loading,
   renderMarkdown = true,
   userId = "",
+  isEditorTab = false,
   knownAssignees = [],
   onUpdateBead,
   onAddDependency,
@@ -211,6 +215,14 @@ export function DetailsView({
   const [newDependency, setNewDependency] = useState("");
   const [newDepOptionIndex, setNewDepOptionIndex] = useState(0); // Index into DEPENDENCY_TYPE_OPTIONS
   const [newComment, setNewComment] = useState("");
+  // Briefly spin the header Refresh icon on click so the action reads as
+  // registered (the data swap is otherwise silent).
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = useCallback(() => {
+    vscode.postMessage({ type: "refresh" });
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 800);
+  }, []);
 
   // Reset edit state when bead ID changes
   useEffect(() => {
@@ -224,6 +236,25 @@ export function DetailsView({
       setEditedBead({});
     }
   }, [bead?.updatedAt]);
+
+  // Keyboard history navigation: Alt+Left / Alt+Right walk the Details
+  // back/forward trail (vs-xzq). Handled webview-side because the webview owns
+  // focus and would otherwise swallow the keystrokes before a VS Code
+  // keybinding could fire. Ignored while editing or typing in a field.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!e.altKey || (e.key !== "ArrowLeft" && e.key !== "ArrowRight")) return;
+      const target = e.target as HTMLElement | null;
+      const typing =
+        editMode ||
+        (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable));
+      if (typing) return;
+      e.preventDefault();
+      vscode.postMessage({ type: e.key === "ArrowLeft" ? "navigateBack" : "navigateForward" });
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [editMode]);
 
   const handleSave = useCallback(() => {
     if (bead && Object.keys(editedBead).length > 0) {
@@ -308,7 +339,10 @@ export function DetailsView({
 
   return (
     <div className="bead-details">
-      {/* Header with icon, ID and actions */}
+      {/* Header block — the ID/actions row, title anchor, and metadata
+          chiclets, grouped and delimited from the body as one header unit. */}
+      <div className="details-headerblock">
+      {/* Header row: type icon, ID chip, action cluster */}
       <div className="details-header">
         <TypeIcon type={(displayBead.type || "task") as BeadType} size={20} />
         <span
@@ -326,6 +360,35 @@ export function DetailsView({
           {bead.id}
         </span>
         <div className="header-actions">
+          {!isEditorTab && (
+            <button
+              className="icon-btn header-icon-btn"
+              title="New issue"
+              aria-label="New issue"
+              onClick={() => vscode.postMessage({ type: "startCreate" })}
+            >
+              <Icon name="plus" size={13} />
+            </button>
+          )}
+          {!isEditorTab && (
+            <button
+              className="icon-btn header-icon-btn"
+              title="Open in editor tab"
+              aria-label="Open in editor tab"
+              onClick={() => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id })}
+            >
+              <Icon name="external-link" size={13} />
+            </button>
+          )}
+          <button
+            className="icon-btn header-icon-btn"
+            title="Refresh"
+            aria-label="Refresh"
+            onClick={handleRefresh}
+          >
+            <Icon name="refresh" size={13} className={refreshing ? "spinning" : ""} />
+          </button>
+          <span className="header-actions-sep" />
           {editMode ? (
             <>
               <button
@@ -505,6 +568,7 @@ export function DetailsView({
             )}
           </>
         )}
+      </div>
       </div>
 
       {/* Description */}

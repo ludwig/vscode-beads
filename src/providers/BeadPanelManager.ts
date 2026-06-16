@@ -18,6 +18,7 @@ import { BaseViewProvider } from "./BaseViewProvider";
 import { BeadDetailsViewProvider } from "./BeadDetailsViewProvider";
 import { BeadsPanelViewProvider } from "./BeadsPanelViewProvider";
 import { DashboardViewProvider } from "./DashboardViewProvider";
+import { GraphViewProvider } from "./GraphViewProvider";
 import { hostFromPanel } from "./WebviewHost";
 
 interface PanelEntry {
@@ -82,6 +83,18 @@ export class BeadPanelManager implements vscode.Disposable {
     this.track(key, panel, provider);
   }
 
+  /** Open (or focus) the dependency Graph as an editor tab. */
+  public openGraph(): void {
+    const key = "beadsGraph";
+    if (this.reveal(key)) return;
+
+    const panel = this.createPanel("Graph");
+    const provider = new GraphViewProvider(this.extensionUri, this.projectManager, this.log);
+    provider.attach(hostFromPanel(panel));
+
+    this.track(key, panel, provider);
+  }
+
   private createPanel(title: string): vscode.WebviewPanel {
     const panel = vscode.window.createWebviewPanel(
       "beadsTab",
@@ -101,6 +114,8 @@ export class BeadPanelManager implements vscode.Disposable {
   }
 
   private track(key: string, panel: vscode.WebviewPanel, provider: BaseViewProvider): void {
+    // Freshly-created tab: pulse it once the webview mounts (vs-c59).
+    provider.pulseWhenReady();
     this.entries.set(key, { panel, provider });
     panel.onDidDispose(() => {
       this.entries.delete(key);
@@ -108,11 +123,15 @@ export class BeadPanelManager implements vscode.Disposable {
     });
   }
 
-  /** Focus an already-open tab for `key`; returns true if one existed. */
+  /**
+   * Focus an already-open tab for `key`; returns true if one existed. Pulses
+   * the revealed tab so re-opening gives visible feedback (vs-c59).
+   */
   private reveal(key: string): boolean {
     const entry = this.entries.get(key);
     if (!entry) return false;
     entry.panel.reveal();
+    entry.provider.pulse();
     return true;
   }
 

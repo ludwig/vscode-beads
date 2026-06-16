@@ -10,9 +10,19 @@ import {
   CloseIssueArgs,
   CreateIssueArgs,
   DependencyArgs,
+  GraphEdge,
   UpdateIssueArgs,
 } from "./BeadsBackend";
 import { BeadsCommandRunner } from "./BeadsCommandRunner";
+import { normalizeSqlTimestamp } from "./sqlTimestamp";
+import type { DependencyType } from "../shared/contract";
+
+const DEPENDENCY_TYPES: ReadonlySet<string> = new Set<DependencyType>([
+  "blocks",
+  "parent-child",
+  "related",
+  "discovered-from",
+]);
 
 const execFileAsync = util.promisify(execFile);
 
@@ -152,6 +162,25 @@ export class BeadsDoltBackend implements BeadsBackend {
         updated_at: this.timestamp(row.updated_at),
         closed_at: this.optionalTimestamp(row.closed_at),
       } satisfies BeadsIssue));
+    });
+  }
+
+  async getDependencyGraph(): Promise<GraphEdge[]> {
+    return this.coalesceRead("graph", async () => {
+      // issue_id is the dependent; depends_on_issue_id is what it depends on —
+      // matching the { from, to } convention used by the CLI dot output.
+      const rows = await this.query<SqlRow>(`
+        SELECT issue_id AS from_id, depends_on_issue_id AS to_id, type
+        FROM dependencies
+      `);
+      return rows.map((row) => {
+        const type = this.str(row.type);
+        return {
+          from: this.str(row.from_id),
+          to: this.str(row.to_id),
+          type: DEPENDENCY_TYPES.has(type) ? (type as DependencyType) : "related",
+        } satisfies GraphEdge;
+      });
     });
   }
 
@@ -574,10 +603,11 @@ export class BeadsDoltBackend implements BeadsBackend {
   }
 
   private timestamp(value: unknown): string {
-    return this.str(value);
+    return normalizeSqlTimestamp(value);
   }
 
   private optionalTimestamp(value: unknown): string | undefined {
-    return this.optionalStr(value);
+    const normalized = normalizeSqlTimestamp(value);
+    return normalized.length > 0 ? normalized : undefined;
   }
 }

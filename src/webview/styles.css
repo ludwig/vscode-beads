@@ -27,6 +27,18 @@
   --badge-font-lg: 13px;
   --badge-radius-pill: 10px;
   --badge-radius-rect: 3px;
+
+  /* Accent — muted steel blue, the primary-action color shared by Show Issues,
+     New Issue, etc. (the start of a small palette). */
+  --beads-accent: #3f5e96;
+  --beads-accent-hover: #354f80;
+
+  /* Type scale — a small, deliberate set of sizes so text hierarchy is
+     consistent rather than ad-hoc per component. */
+  --text-label: 11px;   /* tracked-out uppercase section captions */
+  --text-sm: 12px;      /* secondary / chrome text */
+  --text-body: 13px;    /* descriptions, comments, prose */
+  --text-title: 16px;   /* the Details title anchor */
 }
 
 * {
@@ -41,6 +53,21 @@ body {
   color: var(--vscode-foreground);
   background-color: var(--vscode-editor-background);
   line-height: 1.5;
+  /* Typography polish: crisp antialiasing only. No ligatures/optimizeLegibility
+     — those turn code sequences (->, =>, !=, ===) into glyphs in the code font,
+     which reads as a "strange font" in rendered markdown. */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Numbers that sit in columns or get scanned/compared — IDs, timestamps,
+   counts — use tabular (monospaced) figures so they don't shift width. */
+.bead-id-badge,
+.dep-id,
+.details-meta,
+.comment-date {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 /* ==================== App Layout ==================== */
@@ -50,6 +77,20 @@ body {
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
+  position: relative;
+}
+
+/* Confirmation ring flashed when this (editor-tab) webview is opened/revealed
+   (vs-c59) — reuses the hold-then-fade pulse so re-opening a tab is visible. */
+.app.pulsing::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  border: 2.5px solid var(--vscode-focusBorder);
+  border-radius: 3px;
+  animation: panel-shell-pulse 1.6s ease-in forwards;
 }
 
 .app-header {
@@ -662,6 +703,31 @@ textarea {
   max-width: 300px;
 }
 
+.empty-state-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--spacing-md);
+  padding: 6px 16px;
+  border: none;
+  border-radius: var(--border-radius);
+  background: var(--beads-accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.empty-state-action:hover {
+  background: var(--beads-accent-hover);
+}
+
+.empty-state-action-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
 .empty-state code {
   background-color: var(--vscode-textCodeBlock-background);
   padding: 2px 6px;
@@ -748,10 +814,27 @@ textarea {
   min-width: 0;
   max-width: 240px;
   width: 100%;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 7px;
   padding: 4px 8px 4px 10px;
   min-height: 26px;
   box-sizing: border-box;
+}
+
+.project-dropdown-trigger-icon {
+  flex: 0 0 auto;
+  color: var(--vscode-textLink-foreground, var(--vscode-focusBorder));
+}
+
+.project-dropdown-path {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
 }
 
 .project-dropdown-prefix {
@@ -1102,6 +1185,31 @@ textarea {
   line-height: 1;
 }
 
+/* Ready toggle (vs-bo9) — a composable filter alongside the presets/chips. */
+.ready-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  height: var(--badge-height-sm);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--vscode-foreground);
+  background: transparent;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 3px;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+.ready-toggle:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+.ready-toggle.active {
+  color: #fff;
+  background: var(--beads-accent);
+  border-color: var(--beads-accent);
+}
+
 .preset-dropdown-menu {
   min-width: 100px;
 }
@@ -1111,14 +1219,15 @@ textarea {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 8px 2px 10px;
+  padding: 2px 8px;
   font-size: 12px;
   height: var(--badge-height-sm);
   line-height: 1;
   background: transparent;
   color: var(--vscode-foreground);
-  border: 1px solid var(--vscode-panel-border);
-  border-left: 3px solid var(--chip-accent-color, var(--vscode-panel-border));
+  /* A complete 1px outline in the chip's accent color, rather than a lopsided
+     thick left rail (which read as an unfinished border). */
+  border: 1px solid var(--chip-accent-color, var(--vscode-panel-border));
   border-radius: 3px;
   font-variant: small-caps;
 }
@@ -1345,6 +1454,18 @@ textarea {
   background-color: var(--vscode-list-activeSelectionBackground);
 }
 
+/* The (unnamed) icon cell is the tooltip affordance: highlight it on hover (and
+ * use a help cursor) so users learn to hover there for the bead's description. */
+.icon-cell-hoverable {
+  cursor: help;
+}
+
+.bead-row .icon-cell-hoverable:hover {
+  background-color: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+  box-shadow: inset 0 0 0 1px var(--vscode-focusBorder);
+  border-radius: 3px;
+}
+
 /* title-cell overflow handled by table-layout: fixed + td overflow settings */
 
 /* Default: id stacked above title (also used by the Dashboard cards) */
@@ -1543,6 +1664,14 @@ textarea {
   padding: 0 !important;
 }
 
+/* Title is the only flexible column (width:auto in the fixed-layout table) so
+   it soaks up available width; the rest stay at their compact fixed sizes.
+   Keep a floor so it can't collapse when many columns are visible. */
+.beads-table th.title-th,
+.beads-table td.title-cell {
+  min-width: 120px;
+}
+
 /* Table wrapper - positions overlay relative to visible area */
 .beads-table-wrapper {
   position: relative;
@@ -1611,6 +1740,336 @@ textarea {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--vscode-descriptionForeground);
+}
+
+/* Consolidated bottom-Panel shell: in-view nav row + full-area subview. */
+.panel-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  position: relative;
+}
+
+/* Confirmation ring pulsed when "Show Issues" (re)selects the panel. */
+.panel-shell.pulsing::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border: 2.5px solid var(--vscode-focusBorder);
+  border-radius: 3px;
+  /* Hold the ring at full strength, then fade quickly at the tail — a steady
+     confirmation that lingers instead of a faint linear fade. */
+  animation: panel-shell-pulse 1.6s ease-in forwards;
+}
+
+@keyframes panel-shell-pulse {
+  0% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.panel-shell-nav {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  padding: 0 var(--spacing-sm);
+  border-bottom: 1px solid var(--vscode-panel-border);
+  background: var(--vscode-sideBar-background);
+}
+
+.panel-shell-tabs {
+  display: flex;
+  gap: 2px;
+}
+
+.panel-shell-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: none;
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  /* Browser/GitLens-style underline indicator for the active tab. */
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px; /* overlap the nav's 1px bottom border */
+  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+
+.panel-shell-tab-icon {
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+
+.panel-shell-tab:hover {
+  color: var(--vscode-foreground);
+  background: var(--vscode-list-hoverBackground);
+}
+
+.panel-shell-tab.active {
+  color: var(--vscode-foreground);
+  border-bottom-color: var(--vscode-focusBorder, var(--vscode-textLink-activeForeground));
+  font-weight: 600;
+}
+
+.panel-shell-tab.active .panel-shell-tab-icon {
+  opacity: 1;
+  color: var(--vscode-focusBorder, var(--vscode-textLink-activeForeground));
+}
+
+.panel-shell-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.panel-shell-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  border: none;
+  border-radius: var(--border-radius);
+  background: transparent;
+  color: var(--vscode-icon-foreground, var(--vscode-foreground));
+  cursor: pointer;
+  opacity: 0.8;
+  transition: background 0.12s ease, opacity 0.12s ease;
+}
+
+.panel-shell-action:hover {
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+  opacity: 1;
+}
+
+.panel-shell-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Slimmed-sidebar project switcher (header + dropdown + info + footer). */
+.project-switcher-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-sm);
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* Each section reads as an elevated card lifted off the sidebar background. */
+.context-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-md);
+  background: var(--vscode-editorWidget-background, var(--vscode-sideBar-background));
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+.context-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.context-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--vscode-foreground);
+}
+
+.context-heading-icon {
+  color: var(--vscode-textLink-foreground, var(--vscode-focusBorder));
+  flex: 0 0 auto;
+}
+
+/* Collapsible heading acts as a button while keeping the heading's look. */
+.context-heading-toggle {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 2px 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.context-heading-chevron {
+  color: var(--vscode-descriptionForeground);
+  flex: 0 0 auto;
+}
+
+.context-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  border: none;
+  border-radius: var(--border-radius);
+  background: transparent;
+  color: var(--vscode-icon-foreground, var(--vscode-foreground));
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.context-menu-btn:hover {
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+  opacity: 1;
+}
+
+.context-menu-trigger {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.context-empty {
+  color: var(--vscode-descriptionForeground);
+  font-size: 12px;
+}
+
+.context-empty p {
+  margin: 0 0 var(--spacing-xs);
+}
+
+/* Active Bead reads as a pinned register slot: accent left rail + pin glyph. */
+.active-bead {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm) 10px;
+  border: 1px solid var(--vscode-panel-border);
+  border-left: 3px solid var(--vscode-textLink-foreground, var(--vscode-focusBorder));
+  border-radius: var(--border-radius);
+  background: var(--vscode-sideBar-background, var(--vscode-editor-background));
+  cursor: pointer;
+  transition: background 0.12s ease, box-shadow 0.12s ease;
+}
+
+.active-bead:hover {
+  background: var(--vscode-list-hoverBackground);
+  box-shadow: 0 0 0 1px var(--vscode-focusBorder);
+}
+
+.active-bead-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.active-bead-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.active-bead-status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.active-bead-id {
+  font-family: var(--vscode-editor-font-family);
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.active-bead-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--vscode-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Responsive grid of stat chips: one column on a narrow sidebar, packing into
+ * multiple columns as it widens (auto-fill) — no media queries, just tracks the
+ * container width. Keeps the table compact instead of sprawling label↔value. */
+.project-switcher-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 5px;
+  margin: var(--spacing-xs) 0 0;
+  font-size: 11px;
+}
+
+.project-switcher-meta-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 5px 8px;
+  background: var(--vscode-list-hoverBackground);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+/* A quiet hover lift so the meta cards feel alive (they're informational, so
+   keep it subtle — not a clickable cue). */
+.project-switcher-meta-row:hover {
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+  border-color: var(--vscode-panel-border);
+}
+
+.project-switcher-meta-row .mono-figure {
+  font-variant-numeric: tabular-nums;
+}
+
+.project-switcher-meta-row dt {
+  color: var(--vscode-descriptionForeground);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.project-switcher-meta-row dd {
+  margin: 0;
+  color: var(--vscode-foreground);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.project-switcher-backend.running { color: var(--vscode-testing-iconPassed, #10b981); }
+.project-switcher-backend.stopped { color: var(--vscode-list-warningForeground, #ff8800); }
+.project-switcher-backend.unknown { color: var(--vscode-descriptionForeground); }
+
+.project-switcher-empty {
+  padding: var(--spacing-md) 0;
+  color: var(--vscode-descriptionForeground);
+  font-size: 12px;
+}
+
+.project-switcher-empty p {
+  margin: 0 0 var(--spacing-sm);
 }
 
 .dashboard-header-path {
@@ -1744,22 +2203,45 @@ textarea {
 }
 
 .summary-card {
-  display: block;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   width: 100%;
   font-family: inherit;
   color: inherit;
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: 10px 12px;
   border-radius: var(--border-radius-md);
   background-color: var(--vscode-sideBar-background);
   border: 1px solid var(--vscode-panel-border);
-  text-align: center;
+  text-align: left;
   cursor: pointer;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+  overflow: hidden;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+/* Accent rail keyed to the metric, lit on hover. */
+.summary-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--card-accent, var(--vscode-panel-border));
+  opacity: 0.55;
+  transition: opacity var(--transition-fast);
 }
 
 .summary-card:hover {
   background-color: var(--vscode-list-hoverBackground);
   border-color: var(--vscode-focusBorder);
+  transform: translateY(-1px);
+}
+
+.summary-card:hover::before {
+  opacity: 1;
 }
 
 .summary-card:focus-visible {
@@ -1768,28 +2250,46 @@ textarea {
 }
 
 .summary-card .card-value {
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 700;
-  line-height: 1.1;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
 }
 
 .summary-card .card-label {
   font-size: 9px;
   color: var(--vscode-descriptionForeground);
   text-transform: uppercase;
-  margin-top: 2px;
+  letter-spacing: 0.06em;
+  margin-top: 3px;
+}
+
+.summary-card.total {
+  --card-accent: var(--vscode-foreground);
 }
 
 .summary-card.total .card-value {
   color: var(--vscode-foreground);
 }
 
+.summary-card.ready {
+  --card-accent: #10b981;
+}
+
 .summary-card.ready .card-value {
   color: #10b981;
 }
 
+.summary-card.in-progress {
+  --card-accent: #3b82f6;
+}
+
 .summary-card.in-progress .card-value {
   color: #3b82f6;
+}
+
+.summary-card.blocked {
+  --card-accent: #ef4444;
 }
 
 .summary-card.blocked .card-value {
@@ -1987,34 +2487,92 @@ textarea {
   min-height: 0;
 }
 
+/* Spinning indicator for Refresh icons — a short rotation on click so the
+   reload reads as registered even when the data swap is instant. */
+@keyframes beads-spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinning {
+  transform-origin: center;
+  animation: beads-spin 0.8s linear;
+}
+
+/* The header block groups the ID/actions row, the title anchor, and the
+   metadata chiclets, delimited from the body by a single divider so it reads
+   as one composed header rather than three loose rows. */
+.details-headerblock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
 .details-header {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: 6px;
 }
 
 .details-header .header-actions {
   margin-left: auto;
 }
 
+/* The bead ID reads as a copyable identifier — a quiet bordered monospace chip
+   beside the type icon, not loose text. */
 .bead-id-badge {
   font-family: var(--vscode-editor-font-family);
   font-size: 11px;
   color: var(--vscode-descriptionForeground);
+  background: var(--vscode-editorWidget-background, var(--vscode-editor-background));
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: var(--badge-radius-pill);
+  padding: 1px 8px;
+  line-height: 1.5;
 }
 
 .bead-id-badge.clickable {
   cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .bead-id-badge.clickable:hover {
-  text-decoration: underline;
+  color: var(--vscode-foreground);
+  border-color: var(--vscode-focusBorder);
 }
 
 .header-actions {
   display: flex;
   gap: var(--spacing-xs);
   align-items: center;
+}
+
+/* Utility icon buttons in the header (Open in tab, Refresh) — quiet until
+   hovered, so the Edit/Save action stays the cluster's focal point. */
+.header-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--border-radius);
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.header-icon-btn:hover {
+  color: var(--vscode-foreground);
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+}
+
+/* Hairline between the utility icons and the primary action. */
+.header-actions-sep {
+  width: 1px;
+  align-self: stretch;
+  margin: 2px 2px;
+  background: var(--vscode-panel-border);
 }
 
 .icon-btn {
@@ -2046,6 +2604,50 @@ textarea {
   padding: 3px 8px;
 }
 
+/* Action buttons in the Context view flow (Show Issues · Pick Ready Bead) —
+   a single row of plump, hard-to-miss buttons. */
+.context-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  padding: 2px 4px;
+}
+
+.context-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex: 1;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+/* Show Issues — muted (desaturated) steel blue accent, easier on the eyes than
+   the vivid #2563eb. */
+.context-action-btn.show-issues {
+  background: var(--beads-accent);
+  color: #fff;
+}
+.context-action-btn.show-issues:hover {
+  background: var(--beads-accent-hover);
+}
+
+/* Pick Ready Bead — muted (desaturated) indigo, paired with the steel-blue
+   Show Issues without the distracting aurora gradient. */
+.context-action-btn.pick-ready {
+  background: #564f96;
+  color: #fff;
+}
+.context-action-btn.pick-ready:hover:not(:disabled) {
+  background: #494380;
+}
+
 .btn:hover {
   background: var(--vscode-button-secondaryHoverBackground);
 }
@@ -2060,17 +2662,22 @@ textarea {
   opacity: 0.9;
 }
 
+/* Title is the header's anchor — a clear step up in size, full-strength
+   foreground, with a touch of negative tracking so longer titles read tight. */
 .details-title h2 {
-  font-size: 14px;
+  font-size: var(--text-title);
   font-weight: 600;
   margin: 0;
   line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--vscode-foreground);
 }
 
 .title-input {
   width: 100%;
-  font-size: 14px;
+  font-size: var(--text-title);
   font-weight: 600;
+  letter-spacing: -0.01em;
   padding: 4px 8px;
 }
 
@@ -2294,17 +2901,20 @@ textarea {
   margin-top: var(--spacing-sm);
 }
 
+/* Section labels — small, tracked-out uppercase captions that quietly index
+   the content below them. */
 .details-section h4 {
-  font-size: 11px;
+  font-size: var(--text-label);
   font-weight: 600;
   color: var(--vscode-descriptionForeground);
   text-transform: uppercase;
-  margin: 0 0 var(--spacing-xs) 0;
+  letter-spacing: 0.05em;
+  margin: 0 0 6px 0;
 }
 
 .description-text {
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: var(--text-body);
+  line-height: 1.45;
   white-space: pre-wrap;
   margin: 0;
   color: var(--vscode-foreground);
@@ -2312,9 +2922,14 @@ textarea {
 
 /* Markdown content styles */
 .markdown-content {
-  font-size: 12px;
-  line-height: 1.3;
+  font-size: var(--text-body);
+  line-height: 1.45;
   color: var(--vscode-foreground);
+  /* CRITICAL: the Markdown component also carries .description-text, whose
+     `white-space: pre-wrap` would render marked's pretty-printed newlines
+     BETWEEN block tags (</p>\n<ol>\n<li>…) as literal blank lines — huge gaps
+     everywhere. Markdown HTML must use normal whitespace collapsing. */
+  white-space: normal;
 }
 
 .markdown-content * {
@@ -2341,38 +2956,67 @@ textarea {
 .markdown-content h1,
 .markdown-content h2,
 .markdown-content h3,
-.markdown-content h4 {
-  margin: 0.4em 0 0.1em 0;
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  margin: 0.7em 0 0.25em 0;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
-.markdown-content h1 { font-size: 1.2em; }
-.markdown-content h2 { font-size: 1.1em; }
-.markdown-content h3 { font-size: 1.05em; }
-.markdown-content h4 { font-size: 1em; }
+/* A clear, slightly-tracked heading scale rather than near-flat 1.0–1.2em. */
+.markdown-content h1 { font-size: 1.5em; letter-spacing: -0.01em; }
+.markdown-content h2 { font-size: 1.3em; letter-spacing: -0.01em; }
+.markdown-content h3 { font-size: 1.15em; }
+.markdown-content h4 { font-size: 1.02em; }
+.markdown-content h5,
+.markdown-content h6 {
+  font-size: 0.92em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--vscode-descriptionForeground);
+}
+
+/* A heading immediately after prose shouldn't double up the gap. */
+.markdown-content > *:first-child {
+  margin-top: 0;
+}
 
 .markdown-content ul,
 .markdown-content ol {
-  margin: 0 !important;
-  padding: 0 0 0 1.2em !important;
+  margin: 0.25em 0 !important;
+  padding: 0 0 0 1.4em !important;
   list-style-position: outside;
 }
 
 .markdown-content li {
   margin: 0 !important;
   padding: 0 !important;
-  line-height: 1.3;
+  line-height: 1.35;
+}
+
+.markdown-content li + li {
+  margin-top: 0 !important;
+}
+
+.markdown-content li::marker {
+  color: var(--vscode-descriptionForeground);
+}
+
+/* Nested lists tuck in without an extra leading gap. */
+.markdown-content li > ul,
+.markdown-content li > ol {
+  margin: 0.1em 0 !important;
 }
 
 .markdown-content p + ul,
 .markdown-content p + ol {
-  margin-top: 0 !important;
+  margin-top: 0.3em !important;
 }
 
 .markdown-content ul + p,
 .markdown-content ol + p {
-  margin-top: 0.3em !important;
+  margin-top: 0.5em !important;
 }
 
 .markdown-content p:empty,
@@ -2382,31 +3026,46 @@ textarea {
 
 .markdown-content code {
   font-family: var(--vscode-editor-font-family);
-  font-size: 0.9em;
-  padding: 1px 4px;
+  font-size: 0.875em;
+  /* Render code literally — never ligate operators (->, =>, !=). */
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
+  padding: 0.1em 0.4em;
   background: var(--vscode-textCodeBlock-background);
-  border-radius: 3px;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 4px;
 }
 
 .markdown-content pre {
   margin: 0.5em 0;
-  padding: 8px;
+  padding: 10px 12px;
   background: var(--vscode-textCodeBlock-background);
+  border: 1px solid var(--vscode-panel-border);
   border-radius: var(--border-radius);
   overflow-x: auto;
+  line-height: 1.45;
 }
 
 .markdown-content pre code {
   padding: 0;
   background: none;
+  border: none;
+  font-size: 0.875em;
 }
 
 .markdown-content blockquote {
   margin: 0.5em 0;
-  padding-left: 10px;
-  border-left: 3px solid var(--vscode-textBlockQuote-border);
-  color: var(--vscode-textBlockQuote-foreground);
+  padding: 0.1em 0 0.1em 12px;
+  border-left: 3px solid var(--beads-accent);
+  color: var(--vscode-descriptionForeground);
+  font-style: italic;
 }
+
+.markdown-content blockquote > *:first-child { margin-top: 0; }
+.markdown-content blockquote > *:last-child { margin-bottom: 0; }
+
+.markdown-content strong { font-weight: 600; }
+.markdown-content em { font-style: italic; }
 
 .markdown-content a {
   color: var(--vscode-textLink-foreground);
@@ -2415,30 +3074,33 @@ textarea {
 
 .markdown-content a:hover {
   text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .markdown-content hr {
   border: none;
   border-top: 1px solid var(--vscode-panel-border);
-  margin: 0.8em 0;
+  margin: 0.7em 0;
 }
 
 .markdown-content table {
   border-collapse: collapse;
   margin: 0.5em 0;
-  font-size: 11px;
+  font-size: var(--text-sm);
+  width: 100%;
 }
 
 .markdown-content th,
 .markdown-content td {
   border: 1px solid var(--vscode-panel-border);
-  padding: 4px 8px;
+  padding: 5px 9px;
   text-align: left;
 }
 
 .markdown-content th {
   background: var(--vscode-sideBar-background);
   font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .markdown-content img {
@@ -2448,7 +3110,8 @@ textarea {
 
 .description-input {
   width: 100%;
-  font-size: 12px;
+  font-size: var(--text-body);
+  line-height: 1.45;
   padding: var(--spacing-sm);
   resize: vertical;
 }
@@ -2644,8 +3307,8 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
-  max-height: 200px;
-  overflow-y: auto;
+  /* Let comments flow in the Details view (the whole pane scrolls) rather than
+     trapping a long thread in a cramped 200px inner scrollbar (vs-3kq). */
   margin-bottom: var(--spacing-sm);
 }
 
@@ -2654,6 +3317,8 @@ textarea {
   background: var(--vscode-sideBar-background);
   border-radius: var(--border-radius);
   border: 1px solid var(--vscode-panel-border);
+  /* A quiet left rail reads the card as a threaded note. */
+  border-left: 2px solid var(--beads-accent);
 }
 
 .comment-header {
@@ -2675,8 +3340,8 @@ textarea {
 }
 
 .comment-text {
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: var(--text-body);
+  line-height: 1.45;
   white-space: pre-wrap;
 }
 
@@ -2815,13 +3480,66 @@ textarea {
 
 /* ==================== Kanban Board ==================== */
 
+/* Kanban tab root: a flex column holding the optional filter bar + the board.
+   min-height:100% (against the definite-height .panel-shell-body) floors it to
+   the viewport; flex:0 0 auto lets it grow past that with a tall board so the
+   OUTER .panel-shell-body scrolls the whole thing. */
+.kanban {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+/* Ad-hoc quick-filter bar for the board (mirrors the Tree's filter row). Hosts
+   the local card filter and, when scoped to an Issues filter, the "N of M" chip
+   (right-aligned). */
+.kanban-filterbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px var(--spacing-sm);
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+.kanban-filter-icon {
+  flex: 0 0 auto;
+  color: var(--vscode-descriptionForeground);
+}
+.kanban-filter-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, transparent);
+  border-radius: 3px;
+  padding: 3px 6px;
+  font-size: 12px;
+  outline: none;
+}
+.kanban-filter-input:focus {
+  border-color: var(--vscode-focusBorder);
+}
+.kanban-filter-indicator {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
 .kanban-board {
   display: flex;
   gap: var(--spacing-sm);
-  flex: 1;
-  min-height: 0;
   padding: var(--spacing-sm);
-  overflow-x: auto;
+  box-sizing: border-box;
+  /* The board grows with its tallest lane and lets the OUTER scroller
+     (.panel-shell-body, via .kanban) scroll it — it must NOT be its own
+     overflow:auto container, which (nested inside panel-shell-body's auto) left
+     the board height indefinite, so a tall lane's cards spilled past the lane
+     with no scrollbar to reach them (vs-qlp). flex:1 0 auto fills the remaining
+     .kanban height and grows with content; align-items:stretch makes every lane
+     equal-height so each lane box CONTAINS all of its own cards. */
+  flex: 1 0 auto;
+  align-items: stretch;
 }
 
 .kanban-column {
@@ -2858,6 +3576,13 @@ textarea {
   border-bottom: 1px solid var(--vscode-panel-border);
   cursor: pointer;
   user-select: none;
+  /* Stay visible while scrolling a tall board. */
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--vscode-sideBar-background);
+  border-top-left-radius: var(--border-radius);
+  border-top-right-radius: var(--border-radius);
 }
 
 .kanban-column-header:hover {
@@ -2886,8 +3611,10 @@ textarea {
 }
 
 .kanban-column-body {
-  flex: 1;
-  overflow-y: auto;
+  /* Grow with content (basis auto) AND fill the floored column height (grow 1)
+     so the whole lane is a drop target; never an inner scrollbar. */
+  flex: 1 0 auto;
+  overflow-y: visible;
   padding: var(--spacing-xs);
   display: flex;
   flex-direction: column;
@@ -3000,37 +3727,6 @@ textarea {
 }
 
 /* View toggle */
-.view-toggle {
-  display: flex;
-  border: 1px solid var(--vscode-panel-border);
-  border-radius: var(--border-radius);
-  overflow: hidden;
-}
-
-.view-toggle button {
-  padding: 4px 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  color: var(--vscode-descriptionForeground);
-  border: none;
-  cursor: pointer;
-}
-
-.view-toggle button:not(:last-child) {
-  border-right: 1px solid var(--vscode-panel-border);
-}
-
-.view-toggle button.active {
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-}
-
-.view-toggle button:hover:not(.active) {
-  background: var(--vscode-list-hoverBackground);
-}
-
 .compact-toggle {
   display: flex;
   align-items: center;
@@ -3055,4 +3751,535 @@ textarea {
 
 .compact-toggle svg {
   display: block;
+}
+
+/* ----------------------------------------------------------------------------
+ * Graph view (dependency graph — vs-xlf)
+ * ------------------------------------------------------------------------- */
+
+.graph-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+/* Tree view (vs-bw9) — file-explorer-style hierarchical bead tree */
+.beads-tree {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.beads-tree-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  flex: 0 0 auto;
+}
+
+.beads-tree-filter-icon {
+  color: var(--vscode-descriptionForeground);
+  flex: 0 0 auto;
+}
+
+.beads-tree-filter-input {
+  flex: 1 1 auto;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, transparent);
+  border-radius: 3px;
+  padding: 3px 6px;
+  font-size: 12px;
+  outline: none;
+}
+
+.beads-tree-filter-input:focus {
+  border-color: var(--vscode-focusBorder);
+}
+
+.beads-tree-sort {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+
+.beads-tree-sort-label {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  margin-right: 2px;
+}
+
+.beads-tree-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: transparent;
+  color: var(--vscode-foreground);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.beads-tree-sort-dir {
+  margin-top: 0.5px;
+}
+
+.beads-tree-sort-btn:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+
+.beads-tree-sort-btn.active {
+  background: var(--vscode-button-secondaryBackground, var(--vscode-toolbar-hoverBackground));
+  border-color: var(--vscode-focusBorder);
+}
+
+.beads-tree-sort-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.beads-tree-sort-btn:disabled:hover {
+  background: transparent;
+}
+
+/* The Filtered scope toggle sits just left of the Sort group. */
+.beads-tree-filter-toggle {
+  flex: 0 0 auto;
+  margin-right: 2px;
+}
+
+/* "Acting on a filtered subset" chip — shown on the immediate-data views
+   (Tree, Kanban) so it's unmistakable they're scoped to the Issues filter. */
+.filter-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  padding: 2px 7px;
+  border-radius: var(--badge-radius-pill, 10px);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--vscode-badge-foreground);
+  background: var(--vscode-badge-background);
+  white-space: nowrap;
+}
+.filter-indicator svg {
+  opacity: 0.9;
+}
+/* In the Tree filter row, push the chip to the trailing edge. */
+.beads-tree-filter-indicator {
+  margin-left: auto;
+}
+
+.beads-tree-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 4px 0;
+}
+
+/* Sortable column-header row of the tree-table. MUST keep this grid template
+   in lockstep with .beads-tree-row below: each row is its own grid, so the
+   trailing columns are fixed-width (not max-content) — otherwise every row
+   sizes its own columns from its own content and nothing lines up (vs-wp5). */
+.beads-tree-colheader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px 64px 32px;
+  column-gap: 8px;
+  align-items: center;
+  padding: 3px 10px 4px 4px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  flex: 0 0 auto;
+}
+
+/* Matches the Issues table header (.beads-table th): Title-case, weight 600,
+   foreground color — not the old uppercase/gray treatment, which read as a
+   different control than the Issues tab. */
+.beads-tree-col {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  justify-self: start;
+}
+/* Status / Type / Priority headers sit over fixed-width tracks; align each
+   header with its column's cell content. */
+.beads-tree-col-priority {
+  justify-self: end;
+}
+.beads-tree-col:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+  color: var(--vscode-foreground);
+}
+.beads-tree-col.active {
+  color: var(--vscode-foreground);
+}
+/* Precedence badge (1 = primary, 2 = secondary, …) shown only in multi-sort. */
+.beads-tree-sort-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 13px;
+  height: 13px;
+  padding: 0 3px;
+  border-radius: 7px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--vscode-badge-foreground);
+  background: var(--vscode-badge-background);
+}
+
+.beads-tree-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px 64px 32px;
+  column-gap: 8px;
+  align-items: center;
+  padding: 2px 10px 2px 4px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+/* The indented tree column (twisty + status rail + type icon + id + title). */
+.beads-tree-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  /* Stretch so the indent guides span the full row height (continuous rails). */
+  align-self: stretch;
+}
+
+/* Indentation guides: one 16px rail per ancestor level, line on the trailing
+   edge so the deepest rail meets the twisty (file-explorer style). */
+.beads-tree-guides {
+  display: flex;
+  flex: 0 0 auto;
+  align-self: stretch;
+}
+.beads-tree-guide {
+  flex: 0 0 16px;
+  width: 16px;
+  border-right: 1px solid var(--vscode-tree-indentGuidesStroke, var(--vscode-panel-border));
+}
+
+.beads-tree-row:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.beads-tree-row.selected {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+}
+
+.beads-tree-row.dragging {
+  opacity: 0.5;
+}
+
+.beads-tree-row.drop-target {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+  background: var(--vscode-list-dropBackground, var(--vscode-list-hoverBackground));
+}
+
+/* Subtle hint that releasing on empty space detaches (makes a root). */
+.beads-tree-body.can-detach {
+  outline: 1px dashed var(--vscode-input-border, var(--vscode-panel-border));
+  outline-offset: -3px;
+}
+
+/* "Move to root" drop band — appears while dragging a parented bead, so detach
+   works even when the tree fills the viewport (no empty space to drop on). */
+.beads-tree-rootzone {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 4px 8px;
+  padding: 5px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  border: 1px dashed var(--vscode-input-border, var(--vscode-panel-border));
+  border-radius: 4px;
+}
+.beads-tree-rootzone.over {
+  color: var(--vscode-foreground);
+  border-color: var(--vscode-focusBorder);
+  background: var(--vscode-list-dropBackground, var(--vscode-list-hoverBackground));
+}
+
+.beads-tree-twisty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  flex: 0 0 auto;
+  color: var(--vscode-descriptionForeground);
+}
+
+.beads-tree-id {
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 11px;
+  opacity: 0.85;
+  flex: 0 0 auto;
+}
+
+.beads-tree-title {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1 1 auto;
+}
+
+/* Status column cell. */
+/* Status as subtle colored text (color from STATUS_COLORS, set inline), to match
+   the Priority column's treatment — filled badges stood out too much here. */
+.beads-tree-status {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Type column cell. */
+.beads-tree-type {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--vscode-descriptionForeground);
+}
+
+/* Priority column cell — colored P0–P4 label (tabular for column alignment). */
+.beads-tree-prio {
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.beads-tree-empty {
+  padding: 16px;
+  color: var(--vscode-descriptionForeground);
+  font-size: 12px;
+  text-align: center;
+}
+
+.graph-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  flex: 0 0 auto;
+}
+
+.graph-layout-toggle {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.graph-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  font-size: 12px;
+  color: var(--vscode-foreground);
+  background: transparent;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.graph-toggle-btn:hover:not(:disabled) {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+
+.graph-toggle-btn.active {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border-color: var(--vscode-button-background);
+}
+
+.graph-toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.graph-view .react-flow {
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--vscode-editor-background);
+}
+
+/* Bead node card */
+.graph-node {
+  width: 220px;
+  box-sizing: border-box;
+  padding: 7px 9px;
+  background: var(--vscode-editorWidget-background, var(--vscode-editor-background));
+  border: 1px solid var(--vscode-panel-border);
+  border-left-width: 4px;
+  border-radius: 5px;
+  color: var(--vscode-foreground);
+  font-size: 12px;
+  cursor: pointer;
+  transition: opacity 0.12s ease, box-shadow 0.12s ease;
+}
+
+.graph-node.selected {
+  border-color: var(--vscode-focusBorder);
+  /* A bold ring + strong outer glow so the active bead reads clearly even on a
+   * dense, zoomed-out board (box-shadow scales down with zoom, so go large). */
+  box-shadow:
+    0 0 0 3px var(--vscode-focusBorder),
+    0 0 28px 8px var(--vscode-focusBorder);
+  transform: scale(1.08);
+  z-index: 1;
+}
+
+.graph-node.dimmed {
+  opacity: 0.25;
+}
+
+.graph-node-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.graph-node-id {
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.graph-node-priority {
+  margin-left: auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.graph-node-title {
+  margin-top: 3px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.graph-node-handle {
+  width: 6px;
+  height: 6px;
+  background: var(--vscode-panel-border);
+  border: none;
+}
+
+/* React Flow minimap — give it contrast against the editor background
+ * (the stock styles render a near-white pane that hides the node structure). */
+.graph-view .react-flow__minimap {
+  background-color: var(--vscode-editorWidget-background, var(--vscode-editor-background));
+  border: 1px solid var(--vscode-panel-border);
+}
+
+/* Legend overlay — top-right, clear of the bottom-left Controls and the
+ * bottom-right minimap. */
+.graph-legend {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 7px 9px;
+  background: var(--vscode-editorWidget-background, var(--vscode-editor-background));
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 5px;
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.graph-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.graph-legend-line {
+  width: 22px;
+  border-top-style: solid;
+  border-top-width: 2px;
+}
+
+.graph-legend-label {
+  color: var(--vscode-descriptionForeground);
+}
+
+.graph-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--vscode-descriptionForeground);
+  font-size: 13px;
+}
+
+/* Right-click context menu on bead nodes */
+.app-context-menu {
+  position: fixed;
+  z-index: 50;
+  min-width: 180px;
+  padding: 4px;
+  background: var(--vscode-menu-background, var(--vscode-editorWidget-background));
+  color: var(--vscode-menu-foreground, var(--vscode-foreground));
+  border: 1px solid var(--vscode-menu-border, var(--vscode-panel-border));
+  border-radius: 5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.36);
+}
+
+.app-context-menu-item {
+  display: block;
+  width: 100%;
+  padding: 5px 10px;
+  text-align: left;
+  font-size: 12px;
+  color: inherit;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.app-context-menu-item:hover {
+  background: var(--vscode-menu-selectionBackground, var(--vscode-list-activeSelectionBackground));
+  color: var(--vscode-menu-selectionForeground, var(--vscode-list-activeSelectionForeground));
+}
+
+.app-context-menu-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--vscode-menu-separatorBackground, var(--vscode-panel-border));
 }

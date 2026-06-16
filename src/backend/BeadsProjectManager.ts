@@ -135,6 +135,11 @@ export class BeadsProjectManager implements vscode.Disposable {
     return this.cachedBeads.get(id) ?? null;
   }
 
+  /** All cached list rows (empty if the list hasn't been loaded yet). */
+  getCachedBeadList(): Bead[] {
+    return [...this.cachedBeads.values()];
+  }
+
   /**
    * Records the active issue prefix derived from the currently loaded issue
    * IDs. Fires onPrefixChanged only when the value actually changes so the
@@ -584,6 +589,7 @@ export class BeadsProjectManager implements vscode.Disposable {
 
     const compatibility = await this.backend.checkCompatibility();
     project.backendStatus = compatibility.supported ? "running" : "stopped";
+    project.bdVersion = compatibility.detectedVersion;
     if (compatibility.supported) {
       try {
         this.activePollToken = await this.backend.getChangeToken();

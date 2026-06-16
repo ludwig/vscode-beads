@@ -10,39 +10,30 @@
 import React, { useState } from "react";
 import {
   Bead,
-  BeadsProject,
   BeadsSummary,
   BeadStatus,
   IssuesFilter,
   STATUS_COLORS,
   STATUS_LABELS,
+  TYPE_COLORS,
+  getTypeSortOrder,
 } from "../types";
 import { ChevronIcon } from "../common/ChevronIcon";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { Loading } from "../common/Loading";
-import { ProjectDropdown } from "../common/ProjectDropdown";
-import { Dropdown, DropdownItem } from "../common/Dropdown";
 import { StatusBadge } from "../common/StatusBadge";
 import { PriorityBadge } from "../common/PriorityBadge";
 import { LabelBadge } from "../common/LabelBadge";
+import { TypeBadge } from "../common/TypeBadge";
 import { getLabelColorStyle } from "../utils/label-colors";
-import { deriveIssuePrefix } from "../../utils/issue-prefix";
 
 interface DashboardViewProps {
   summary: BeadsSummary | null;
   beads: Bead[];
   loading: boolean;
   error: string | null;
-  projects: BeadsProject[];
-  activeProject: BeadsProject | null;
-  onSelectProject: (project: BeadsProject) => void;
   onSelectBead: (beadId: string) => void;
   onOpenIssues: (filter: IssuesFilter) => void;
-  onShowStatus: () => void;
-  onStartDolt: () => void;
-  onStopDolt: () => void;
-  onOpenDoltLog: () => void;
-  onOpenProjectFolder: () => void;
   onRetry: () => void;
   version?: string;
   buildSha?: string;
@@ -54,24 +45,22 @@ export function DashboardView({
   beads,
   loading,
   error,
-  projects,
-  activeProject,
-  onSelectProject,
   onSelectBead,
   onOpenIssues,
-  onShowStatus,
-  onStartDolt,
-  onStopDolt,
-  onOpenDoltLog,
-  onOpenProjectFolder,
   onRetry,
   version,
   buildSha,
   buildDirty,
 }: DashboardViewProps): React.ReactElement {
-  const [byStatusOpen, setByStatusOpen] = useState(true);
-  const [byLabelOpen, setByLabelOpen] = useState(true);
-  const prefix = deriveIssuePrefix(beads.map((b) => b.id));
+  const [byStatusOpen, setByStatusOpen] = useState(false);
+  const [byTypeOpen, setByTypeOpen] = useState(false);
+  const [byLabelOpen, setByLabelOpen] = useState(false);
+  const byType = Array.from(
+    beads.reduce((acc, bead) => {
+      if (bead.type) acc.set(bead.type, (acc.get(bead.type) ?? 0) + 1);
+      return acc;
+    }, new Map<string, number>())
+  ).sort((a, b) => getTypeSortOrder(a[0]) - getTypeSortOrder(b[0]) || a[0].localeCompare(b[0]));
   const openBeads = beads.filter((b) => b.status === "open").slice(0, 5);
   const blockedBeads = beads.filter((b) => b.status === "blocked").slice(0, 5);
   const inProgressBeads = beads.filter((b) => b.status === "in_progress").slice(0, 5);
@@ -88,55 +77,6 @@ export function DashboardView({
 
   return (
     <div className="dashboard dashboard-compact">
-      <header className="dashboard-header">
-        <span className="dashboard-header-label">Active Beads Directory</span>
-        {activeProject && (
-          <button
-            type="button"
-            className="dashboard-header-path"
-            title={activeProject.rootPath}
-            onClick={onOpenProjectFolder}
-          >
-            {activeProject.displayPath ?? activeProject.rootPath}
-          </button>
-        )}
-      </header>
-      <div className="dashboard-toolbar">
-        <ProjectDropdown
-          projects={projects}
-          activeProject={activeProject}
-          onSelectProject={onSelectProject}
-          prefix={prefix}
-        />
-        {activeProject && (
-          <Dropdown
-            trigger={<span className="dashboard-menu-trigger">⋮</span>}
-            className="dashboard-actions-dropdown"
-            triggerClassName="dashboard-menu-btn"
-            menuClassName="dashboard-actions-menu"
-            title="Project actions"
-            showChevron={false}
-            menuPlacement="bottom-end"
-          >
-            <DropdownItem onClick={onRetry}>
-              <span className="dashboard-menu-item"><span className="dashboard-menu-item-icon">↻</span><span>Refresh</span></span>
-            </DropdownItem>
-            <DropdownItem onClick={onShowStatus}>
-              <span className="dashboard-menu-item"><span className="dashboard-menu-item-icon">i</span><span>Show Dolt Status</span></span>
-            </DropdownItem>
-            <DropdownItem onClick={onStartDolt}>
-              <span className="dashboard-menu-item"><span className="dashboard-menu-item-icon">▶</span><span>Start Dolt</span></span>
-            </DropdownItem>
-            <DropdownItem onClick={onStopDolt}>
-              <span className="dashboard-menu-item"><span className="dashboard-menu-item-icon">■</span><span>Stop Dolt</span></span>
-            </DropdownItem>
-            <DropdownItem onClick={onOpenDoltLog}>
-              <span className="dashboard-menu-item"><span className="dashboard-menu-item-icon">≡</span><span>Open Dolt Log</span></span>
-            </DropdownItem>
-          </Dropdown>
-        )}
-      </div>
-
       {error && !loading && <ErrorMessage message={error} onRetry={onRetry} />}
 
       {loading && !error && <Loading />}
@@ -219,6 +159,47 @@ export function DashboardView({
             </div>
             )}
           </div>
+
+          {byType.length > 0 && (
+            <div className="breakdown-section compact">
+              <button
+                type="button"
+                className="breakdown-toggle"
+                onClick={() => setByTypeOpen((o) => !o)}
+                aria-expanded={byTypeOpen}
+              >
+                <ChevronIcon open={byTypeOpen} size={12} />
+                <h3>By Type</h3>
+              </button>
+              {byTypeOpen && (
+              <div className="breakdown-bars compact">
+                {byType.map(([type, count]) => {
+                  const percentage = summary.total > 0 ? (count / summary.total) * 100 : 0;
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      className="breakdown-bar compact"
+                      onClick={() => onOpenIssues({ types: [type] })}
+                      title={`Open ${type} issues`}
+                    >
+                      <div className="bar-label compact">
+                        <TypeBadge type={type} size="small" />
+                        <span className="bar-count">{count}</span>
+                      </div>
+                      <div className="bar-track">
+                        <div
+                          className="bar-fill"
+                          style={{ width: `${percentage}%`, backgroundColor: TYPE_COLORS[type as keyof typeof TYPE_COLORS] || "#888888" }}
+                        />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              )}
+            </div>
+          )}
 
           {topLabels.length > 0 && (
             <div className="breakdown-section compact">

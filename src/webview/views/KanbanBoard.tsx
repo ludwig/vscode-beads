@@ -5,12 +5,15 @@
  * Supports drag-and-drop to change status.
  */
 
-import React, { useState, useMemo } from "react";
-import { Bead, BeadStatus, BeadType, STATUS_LABELS, STATUS_COLORS } from "../types";
+import React, { useState, useMemo, useEffect } from "react";
+import { Search } from "lucide-react";
+import { Bead, BeadStatus, BeadType, STATUS_LABELS, STATUS_COLORS, vscode } from "../types";
 import { TypeIcon } from "../common/TypeIcon";
 import { PriorityBadge } from "../common/PriorityBadge";
 import { LabelBadge } from "../common/LabelBadge";
 import { Icon } from "../common/Icon";
+import { FilterIndicator } from "../common/FilterIndicator";
+import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
 
 interface KanbanBoardProps {
   beads: Bead[];
@@ -21,17 +24,43 @@ interface KanbanBoardProps {
   hasActiveFilters?: boolean;
   /** Unfiltered counts per status (to show "0 of N" when filtering) */
   unfilteredCounts?: Record<BeadStatus, number>;
+  /**
+   * Ids matching the current Issues filter, or null/undefined when the board
+   * should show every bead. When set, the board scopes its cards to this slice
+   * (always-on, mirroring the Tree). Omitted by the in-Issues board view-mode,
+   * whose `beads` are already filtered.
+   */
+  filteredBeadIds?: string[] | null;
+  /** Whether the Issues filter narrows to a strict subset (drives the indicator). */
+  filterActive?: boolean;
+  filteredCount?: number;
+  totalCount?: number;
 }
 
 const COLUMNS: BeadStatus[] = ["open", "in_progress", "blocked", "closed"];
 
-export function KanbanBoard({ beads, selectedBeadId, onSelectBead, onUpdateBead, hasActiveFilters, unfilteredCounts }: KanbanBoardProps): React.ReactElement {
+export function KanbanBoard({ beads, selectedBeadId, onSelectBead, onUpdateBead, hasActiveFilters, unfilteredCounts, filteredBeadIds, filterActive, filteredCount, totalCount }: KanbanBoardProps): React.ReactElement {
   // Track which columns are collapsed (closed is collapsed by default)
   const [collapsedColumns, setCollapsedColumns] = useState<Set<BeadStatus>>(new Set(["closed"]));
   // Track which column is being dragged over
   const [dragOverColumn, setDragOverColumn] = useState<BeadStatus | null>(null);
   // Optimistic status overrides for instant visual feedback
   const [optimisticStatus, setOptimisticStatus] = useState<Map<string, BeadStatus>>(new Map());
+  // Right-click row menu (mirrors the Tree/Graph card menus).
+  const [menu, setMenu] = useState<{ x: number; y: number; bead: Bead } | null>(null);
+  // Ad-hoc quick filter local to the board (mirrors the Tree's filter input) —
+  // narrows the cards by id/title on top of the shared Issues filter slice.
+  const [query, setQuery] = useState("");
+  // Optimistic selection: highlight the clicked card instantly instead of
+  // waiting for the extension to echo selectedBeadId back. Cleared when the
+  // authoritative prop updates so external selections win.
+  const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
+  useEffect(() => setLocalSelectedId(null), [selectedBeadId]);
+  const activeSelectedId = localSelectedId ?? selectedBeadId;
+  const selectCard = (id: string) => {
+    setLocalSelectedId(id);
+    onSelectBead(id);
+  };
 
   // Apply optimistic overrides to beads
   const effectiveBeads = useMemo(() => {
@@ -96,14 +125,47 @@ export function KanbanBoard({ beads, selectedBeadId, onSelectBead, onUpdateBead,
     }
   };
 
-  // Group beads by status (using effective beads with optimistic overrides)
+  // Scope to the Issues filter slice when provided (always-on, like the Tree).
+  const scopedBeads = useMemo(() => {
+    if (filteredBeadIds == null) return effectiveBeads;
+    const allowed = new Set(filteredBeadIds);
+    return effectiveBeads.filter((b) => allowed.has(b.id));
+  }, [effectiveBeads, filteredBeadIds]);
+
+  // Apply the ad-hoc board filter on top (id/title contains, case-insensitive).
+  const visibleBeads = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return scopedBeads;
+    return scopedBeads.filter((b) => b.id.toLowerCase().includes(q) || b.title.toLowerCase().includes(q));
+  }, [scopedBeads, query]);
+
+  // Group beads by status (using the scoped + locally-filtered beads)
   const grouped = COLUMNS.reduce((acc, status) => {
-    acc[status] = effectiveBeads.filter((b) => b.status === status);
+    acc[status] = visibleBeads.filter((b) => b.status === status);
     return acc;
   }, {} as Record<BeadStatus, Bead[]>);
 
   return (
-    <div className="kanban-board">
+    <div className="kanban">
+      <div className="kanban-filterbar">
+        <Search size={13} strokeWidth={2} className="kanban-filter-icon" />
+        <input
+          type="text"
+          className="kanban-filter-input"
+          placeholder="Filter cards…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          spellCheck={false}
+        />
+        {filterActive && (
+          <FilterIndicator
+            count={filteredCount ?? scopedBeads.length}
+            total={totalCount ?? beads.length}
+            className="kanban-filter-indicator"
+          />
+        )}
+      </div>
+      <div className="kanban-board">
       {COLUMNS.map((status) => {
         const isCollapsed = collapsedColumns.has(status);
         const items = grouped[status] || [];
@@ -134,10 +196,14 @@ export function KanbanBoard({ beads, selectedBeadId, onSelectBead, onUpdateBead,
                 {items.map((bead) => (
                   <div
                     key={bead.id}
-                    className={`kanban-card ${bead.id === selectedBeadId ? "selected" : ""}`}
+                    className={`kanban-card ${bead.id === activeSelectedId ? "selected" : ""}`}
                     draggable={!!onUpdateBead}
                     onDragStart={(e) => handleDragStart(e, bead.id)}
-                    onClick={() => onSelectBead(bead.id)}
+                    onClick={() => selectCard(bead.id)}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      setMenu({ x: e.clientX, y: e.clientY, bead });
+                    }}
                   >
                     <div className="kanban-card-header">
                       <TypeIcon type={(bead.type || "task") as BeadType} size={12} />
@@ -179,6 +245,45 @@ export function KanbanBoard({ beads, selectedBeadId, onSelectBead, onUpdateBead,
           </div>
         );
       })}
+      </div>
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          onClose={() => setMenu(null)}
+          items={cardMenuItems(menu.bead)}
+        />
+      )}
     </div>
   );
+}
+
+function cardMenuItems(bead: Bead): ContextMenuItem[] {
+  return [
+    {
+      label: "Open Details (editor tab)",
+      onSelect: () => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id }),
+    },
+    {
+      label: "Show Details",
+      onSelect: () => vscode.postMessage({ type: "openBeadDetails", beadId: bead.id }),
+    },
+    {
+      label: "Focus on Graph",
+      onSelect: () => vscode.postMessage({ type: "viewInGraph", beadId: bead.id }),
+    },
+    {
+      label: "Copy ID",
+      separatorBefore: true,
+      onSelect: () => vscode.postMessage({ type: "copyBeadId", beadId: bead.id }),
+    },
+    {
+      label: "Copy title",
+      onSelect: () => vscode.postMessage({ type: "copyText", text: bead.title, label: "title" }),
+    },
+    {
+      label: "Copy JSON",
+      onSelect: () => vscode.postMessage({ type: "copyBeadJson", beadId: bead.id }),
+    },
+  ];
 }

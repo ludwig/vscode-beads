@@ -30,6 +30,7 @@ import {
   BeadStatus,
   BeadPriority,
   BeadType,
+  DependencyGraph,
   IssuesFilter,
   STATUS_LABELS,
   STATUS_COLORS,
@@ -41,13 +42,15 @@ import {
   sortLabels,
   vscode,
 } from "../types";
+import { readyBeadIds } from "../../backend/readyBeads";
 import { StatusBadge } from "../common/StatusBadge";
 import { PriorityBadge } from "../common/PriorityBadge";
 import { TypeBadge } from "../common/TypeBadge";
 import { TypeIcon } from "../common/TypeIcon";
 import { LabelBadge } from "../common/LabelBadge";
 import { FilterChip } from "../common/FilterChip";
-import { Table, Kanban, Rows3, Rows2 } from "lucide-react";
+import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
+import { Rows3, Rows2, Rocket } from "lucide-react";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { Loading } from "../common/Loading";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
@@ -57,7 +60,6 @@ import { Markdown } from "../common/Markdown";
 import { getLabelColorStyle } from "../utils/label-colors";
 import { useClickOutside } from "../hooks/useClickOutside";
 import { useColumnState } from "../hooks/useColumnState";
-import { KanbanBoard } from "./KanbanBoard";
 
 interface IssuesViewProps {
   beads: Bead[];
@@ -67,9 +69,20 @@ interface IssuesViewProps {
   tooltipHoverDelay: number; // 0 = disabled
   /** Drill-in filter pushed from another view (e.g. a Dashboard card/badge). */
   issuesFilterRequest?: { filter: IssuesFilter; seq: number } | null;
+  /**
+   * Dependency graph (nodes + edges), used by the "Ready" toggle to compute
+   * open-with-no-open-blocker beads. Lazily fetched via onRequestGraph.
+   */
+  graph?: DependencyGraph | null;
+  onRequestGraph?: () => void;
   onSelectBead: (beadId: string) => void;
-  onUpdateBead: (beadId: string, updates: Partial<Bead>) => void;
   onRetry: () => void;
+  /**
+   * Published whenever the visible (filtered) row set changes, so the shell can
+   * scope the Graph view to the same slice (vs-v07). Carries the matching bead
+   * ids in current filter/search order.
+   */
+  onFilteredBeadsChange?: (beadIds: string[]) => void;
 }
 
 // Issue types sorted by TYPE_SORT_ORDER (epic first)
@@ -108,9 +121,11 @@ export function IssuesView({
   selectedBeadId,
   tooltipHoverDelay,
   issuesFilterRequest,
+  graph,
+  onRequestGraph,
   onSelectBead,
-  onUpdateBead,
   onRetry,
+  onFilteredBeadsChange,
 }: IssuesViewProps): React.ReactElement {
   // Persisted column state (sorting, visibility, order)
   const defaultVisibility = {
@@ -128,6 +143,7 @@ export function IssuesView({
     compact,
     setCompact,
     resetVisibility,
+    resetSorting,
   } = useColumnState({
     defaultSorting: [{ id: "updatedAt", desc: true }],
     defaultVisibility,
@@ -143,7 +159,48 @@ export function IssuesView({
   const [isResizing, setIsResizing] = useState(false);
 
   // UI state
-  const [viewMode, setViewMode] = useState<"table" | "board">("table");
+  // Optimistic selection: highlight the clicked row instantly instead of waiting
+  // for the extension to echo setSelectedBeadId back (the round trip read as
+  // selection lag). Cleared whenever the authoritative prop updates so external
+  // selections still win.
+  const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
+  useEffect(() => setLocalSelectedId(null), [selectedBeadId]);
+  const activeSelectedId = localSelectedId ?? selectedBeadId;
+  const selectRow = useCallback(
+    (id: string) => {
+      setLocalSelectedId(id);
+      onSelectBead(id);
+    },
+    [onSelectBead],
+  );
+  // "Ready" filter (vs-bo9): show only open beads with no open blocker. Composes
+  // with the column filters/search (it narrows the data they then filter). Needs
+  // the dependency graph, fetched lazily on first enable.
+  // Persisted across tab switches (IssuesView unmounts when another Panel tab is
+  // active, so plain state would forget it). Merged into the shared state blob so
+  // we don't clobber the Tree's persisted sort.
+  const [readyOnly, setReadyOnly] = useState<boolean>(
+    () => (vscode.getState() as { issuesReadyOnly?: boolean } | undefined)?.issuesReadyOnly ?? false,
+  );
+  useEffect(() => {
+    const prev = (vscode.getState() as Record<string, unknown>) ?? {};
+    vscode.setState({ ...prev, issuesReadyOnly: readyOnly });
+  }, [readyOnly]);
+  const readySet = useMemo(() => {
+    if (!graph) return null;
+    const blocks = graph.edges.filter((e) => e.type === "blocks");
+    return new Set(readyBeadIds(beads, blocks));
+  }, [graph, beads]);
+  const tableData = useMemo(
+    () => (readyOnly && readySet ? beads.filter((b) => readySet.has(b.id)) : beads),
+    [readyOnly, readySet, beads],
+  );
+  const toggleReady = useCallback(() => {
+    setReadyOnly((on) => {
+      if (!on && !graph) onRequestGraph?.(); // fetch the graph the first time it's needed
+      return !on;
+    });
+  }, [graph, onRequestGraph]);
   const [activePreset, setActivePreset] = useState<string>("not-closed");
   const [filterBarOpen, setFilterBarOpen] = useState(true);
   const [filterMenuOpen, setFilterMenuOpen] = useState<string | null>(null);
@@ -163,7 +220,7 @@ export function IssuesView({
     return beads.find((b) => b.id === hoveredRowId);
   }, [hoveredRowId, beads]);
 
-  const handleRowMouseEnter = useCallback((e: React.MouseEvent<HTMLTableRowElement>, beadId: string) => {
+  const handleRowMouseEnter = useCallback((e: React.MouseEvent<HTMLElement>, beadId: string) => {
     // Skip if tooltips are disabled
     if (tooltipHoverDelay === 0) return;
 
@@ -238,10 +295,12 @@ export function IssuesView({
 
     const statuses = issuesFilterRequest.filter.statuses ?? [];
     const labels = issuesFilterRequest.filter.labels ?? [];
+    const types = issuesFilterRequest.filter.types ?? [];
     setColumnFilters((prev) => {
-      const others = prev.filter((f) => f.id !== "status" && f.id !== "labels");
+      const others = prev.filter((f) => f.id !== "status" && f.id !== "labels" && f.id !== "type");
       if (statuses.length > 0) others.push({ id: "status", value: statuses });
       if (labels.length > 0) others.push({ id: "labels", value: labels });
+      if (types.length > 0) others.push({ id: "type", value: types });
       return others;
     });
     // Reflect a matching status preset in the dropdown when one lines up and
@@ -255,7 +314,6 @@ export function IssuesView({
           )
         : undefined;
     setActivePreset(matched ? matched.id : "");
-    setViewMode("table");
   }, [issuesFilterRequest]);
 
   // Column definitions
@@ -301,7 +359,7 @@ export function IssuesView({
               onClick={(e) => {
                 e.stopPropagation();
                 handleCopyId(info.row.original.id);
-                onSelectBead(info.row.original.id);
+                selectRow(info.row.original.id);
               }}
               title={copiedId === info.row.original.id ? "Copied!" : "Click to copy"}
             >
@@ -396,11 +454,11 @@ export function IssuesView({
         sortingFn: timestampSortingFn,
       }),
     ],
-    [copiedId]
+    [copiedId, selectRow]
   );
 
   const table = useReactTable({
-    data: beads,
+    data: tableData,
     columns,
     state: {
       sorting,
@@ -438,6 +496,39 @@ export function IssuesView({
     setCopiedId(beadId);
     setTimeout(() => setCopiedId(null), 1500);
   }, []);
+
+  const [rowMenu, setRowMenu] = useState<{ x: number; y: number; bead: Bead } | null>(null);
+
+  const rowMenuItems = useCallback(
+    (bead: Bead): ContextMenuItem[] => [
+      {
+        label: "Open Details (editor tab)",
+        onSelect: () => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id }),
+      },
+      {
+        label: "Show Details",
+        onSelect: () => vscode.postMessage({ type: "openBeadDetails", beadId: bead.id }),
+      },
+      {
+        label: "Focus on Graph",
+        onSelect: () => vscode.postMessage({ type: "viewInGraph", beadId: bead.id }),
+      },
+      {
+        label: "Copy ID",
+        separatorBefore: true,
+        onSelect: () => handleCopyId(bead.id),
+      },
+      {
+        label: "Copy title",
+        onSelect: () => vscode.postMessage({ type: "copyText", text: bead.title, label: "title" }),
+      },
+      {
+        label: "Copy JSON",
+        onSelect: () => vscode.postMessage({ type: "copyBeadJson", beadId: bead.id }),
+      },
+    ],
+    [handleCopyId],
+  );
 
   // Filter helpers
   const statusFilter = (columnFilters.find((f) => f.id === "status")?.value || []) as BeadStatus[];
@@ -573,6 +664,7 @@ export function IssuesView({
     setColumnFilters([]);
     setGlobalFilter("");
     setActivePreset("all");
+    setReadyOnly(false);
   };
 
   const filteredCount = table.getFilteredRowModel().rows.length;
@@ -585,16 +677,6 @@ export function IssuesView({
   const assigneeFacets = table.getColumn("assignee")?.getFacetedUniqueValues() ?? new Map();
 
   // Unfiltered counts per status (for kanban empty state messaging)
-  const unfilteredStatusCounts = useMemo(() => {
-    const counts: Record<BeadStatus, number> = { open: 0, in_progress: 0, blocked: 0, closed: 0 };
-    for (const bead of beads) {
-      if (bead.status in counts) {
-        counts[bead.status as BeadStatus]++;
-      }
-    }
-    return counts;
-  }, [beads]);
-
   // Get unique assignees from facets for filter menu
   const uniqueAssignees = useMemo(() => {
     const assignees = Array.from(assigneeFacets.keys()).filter((a): a is string => typeof a === "string" && a !== "");
@@ -631,6 +713,16 @@ export function IssuesView({
     const sorted = Array.from(counts.keys()).sort();
     return { uniqueLabels: sorted, labelCounts: counts, unlabeledCount: unlabeled };
   }, [table.getFilteredRowModel().rows]);
+
+  // Publish the filtered bead ids upward so the shell can scope the Graph view
+  // to the same slice (vs-v07). Fires whenever the filter/search result changes.
+  const filteredBeadIds = useMemo(
+    () => table.getFilteredRowModel().rows.map((r) => r.original.id),
+    [table.getFilteredRowModel().rows],
+  );
+  useEffect(() => {
+    onFilteredBeadsChange?.(filteredBeadIds);
+  }, [filteredBeadIds, onFilteredBeadsChange]);
 
   // Build label autocomplete options
   const labelOptions = useMemo((): AutocompleteOption[] => {
@@ -693,32 +785,14 @@ export function IssuesView({
             <path d="M6 10.5v-1h4v1H6zm-2-3v-1h8v1H4zm-2-3v-1h12v1H2z" />
           </svg>
         </button>
-        <div className="view-toggle">
-          <button
-            className={viewMode === "table" ? "active" : ""}
-            onClick={() => setViewMode("table")}
-            title="Table view"
-          >
-            <Table size={14} />
-          </button>
-          <button
-            className={viewMode === "board" ? "active" : ""}
-            onClick={() => setViewMode("board")}
-            title="Board view"
-          >
-            <Kanban size={14} />
-          </button>
-        </div>
-        {viewMode === "table" && (
-          <button
-            className={`compact-toggle ${compact ? "active" : ""}`}
-            onClick={() => setCompact((c) => !c)}
-            title={compact ? "Comfortable rows" : "Compact rows"}
-            aria-pressed={compact}
-          >
-            {compact ? <Rows2 size={14} /> : <Rows3 size={14} />}
-          </button>
-        )}
+        <button
+          className={`compact-toggle ${compact ? "active" : ""}`}
+          onClick={() => setCompact((c) => !c)}
+          title={compact ? "Comfortable rows" : "Compact rows"}
+          aria-pressed={compact}
+        >
+          {compact ? <Rows2 size={14} /> : <Rows3 size={14} />}
+        </button>
       </div>
 
       {/* Row 2: Filter bar */}
@@ -741,6 +815,18 @@ export function IssuesView({
               </DropdownItem>
             ))}
           </Dropdown>
+
+          {/* Ready toggle (vs-bo9) — composes with the presets/filter chips. */}
+          <button
+            type="button"
+            className={`ready-toggle ${readyOnly ? "active" : ""}`}
+            aria-pressed={readyOnly}
+            onClick={toggleReady}
+            title="Show only ready-to-work beads (open, no open blocker). Composes with the other filters."
+          >
+            <Rocket size={12} strokeWidth={2.25} />
+            <span>Ready</span>
+          </button>
 
           {/* Active filter chips */}
           {statusFilter.map((status) => (
@@ -914,7 +1000,7 @@ export function IssuesView({
       )}
 
       {/* Table */}
-      {!error && viewMode === "table" && (
+      {!error && (
         <div className="beads-table-wrapper">
           {loading && (
             <div className="issues-loading-state">
@@ -933,7 +1019,10 @@ export function IssuesView({
                     {headerGroup.headers.map((header) => (
                       <th
                         key={header.id}
-                        style={{ width: header.getSize() }}
+                        // Title flexes (width:auto) to absorb all slack so the
+                        // other columns render at their fixed, clip-safe widths
+                        // (vs-xy5) instead of inflating to fill width:100%.
+                        style={header.column.id === "title" ? {} : { width: header.getSize() }}
                         className={`${header.column.id}-th ${header.column.getCanSort() ? "sortable" : ""} ${draggedColumn === header.id ? "dragging" : ""} ${dragOverColumn === header.id && draggedColumn !== header.id ? "drag-over" : ""}`}
                         onClick={header.column.getToggleSortingHandler()}
                         draggable={!isResizing}
@@ -1058,11 +1147,20 @@ export function IssuesView({
                           <button
                             className="col-menu-reset"
                             onClick={() => {
+                              resetSorting();
+                              setColumnMenuOpen(false);
+                            }}
+                          >
+                            Reset sort
+                          </button>
+                          <button
+                            className="col-menu-reset"
+                            onClick={() => {
                               resetVisibility();
                               setColumnMenuOpen(false);
                             }}
                           >
-                            Reset to defaults
+                            Reset columns
                           </button>
                         </div>
                       )}
@@ -1084,20 +1182,27 @@ export function IssuesView({
                   table.getRowModel().rows.map((row) => (
                     <tr
                       key={row.id}
-                      onClick={() => onSelectBead(row.original.id)}
-                      className={`bead-row ${row.original.id === selectedBeadId ? "selected" : ""}`}
-                      onMouseEnter={(e) => handleRowMouseEnter(e, row.original.id)}
-                      onMouseLeave={handleRowMouseLeave}
+                      onClick={() => selectRow(row.original.id)}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        setRowMenu({ x: e.clientX, y: e.clientY, bead: row.original });
+                      }}
+                      className={`bead-row ${row.original.id === activeSelectedId ? "selected" : ""}`}
                     >
-                      {row.getVisibleCells().map((cell) => (
-                        <td
-                          key={cell.id}
-                          className={`${cell.column.id}-cell`}
-                          style={{ width: cell.column.getSize() }}
-                        >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </td>
-                      ))}
+                      {row.getVisibleCells().map((cell) => {
+                        const isIcon = cell.column.id === "icon";
+                        return (
+                          <td
+                            key={cell.id}
+                            className={`${cell.column.id}-cell${isIcon ? " icon-cell-hoverable" : ""}`}
+                            style={cell.column.id === "title" ? {} : { width: cell.column.getSize() }}
+                            onMouseEnter={isIcon ? (e) => handleRowMouseEnter(e, row.original.id) : undefined}
+                            onMouseLeave={isIcon ? handleRowMouseLeave : undefined}
+                          >
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </td>
+                        );
+                      })}
                       <td className="row-spacer" />
                     </tr>
                   ))
@@ -1106,7 +1211,7 @@ export function IssuesView({
             </table>
           </div>
           {/* Filtered count overlay */}
-          {(hasActiveFilters || globalFilter) && filteredCount !== totalCount && (
+          {(hasActiveFilters || globalFilter || readyOnly) && filteredCount !== totalCount && (
             <div className="filter-count-overlay">
               {filteredCount} of {totalCount}
             </div>
@@ -1114,24 +1219,6 @@ export function IssuesView({
         </div>
       )}
 
-      {/* Kanban Board */}
-      {!error && viewMode === "board" && (
-        <>
-          {loading && (
-            <div className="issues-loading-state">
-              <Loading />
-            </div>
-          )}
-          <KanbanBoard
-            beads={table.getFilteredRowModel().rows.map((r) => r.original)}
-            selectedBeadId={selectedBeadId}
-            onSelectBead={onSelectBead}
-            onUpdateBead={onUpdateBead}
-            hasActiveFilters={hasActiveFilters}
-            unfilteredCounts={unfilteredStatusCounts}
-          />
-        </>
-      )}
 
       {/* Markdown tooltip */}
       {hoveredBead && tooltipPosition && (hoveredBead.description || hoveredBead.title) &&
@@ -1150,6 +1237,15 @@ export function IssuesView({
           </div>,
           document.body
         )}
+
+      {rowMenu && (
+        <ContextMenu
+          x={rowMenu.x}
+          y={rowMenu.y}
+          items={rowMenuItems(rowMenu.bead)}
+          onClose={() => setRowMenu(null)}
+        />
+      )}
     </div>
   );
 }

@@ -6,8 +6,17 @@
 // dist/ is gitignored, so regenerating every build creates no churn.
 
 import { execSync } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+
+/** Bytes of a built file, or 0 if it isn't there yet. */
+function sizeOf(path) {
+  try {
+    return statSync(path).size;
+  } catch {
+    return 0;
+  }
+}
 
 function sh(command) {
   try {
@@ -23,6 +32,18 @@ const builtAt = new Date().toISOString();
 
 const distDir = join(process.cwd(), "dist");
 mkdirSync(distDir, { recursive: true });
-writeFileSync(join(distDir, "build-info.json"), `${JSON.stringify({ sha, dirty, builtAt }, null, 2)}\n`);
 
-console.log(`build-info: ${sha}${dirty ? "-dirty" : ""} @ ${builtAt}`);
+// Our extension's actual on-disk footprint: the bundled extension + webview
+// (the only sizeable artifacts). An attributable "this is Beads" figure, unlike
+// the shared-host RSS. Computed here since dist/ exists right after esbuild.
+const bundleBytes =
+  sizeOf(join(distDir, "extension.js")) +
+  sizeOf(join(distDir, "webview", "main.js")) +
+  sizeOf(join(distDir, "webview", "main.css"));
+
+writeFileSync(
+  join(distDir, "build-info.json"),
+  `${JSON.stringify({ sha, dirty, builtAt, bundleBytes }, null, 2)}\n`,
+);
+
+console.log(`build-info: ${sha}${dirty ? "-dirty" : ""} @ ${builtAt} · bundle ${Math.round(bundleBytes / 1024)}KB`);

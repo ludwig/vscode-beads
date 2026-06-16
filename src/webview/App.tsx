@@ -10,6 +10,7 @@ import {
   Bead,
   BeadsProject,
   BeadsSummary,
+  DependencyGraph,
   ExtensionMessage,
   IssuesFilter,
   WebviewSettings,
@@ -17,7 +18,10 @@ import {
 } from "./types";
 import { DashboardView } from "./views/DashboardView";
 import { IssuesView } from "./views/IssuesView";
+import { GraphView } from "./views/graph/GraphView";
 import { DetailsView } from "./views/DetailsView";
+import { ProjectSwitcherView } from "./views/ProjectSwitcherView";
+import { PanelShell } from "./views/PanelShell";
 import { CreateBeadForm } from "./views/CreateBeadForm";
 import { Loading } from "./common/Loading";
 import { ToastProvider, triggerToast } from "./common/Toast";
@@ -30,6 +34,7 @@ interface AppState {
   selectedBead: Bead | null;
   selectedBeadId: string | null;
   summary: BeadsSummary | null;
+  graph: DependencyGraph | null;
   loading: boolean;
   error: string | null;
   settings: WebviewSettings;
@@ -38,6 +43,18 @@ interface AppState {
   // `seq` changes on every request so the Issues view re-applies even if the
   // filter is identical to last time.
   issuesFilterRequest: { filter: IssuesFilter; seq: number } | null;
+  // Deep-link to focus a bead on the Graph tab, pushed from another view (e.g.
+  // the Details/table "View in graph" action). `seq` changes on every request
+  // so the panel re-switches to Graph even if it's the same bead as last time.
+  showGraphRequest: { beadId: string; seq: number } | null;
+  // Bumped to switch the panel to the Issues tab + pulse a confirmation ring.
+  focusIssuesSeq: number;
+  // Bumped when this (editor-tab) webview is revealed/opened, to flash a
+  // confirmation ring so the tab is easy to spot (vs-c59).
+  pulseSeq: number;
+  // Extension-host RSS (bytes), sampled periodically for the Active Project
+  // card (vs-f50). 0 until the first sample arrives.
+  memoryBytes: number;
 }
 
 const initialState: AppState = {
@@ -48,6 +65,7 @@ const initialState: AppState = {
   selectedBead: null,
   selectedBeadId: null,
   summary: null,
+  graph: null,
   loading: true,
   error: null,
   settings: {
@@ -57,9 +75,15 @@ const initialState: AppState = {
     extensionVersion: "",
     buildSha: "",
     buildDirty: false,
+    isEditorTab: false,
+    bundleBytes: 0,
   },
   createMode: false,
   issuesFilterRequest: null,
+  showGraphRequest: null,
+  focusIssuesSeq: 0,
+  pulseSeq: 0,
+  memoryBytes: 0,
 };
 
 export function App(): React.ReactElement {
@@ -91,6 +115,9 @@ export function App(): React.ReactElement {
       case "setSummary":
         setState((prev) => ({ ...prev, summary: message.summary }));
         break;
+      case "setGraph":
+        setState((prev) => ({ ...prev, graph: message.graph }));
+        break;
       case "setLoading":
         setState((prev) => ({ ...prev, loading: message.loading }));
         break;
@@ -111,6 +138,24 @@ export function App(): React.ReactElement {
             seq: (prev.issuesFilterRequest?.seq ?? 0) + 1,
           },
         }));
+        break;
+      case "showGraph":
+        setState((prev) => ({
+          ...prev,
+          showGraphRequest: {
+            beadId: message.beadId,
+            seq: (prev.showGraphRequest?.seq ?? 0) + 1,
+          },
+        }));
+        break;
+      case "focusIssuesTab":
+        setState((prev) => ({ ...prev, focusIssuesSeq: prev.focusIssuesSeq + 1 }));
+        break;
+      case "pulse":
+        setState((prev) => ({ ...prev, pulseSeq: prev.pulseSeq + 1 }));
+        break;
+      case "setMemoryUsage":
+        setState((prev) => ({ ...prev, memoryBytes: message.bytes }));
         break;
       case "refresh":
         vscode.postMessage({ type: "refresh" });
@@ -133,6 +178,16 @@ export function App(): React.ReactElement {
     };
   }, [handleMessage]);
 
+  // Flash a confirmation ring when this webview is pulsed (editor tab opened /
+  // revealed, vs-c59). Keyed on pulseSeq so repeat opens re-fire.
+  const [pulsing, setPulsing] = useState(false);
+  useEffect(() => {
+    if (state.pulseSeq === 0) return;
+    setPulsing(true);
+    const t = setTimeout(() => setPulsing(false), 1600);
+    return () => clearTimeout(t);
+  }, [state.pulseSeq]);
+
   // Render the appropriate view
   const renderView = () => {
       if (state.viewType === "beadsPanel" && state.loading && state.beads.length === 0) {
@@ -147,29 +202,15 @@ export function App(): React.ReactElement {
             beads={state.beads}
             loading={state.loading}
             error={state.error}
-            projects={state.projects}
-            activeProject={state.project}
             version={state.settings.extensionVersion}
             buildSha={state.settings.buildSha}
             buildDirty={state.settings.buildDirty}
-            onSelectProject={(project) =>
-              vscode.postMessage({
-                type: "selectProject",
-                projectId: project.id,
-                projectRootPath: project.rootPath,
-              })
-            }
             onSelectBead={(beadId) =>
               vscode.postMessage({ type: "openBeadDetails", beadId })
             }
             onOpenIssues={(filter) =>
               vscode.postMessage({ type: "openIssuesWithFilter", filter })
             }
-            onShowStatus={() => vscode.postMessage({ type: "showDoltStatus" })}
-            onStartDolt={() => vscode.postMessage({ type: "startDoltServer" })}
-            onStopDolt={() => vscode.postMessage({ type: "stopDoltServer" })}
-            onOpenDoltLog={() => vscode.postMessage({ type: "openDoltLog" })}
-            onOpenProjectFolder={() => vscode.postMessage({ type: "openProjectFolder" })}
             onRetry={() =>
               vscode.postMessage({ type: "refresh" })
             }
@@ -185,15 +226,77 @@ export function App(): React.ReactElement {
             selectedBeadId={state.selectedBeadId}
             tooltipHoverDelay={state.settings.tooltipHoverDelay}
             issuesFilterRequest={state.issuesFilterRequest}
+            graph={state.graph}
+            onRequestGraph={() => vscode.postMessage({ type: "requestGraph" })}
             onSelectBead={(beadId) =>
               vscode.postMessage({ type: "openBeadDetails", beadId })
-            }
-            onUpdateBead={(beadId, updates) =>
-              vscode.postMessage({ type: "updateBead", beadId, updates })
             }
             onRetry={() =>
               vscode.postMessage({ type: "refresh" })
             }
+          />
+        );
+
+      case "beadsPanelShell":
+        return (
+          <PanelShell
+            summary={state.summary}
+            beads={state.beads}
+            graph={state.graph}
+            loading={state.loading}
+            error={state.error}
+            selectedBeadId={state.selectedBeadId}
+            settings={state.settings}
+            issuesFilterRequest={state.issuesFilterRequest}
+            showGraphRequest={state.showGraphRequest}
+            focusIssuesSeq={state.focusIssuesSeq}
+          />
+        );
+
+      case "beadsGraph":
+        return (
+          <GraphView
+            graph={state.graph}
+            loading={state.loading}
+            error={state.error}
+            selectedBeadId={state.selectedBeadId}
+            focusBeadId={null}
+            filteredBeadIds={null}
+            onOpenBead={(beadId) =>
+              vscode.postMessage({ type: "openBeadDetails", beadId })
+            }
+            onRetry={() => vscode.postMessage({ type: "refresh" })}
+          />
+        );
+
+      case "beadsProjectSwitcher":
+        return (
+          <ProjectSwitcherView
+            projects={state.projects}
+            activeProject={state.project}
+            activeBead={state.selectedBead}
+            version={state.settings.extensionVersion}
+            buildSha={state.settings.buildSha}
+            buildDirty={state.settings.buildDirty}
+            memoryBytes={state.memoryBytes}
+            bundleBytes={state.settings.bundleBytes}
+            onSelectProject={(project) =>
+              vscode.postMessage({
+                type: "selectProject",
+                projectId: project.id,
+                projectRootPath: project.rootPath,
+              })
+            }
+            onOpenProjectFolder={() => vscode.postMessage({ type: "openProjectFolder" })}
+            onOpenBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
+            onOpenBeadInTab={(beadId) => vscode.postMessage({ type: "openBeadInTab", beadId })}
+            onClearBead={() => vscode.postMessage({ type: "clearActiveBead" })}
+            onPickReady={() => vscode.postMessage({ type: "pickReadyBead" })}
+            onShowIssues={() => vscode.postMessage({ type: "showIssues" })}
+            onShowStatus={() => vscode.postMessage({ type: "showDoltStatus" })}
+            onStartDolt={() => vscode.postMessage({ type: "startDoltServer" })}
+            onStopDolt={() => vscode.postMessage({ type: "stopDoltServer" })}
+            onOpenDoltLog={() => vscode.postMessage({ type: "openDoltLog" })}
           />
         );
 
@@ -209,8 +312,21 @@ export function App(): React.ReactElement {
         }
         if (!state.selectedBead && !state.loading) {
           return (
-            <div className="empty-state compact">
-              <p>Select an issue to view details</p>
+            <div className="empty-state">
+              <div className="empty-state-icon">🔖</div>
+              <h3>No issue selected</h3>
+              <p>
+                Pick an issue from the <strong>Issues</strong> list in the panel
+                below to see its details here.
+              </p>
+              <button
+                type="button"
+                className="empty-state-action"
+                onClick={() => vscode.postMessage({ type: "startCreate" })}
+              >
+                <span className="empty-state-action-icon">+</span>
+                New Issue
+              </button>
             </div>
           );
         }
@@ -227,6 +343,7 @@ export function App(): React.ReactElement {
             loading={state.loading}
             renderMarkdown={state.settings.renderMarkdown}
             userId={state.settings.userId}
+            isEditorTab={state.settings.isEditorTab}
             knownAssignees={knownAssignees}
             onUpdateBead={(beadId, updates) =>
               vscode.postMessage({ type: "updateBead", beadId, updates })
@@ -247,7 +364,7 @@ export function App(): React.ReactElement {
               vscode.postMessage({ type: "openBeadDetails", beadId })
             }
             onCopyId={(beadId) =>
-              vscode.postMessage({ type: "copyBeadId", beadId })
+              vscode.postMessage({ type: "copyBeadId", beadId, toast: true })
             }
           />
         );
@@ -264,7 +381,7 @@ export function App(): React.ReactElement {
 
   return (
     <ToastProvider>
-      <div className="app">
+      <div className={`app${pulsing ? " pulsing" : ""}`}>
         <main className="app-content">{renderView()}</main>
       </div>
     </ToastProvider>
