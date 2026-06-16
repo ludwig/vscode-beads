@@ -3486,7 +3486,11 @@ textarea {
   flex: 1;
   min-height: 0;
   padding: var(--spacing-sm);
-  overflow-x: auto;
+  /* Columns grow to their content; the whole board scrolls (both axes) rather
+     than each column trapping cards in a cramped inner scrollbar (vs-qlp).
+     align-items:flex-start so columns are content-height, not stretched. */
+  overflow: auto;
+  align-items: flex-start;
 }
 
 .kanban-column {
@@ -3523,6 +3527,13 @@ textarea {
   border-bottom: 1px solid var(--vscode-panel-border);
   cursor: pointer;
   user-select: none;
+  /* Stay visible while scrolling a tall board. */
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--vscode-sideBar-background);
+  border-top-left-radius: var(--border-radius);
+  border-top-right-radius: var(--border-radius);
 }
 
 .kanban-column-header:hover {
@@ -3552,7 +3563,8 @@ textarea {
 
 .kanban-column-body {
   flex: 1;
-  overflow-y: auto;
+  /* Grow to fit all cards; the board scrolls instead of the column. */
+  overflow-y: visible;
   padding: var(--spacing-xs);
   display: flex;
   flex-direction: column;
