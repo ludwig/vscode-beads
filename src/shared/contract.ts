@@ -170,6 +170,7 @@ export type ExtensionToWebviewMessage =
   | { type: "applyIssuesFilter"; filter: IssuesFilter }
   | { type: "showGraph"; beadId: string }
   | { type: "focusIssuesTab" }
+  | { type: "pulse" }
   | { type: "refresh" }
   | { type: "showToast"; text: string };
 

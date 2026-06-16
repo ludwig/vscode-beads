@@ -27,6 +27,10 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
   protected readonly log: Logger;
   protected abstract readonly viewType: string;
   private readonly disposables: vscode.Disposable[] = [];
+  // When set, the webview is pulsed once it signals "ready" — used by editor
+  // tabs opened via BeadPanelManager so a freshly-created tab flashes a
+  // confirmation ring after it mounts (vs-c59).
+  private pulseOnReady = false;
 
   constructor(
     extensionUri: vscode.Uri,
@@ -155,6 +159,10 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     switch (message.type) {
       case "ready":
         await this.initializeView();
+        if (this.pulseOnReady) {
+          this.pulseOnReady = false;
+          this.pulse();
+        }
         break;
 
       case "refresh":
@@ -367,6 +375,22 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     this.log.error(`${message}: ${err}`);
     // ProjectManager handles notification details - views just update their error state
     this.projectManager.notifyBackendError(err);
+  }
+
+  /**
+   * Flash a confirmation ring in the webview (vs-c59). Used when an editor tab
+   * is revealed so re-opening an already-open tab gives visible feedback.
+   * No-op if the webview isn't live yet — use pulseWhenReady() for that case.
+   */
+  public pulse(): void {
+    if (this._host?.visible) {
+      this.postMessage({ type: "pulse" });
+    }
+  }
+
+  /** Pulse once the webview signals "ready" (for freshly-created tabs). */
+  public pulseWhenReady(): void {
+    this.pulseOnReady = true;
   }
 
   /**

@@ -49,6 +49,9 @@ interface AppState {
   showGraphRequest: { beadId: string; seq: number } | null;
   // Bumped to switch the panel to the Issues tab + pulse a confirmation ring.
   focusIssuesSeq: number;
+  // Bumped when this (editor-tab) webview is revealed/opened, to flash a
+  // confirmation ring so the tab is easy to spot (vs-c59).
+  pulseSeq: number;
 }
 
 const initialState: AppState = {
@@ -74,6 +77,7 @@ const initialState: AppState = {
   issuesFilterRequest: null,
   showGraphRequest: null,
   focusIssuesSeq: 0,
+  pulseSeq: 0,
 };
 
 export function App(): React.ReactElement {
@@ -141,6 +145,9 @@ export function App(): React.ReactElement {
       case "focusIssuesTab":
         setState((prev) => ({ ...prev, focusIssuesSeq: prev.focusIssuesSeq + 1 }));
         break;
+      case "pulse":
+        setState((prev) => ({ ...prev, pulseSeq: prev.pulseSeq + 1 }));
+        break;
       case "refresh":
         vscode.postMessage({ type: "refresh" });
         break;
@@ -161,6 +168,16 @@ export function App(): React.ReactElement {
       window.removeEventListener("message", handleMessage);
     };
   }, [handleMessage]);
+
+  // Flash a confirmation ring when this webview is pulsed (editor tab opened /
+  // revealed, vs-c59). Keyed on pulseSeq so repeat opens re-fire.
+  const [pulsing, setPulsing] = useState(false);
+  useEffect(() => {
+    if (state.pulseSeq === 0) return;
+    setPulsing(true);
+    const t = setTimeout(() => setPulsing(false), 1600);
+    return () => clearTimeout(t);
+  }, [state.pulseSeq]);
 
   // Render the appropriate view
   const renderView = () => {
@@ -353,7 +370,7 @@ export function App(): React.ReactElement {
 
   return (
     <ToastProvider>
-      <div className="app">
+      <div className={`app${pulsing ? " pulsing" : ""}`}>
         <main className="app-content">{renderView()}</main>
       </div>
     </ToastProvider>

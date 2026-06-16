@@ -77,6 +77,20 @@ body {
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
+  position: relative;
+}
+
+/* Confirmation ring flashed when this (editor-tab) webview is opened/revealed
+   (vs-c59) — reuses the hold-then-fade pulse so re-opening a tab is visible. */
+.app.pulsing::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  border: 2.5px solid var(--vscode-focusBorder);
+  border-radius: 3px;
+  animation: panel-shell-pulse 1.6s ease-in forwards;
 }
 
 .app-header {
