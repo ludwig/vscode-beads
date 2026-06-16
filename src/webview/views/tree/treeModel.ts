@@ -24,10 +24,18 @@ interface GraphEdgeLike {
 /**
  * Build a forest of beads keyed on parent-child edges. Roots are beads with no
  * parent (including standalone beads). Guards against multi-parent (first parent
- * wins) and cycles (a node is never expanded twice along one branch). Roots and
- * children are sorted by id for stable output.
+ * wins) and cycles (a node is never expanded twice along one branch).
+ *
+ * Ordering at every level: by `typeRank` (lower first — callers pass the type
+ * sort order so epics cluster at the top), then by id. `typeRank` is injected
+ * rather than imported so this module stays free of the webview's
+ * window-touching `types` side-effects (and unit-testable). Defaults to id-only.
  */
-export function buildForest(nodes: Bead[], edges: GraphEdgeLike[]): TreeNode[] {
+export function buildForest(
+  nodes: Bead[],
+  edges: GraphEdgeLike[],
+  typeRank: (type: string | undefined) => number = () => 0,
+): TreeNode[] {
   const byId = new Map(nodes.map((b) => [b.id, b]));
   const parentOf = new Map<string, string>();
   const childrenOf = new Map<string, string[]>();
@@ -44,12 +52,18 @@ export function buildForest(nodes: Bead[], edges: GraphEdgeLike[]): TreeNode[] {
     childrenOf.get(parent)!.push(child);
   }
 
-  const byIdAsc = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+  // Sort by type rank (epics first) then id, so the structural containers that
+  // usually hold children cluster at the top of each level.
+  const sortIds = (ids: string[]): string[] =>
+    [...ids].sort((a, b) => {
+      const ta = typeRank(byId.get(a)?.type);
+      const tb = typeRank(byId.get(b)?.type);
+      if (ta !== tb) return ta - tb;
+      return a < b ? -1 : a > b ? 1 : 0;
+    });
 
   const build = (id: string, ancestry: Set<string>): TreeNode => {
-    const kidIds = (childrenOf.get(id) ?? [])
-      .filter((c) => !ancestry.has(c)) // cycle guard
-      .sort(byIdAsc);
+    const kidIds = sortIds((childrenOf.get(id) ?? []).filter((c) => !ancestry.has(c))); // cycle guard
     const nextAncestry = new Set(ancestry).add(id);
     return {
       bead: byId.get(id)!,
@@ -57,11 +71,9 @@ export function buildForest(nodes: Bead[], edges: GraphEdgeLike[]): TreeNode[] {
     };
   };
 
-  return nodes
-    .filter((b) => !parentOf.has(b.id))
-    .map((b) => b.id)
-    .sort(byIdAsc)
-    .map((id) => build(id, new Set()));
+  return sortIds(nodes.filter((b) => !parentOf.has(b.id)).map((b) => b.id)).map((id) =>
+    build(id, new Set()),
+  );
 }
 
 /**

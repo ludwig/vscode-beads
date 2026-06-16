@@ -5,6 +5,10 @@ function bead(id: string, title = id): Bead {
   return { id, title, status: "open", priority: 2, type: "task" } as Bead;
 }
 
+function typedBead(id: string, type: string): Bead {
+  return { id, title: id, status: "open", priority: 2, type } as Bead;
+}
+
 // parent-child edge: from=child, to=parent
 function pc(child: string, parent: string) {
   return { from: child, to: parent, type: "parent-child" as const };
@@ -65,6 +69,17 @@ describe("buildForest", () => {
   it("ignores edges referencing absent beads", () => {
     const forest = buildForest([bead("a")], [pc("a", "ghost")]);
     expect(ids(forest)).toEqual(["a"]);
+  });
+
+  it("sorts by type rank (epics first) then id, at every level", () => {
+    const epicFirst = (t: string | undefined) => (t === "epic" ? 0 : 1);
+    const forest = buildForest(
+      [typedBead("z-epic", "epic"), typedBead("a-task", "task"), typedBead("m-epic", "epic")],
+      [],
+      epicFirst,
+    );
+    // both epics precede the task, even though 'a-task' sorts first by id
+    expect(ids(forest)).toEqual(["m-epic", "z-epic", "a-task"]);
   });
 });
 

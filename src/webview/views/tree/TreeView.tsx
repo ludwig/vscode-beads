@@ -9,10 +9,20 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronRight, ChevronDown, Search } from "lucide-react";
-import { DependencyGraph, STATUS_COLORS, PRIORITY_COLORS, UNKNOWN_PRIORITY_COLOR, BeadPriority } from "../../types";
+import {
+  Bead,
+  DependencyGraph,
+  STATUS_COLORS,
+  PRIORITY_COLORS,
+  UNKNOWN_PRIORITY_COLOR,
+  BeadPriority,
+  getTypeSortOrder,
+  vscode,
+} from "../../types";
 import { TypeIcon } from "../../common/TypeIcon";
 import { Loading } from "../../common/Loading";
 import { ErrorMessage } from "../../common/ErrorMessage";
+import { ContextMenu, type ContextMenuItem } from "../../common/ContextMenu";
 import { buildForest, filterForest, type TreeNode } from "./treeModel";
 
 interface TreeViewProps {
@@ -41,6 +51,7 @@ export function TreeView({
 
   const [query, setQuery] = useState("");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [menu, setMenu] = useState<{ x: number; y: number; bead: Bead } | null>(null);
 
   const toggle = useCallback((id: string) => {
     setCollapsed((prev) => {
@@ -51,8 +62,12 @@ export function TreeView({
     });
   }, []);
 
+  const openMenu = useCallback((x: number, y: number, bead: Bead) => {
+    setMenu({ x, y, bead });
+  }, []);
+
   const forest = useMemo(
-    () => (graph ? buildForest(graph.nodes, graph.edges) : []),
+    () => (graph ? buildForest(graph.nodes, graph.edges, getTypeSortOrder) : []),
     [graph],
   );
   const visible = useMemo(() => filterForest(forest, query), [forest, query]);
@@ -93,12 +108,47 @@ export function TreeView({
               forceExpand={filtering}
               onToggle={toggle}
               onSelectBead={onSelectBead}
+              onContextMenu={openMenu}
             />
           ))
         )}
       </div>
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          onClose={() => setMenu(null)}
+          items={rowMenuItems(menu.bead)}
+        />
+      )}
     </div>
   );
+}
+
+function rowMenuItems(bead: Bead): ContextMenuItem[] {
+  return [
+    {
+      label: "Open Details (editor tab)",
+      onSelect: () => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id }),
+    },
+    {
+      label: "Show Details",
+      onSelect: () => vscode.postMessage({ type: "openBeadDetails", beadId: bead.id }),
+    },
+    {
+      label: "Focus on Graph",
+      onSelect: () => vscode.postMessage({ type: "viewInGraph", beadId: bead.id }),
+    },
+    {
+      label: "Copy ID",
+      separatorBefore: true,
+      onSelect: () => vscode.postMessage({ type: "copyBeadId", beadId: bead.id }),
+    },
+    {
+      label: "Copy title",
+      onSelect: () => vscode.postMessage({ type: "copyText", text: bead.title, label: "title" }),
+    },
+  ];
 }
 
 interface TreeRowProps {
@@ -109,6 +159,7 @@ interface TreeRowProps {
   forceExpand: boolean;
   onToggle: (id: string) => void;
   onSelectBead: (beadId: string) => void;
+  onContextMenu: (x: number, y: number, bead: Bead) => void;
 }
 
 function TreeRow({
@@ -119,6 +170,7 @@ function TreeRow({
   forceExpand,
   onToggle,
   onSelectBead,
+  onContextMenu,
 }: TreeRowProps): React.ReactElement {
   const { bead, children } = node;
   const hasChildren = children.length > 0;
@@ -137,6 +189,10 @@ function TreeRow({
         aria-selected={isSelected}
         style={{ paddingLeft: depth * 16 }}
         onClick={() => onSelectBead(bead.id)}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          onContextMenu(e.clientX, e.clientY, bead);
+        }}
         title={`${bead.id} · ${bead.title}`}
       >
         <span
@@ -167,6 +223,7 @@ function TreeRow({
               forceExpand={forceExpand}
               onToggle={onToggle}
               onSelectBead={onSelectBead}
+              onContextMenu={onContextMenu}
             />
           ))
         : null}
