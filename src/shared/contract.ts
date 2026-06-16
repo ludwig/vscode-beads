@@ -189,6 +189,7 @@ export type WebviewToExtensionMessage =
   | { type: "openBeadDetails"; beadId: string }
   | { type: "viewInGraph"; beadId: string }
   | { type: "requestGraph" }
+  | { type: "openViewInTab"; view: "issues" | "dashboard" | "graph" }
   | { type: "copyBeadId"; beadId: string }
   | { type: "createBead"; fields: CreateBeadFields }
   | { type: "startCreate" }

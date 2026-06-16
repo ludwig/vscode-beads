@@ -125,6 +125,11 @@ export function registerCommands(
       panelManager.openDashboard();
     }),
 
+    // vs-3bp: open the dependency Graph as an editor tab.
+    vscode.commands.registerCommand("beads.openGraphInTab", () => {
+      panelManager.openGraph();
+    }),
+
     vscode.commands.registerCommand("beads.createIssue", () => {
       if (!projectManager.getActiveProject()) {
         vscode.window.showWarningMessage("No active Beads project");

@@ -18,6 +18,7 @@ import {
 } from "./types";
 import { DashboardView } from "./views/DashboardView";
 import { IssuesView } from "./views/IssuesView";
+import { GraphView } from "./views/graph/GraphView";
 import { DetailsView } from "./views/DetailsView";
 import { ProjectSwitcherView } from "./views/ProjectSwitcherView";
 import { PanelShell } from "./views/PanelShell";
@@ -202,6 +203,22 @@ export function App(): React.ReactElement {
             selectedBeadId={state.selectedBeadId}
             settings={state.settings}
             issuesFilterRequest={state.issuesFilterRequest}
+          />
+        );
+
+      case "beadsGraph":
+        return (
+          <GraphView
+            graph={state.graph}
+            loading={state.loading}
+            error={state.error}
+            selectedBeadId={state.selectedBeadId}
+            focusBeadId={null}
+            onOpenBead={(beadId) =>
+              vscode.postMessage({ type: "openBeadDetails", beadId })
+            }
+            onRequestGraph={() => vscode.postMessage({ type: "requestGraph" })}
+            onRetry={() => vscode.postMessage({ type: "refresh" })}
           />
         );
 

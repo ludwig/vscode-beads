@@ -10,7 +10,7 @@
  */
 
 import React, { useCallback, useState } from "react";
-import { LayoutDashboard, ListTodo, Workflow, RefreshCw, LucideIcon } from "lucide-react";
+import { LayoutDashboard, ListTodo, Workflow, RefreshCw, ExternalLink, LucideIcon } from "lucide-react";
 import { Bead, BeadsSummary, DependencyGraph, IssuesFilter, WebviewSettings, vscode } from "../types";
 import { DashboardView } from "./DashboardView";
 import { IssuesView } from "./IssuesView";
@@ -79,6 +79,15 @@ export function PanelShell({
           ))}
         </div>
         <div className="panel-shell-actions">
+          <button
+            type="button"
+            className="panel-shell-action"
+            title={`Open ${tabs.find((t) => t.id === active)?.label ?? "view"} in an editor tab`}
+            aria-label="Open in editor tab"
+            onClick={() => vscode.postMessage({ type: "openViewInTab", view: active })}
+          >
+            <ExternalLink size={14} strokeWidth={2} />
+          </button>
           <button
             type="button"
             className="panel-shell-action"

@@ -120,6 +120,11 @@
         "command": "beads.openDashboardInTab",
         "title": "Beads: Open Dashboard in Editor Tab",
         "icon": "$(link-external)"
+      },
+      {
+        "command": "beads.openGraphInTab",
+        "title": "Beads: Open Graph in Editor Tab",
+        "icon": "$(link-external)"
       }
     ],
     "menus": {

@@ -178,6 +178,16 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         vscode.commands.executeCommand("beads.openBeadDetails", message.beadId);
         break;
 
+      case "openViewInTab": {
+        const command = {
+          issues: "beads.openIssuesInTab",
+          dashboard: "beads.openDashboardInTab",
+          graph: "beads.openGraphInTab",
+        }[message.view];
+        vscode.commands.executeCommand(command);
+        break;
+      }
+
       case "showDoltStatus":
         vscode.commands.executeCommand("beads.showDoltStatus");
         break;
