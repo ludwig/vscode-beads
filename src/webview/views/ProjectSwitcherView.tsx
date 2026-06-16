@@ -8,9 +8,11 @@
  */
 
 import React from "react";
-import { Bead, BeadsProject } from "../types";
+import { FolderGit2, Pin } from "lucide-react";
+import { Bead, BeadsProject, STATUS_COLORS } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
+import { TypeIcon } from "../common/TypeIcon";
 
 interface ProjectSwitcherViewProps {
   projects: BeadsProject[];
@@ -55,7 +57,10 @@ export function ProjectSwitcherView({
     <div className="project-switcher-view">
       <section className="context-section">
         <div className="context-section-head">
-          <h2 className="context-heading">Active Project</h2>
+          <h2 className="context-heading">
+            <FolderGit2 size={13} strokeWidth={2} className="context-heading-icon" />
+            <span>Active Project</span>
+          </h2>
           {activeProject && (
             <Dropdown
               trigger={<span className="context-menu-trigger">⋮</span>}
@@ -126,7 +131,10 @@ export function ProjectSwitcherView({
       </section>
 
       <section className="context-section">
-        <h2 className="context-heading">Active Bead</h2>
+        <h2 className="context-heading">
+          <Pin size={13} strokeWidth={2} className="context-heading-icon" />
+          <span>Active Bead</span>
+        </h2>
         {activeBead ? (
           <button
             type="button"
@@ -134,8 +142,19 @@ export function ProjectSwitcherView({
             title={`${activeBead.id} — ${activeBead.title}\nClick to open in Details`}
             onClick={() => onOpenBead(activeBead.id)}
           >
-            <span className="active-bead-id">{activeBead.id}</span>
-            <span className="active-bead-title">{activeBead.title}</span>
+            <Pin size={12} strokeWidth={2} className="active-bead-pin" />
+            <div className="active-bead-main">
+              <div className="active-bead-head">
+                {activeBead.type && <TypeIcon type={activeBead.type} size={13} />}
+                <span className="active-bead-id">{activeBead.id}</span>
+                <span
+                  className="active-bead-status"
+                  style={{ backgroundColor: STATUS_COLORS[activeBead.status] || "#888888" }}
+                  title={activeBead.status}
+                />
+              </div>
+              <span className="active-bead-title">{activeBead.title}</span>
+            </div>
           </button>
         ) : (
           <div className="context-empty">

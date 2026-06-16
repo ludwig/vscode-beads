@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Polished the sidebar **Active Project** and **Active Bead** sections — each is now an elevated card with an accent-colored heading icon, and Active Bead reads as a pinned register slot (accent left rail, pin glyph, type icon + status dot) (vs-si0)
+
 ### Added
 
 - Right-click a bead node in the **Graph** view for a context menu — **Focus** (narrow to its neighborhood), **Open Details** (editor tab), **Show Details** (sidebar), **Copy ID**, **Copy title** (vs-aml)
