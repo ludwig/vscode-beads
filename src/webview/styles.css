@@ -773,10 +773,27 @@ textarea {
   min-width: 0;
   max-width: 240px;
   width: 100%;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 7px;
   padding: 4px 8px 4px 10px;
   min-height: 26px;
   box-sizing: border-box;
+}
+
+.project-dropdown-trigger-icon {
+  flex: 0 0 auto;
+  color: var(--vscode-textLink-foreground, var(--vscode-focusBorder));
+}
+
+.project-dropdown-path {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
 }
 
 .project-dropdown-prefix {
@@ -1954,43 +1971,6 @@ textarea {
   font-size: 10px;
   color: var(--vscode-descriptionForeground);
   border-top: 1px solid var(--vscode-panel-border);
-}
-
-/* A caption tied to the selector above it: folder icon + abbreviated path. */
-.project-switcher-path {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  min-width: 0;
-  margin-top: -2px;
-  padding: 0 2px;
-  border: none;
-  background: transparent;
-  font-family: var(--vscode-editor-font-family);
-  font-size: 11px;
-  color: var(--vscode-descriptionForeground);
-  text-align: left;
-  cursor: pointer;
-}
-
-.project-switcher-path-icon {
-  flex: 0 0 auto;
-  opacity: 0.8;
-}
-
-.project-switcher-path-text {
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.project-switcher-path:hover {
-  color: var(--vscode-foreground);
-}
-
-.project-switcher-path:hover .project-switcher-path-text {
-  text-decoration: underline;
 }
 
 .dashboard-header-path {

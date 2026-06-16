@@ -6,6 +6,7 @@
  */
 
 import React from "react";
+import { Folder } from "lucide-react";
 import { BeadsProject } from "../types";
 import { Dropdown, DropdownItem } from "./Dropdown";
 import { sharedPrefixWidthCh } from "./prefixWidth";
@@ -14,15 +15,12 @@ interface ProjectDropdownProps {
   projects: BeadsProject[];
   activeProject: BeadsProject | null;
   onSelectProject: (project: BeadsProject) => void;
-  /** Active issue prefix (e.g. "vs"), derived from the loaded issue IDs. */
-  prefix?: string | null;
 }
 
 export function ProjectDropdown({
   projects,
   activeProject,
   onSelectProject,
-  prefix,
 }: ProjectDropdownProps): React.ReactElement {
   if (projects.length === 0) {
     return (
@@ -43,20 +41,16 @@ export function ProjectDropdown({
   const prefixStyle: React.CSSProperties | undefined =
     prefixWidthCh != null ? { minWidth: `${prefixWidthCh}ch` } : undefined;
 
+  const activePath =
+    activeProject?.displayPath ??
+    activeProject?.rootPath ??
+    activeProject?.name ??
+    projects[0]?.name ??
+    "Select project";
   const triggerContent = (
     <>
-      {prefix && (
-        <span
-          className="project-dropdown-prefix"
-          style={prefixStyle}
-          title={`Active issue prefix — IDs look like ${prefix}-123`}
-        >
-          {prefix}-
-        </span>
-      )}
-      <span className="project-dropdown-name">
-        {activeProject?.name || projects[0]?.name || "Select project"}
-      </span>
+      <Folder size={13} strokeWidth={2} className="project-dropdown-trigger-icon" />
+      <span className="project-dropdown-path">{activePath}</span>
     </>
   );
 

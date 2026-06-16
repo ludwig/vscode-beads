@@ -8,7 +8,7 @@
  */
 
 import React, { useState } from "react";
-import { FolderGit2, Folder, Pin, ChevronDown, ChevronRight } from "lucide-react";
+import { FolderGit2, Pin, ChevronDown, ChevronRight } from "lucide-react";
 import { Bead, BeadsProject, STATUS_COLORS } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
@@ -83,6 +83,7 @@ export function ProjectSwitcherView({
               showChevron={false}
               menuPlacement="bottom-end"
             >
+              <DropdownItem onClick={onOpenProjectFolder}>Open Folder</DropdownItem>
               <DropdownItem onClick={onShowStatus}>Show Dolt Status</DropdownItem>
               <DropdownItem onClick={onStartDolt}>Start Dolt</DropdownItem>
               <DropdownItem onClick={onStopDolt}>Stop Dolt</DropdownItem>
@@ -96,24 +97,11 @@ export function ProjectSwitcherView({
         <ProjectDropdown
           projects={projects}
           activeProject={activeProject}
-          prefix={activeProject?.prefix}
           onSelectProject={onSelectProject}
         />
 
         {activeProject ? (
           <>
-            <button
-              type="button"
-              className="project-switcher-path"
-              title={`${activeProject.rootPath}\nClick to reveal in Explorer`}
-              onClick={onOpenProjectFolder}
-            >
-              <Folder size={11} strokeWidth={2} className="project-switcher-path-icon" />
-              <span className="project-switcher-path-text">
-                {activeProject.displayPath ?? activeProject.rootPath}
-              </span>
-            </button>
-
             <dl className="project-switcher-meta">
               {activeProject.prefix && (
                 <div className="project-switcher-meta-row">
