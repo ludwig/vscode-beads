@@ -10,12 +10,13 @@
  */
 
 import React, { useState } from "react";
+import { LayoutDashboard, ListTodo, RefreshCw, LucideIcon } from "lucide-react";
 import { Bead, BeadsProject, BeadsSummary, IssuesFilter, WebviewSettings, vscode } from "../types";
 import { DashboardView } from "./DashboardView";
 import { IssuesView } from "./IssuesView";
 import { Loading } from "../common/Loading";
 
-type PanelTab = "dashboard" | "issues";
+type PanelTab = "issues" | "dashboard";
 
 interface PanelShellProps {
   summary: BeadsSummary | null;
@@ -38,7 +39,8 @@ export function PanelShell({
   settings,
   issuesFilterRequest,
 }: PanelShellProps): React.ReactElement {
-  const [active, setActive] = useState<PanelTab>("dashboard");
+  // Issues is the default view when the panel first opens.
+  const [active, setActive] = useState<PanelTab>("issues");
   // A Dashboard card click flips to Issues and carries its filter in-shell.
   const [localFilter, setLocalFilter] = useState<{ filter: IssuesFilter; seq: number } | null>(null);
 
@@ -47,25 +49,26 @@ export function PanelShell({
     setActive("issues");
   };
 
-  const tabs: { id: PanelTab; label: string }[] = [
-    { id: "dashboard", label: "Dashboard" },
-    { id: "issues", label: "Issues" },
+  const tabs: { id: PanelTab; label: string; Icon: LucideIcon }[] = [
+    { id: "issues", label: "Issues", Icon: ListTodo },
+    { id: "dashboard", label: "Dashboard", Icon: LayoutDashboard },
   ];
 
   return (
     <div className="panel-shell">
       <nav className="panel-shell-nav" role="tablist">
         <div className="panel-shell-tabs">
-          {tabs.map((tab) => (
+          {tabs.map(({ id, label, Icon }) => (
             <button
-              key={tab.id}
+              key={id}
               type="button"
               role="tab"
-              aria-selected={active === tab.id}
-              className={`panel-shell-tab ${active === tab.id ? "active" : ""}`}
-              onClick={() => setActive(tab.id)}
+              aria-selected={active === id}
+              className={`panel-shell-tab ${active === id ? "active" : ""}`}
+              onClick={() => setActive(id)}
             >
-              {tab.label}
+              <Icon size={15} strokeWidth={2} className="panel-shell-tab-icon" />
+              <span>{label}</span>
             </button>
           ))}
         </div>
@@ -74,9 +77,10 @@ export function PanelShell({
             type="button"
             className="panel-shell-action"
             title="Refresh"
+            aria-label="Refresh"
             onClick={() => vscode.postMessage({ type: "refresh" })}
           >
-            ↻
+            <RefreshCw size={14} strokeWidth={2} />
           </button>
         </div>
       </nav>

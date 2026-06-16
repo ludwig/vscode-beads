@@ -1631,10 +1631,10 @@ textarea {
 
 .panel-shell-nav {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
   gap: var(--spacing-sm);
-  padding: 4px var(--spacing-sm);
+  padding: 0 var(--spacing-sm);
   border-bottom: 1px solid var(--vscode-panel-border);
   background: var(--vscode-sideBar-background);
 }
@@ -1645,42 +1645,66 @@ textarea {
 }
 
 .panel-shell-tab {
-  padding: 4px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
   border: none;
-  border-radius: var(--border-radius);
   background: transparent;
-  color: var(--vscode-foreground);
+  color: var(--vscode-descriptionForeground);
   font-size: 12px;
+  line-height: 1;
   cursor: pointer;
+  /* Browser/GitLens-style underline indicator for the active tab. */
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px; /* overlap the nav's 1px bottom border */
+  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+
+.panel-shell-tab-icon {
+  opacity: 0.85;
+  flex-shrink: 0;
 }
 
 .panel-shell-tab:hover {
+  color: var(--vscode-foreground);
   background: var(--vscode-list-hoverBackground);
 }
 
 .panel-shell-tab.active {
-  background: var(--vscode-list-activeSelectionBackground);
-  color: var(--vscode-list-activeSelectionForeground);
+  color: var(--vscode-foreground);
+  border-bottom-color: var(--vscode-focusBorder, var(--vscode-textLink-activeForeground));
   font-weight: 600;
+}
+
+.panel-shell-tab.active .panel-shell-tab-icon {
+  opacity: 1;
+  color: var(--vscode-focusBorder, var(--vscode-textLink-activeForeground));
 }
 
 .panel-shell-actions {
   display: flex;
+  align-items: center;
   gap: 2px;
 }
 
 .panel-shell-action {
-  padding: 2px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
   border: none;
   border-radius: var(--border-radius);
   background: transparent;
-  color: var(--vscode-foreground);
-  font-size: 14px;
+  color: var(--vscode-icon-foreground, var(--vscode-foreground));
   cursor: pointer;
+  opacity: 0.8;
+  transition: background 0.12s ease, opacity 0.12s ease;
 }
 
 .panel-shell-action:hover {
-  background: var(--vscode-list-hoverBackground);
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+  opacity: 1;
 }
 
 .panel-shell-body {
