@@ -41,6 +41,8 @@ interface UseColumnStateReturn {
   setCompact: React.Dispatch<React.SetStateAction<boolean>>;
   /** Reset visibility to defaults */
   resetVisibility: () => void;
+  /** Reset sorting to the default (clears a persisted/stuck sort) */
+  resetSorting: () => void;
 }
 
 /**
@@ -97,6 +99,10 @@ export function useColumnState(options: UseColumnStateOptions = {}): UseColumnSt
     setColumnVisibility(defaultVisibility);
   };
 
+  const resetSorting = () => {
+    setSorting(defaultSorting);
+  };
+
   return {
     sorting,
     setSorting,
@@ -107,5 +113,6 @@ export function useColumnState(options: UseColumnStateOptions = {}): UseColumnSt
     compact,
     setCompact,
     resetVisibility,
+    resetSorting,
   };
 }

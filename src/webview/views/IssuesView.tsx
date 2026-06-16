@@ -136,6 +136,7 @@ export function IssuesView({
     compact,
     setCompact,
     resetVisibility,
+    resetSorting,
   } = useColumnState({
     defaultSorting: [{ id: "updatedAt", desc: true }],
     defaultVisibility,
@@ -1110,11 +1111,20 @@ export function IssuesView({
                           <button
                             className="col-menu-reset"
                             onClick={() => {
+                              resetSorting();
+                              setColumnMenuOpen(false);
+                            }}
+                          >
+                            Reset sort
+                          </button>
+                          <button
+                            className="col-menu-reset"
+                            onClick={() => {
                               resetVisibility();
                               setColumnMenuOpen(false);
                             }}
                           >
-                            Reset to defaults
+                            Reset columns
                           </button>
                         </div>
                       )}
