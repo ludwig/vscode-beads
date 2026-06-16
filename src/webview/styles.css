@@ -3479,7 +3479,13 @@ textarea {
 
 .graph-node.selected {
   border-color: var(--vscode-focusBorder);
-  box-shadow: 0 0 0 1px var(--vscode-focusBorder);
+  /* A bold ring + outer glow so the active bead reads clearly even on a dense,
+   * zoomed-out board. */
+  box-shadow:
+    0 0 0 2px var(--vscode-focusBorder),
+    0 0 14px 3px var(--vscode-focusBorder);
+  transform: scale(1.06);
+  z-index: 1;
 }
 
 .graph-node.dimmed {
