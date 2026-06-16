@@ -455,6 +455,10 @@ export function IssuesView({
         onSelect: () => vscode.postMessage({ type: "openBeadDetails", beadId: bead.id }),
       },
       {
+        label: "Focus on Graph",
+        onSelect: () => vscode.postMessage({ type: "viewInGraph", beadId: bead.id }),
+      },
+      {
         label: "Copy ID",
         separatorBefore: true,
         onSelect: () => handleCopyId(bead.id),
