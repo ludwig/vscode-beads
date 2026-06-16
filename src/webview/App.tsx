@@ -240,9 +240,16 @@ export function App(): React.ReactElement {
               <h3>No issue selected</h3>
               <p>
                 Pick an issue from the <strong>Issues</strong> list in the panel
-                below to see its details here — or hit <strong>+</strong> above
-                to create a new one.
+                below to see its details here.
               </p>
+              <button
+                type="button"
+                className="empty-state-action"
+                onClick={() => vscode.postMessage({ type: "startCreate" })}
+              >
+                <span className="empty-state-action-icon">+</span>
+                New Issue
+              </button>
             </div>
           );
         }

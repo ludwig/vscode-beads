@@ -230,6 +230,10 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         await vscode.commands.executeCommand("beads.openIssuesWithFilter", message.filter);
         break;
 
+      case "startCreate":
+        await vscode.commands.executeCommand("beads.createIssue");
+        break;
+
       default:
         await this.handleCustomMessage(message);
     }

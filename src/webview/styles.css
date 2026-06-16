@@ -662,6 +662,31 @@ textarea {
   max-width: 300px;
 }
 
+.empty-state-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--spacing-md);
+  padding: 6px 16px;
+  border: none;
+  border-radius: var(--border-radius);
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.empty-state-action:hover {
+  background: var(--vscode-button-hoverBackground, var(--vscode-button-background));
+}
+
+.empty-state-action-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
 .empty-state code {
   background-color: var(--vscode-textCodeBlock-background);
   padding: 2px 6px;

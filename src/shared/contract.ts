@@ -190,6 +190,7 @@ export type WebviewToExtensionMessage =
   | { type: "viewInGraph"; beadId: string }
   | { type: "copyBeadId"; beadId: string }
   | { type: "createBead"; fields: CreateBeadFields }
+  | { type: "startCreate" }
   | { type: "cancelCreate" }
   | { type: "openFile"; filePath: string; line?: number }
   | { type: "openExternal"; url: string }
