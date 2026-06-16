@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reorganized view title-bar actions: the New Issue (+) action now lives on the Details toolbar (where the create form opens) instead of Dashboard/Issues; each view keeps its own Open-in-Editor action; on Details, Copy ID sits last (vs-73h)
 - Issues table column header row is shorter (trimmed vertical padding) (vs-4rt)
 - Issues table dates (Updated/Created) render smaller and muted (10px) so they read as secondary metadata instead of out-sizing the title (vs-xe1)
+- Issues table now lets only the Title column expand to fill available width; the other columns stay at their compact fixed sizes instead of inflating, while preserving the badge clip-safe widths (vs-gmj)
 - Explicitly-configured Beads projects (`beads.projects`, `$BEADS_DIR`, workspace folders) that don't exist or aren't a Beads project are now logged as warnings instead of silently skipped; the `~/beads` auto-scan stays quiet (vs-jse)
 - Reordered Dashboard/Issues view title actions so the share-link (open-in-editor-tab) sits in the middle and Refresh moves to the rightmost edge, matching the Details view where the common op (Copy ID) sits at the edge (vs-qi5)
 - Details-view markdown is now sanitized with DOMPurify before rendering (defense-in-depth atop the webview CSP), and links are routed through the extension: workspace paths open in the editor, http(s)/mailto open in the system handler, and unsafe schemes (`javascript:`, `file:`, …) are dropped (vs-9xx)

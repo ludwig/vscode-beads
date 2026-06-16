@@ -1543,6 +1543,14 @@ textarea {
   padding: 0 !important;
 }
 
+/* Title is the only flexible column (width:auto in the fixed-layout table) so
+   it soaks up available width; the rest stay at their compact fixed sizes.
+   Keep a floor so it can't collapse when many columns are visible. */
+.beads-table th.title-th,
+.beads-table td.title-cell {
+  min-width: 120px;
+}
+
 /* Table wrapper - positions overlay relative to visible area */
 .beads-table-wrapper {
   position: relative;

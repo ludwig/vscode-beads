@@ -933,7 +933,10 @@ export function IssuesView({
                     {headerGroup.headers.map((header) => (
                       <th
                         key={header.id}
-                        style={{ width: header.getSize() }}
+                        // Title flexes (width:auto) to absorb all slack so the
+                        // other columns render at their fixed, clip-safe widths
+                        // (vs-xy5) instead of inflating to fill width:100%.
+                        style={header.column.id === "title" ? {} : { width: header.getSize() }}
                         className={`${header.column.id}-th ${header.column.getCanSort() ? "sortable" : ""} ${draggedColumn === header.id ? "dragging" : ""} ${dragOverColumn === header.id && draggedColumn !== header.id ? "drag-over" : ""}`}
                         onClick={header.column.getToggleSortingHandler()}
                         draggable={!isResizing}
@@ -1093,7 +1096,7 @@ export function IssuesView({
                         <td
                           key={cell.id}
                           className={`${cell.column.id}-cell`}
-                          style={{ width: cell.column.getSize() }}
+                          style={cell.column.id === "title" ? {} : { width: cell.column.getSize() }}
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
