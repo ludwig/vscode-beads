@@ -10,15 +10,16 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { LayoutDashboard, ListTodo, Workflow, ListTree, RefreshCw, ExternalLink, LucideIcon } from "lucide-react";
+import { LayoutDashboard, ListTodo, Workflow, ListTree, Kanban, RefreshCw, ExternalLink, LucideIcon } from "lucide-react";
 import { Bead, BeadsSummary, DependencyGraph, IssuesFilter, WebviewSettings, vscode } from "../types";
 import { DashboardView } from "./DashboardView";
 import { IssuesView } from "./IssuesView";
+import { KanbanBoard } from "./KanbanBoard";
 import { GraphView } from "./graph/GraphView";
 import { TreeView } from "./tree/TreeView";
 import { Loading } from "../common/Loading";
 
-type PanelTab = "issues" | "dashboard" | "graph" | "tree";
+type PanelTab = "issues" | "dashboard" | "kanban" | "graph" | "tree";
 
 interface PanelShellProps {
   summary: BeadsSummary | null;
@@ -106,13 +107,14 @@ export function PanelShell({
 
   const tabs: { id: PanelTab; label: string; Icon: LucideIcon }[] = [
     { id: "dashboard", label: "Dashboard", Icon: LayoutDashboard },
+    { id: "kanban", label: "Kanban", Icon: Kanban },
     { id: "issues", label: "Issues", Icon: ListTodo },
     { id: "tree", label: "Tree", Icon: ListTree },
     { id: "graph", label: "Graph", Icon: Workflow },
   ];
 
-  // The Tree tab has no editor-tab route yet, so hide Open-in-Editor for it.
-  const canOpenInEditor = active !== "tree";
+  // Tree and Kanban have no editor-tab route yet, so hide Open-in-Editor there.
+  const canOpenInEditor = active !== "tree" && active !== "kanban";
 
   return (
     <div className={`panel-shell${pulsing ? " pulsing" : ""}`}>
@@ -157,7 +159,14 @@ export function PanelShell({
       </nav>
 
       <div className="panel-shell-body">
-        {active === "tree" ? (
+        {active === "kanban" ? (
+          <KanbanBoard
+            beads={beads}
+            selectedBeadId={selectedBeadId}
+            onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
+            onUpdateBead={(beadId, updates) => vscode.postMessage({ type: "updateBead", beadId, updates })}
+          />
+        ) : active === "tree" ? (
           <TreeView
             graph={graph}
             loading={loading}

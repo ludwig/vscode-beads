@@ -49,7 +49,11 @@ export class BeadsProjectSwitcherViewProvider extends BaseViewProvider {
 
   private sampleMemory(): void {
     if (!this._host?.visible) return;
-    this.postMessage({ type: "setMemoryUsage", bytes: process.memoryUsage().rss });
+    // heapUsed (the V8 JS heap) rather than rss — rss includes Electron/native
+    // and shared pages and runs to GBs for the whole host; heapUsed is the JS
+    // memory extensions actually grow, so it's smaller and useful for spotting
+    // leaks. Still the shared host heap, not Beads in isolation.
+    this.postMessage({ type: "setMemoryUsage", bytes: process.memoryUsage().heapUsed });
   }
 
   public dispose(): void {

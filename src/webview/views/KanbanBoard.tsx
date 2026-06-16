@@ -5,7 +5,7 @@
  * Supports drag-and-drop to change status.
  */
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Bead, BeadStatus, BeadType, STATUS_LABELS, STATUS_COLORS } from "../types";
 import { TypeIcon } from "../common/TypeIcon";
 import { PriorityBadge } from "../common/PriorityBadge";
@@ -32,6 +32,16 @@ export function KanbanBoard({ beads, selectedBeadId, onSelectBead, onUpdateBead,
   const [dragOverColumn, setDragOverColumn] = useState<BeadStatus | null>(null);
   // Optimistic status overrides for instant visual feedback
   const [optimisticStatus, setOptimisticStatus] = useState<Map<string, BeadStatus>>(new Map());
+  // Optimistic selection: highlight the clicked card instantly instead of
+  // waiting for the extension to echo selectedBeadId back. Cleared when the
+  // authoritative prop updates so external selections win.
+  const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
+  useEffect(() => setLocalSelectedId(null), [selectedBeadId]);
+  const activeSelectedId = localSelectedId ?? selectedBeadId;
+  const selectCard = (id: string) => {
+    setLocalSelectedId(id);
+    onSelectBead(id);
+  };
 
   // Apply optimistic overrides to beads
   const effectiveBeads = useMemo(() => {
@@ -134,10 +144,10 @@ export function KanbanBoard({ beads, selectedBeadId, onSelectBead, onUpdateBead,
                 {items.map((bead) => (
                   <div
                     key={bead.id}
-                    className={`kanban-card ${bead.id === selectedBeadId ? "selected" : ""}`}
+                    className={`kanban-card ${bead.id === activeSelectedId ? "selected" : ""}`}
                     draggable={!!onUpdateBead}
                     onDragStart={(e) => handleDragStart(e, bead.id)}
-                    onClick={() => onSelectBead(bead.id)}
+                    onClick={() => selectCard(bead.id)}
                   >
                     <div className="kanban-card-header">
                       <TypeIcon type={(bead.type || "task") as BeadType} size={12} />

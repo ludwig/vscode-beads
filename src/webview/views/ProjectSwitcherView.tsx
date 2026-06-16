@@ -189,7 +189,7 @@ export function ProjectSwitcherView({
                   <dt>Memory</dt>
                   <dd
                     className="mono-figure"
-                    title="Resident memory of the VS Code extension-host process (shared by all extensions, not just Beads) — sampled periodically"
+                    title="JS heap (heapUsed) of the VS Code extension-host process — shared by all JS extensions, not just Beads. Sampled periodically."
                   >
                     {formatMb(memoryBytes)}
                   </dd>
