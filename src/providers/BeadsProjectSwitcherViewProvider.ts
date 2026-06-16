@@ -15,6 +15,9 @@ import { Logger } from "../utils/logger";
 export class BeadsProjectSwitcherViewProvider extends BaseViewProvider {
   protected readonly viewType = "beadsProjectSwitcher";
 
+  /** The currently-selected ("active") bead, pinned in the view for reference. */
+  private activeBeadId: string | null = null;
+
   constructor(
     extensionUri: vscode.Uri,
     projectManager: BeadsProjectManager,
@@ -23,8 +26,26 @@ export class BeadsProjectSwitcherViewProvider extends BaseViewProvider {
     super(extensionUri, projectManager, logger.child("ProjectSwitcher"));
   }
 
+  /**
+   * Pin a bead as the active reference (or clear with null). Reuses the
+   * existing `setBead` message; the bead row is resolved from the list cache so
+   * we don't spawn a `bd show`.
+   */
+  public setActiveBead(beadId: string | null): void {
+    this.activeBeadId = beadId;
+    this.postActiveBead();
+  }
+
+  private postActiveBead(): void {
+    const bead = this.activeBeadId
+      ? this.projectManager.getCachedBead(this.activeBeadId)
+      : null;
+    this.postMessage({ type: "setBead", bead });
+  }
+
   protected async loadData(): Promise<void> {
-    // No bead data to load — the switcher only needs project/projects, which
-    // initializeView() and refresh() already push.
+    // No bead list to load — the switcher only needs project/projects (pushed by
+    // initializeView/refresh). Re-send the pinned active bead on (re)init.
+    this.postActiveBead();
   }
 }

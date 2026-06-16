@@ -1701,14 +1701,14 @@ textarea {
   box-sizing: border-box;
 }
 
-.project-switcher-head {
+.context-section {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  margin-bottom: var(--spacing-xs);
+  gap: var(--spacing-xs);
 }
 
-.project-switcher-eyebrow {
+.context-heading {
+  margin: 0 0 2px;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.12em;
@@ -1716,11 +1716,40 @@ textarea {
   color: var(--vscode-descriptionForeground);
 }
 
-.project-switcher-title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1.2;
+.context-empty {
+  color: var(--vscode-descriptionForeground);
+  font-size: 12px;
+}
+
+.context-empty p {
+  margin: 0 0 var(--spacing-xs);
+}
+
+.active-bead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: var(--border-radius);
+  background: var(--vscode-sideBar-background);
+  cursor: pointer;
+}
+
+.active-bead:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.active-bead-id {
+  font-family: var(--vscode-editor-font-family);
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.active-bead-title {
+  font-size: 12px;
   color: var(--vscode-foreground);
   white-space: nowrap;
   overflow: hidden;

@@ -128,6 +128,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     projectManager,
     shellProvider,
     detailsProvider,
+    switcherProvider,
     panelManager,
     log,
     updateStatusBar,
@@ -143,6 +144,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     projectManager.onActiveProjectChanged(() => {
       shellProvider.setSelectedBead(null); // Clear selection on project switch
+      switcherProvider.setActiveBead(null);
       shellProvider.refreshForProjectChange();
       detailsProvider.refreshForProjectChange();
       switcherProvider.refreshForProjectChange();

@@ -12,6 +12,7 @@ import { IssuesFilter } from "../backend/types";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
 import { PanelShellViewProvider } from "../providers/PanelShellViewProvider";
 import { BeadDetailsViewProvider } from "../providers/BeadDetailsViewProvider";
+import { BeadsProjectSwitcherViewProvider } from "../providers/BeadsProjectSwitcherViewProvider";
 import { BeadPanelManager } from "../providers/BeadPanelManager";
 import { Logger } from "../utils/logger";
 
@@ -20,6 +21,8 @@ export interface CommandDeps {
   /** The consolidated bottom-Panel shell (Dashboard + Issues data + selection). */
   shellProvider: PanelShellViewProvider;
   detailsProvider: BeadDetailsViewProvider;
+  /** Sidebar context view — pins the active bead as a reference. */
+  switcherProvider: BeadsProjectSwitcherViewProvider;
   panelManager: BeadPanelManager;
   log: Logger;
   /** Recompute the Beads status-bar item from current project state. */
@@ -38,6 +41,7 @@ export function registerCommands(
     projectManager,
     shellProvider,
     detailsProvider,
+    switcherProvider,
     panelManager,
     log,
     updateStatusBar,
@@ -96,6 +100,7 @@ export function registerCommands(
         const selectedId = beadId;
         detailsProvider.showBead(selectedId);
         shellProvider.setSelectedBead(selectedId);
+        switcherProvider.setActiveBead(selectedId);
       }
     }),
 

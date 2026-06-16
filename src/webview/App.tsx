@@ -219,6 +219,7 @@ export function App(): React.ReactElement {
           <ProjectSwitcherView
             projects={state.projects}
             activeProject={state.project}
+            activeBead={state.selectedBead}
             version={state.settings.extensionVersion}
             buildSha={state.settings.buildSha}
             buildDirty={state.settings.buildDirty}
@@ -230,6 +231,7 @@ export function App(): React.ReactElement {
               })
             }
             onOpenProjectFolder={() => vscode.postMessage({ type: "openProjectFolder" })}
+            onOpenBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
           />
         );
 

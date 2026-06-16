@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New consolidated **Beads** panel in the bottom Panel (next to Terminal/Problems): a single surface that hosts the **Dashboard** and **Issues** subviews behind an in-view nav row — clicking a tab swaps the whole area, and a Dashboard card click flips to Issues with that filter applied. Buttons live in the view (nav row), not the panel tab bar, and the panel loads the bead list once to feed both subviews (vs-b2p, vs-b2p.1)
 - Restructured the sidebar: Dashboard and Issues now live in the bottom Panel, and the activity-bar Beads view is slimmed to a dedicated **Project** switcher + **Details** — giving the wide Dashboard/Issues surfaces horizontal room and decluttering the left (vs-b2p, vs-5a8)
 - The sidebar Project view now leads with a header and shows basic context (issue prefix, backend status, project count, build/version) with a friendly empty state; the Details view shows a proper empty state (icon + guidance) instead of a bare line (vs-ed2)
+- Renamed the sidebar context view to **Active Project** and added an **Active Bead** section that pins the currently-selected bead (id + title) with a quick-open button — a reference anchor (and future seed root for the Graph view) (vs-14e)
+- The Dashboard's **By Label** breakdown now starts collapsed (vs-7r5)
 
 ### Changed
 
