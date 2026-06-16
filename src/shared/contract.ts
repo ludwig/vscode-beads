@@ -169,6 +169,7 @@ export type ExtensionToWebviewMessage =
   | { type: "setCreateMode"; value: boolean }
   | { type: "applyIssuesFilter"; filter: IssuesFilter }
   | { type: "showGraph"; beadId: string }
+  | { type: "focusIssuesTab" }
   | { type: "refresh" }
   | { type: "showToast"; text: string };
 

@@ -47,6 +47,8 @@ interface AppState {
   // the Details/table "View in graph" action). `seq` changes on every request
   // so the panel re-switches to Graph even if it's the same bead as last time.
   showGraphRequest: { beadId: string; seq: number } | null;
+  // Bumped to switch the panel to the Issues tab + pulse a confirmation ring.
+  focusIssuesSeq: number;
 }
 
 const initialState: AppState = {
@@ -71,6 +73,7 @@ const initialState: AppState = {
   createMode: false,
   issuesFilterRequest: null,
   showGraphRequest: null,
+  focusIssuesSeq: 0,
 };
 
 export function App(): React.ReactElement {
@@ -134,6 +137,9 @@ export function App(): React.ReactElement {
             seq: (prev.showGraphRequest?.seq ?? 0) + 1,
           },
         }));
+        break;
+      case "focusIssuesTab":
+        setState((prev) => ({ ...prev, focusIssuesSeq: prev.focusIssuesSeq + 1 }));
         break;
       case "refresh":
         vscode.postMessage({ type: "refresh" });
@@ -218,6 +224,7 @@ export function App(): React.ReactElement {
             settings={state.settings}
             issuesFilterRequest={state.issuesFilterRequest}
             showGraphRequest={state.showGraphRequest}
+            focusIssuesSeq={state.focusIssuesSeq}
           />
         );
 

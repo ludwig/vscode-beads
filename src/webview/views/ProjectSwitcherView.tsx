@@ -93,27 +93,6 @@ export function ProjectSwitcherView({
 
   return (
     <div className="project-switcher-view">
-      <div className="context-actions">
-        <button
-          type="button"
-          className="btn btn-primary context-action-btn"
-          onClick={onPickReady}
-          disabled={!activeProject}
-          title="Pick a ready-to-work bead (open, no open blocker) and make it the active bead"
-        >
-          <Rocket size={14} strokeWidth={2} />
-          <span>Pick Ready Bead</span>
-        </button>
-        <button
-          type="button"
-          className="btn context-action-btn"
-          onClick={onShowIssues}
-          title="Show the Issues panel"
-        >
-          <ListTodo size={14} strokeWidth={2} />
-          <span>Show Issues</span>
-        </button>
-      </div>
       <section className="context-section">
         <div className="context-section-head">
           <button
@@ -265,6 +244,28 @@ export function ProjectSwitcherView({
           </div>
         ))}
       </section>
+
+      <div className="context-actions">
+        <button
+          type="button"
+          className="btn context-action-btn"
+          onClick={onShowIssues}
+          title="Show the Issues panel"
+        >
+          <ListTodo size={14} strokeWidth={2} />
+          <span>Show Issues</span>
+        </button>
+        <button
+          type="button"
+          className="btn btn-primary context-action-btn"
+          onClick={onPickReady}
+          disabled={!activeProject}
+          title="Pick a ready-to-work bead (open, no open blocker) and make it the active bead"
+        >
+          <Rocket size={14} strokeWidth={2} />
+          <span>Pick Ready Bead</span>
+        </button>
+      </div>
     </div>
   );
 }

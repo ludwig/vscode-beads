@@ -30,6 +30,7 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
   // (e.g. the Details "View in graph" action). Held until the webview is ready
   // so a freshly-focused panel still switches to the Graph tab and focuses it.
   private pendingShowGraph: string | undefined;
+  private pendingFocusIssues = false;
   // Set once the Graph/Tree tab asks for the dependency graph, so a project
   // switch / refresh knows to re-push fresh graph data (not just the bead list).
   private graphRequested = false;
@@ -54,6 +55,15 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     this.flushShowGraph();
   }
 
+  /**
+   * Switch the panel to the Issues tab and pulse a confirmation ring — so
+   * "Show Issues" gives visible feedback even when Issues is already showing.
+   */
+  public focusIssuesTab(): void {
+    this.pendingFocusIssues = true;
+    this.flushFocusIssues();
+  }
+
   private flushFilter(): void {
     if (this.pendingFilter !== undefined && this._host?.visible) {
       this.postMessage({ type: "applyIssuesFilter", filter: this.pendingFilter });
@@ -68,10 +78,18 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     }
   }
 
+  private flushFocusIssues(): void {
+    if (this.pendingFocusIssues && this._host?.visible) {
+      this.postMessage({ type: "focusIssuesTab" });
+      this.pendingFocusIssues = false;
+    }
+  }
+
   protected async initializeView(): Promise<void> {
     await super.initializeView();
     this.flushFilter();
     this.flushShowGraph();
+    this.flushFocusIssues();
   }
 
   constructor(

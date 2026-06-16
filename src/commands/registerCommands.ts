@@ -86,8 +86,11 @@ export function registerCommands(
       await projectManager.showProjectPicker();
     }),
 
-    vscode.commands.registerCommand("beads.openBeadsPanel", () => {
-      vscode.commands.executeCommand("beadsPanelShell.focus");
+    vscode.commands.registerCommand("beads.openBeadsPanel", async () => {
+      await vscode.commands.executeCommand("beadsPanelShell.focus");
+      // Switch to the Issues tab and pulse a ring so the action is visible even
+      // when the panel (or Issues tab) was already showing.
+      shellProvider.focusIssuesTab();
     }),
 
     // Open the Issues panel pre-filtered to a slice (empty filter = all).

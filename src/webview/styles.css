@@ -1681,6 +1681,23 @@ textarea {
   flex-direction: column;
   height: 100%;
   min-height: 0;
+  position: relative;
+}
+
+/* Confirmation ring pulsed when "Show Issues" (re)selects the panel. */
+.panel-shell.pulsing::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border: 2px solid var(--vscode-focusBorder);
+  border-radius: 3px;
+  animation: panel-shell-pulse 0.7s ease-out forwards;
+}
+
+@keyframes panel-shell-pulse {
+  0% { opacity: 0.9; }
+  100% { opacity: 0; }
 }
 
 .panel-shell-nav {
@@ -2446,12 +2463,14 @@ textarea {
   padding: 3px 8px;
 }
 
-/* Prominent action buttons at the top of the Context view (Pick Ready / Show Issues) */
+/* Action buttons pinned to the bottom of the Context view, flowing in one row
+   (Show Issues · Pick Ready Bead). */
 .context-actions {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 6px;
-  padding: 10px 12px 6px;
+  padding: 6px 4px 2px;
+  margin-top: auto;
 }
 
 .context-action-btn {
@@ -2459,7 +2478,7 @@ textarea {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  width: 100%;
+  flex: 1;
   padding: 6px 10px;
   font-size: 12px;
   cursor: pointer;

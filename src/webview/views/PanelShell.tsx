@@ -30,6 +30,7 @@ interface PanelShellProps {
   settings: WebviewSettings;
   issuesFilterRequest: { filter: IssuesFilter; seq: number } | null;
   showGraphRequest: { beadId: string; seq: number } | null;
+  focusIssuesSeq: number;
 }
 
 export function PanelShell({
@@ -42,6 +43,7 @@ export function PanelShell({
   settings,
   issuesFilterRequest,
   showGraphRequest,
+  focusIssuesSeq,
 }: PanelShellProps): React.ReactElement {
   // Issues is the default view when the panel first opens.
   const [active, setActive] = useState<PanelTab>("issues");
@@ -69,6 +71,21 @@ export function PanelShell({
     setActive("graph");
   }, [showGraphRequest]);
 
+  // "Show Issues": flip to the Issues tab and pulse a confirmation ring, so the
+  // action reads as registered even when Issues was already showing.
+  const [pulsing, setPulsing] = useState(false);
+  const lastFocusIssuesSeq = useRef(0);
+  useEffect(() => {
+    if (focusIssuesSeq === 0 || lastFocusIssuesSeq.current === focusIssuesSeq) {
+      return;
+    }
+    lastFocusIssuesSeq.current = focusIssuesSeq;
+    setActive("issues");
+    setPulsing(true);
+    const t = setTimeout(() => setPulsing(false), 700);
+    return () => clearTimeout(t);
+  }, [focusIssuesSeq]);
+
   const flipToIssues = (filter: IssuesFilter) => {
     setLocalFilter((prev) => ({ filter, seq: (prev?.seq ?? 0) + 1 }));
     setActive("issues");
@@ -89,7 +106,7 @@ export function PanelShell({
   const canOpenInEditor = active !== "tree";
 
   return (
-    <div className="panel-shell">
+    <div className={`panel-shell${pulsing ? " pulsing" : ""}`}>
       <nav className="panel-shell-nav" role="tablist">
         <div className="panel-shell-tabs">
           {tabs.map(({ id, label, Icon }) => (
