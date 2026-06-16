@@ -3486,11 +3486,12 @@ textarea {
   flex: 1;
   min-height: 0;
   padding: var(--spacing-sm);
-  /* Columns grow to their content; the whole board scrolls (both axes) rather
-     than each column trapping cards in a cramped inner scrollbar (vs-qlp).
-     align-items:flex-start so columns are content-height, not stretched. */
+  /* The whole board scrolls (both axes) rather than each column trapping cards
+     in a cramped inner scrollbar (vs-qlp). align-items:stretch keeps every lane
+     equal-height — at least the visible area (distinct lanes + full-lane drop
+     targets), growing taller and scrolling the board when a column overflows. */
   overflow: auto;
-  align-items: flex-start;
+  align-items: stretch;
 }
 
 .kanban-column {
