@@ -22,7 +22,6 @@ interface PanelShellProps {
   beads: Bead[];
   loading: boolean;
   error: string | null;
-  projects: BeadsProject[];
   activeProject: BeadsProject | null;
   selectedBeadId: string | null;
   settings: WebviewSettings;
@@ -34,7 +33,6 @@ export function PanelShell({
   beads,
   loading,
   error,
-  projects,
   activeProject,
   selectedBeadId,
   settings,
@@ -90,18 +88,10 @@ export function PanelShell({
             beads={beads}
             loading={loading}
             error={error}
-            projects={projects}
             activeProject={activeProject}
             version={settings.extensionVersion}
             buildSha={settings.buildSha}
             buildDirty={settings.buildDirty}
-            onSelectProject={(project) =>
-              vscode.postMessage({
-                type: "selectProject",
-                projectId: project.id,
-                projectRootPath: project.rootPath,
-              })
-            }
             onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onOpenIssues={(filter) => flipToIssues(filter)}
             onShowStatus={() => vscode.postMessage({ type: "showDoltStatus" })}
