@@ -17,6 +17,7 @@ import {
   forceCollide,
   type SimulationNodeDatum,
 } from "d3-force";
+import { hierarchy as d3hierarchy, tree as d3tree } from "d3-hierarchy";
 
 export interface LayoutEdge {
   from: string;
@@ -167,5 +168,133 @@ export function forceLayout(nodeIds: string[], edges: LayoutEdge[], seed = 0): P
   for (const node of nodes) {
     positions.set(node.id, { x: node.x ?? 0, y: node.y ?? 0 });
   }
+  return positions;
+}
+
+interface HierNode {
+  id: string;
+  children: HierNode[];
+}
+
+/**
+ * Build a parent/child forest from `hierEdges` (already filtered to the
+ * hierarchy relation; convention from=child, to=parent). First parent wins;
+ * back-edges are skipped (cycle guard). `participating` is every node that has
+ * a parent or a child — the rest are isolated and handled as orphans.
+ */
+function buildHierarchy(
+  nodeIds: string[],
+  hierEdges: LayoutEdge[],
+): { roots: HierNode[]; participating: Set<string> } {
+  const ids = new Set(nodeIds);
+  const parentOf = new Map<string, string>();
+  const childrenOf = new Map<string, string[]>();
+  for (const e of hierEdges) {
+    const child = e.from;
+    const parent = e.to;
+    if (child === parent || !ids.has(child) || !ids.has(parent)) continue;
+    if (parentOf.has(child)) continue; // first parent wins
+    parentOf.set(child, parent);
+    if (!childrenOf.has(parent)) childrenOf.set(parent, []);
+    childrenOf.get(parent)!.push(child);
+  }
+  const participating = new Set<string>([...parentOf.keys(), ...childrenOf.keys()]);
+  const build = (id: string, ancestry: Set<string>): HierNode => {
+    const kids = (childrenOf.get(id) ?? []).filter((c) => !ancestry.has(c)); // cycle guard
+    const next = new Set(ancestry).add(id);
+    return { id, children: kids.map((c) => build(c, next)) };
+  };
+  const roots = nodeIds
+    .filter((id) => participating.has(id) && !parentOf.has(id))
+    .map((id) => build(id, new Set()));
+  return { roots, participating };
+}
+
+/** Pack a list of ids into a grid starting at (20, startY). */
+function gridPack(ids: string[], startY: number, positions: Positions): void {
+  if (ids.length === 0) return;
+  const cols = Math.max(1, Math.ceil(Math.sqrt(ids.length)));
+  ids.forEach((id, i) => {
+    positions.set(id, {
+      x: 20 + (i % cols) * (NODE_WIDTH + GRID_GAP_X),
+      y: startY + Math.floor(i / cols) * (NODE_HEIGHT + GRID_GAP_Y),
+    });
+  });
+}
+
+const RANK_GAP = 70; // vertical gap between tree depths
+const RADIAL_RING_GAP = NODE_WIDTH + 40; // radius added per depth
+
+/**
+ * Tidy-tree (Reingold–Tilford, via d3-hierarchy) layout of the parent/child
+ * forest. Isolated beads (no parent-child edge) are gridded below. `hierEdges`
+ * must already be filtered to the parent-child relation.
+ */
+export function treeLayout(nodeIds: string[], hierEdges: LayoutEdge[]): Positions {
+  const positions: Positions = new Map();
+  if (nodeIds.length === 0) return positions;
+
+  const { roots } = buildHierarchy(nodeIds, hierEdges);
+
+  let bottom = 0;
+  if (roots.length > 0) {
+    const layout = d3tree<HierNode>().nodeSize([NODE_WIDTH + GRID_GAP_X, NODE_HEIGHT + RANK_GAP]);
+    const root = layout(d3hierarchy<HierNode>({ id: "__virtual__", children: roots }, (d) => d.children));
+    const reals = root.descendants().filter((n) => n.data.id !== "__virtual__");
+    // d3 places the virtual super-root one level above the real roots; normalize
+    // so the topmost real node sits at the margin (x and y both >= 20).
+    const minX = Math.min(...reals.map((n) => n.x));
+    const minY = Math.min(...reals.map((n) => n.y));
+    for (const n of reals) {
+      const x = n.x - minX + 20;
+      const y = n.y - minY + 20;
+      positions.set(n.data.id, { x, y });
+      bottom = Math.max(bottom, y + NODE_HEIGHT);
+    }
+  }
+
+  // Grid anything the tree didn't place — isolated beads AND any node stranded
+  // by a parent-child cycle (every node has a parent, so there's no root).
+  const orphans = nodeIds.filter((id) => !positions.has(id));
+  gridPack(orphans, positions.size > orphans.length ? bottom + ORPHAN_BLOCK_GAP : 20, positions);
+  return positions;
+}
+
+/**
+ * Radial tidy-tree layout (d3-hierarchy): roots near the center, descendants
+ * fanning outward by depth. Isolated beads are gridded below the disc.
+ * `hierEdges` must already be filtered to the parent-child relation.
+ */
+export function radialLayout(nodeIds: string[], hierEdges: LayoutEdge[]): Positions {
+  const positions: Positions = new Map();
+  if (nodeIds.length === 0) return positions;
+
+  const { roots } = buildHierarchy(nodeIds, hierEdges);
+
+  let bottom = 0;
+  let maxR = 0;
+  if (roots.length > 0) {
+    const hier = d3hierarchy<HierNode>({ id: "__virtual__", children: roots }, (d) => d.children);
+    const depth = Math.max(1, hier.height);
+    const radius = depth * RADIAL_RING_GAP;
+    const root = d3tree<HierNode>().size([2 * Math.PI, radius])(hier);
+    const reals = root.descendants().filter((n) => n.data.id !== "__virtual__");
+    // Polar (x = angle, y = radius) → cartesian, centered then shifted positive.
+    const pts = reals.map((n) => {
+      const angle = n.x;
+      const r = n.y;
+      maxR = Math.max(maxR, r);
+      return { id: n.data.id, px: r * Math.cos(angle), py: r * Math.sin(angle) };
+    });
+    for (const p of pts) {
+      const x = p.px + maxR + 20;
+      const y = p.py + maxR + 20;
+      positions.set(p.id, { x, y });
+      bottom = Math.max(bottom, y + NODE_HEIGHT);
+    }
+  }
+
+  const orphans = nodeIds.filter((id) => !positions.has(id));
+  gridPack(orphans, positions.size > orphans.length ? bottom + ORPHAN_BLOCK_GAP : 20, positions);
   return positions;
 }

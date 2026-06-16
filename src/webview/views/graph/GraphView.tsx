@@ -24,13 +24,13 @@ import {
   type Edge,
   type Connection,
 } from "@xyflow/react";
-import { GitBranch, Network, Crosshair, Wand2, Filter } from "lucide-react";
+import { GitBranch, Network, Crosshair, Wand2, Filter, ListTree, Radar } from "lucide-react";
 import { Bead, DependencyGraph, STATUS_COLORS, vscode } from "../../types";
 import { Loading } from "../../common/Loading";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { BeadNode, type BeadNodeData } from "./BeadNode";
 import { ContextMenu, type ContextMenuItem } from "../../common/ContextMenu";
-import { layeredLayout, forceLayout, type LayoutEdge } from "./layout";
+import { layeredLayout, forceLayout, treeLayout, radialLayout, type LayoutEdge } from "./layout";
 import {
   edgeStyle,
   neighborhood,
@@ -40,7 +40,7 @@ import {
   connectionToAddDependency,
 } from "./graphModel";
 
-type LayoutMode = "layered" | "force";
+type LayoutMode = "layered" | "force" | "tree" | "radial";
 
 interface GraphViewProps {
   graph: DependencyGraph | null;
@@ -123,6 +123,14 @@ function GraphCanvas({
     () => (graph?.edges ?? []).map((e) => ({ from: e.from, to: e.to })),
     [graph],
   );
+  // Parent-child subset drives the tree/radial layouts (from=child, to=parent).
+  const hierEdges: LayoutEdge[] = useMemo(
+    () =>
+      (graph?.edges ?? [])
+        .filter((e) => e.type === "parent-child")
+        .map((e) => ({ from: e.from, to: e.to })),
+    [graph],
+  );
 
   // Which beads are visible (focus neighborhood vs the whole board), as a stable
   // content key. Keying on the sorted id list (not the Set identity) means
@@ -146,9 +154,17 @@ function GraphCanvas({
   const positioned = useMemo(() => {
     const ids = beads.filter((b) => visibleIds.has(b.id)).map((b) => b.id);
     const edges = layoutEdges.filter((e) => visibleIds.has(e.from) && visibleIds.has(e.to));
-    const positions = mode === "layered" ? layeredLayout(ids, edges) : forceLayout(ids, edges, layoutSeed);
+    const hier = hierEdges.filter((e) => visibleIds.has(e.from) && visibleIds.has(e.to));
+    const positions =
+      mode === "layered"
+        ? layeredLayout(ids, edges)
+        : mode === "tree"
+          ? treeLayout(ids, hier)
+          : mode === "radial"
+            ? radialLayout(ids, hier)
+            : forceLayout(ids, edges, layoutSeed);
     return { ids: new Set(ids), positions };
-  }, [beads, layoutEdges, visibleIds, mode, layoutSeed]);
+  }, [beads, layoutEdges, hierEdges, visibleIds, mode, layoutSeed]);
 
   // Nodes never dim — hovering only emphasizes the hovered node's own edges, so
   // the board stays fully visible as the mouse moves.
@@ -299,6 +315,28 @@ function GraphCanvas({
           >
             <Network size={14} strokeWidth={2} />
             <span>Force</span>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={mode === "tree"}
+            className={`graph-toggle-btn ${mode === "tree" ? "active" : ""}`}
+            onClick={() => setMode("tree")}
+            title="Tidy-tree layout (parent-child hierarchy)"
+          >
+            <ListTree size={14} strokeWidth={2} />
+            <span>Tree</span>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={mode === "radial"}
+            className={`graph-toggle-btn ${mode === "radial" ? "active" : ""}`}
+            onClick={() => setMode("radial")}
+            title="Radial tree layout (parent-child hierarchy)"
+          >
+            <Radar size={14} strokeWidth={2} />
+            <span>Radial</span>
           </button>
         </div>
         <button

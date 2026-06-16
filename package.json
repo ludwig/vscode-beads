@@ -234,6 +234,7 @@
   },
   "devDependencies": {
     "@types/d3-force": "^3.0.10",
+    "@types/d3-hierarchy": "^3.1.7",
     "@types/dagre": "^0.7.54",
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.45",
@@ -253,6 +254,7 @@
     "@tanstack/react-table": "^8.21.3",
     "@xyflow/react": "^12.11.0",
     "d3-force": "^3.0.0",
+    "d3-hierarchy": "^3.1.2",
     "dagre": "^0.8.5",
     "dompurify": "^3.4.10",
     "lucide-react": "^0.563.0",

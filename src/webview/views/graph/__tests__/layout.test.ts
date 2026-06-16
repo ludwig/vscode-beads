@@ -1,4 +1,4 @@
-import { layeredLayout, forceLayout, NODE_WIDTH, NODE_HEIGHT } from "../layout";
+import { layeredLayout, forceLayout, treeLayout, radialLayout, NODE_WIDTH, NODE_HEIGHT } from "../layout";
 
 const edges = [
   { from: "a", to: "b" },
@@ -115,5 +115,58 @@ describe("forceLayout", () => {
     expect([...v1.entries()]).toEqual([...v1again.entries()]);
     const moved = ids.some((id) => v1.get(id)!.x !== v2.get(id)!.x || v1.get(id)!.y !== v2.get(id)!.y);
     expect(moved).toBe(true);
+  });
+});
+
+// Parent-child hierarchy edges: from=child, to=parent.
+const hier = [
+  { from: "b", to: "a" }, // a is parent of b
+  { from: "c", to: "a" }, // a is parent of c
+  { from: "d", to: "b" }, // b is parent of d
+];
+
+describe("treeLayout", () => {
+  it("returns a position for every node", () => {
+    const pos = treeLayout(["a", "b", "c", "d"], hier);
+    expect(pos.size).toBe(4);
+    for (const id of ["a", "b", "c", "d"]) expect(pos.has(id)).toBe(true);
+  });
+
+  it("places the parent above its children (smaller y)", () => {
+    const pos = treeLayout(["a", "b", "c", "d"], hier);
+    expect(pos.get("a")!.y).toBeLessThan(pos.get("b")!.y);
+    expect(pos.get("b")!.y).toBeLessThan(pos.get("d")!.y);
+  });
+
+  it("grids isolated beads (no parent-child edge) and still positions them", () => {
+    const pos = treeLayout(["a", "b", "orphan1", "orphan2"], [{ from: "b", to: "a" }]);
+    expect(pos.size).toBe(4);
+    expect(pos.has("orphan1")).toBe(true);
+  });
+
+  it("handles cycles without throwing", () => {
+    const pos = treeLayout(["a", "b"], [{ from: "a", to: "b" }, { from: "b", to: "a" }]);
+    expect(pos.size).toBe(2);
+  });
+
+  it("handles empty input", () => {
+    expect(treeLayout([], hier).size).toBe(0);
+  });
+});
+
+describe("radialLayout", () => {
+  it("returns a position for every node", () => {
+    const pos = radialLayout(["a", "b", "c", "d"], hier);
+    expect(pos.size).toBe(4);
+  });
+
+  it("grids isolated beads alongside the hierarchy", () => {
+    const pos = radialLayout(["a", "b", "orphan1"], [{ from: "b", to: "a" }]);
+    expect(pos.size).toBe(3);
+    expect(pos.has("orphan1")).toBe(true);
+  });
+
+  it("handles empty input", () => {
+    expect(radialLayout([], hier).size).toBe(0);
   });
 });
