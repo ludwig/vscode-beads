@@ -40,6 +40,24 @@ describe("layeredLayout", () => {
     expect(pos.size).toBe(3);
   });
 
+  it("packs many orphans into a grid (multiple rows), not one wide row", () => {
+    const ids = Array.from({ length: 9 }, (_, i) => `n${i}`);
+    const pos = layeredLayout(ids, []);
+    const ys = new Set([...pos.values()].map((p) => Math.round(p.y)));
+    const xs = new Set([...pos.values()].map((p) => Math.round(p.x)));
+    // 9 orphans → ~3x3 grid: more than one distinct row and column.
+    expect(ys.size).toBeGreaterThan(1);
+    expect(xs.size).toBeGreaterThan(1);
+  });
+
+  it("places the orphan grid below the connected graph", () => {
+    const ids = ["a", "b", "orphan1", "orphan2"];
+    const pos = layeredLayout(ids, [{ from: "a", to: "b" }]);
+    const connectedMaxY = Math.max(pos.get("a")!.y, pos.get("b")!.y);
+    expect(pos.get("orphan1")!.y).toBeGreaterThan(connectedMaxY);
+    expect(pos.get("orphan2")!.y).toBeGreaterThan(connectedMaxY);
+  });
+
   it("ignores edges to unknown nodes and self-loops", () => {
     const pos = layeredLayout(["a"], [{ from: "a", to: "ghost" }, { from: "a", to: "a" }]);
     expect(pos.size).toBe(1);

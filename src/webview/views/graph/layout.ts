@@ -39,7 +39,17 @@ function validEdges(ids: ReadonlySet<string>, edges: LayoutEdge[]): LayoutEdge[]
   return edges.filter((e) => e.from !== e.to && ids.has(e.from) && ids.has(e.to));
 }
 
-/** Layered DAG layout (dagre). Handles cycles, orphans, and empty input. */
+// Spacing between grid-packed orphan cards.
+const GRID_GAP_X = 28;
+const GRID_GAP_Y = 24;
+// Vertical gap between the connected DAG and the orphan grid below it.
+const ORPHAN_BLOCK_GAP = 60;
+
+/**
+ * Layered DAG layout (dagre) for the connected beads, with edgeless "orphan"
+ * beads packed into a compact grid below — instead of dagre stringing every
+ * disconnected node into one very wide top row. Handles cycles and empty input.
+ */
 export function layeredLayout(
   nodeIds: string[],
   edges: LayoutEdge[],
@@ -49,24 +59,63 @@ export function layeredLayout(
   if (nodeIds.length === 0) return positions;
 
   const ids = new Set(nodeIds);
-  const g = new dagre.graphlib.Graph();
-  g.setGraph({ rankdir: direction, nodesep: 40, ranksep: 70, marginx: 20, marginy: 20 });
-  g.setDefaultEdgeLabel(() => ({}));
+  const valid = validEdges(ids, edges);
 
-  for (const id of nodeIds) {
-    g.setNode(id, { width: NODE_WIDTH, height: NODE_HEIGHT });
+  // Split connected (has at least one edge) from orphan (edgeless) nodes.
+  const connected = new Set<string>();
+  for (const e of valid) {
+    connected.add(e.from);
+    connected.add(e.to);
   }
-  for (const e of validEdges(ids, edges)) {
-    g.setEdge(e.from, e.to);
+  const connectedIds = nodeIds.filter((id) => connected.has(id));
+  const orphanIds = nodeIds.filter((id) => !connected.has(id));
+
+  // Lay out the connected sub-graph with dagre. Track its extent so the orphan
+  // grid can sit directly beneath it.
+  let connectedBottom = 0;
+  let connectedRight = NODE_WIDTH;
+  if (connectedIds.length > 0) {
+    const g = new dagre.graphlib.Graph();
+    g.setGraph({ rankdir: direction, nodesep: 40, ranksep: 70, marginx: 20, marginy: 20 });
+    g.setDefaultEdgeLabel(() => ({}));
+    for (const id of connectedIds) {
+      g.setNode(id, { width: NODE_WIDTH, height: NODE_HEIGHT });
+    }
+    for (const e of valid) {
+      g.setEdge(e.from, e.to);
+    }
+    dagre.layout(g);
+    for (const id of connectedIds) {
+      const node = g.node(id);
+      // dagre returns the node center; React Flow positions by top-left corner.
+      const x = node.x - NODE_WIDTH / 2;
+      const y = node.y - NODE_HEIGHT / 2;
+      positions.set(id, { x, y });
+      connectedBottom = Math.max(connectedBottom, y + NODE_HEIGHT);
+      connectedRight = Math.max(connectedRight, x + NODE_WIDTH);
+    }
   }
 
-  dagre.layout(g);
-
-  for (const id of nodeIds) {
-    const node = g.node(id);
-    // dagre returns the node center; React Flow positions by top-left corner.
-    positions.set(id, { x: node.x - NODE_WIDTH / 2, y: node.y - NODE_HEIGHT / 2 });
+  // Pack orphans into a roughly-square grid whose width tracks the connected
+  // graph's width (so the whole thing stays compact rather than sprawling).
+  if (orphanIds.length > 0) {
+    const widthBudget = connectedIds.length > 0 ? connectedRight : 0;
+    const colsByWidth = Math.floor((widthBudget + GRID_GAP_X) / (NODE_WIDTH + GRID_GAP_X));
+    // At least a square grid, but widen to fill the connected graph's width so
+    // the orphan block sits compactly beneath it instead of as a tall column.
+    const sqrtCols = Math.ceil(Math.sqrt(orphanIds.length));
+    const cols = Math.max(1, colsByWidth, sqrtCols);
+    const startY = connectedIds.length > 0 ? connectedBottom + ORPHAN_BLOCK_GAP : 20;
+    orphanIds.forEach((id, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      positions.set(id, {
+        x: 20 + col * (NODE_WIDTH + GRID_GAP_X),
+        y: startY + row * (NODE_HEIGHT + GRID_GAP_Y),
+      });
+    });
   }
+
   return positions;
 }
 
