@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Issues-list Type badges now share a width, so the "Type" column and the type filter menu line up instead of reading as ragged (the rare long `merge-request` is an accepted outlier) (vs-b48)
 - Project-switcher prefix badges now share a width (sized to the widest prefix in the set), so the project name/path column starts at a common x instead of reading as ragged (vs-od3)
 - Dropdown menus no longer render semi-transparent — the menu background falls back through universal surface tokens when `--vscode-dropdown-listBackground` is undefined (vs-k71)
 - `beads.userId` and `beads.pathToBd` now expand `${env:VAR}` placeholders (#60)
