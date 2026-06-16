@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Refresh is now a title-bar action on every Beads view (Dashboard, both Issues lists, and Details, which previously had none); removed the redundant in-webview "Refresh" item from the Dashboard's actions menu so reload consistently lives in the view chrome
+- Reorganized view title-bar actions: the New Issue (+) action now lives on the Details toolbar (where the create form opens) instead of Dashboard/Issues; each view keeps its own Open-in-Editor action; on Details, Copy ID sits last (vs-73h)
 - Issues table column header row is shorter (trimmed vertical padding) (vs-4rt)
 - Issues table dates (Updated/Created) render smaller and muted (10px) so they read as secondary metadata instead of out-sizing the title (vs-xe1)
 - Explicitly-configured Beads projects (`beads.projects`, `$BEADS_DIR`, workspace folders) that don't exist or aren't a Beads project are now logged as warnings instead of silently skipped; the `~/beads` auto-scan stays quiet (vs-jse)
