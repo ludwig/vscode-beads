@@ -3646,7 +3646,7 @@ textarea {
 }
 
 /* Right-click context menu on bead nodes */
-.graph-context-menu {
+.app-context-menu {
   position: fixed;
   z-index: 50;
   min-width: 180px;
@@ -3658,7 +3658,7 @@ textarea {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.36);
 }
 
-.graph-context-menu-item {
+.app-context-menu-item {
   display: block;
   width: 100%;
   padding: 5px 10px;
@@ -3671,12 +3671,12 @@ textarea {
   cursor: pointer;
 }
 
-.graph-context-menu-item:hover {
+.app-context-menu-item:hover {
   background: var(--vscode-menu-selectionBackground, var(--vscode-list-activeSelectionBackground));
   color: var(--vscode-menu-selectionForeground, var(--vscode-list-activeSelectionForeground));
 }
 
-.graph-context-menu-sep {
+.app-context-menu-sep {
   height: 1px;
   margin: 4px 6px;
   background: var(--vscode-menu-separatorBackground, var(--vscode-panel-border));

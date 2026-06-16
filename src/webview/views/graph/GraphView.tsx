@@ -28,7 +28,7 @@ import { Bead, DependencyGraph, STATUS_COLORS, vscode } from "../../types";
 import { Loading } from "../../common/Loading";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { BeadNode, type BeadNodeData } from "./BeadNode";
-import { GraphContextMenu, type GraphContextMenuItem } from "./GraphContextMenu";
+import { ContextMenu, type ContextMenuItem } from "../../common/ContextMenu";
 import { layeredLayout, forceLayout, type LayoutEdge } from "./layout";
 import { edgeStyle, neighborhood, EDGE_TYPE_ORDER, EDGE_STYLES } from "./graphModel";
 
@@ -238,7 +238,7 @@ function GraphCanvas({
         <GraphLegend />
       </ReactFlow>
       {menu && (
-        <GraphContextMenu
+        <ContextMenu
           x={menu.x}
           y={menu.y}
           onClose={() => setMenu(null)}
@@ -254,7 +254,7 @@ function GraphCanvas({
   );
 }
 
-function buildMenuItems(bead: Bead, handlers: { onFocus: () => void }): GraphContextMenuItem[] {
+function buildMenuItems(bead: Bead, handlers: { onFocus: () => void }): ContextMenuItem[] {
   return [
     { label: "Focus", onSelect: handlers.onFocus },
     {

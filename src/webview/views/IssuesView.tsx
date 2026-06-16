@@ -47,6 +47,7 @@ import { TypeBadge } from "../common/TypeBadge";
 import { TypeIcon } from "../common/TypeIcon";
 import { LabelBadge } from "../common/LabelBadge";
 import { FilterChip } from "../common/FilterChip";
+import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
 import { Table, Kanban, Rows3, Rows2 } from "lucide-react";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { Loading } from "../common/Loading";
@@ -438,6 +439,31 @@ export function IssuesView({
     setCopiedId(beadId);
     setTimeout(() => setCopiedId(null), 1500);
   }, []);
+
+  const [rowMenu, setRowMenu] = useState<{ x: number; y: number; bead: Bead } | null>(null);
+
+  const rowMenuItems = useCallback(
+    (bead: Bead): ContextMenuItem[] => [
+      {
+        label: "Open Details (editor tab)",
+        onSelect: () => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id }),
+      },
+      {
+        label: "Show Details",
+        onSelect: () => vscode.postMessage({ type: "openBeadDetails", beadId: bead.id }),
+      },
+      {
+        label: "Copy ID",
+        separatorBefore: true,
+        onSelect: () => handleCopyId(bead.id),
+      },
+      {
+        label: "Copy title",
+        onSelect: () => vscode.postMessage({ type: "copyText", text: bead.title, label: "title" }),
+      },
+    ],
+    [handleCopyId],
+  );
 
   // Filter helpers
   const statusFilter = (columnFilters.find((f) => f.id === "status")?.value || []) as BeadStatus[];
@@ -1088,6 +1114,10 @@ export function IssuesView({
                     <tr
                       key={row.id}
                       onClick={() => onSelectBead(row.original.id)}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        setRowMenu({ x: e.clientX, y: e.clientY, bead: row.original });
+                      }}
                       className={`bead-row ${row.original.id === selectedBeadId ? "selected" : ""}`}
                       onMouseEnter={(e) => handleRowMouseEnter(e, row.original.id)}
                       onMouseLeave={handleRowMouseLeave}
@@ -1153,6 +1183,15 @@ export function IssuesView({
           </div>,
           document.body
         )}
+
+      {rowMenu && (
+        <ContextMenu
+          x={rowMenu.x}
+          y={rowMenu.y}
+          items={rowMenuItems(rowMenu.bead)}
+          onClose={() => setRowMenu(null)}
+        />
+      )}
     </div>
   );
 }

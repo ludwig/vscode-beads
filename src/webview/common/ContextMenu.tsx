@@ -1,24 +1,25 @@
 /**
- * Lightweight right-click menu for graph bead nodes (vs-aml). Webview-side
- * (the codebase avoids native menus); dismisses on outside-click or Escape.
+ * Shared lightweight right-click menu (the codebase avoids native menus).
+ * Renders a fixed-position menu at (x, y); dismisses on outside-click or Escape.
+ * Used by the Graph view's bead nodes and the Issues table rows.
  */
 
 import React, { useEffect, useRef } from "react";
 
-export interface GraphContextMenuItem {
+export interface ContextMenuItem {
   label: string;
   onSelect: () => void;
   separatorBefore?: boolean;
 }
 
-interface GraphContextMenuProps {
+interface ContextMenuProps {
   x: number;
   y: number;
-  items: GraphContextMenuItem[];
+  items: ContextMenuItem[];
   onClose: () => void;
 }
 
-export function GraphContextMenu({ x, y, items, onClose }: GraphContextMenuProps): React.ReactElement {
+export function ContextMenu({ x, y, items, onClose }: ContextMenuProps): React.ReactElement {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,14 +38,14 @@ export function GraphContextMenu({ x, y, items, onClose }: GraphContextMenuProps
   }, [onClose]);
 
   return (
-    <div ref={ref} className="graph-context-menu" style={{ left: x, top: y }} role="menu">
+    <div ref={ref} className="app-context-menu" style={{ left: x, top: y }} role="menu">
       {items.map((item) => (
         <React.Fragment key={item.label}>
-          {item.separatorBefore && <div className="graph-context-menu-sep" />}
+          {item.separatorBefore && <div className="app-context-menu-sep" />}
           <button
             type="button"
             role="menuitem"
-            className="graph-context-menu-item"
+            className="app-context-menu-item"
             onClick={() => {
               item.onSelect();
               onClose();
