@@ -3519,6 +3519,9 @@ textarea {
 }
 
 .beads-tree-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   background: transparent;
   color: var(--vscode-foreground);
   border: 1px solid transparent;
@@ -3526,6 +3529,10 @@ textarea {
   padding: 2px 6px;
   font-size: 11px;
   cursor: pointer;
+}
+
+.beads-tree-sort-dir {
+  margin-top: 0.5px;
 }
 
 .beads-tree-sort-btn:hover {

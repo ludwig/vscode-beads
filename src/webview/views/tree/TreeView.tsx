@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronRight, ChevronDown, Search } from "lucide-react";
+import { ChevronRight, ChevronDown, Search, ArrowUp, ArrowDown } from "lucide-react";
 import {
   Bead,
   BeadType,
@@ -36,22 +36,40 @@ interface DragApi {
   onEnd: () => void;
 }
 
-type SortKey = "id" | "type" | "title";
+type SortKey = "id" | "type" | "title" | "priority";
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: "id", label: "Default" },
+  { key: "id", label: "ID" },
   { key: "type", label: "Type" },
   { key: "title", label: "Title" },
+  { key: "priority", label: "Priority" },
 ];
+
+type SortDir = "asc" | "desc";
+interface SortState {
+  key: SortKey;
+  dir: SortDir;
+}
+
+// Tri-state cycle on a sort button: none → asc → desc → none (back to default).
+function cycleSort(prev: SortState | null, key: SortKey): SortState | null {
+  if (!prev || prev.key !== key) return { key, dir: "asc" };
+  if (prev.dir === "asc") return { key, dir: "desc" };
+  return null;
+}
 
 const byTitle = (a: Bead, b: Bead) => a.title.localeCompare(b.title) || compareById(a, b);
 const byType = (a: Bead, b: Bead) =>
   getTypeSortOrder(a.type) - getTypeSortOrder(b.type) || byTitle(a, b);
+// P0 (highest) first; missing priority sorts last, then by id.
+const byPriority = (a: Bead, b: Bead) =>
+  (a.priority ?? 99) - (b.priority ?? 99) || compareById(a, b);
 
-function comparatorFor(key: SortKey): BeadComparator {
-  if (key === "type") return byType;
-  if (key === "title") return byTitle;
-  return compareById;
+function comparatorFor(sort: SortState | null): BeadComparator {
+  if (!sort) return compareById;
+  const base =
+    sort.key === "type" ? byType : sort.key === "title" ? byTitle : sort.key === "priority" ? byPriority : compareById;
+  return sort.dir === "asc" ? base : (a, b) => -base(a, b);
 }
 
 function typeLabel(type: string | undefined): string {
@@ -84,7 +102,7 @@ export function TreeView({
   }, [onRequestGraph]);
 
   const [query, setQuery] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>("id");
+  const [sort, setSort] = useState<SortState | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [menu, setMenu] = useState<{ x: number; y: number; bead: Bead } | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -104,8 +122,8 @@ export function TreeView({
   }, []);
 
   const forest = useMemo(
-    () => (graph ? buildForest(graph.nodes, graph.edges, comparatorFor(sortKey)) : []),
-    [graph, sortKey],
+    () => (graph ? buildForest(graph.nodes, graph.edges, comparatorFor(sort)) : []),
+    [graph, sort],
   );
   const visible = useMemo(() => filterForest(forest, query), [forest, query]);
   // While filtering, ignore collapse state so matches are always revealed.
@@ -215,18 +233,28 @@ export function TreeView({
         />
         <div className="beads-tree-sort" role="group" aria-label="Sort beads">
           <span className="beads-tree-sort-label">Sort</span>
-          {SORT_OPTIONS.map(({ key, label }) => (
-            <button
-              key={key}
-              type="button"
-              className={`beads-tree-sort-btn ${sortKey === key ? "active" : ""}`}
-              aria-pressed={sortKey === key}
-              onClick={() => setSortKey(key)}
-              title={`Sort siblings by ${label.toLowerCase()}`}
-            >
-              {label}
-            </button>
-          ))}
+          {SORT_OPTIONS.map(({ key, label }) => {
+            const active = sort?.key === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                className={`beads-tree-sort-btn ${active ? "active" : ""}`}
+                aria-pressed={active}
+                onClick={() => setSort((prev) => cycleSort(prev, key))}
+                title={`Sort siblings by ${label.toLowerCase()} (click to cycle ascending → descending → off)`}
+              >
+                <span>{label}</span>
+                {active ? (
+                  sort!.dir === "asc" ? (
+                    <ArrowUp size={11} strokeWidth={2.5} className="beads-tree-sort-dir" />
+                  ) : (
+                    <ArrowDown size={11} strokeWidth={2.5} className="beads-tree-sort-dir" />
+                  )
+                ) : null}
+              </button>
+            );
+          })}
         </div>
       </div>
       <div
