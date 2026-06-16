@@ -222,8 +222,9 @@ function gridPack(ids: string[], startY: number, positions: Positions): void {
   });
 }
 
-const RANK_GAP = 70; // vertical gap between tree depths
-const RADIAL_RING_GAP = NODE_WIDTH + 40; // radius added per depth
+const RANK_GAP = 120; // vertical gap between tree depths
+const TREE_SIBLING_GAP = 70; // horizontal gap between sibling subtrees
+const RADIAL_RING_GAP = NODE_WIDTH + 140; // radius added per depth
 
 /**
  * Tidy-tree (Reingold–Tilford, via d3-hierarchy) layout of the parent/child
@@ -238,7 +239,7 @@ export function treeLayout(nodeIds: string[], hierEdges: LayoutEdge[]): Position
 
   let bottom = 0;
   if (roots.length > 0) {
-    const layout = d3tree<HierNode>().nodeSize([NODE_WIDTH + GRID_GAP_X, NODE_HEIGHT + RANK_GAP]);
+    const layout = d3tree<HierNode>().nodeSize([NODE_WIDTH + TREE_SIBLING_GAP, NODE_HEIGHT + RANK_GAP]);
     const root = layout(d3hierarchy<HierNode>({ id: "__virtual__", children: roots }, (d) => d.children));
     const reals = root.descendants().filter((n) => n.data.id !== "__virtual__");
     // d3 places the virtual super-root one level above the real roots; normalize

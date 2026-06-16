@@ -123,11 +123,14 @@ function GraphCanvas({
     () => (graph?.edges ?? []).map((e) => ({ from: e.from, to: e.to })),
     [graph],
   );
-  // Parent-child subset drives the tree/radial layouts (from=child, to=parent).
+  // The dependency structure drives the tree/radial layouts: both blocks and
+  // parent-child edges, oriented from=dependent→to=dependency (so dependencies/
+  // blockers sit root-ward). Using blocks too — not just parent-child, which is
+  // sparse on most boards — keeps beads in the tree instead of the orphan grid.
   const hierEdges: LayoutEdge[] = useMemo(
     () =>
       (graph?.edges ?? [])
-        .filter((e) => e.type === "parent-child")
+        .filter((e) => e.type === "parent-child" || e.type === "blocks")
         .map((e) => ({ from: e.from, to: e.to })),
     [graph],
   );
@@ -322,7 +325,7 @@ function GraphCanvas({
             aria-checked={mode === "tree"}
             className={`graph-toggle-btn ${mode === "tree" ? "active" : ""}`}
             onClick={() => setMode("tree")}
-            title="Tidy-tree layout (parent-child hierarchy)"
+            title="Tidy-tree layout (dependency hierarchy: blocks + parent-child)"
           >
             <ListTree size={14} strokeWidth={2} />
             <span>Tree</span>
@@ -333,7 +336,7 @@ function GraphCanvas({
             aria-checked={mode === "radial"}
             className={`graph-toggle-btn ${mode === "radial" ? "active" : ""}`}
             onClick={() => setMode("radial")}
-            title="Radial tree layout (parent-child hierarchy)"
+            title="Radial tree layout (dependency hierarchy: blocks + parent-child)"
           >
             <Radar size={14} strokeWidth={2} />
             <span>Radial</span>
