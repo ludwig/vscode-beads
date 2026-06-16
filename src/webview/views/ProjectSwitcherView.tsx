@@ -248,7 +248,7 @@ export function ProjectSwitcherView({
       <div className="context-actions">
         <button
           type="button"
-          className="btn context-action-btn"
+          className="btn context-action-btn show-issues"
           onClick={onShowIssues}
           title="Show the Issues panel"
         >
@@ -257,7 +257,7 @@ export function ProjectSwitcherView({
         </button>
         <button
           type="button"
-          className="btn btn-primary context-action-btn"
+          className="btn context-action-btn pick-ready"
           onClick={onPickReady}
           disabled={!activeProject}
           title="Pick a ready-to-work bead (open, no open blocker) and make it the active bead"
