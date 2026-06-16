@@ -2850,7 +2850,7 @@ textarea {
 
 .description-text {
   font-size: var(--text-body);
-  line-height: 1.5;
+  line-height: 1.45;
   white-space: pre-wrap;
   margin: 0;
   color: var(--vscode-foreground);
@@ -2859,7 +2859,7 @@ textarea {
 /* Markdown content styles */
 .markdown-content {
   font-size: var(--text-body);
-  line-height: 1.5;
+  line-height: 1.45;
   color: var(--vscode-foreground);
 }
 
@@ -2881,7 +2881,7 @@ textarea {
 }
 
 .markdown-content p + p {
-  margin-top: 0.5em;
+  margin-top: 0.4em;
 }
 
 .markdown-content h1,
@@ -2915,7 +2915,7 @@ textarea {
 
 .markdown-content ul,
 .markdown-content ol {
-  margin: 0.3em 0 !important;
+  margin: 0.25em 0 !important;
   padding: 0 0 0 1.4em !important;
   list-style-position: outside;
 }
@@ -2923,7 +2923,7 @@ textarea {
 .markdown-content li {
   margin: 0 !important;
   padding: 0 !important;
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
 .markdown-content li + li {
@@ -3042,7 +3042,7 @@ textarea {
 .description-input {
   width: 100%;
   font-size: var(--text-body);
-  line-height: 1.5;
+  line-height: 1.45;
   padding: var(--spacing-sm);
   resize: vertical;
 }
@@ -3272,7 +3272,7 @@ textarea {
 
 .comment-text {
   font-size: var(--text-body);
-  line-height: 1.5;
+  line-height: 1.45;
   white-space: pre-wrap;
 }
 
