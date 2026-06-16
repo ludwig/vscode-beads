@@ -53,6 +53,7 @@ export function ProjectSwitcherView({
 }: ProjectSwitcherViewProps): React.ReactElement {
   const backendState = activeProject?.backendStatus ?? "unknown";
   const [projectCollapsed, setProjectCollapsed] = useState(false);
+  const [beadCollapsed, setBeadCollapsed] = useState(false);
 
   return (
     <div className="project-switcher-view">
@@ -149,11 +150,21 @@ export function ProjectSwitcherView({
       </section>
 
       <section className="context-section">
-        <h2 className="context-heading">
+        <button
+          type="button"
+          className="context-heading context-heading-toggle"
+          aria-expanded={!beadCollapsed}
+          onClick={() => setBeadCollapsed((v) => !v)}
+        >
+          {beadCollapsed ? (
+            <ChevronRight size={13} strokeWidth={2} className="context-heading-chevron" />
+          ) : (
+            <ChevronDown size={13} strokeWidth={2} className="context-heading-chevron" />
+          )}
           <Pin size={13} strokeWidth={2} className="context-heading-icon" />
           <span>Active Bead</span>
-        </h2>
-        {activeBead ? (
+        </button>
+        {!beadCollapsed && (activeBead ? (
           <button
             type="button"
             className="active-bead"
@@ -177,7 +188,7 @@ export function ProjectSwitcherView({
           <div className="context-empty">
             <p>No active bead — select one from the Issues list to pin it here.</p>
           </div>
-        )}
+        ))}
       </section>
 
       {version && (

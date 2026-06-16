@@ -9,7 +9,7 @@
  * dependency fetch when the Graph tab is actually opened.
  */
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -23,7 +23,7 @@ import {
   type Node,
   type Edge,
 } from "@xyflow/react";
-import { GitBranch, Network, Crosshair } from "lucide-react";
+import { GitBranch, Network, Crosshair, Wand2 } from "lucide-react";
 import { Bead, DependencyGraph, STATUS_COLORS, vscode } from "../../types";
 import { Loading } from "../../common/Loading";
 import { ErrorMessage } from "../../common/ErrorMessage";
@@ -151,6 +151,12 @@ function GraphCanvas({
   useEffect(() => setNodes(computedNodes), [computedNodes, setNodes]);
   useEffect(() => setEdges(computedEdges), [computedEdges, setEdges]);
 
+  // Re-apply the computed layout (discarding any manual drags) and refit.
+  const autoLayout = useCallback(() => {
+    setNodes(computedNodes);
+    requestAnimationFrame(() => rf.fitView({ padding: 0.2, duration: 200 }));
+  }, [computedNodes, setNodes, rf]);
+
   // Refit the viewport whenever the visible set or layout changes — otherwise
   // a focus-narrowed subgraph (or a layout swap) can land off-screen.
   useEffect(() => {
@@ -200,6 +206,15 @@ function GraphCanvas({
         >
           <Crosshair size={14} strokeWidth={2} />
           <span>Focus</span>
+        </button>
+        <button
+          type="button"
+          className="graph-toggle-btn"
+          onClick={autoLayout}
+          title="Re-run the layout and fit to view (resets manual drags)"
+        >
+          <Wand2 size={14} strokeWidth={2} />
+          <span>Auto Layout</span>
         </button>
       </div>
 

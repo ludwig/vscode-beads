@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Polished the sidebar **Active Project** and **Active Bead** sections — each is now an elevated card with an accent-colored heading icon, and Active Bead reads as a pinned register slot (accent left rail, pin glyph, type icon + status dot) (vs-si0)
+- Polished the sidebar **Active Project** and **Active Bead** sections — each is now an elevated, **collapsible** card with an accent-colored heading icon, and Active Bead reads as a pinned register slot (accent left rail, type icon + status dot) (vs-si0)
 
 ### Added
 
@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Right-click a bead node in the **Graph** view for a context menu — **Focus** (narrow to its neighborhood), **Open Details** (editor tab), **Show Details** (sidebar), **Copy ID**, **Copy title** (vs-aml)
 - Right-click an **Issues table** row for the same context menu — **Open Details** (editor tab), **Show Details**, **Copy ID**, **Copy title** (vs-7mp)
 - The bottom Beads panel now has an **Open in Editor** button in its in-view nav row — pops the active subview (Issues / Dashboard / Graph) out into an editor tab; the Graph gets its own `beads.openGraphInTab` command + standalone editor route (vs-3bp)
+- **Auto Layout** button in the Graph toolbar — re-runs the current layout and fits to view (resets manual node drags) (vs-0wf)
 - New **Graph** tab in the bottom Beads panel — visualizes the dependency graph with bead cards (status-colored) and relationship edges (blocks / parent-child / related / discovered-from, each color+style coded, with a legend). Switch between a **layered** (hierarchical, spline edges) and **force-directed** (freeform) layout; click a node to select, double-click to open its details; pan / zoom / fit / minimap; and a **Focus** toggle narrows to the selected bead's dependency neighborhood. Edges are fetched lazily (one backend call) only when the tab is opened (vs-xlf)
 - Dashboard summary cards (Total / Open / Doing / Blocked) are now clickable — each opens the Issues view pre-filtered to the matching status (Total shows all) (vs-i06)
 - Dashboard **By Status** and **By Label** breakdown rows are clickable too — drilling into the Issues list filtered to that status or label (vs-gnb)
