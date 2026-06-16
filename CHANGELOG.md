@@ -62,6 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Task type icon changed from a checked box (which read as "done") to a list (`list-ul`), in the Issues list, Kanban cards, and Details header (vs-3x0)
 
 ### Fixed
+- Timestamps in **server (Dolt) mode** rendered as "just now"/in the future — SQL datetimes lacked a timezone marker and were parsed as local; now normalized to explicit UTC (vs-b9t)
 
 - Issues table no longer clips the right edge of the Type/Status badges (Type and Status columns widened); the Type badge font is a touch smaller, and the leading type icon + badges now sink onto the title line instead of floating in the 1.75-line rows (vs-xy5)
 - Issues-list Type badges now share a width, so the "Type" column and the type filter menu line up instead of reading as ragged (the rare long `merge-request` is an accepted outlier) (vs-b48)
