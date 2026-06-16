@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Create issues from the UI: a "New Issue" button on the Issues/Dashboard views and a `beads.createIssue` command open a create form in the Details view (vs-69z)
 - Surface the active issue prefix (e.g. `vs`), derived from the loaded issue IDs, in the project dropdown trigger and the status bar so it's always clear which root is active (vs-kmt)
 - Issues list is now also available as a tab in the bottom panel (next to Terminal/Problems), as an independent view that stays in sync with the sidebar Issues list
+- Dashboard is now also a subview in the bottom Beads panel alongside Issues; with two stacked subviews the panel's view actions (Refresh, Open-in-Editor) render in each subview's own header instead of being hoisted onto the panel tab bar (vs-b2p)
 
 ### Changed
 

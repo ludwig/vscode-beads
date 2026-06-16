@@ -75,6 +75,12 @@
       "beadsBottomPanel": [
         {
           "type": "webview",
+          "id": "beadsDashboardBottom",
+          "name": "Dashboard",
+          "visibility": "visible"
+        },
+        {
+          "type": "webview",
           "id": "beadsPanelBottom",
           "name": "Issues",
           "visibility": "visible"
@@ -148,6 +154,16 @@
         {
           "command": "beads.refresh",
           "when": "view == beadsPanel",
+          "group": "navigation@1"
+        },
+        {
+          "command": "beads.openDashboardInTab",
+          "when": "view == beadsDashboardBottom",
+          "group": "navigation@0"
+        },
+        {
+          "command": "beads.refresh",
+          "when": "view == beadsDashboardBottom",
           "group": "navigation@1"
         },
         {

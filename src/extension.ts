@@ -22,18 +22,22 @@ import { setAppInfo } from "./appInfo";
 let log: Logger;
 let projectManager: BeadsProjectManager;
 let dashboardProvider: DashboardViewProvider;
+let dashboardBottomProvider: DashboardViewProvider;
 let beadsPanelProvider: BeadsPanelViewProvider;
 let beadsBottomPanelProvider: BeadsPanelViewProvider;
 let detailsProvider: BeadDetailsViewProvider;
 
 /**
- * The Issues list is shown in two places: the sidebar (`beadsPanel`) and the
- * bottom panel next to the terminal (`beadsPanelBottom`). They share the same
- * provider class and must stay in sync, so all refresh/selection/filter calls
- * fan out to both instances.
+ * Dashboard and Issues are each shown in two places — the sidebar (`beads`
+ * container) and the bottom panel next to the terminal (`beadsBottomPanel`).
+ * Each pair shares one provider class and must stay in sync, so every
+ * refresh/selection/filter call fans out to both instances.
  */
 function eachIssuesView(fn: (view: BeadsPanelViewProvider) => void): void {
   [beadsPanelProvider, beadsBottomPanelProvider].forEach(fn);
+}
+function eachDashboardView(fn: (view: DashboardViewProvider) => void): void {
+  [dashboardProvider, dashboardBottomProvider].forEach(fn);
 }
 let panelManager: BeadPanelManager;
 let statusBar: vscode.StatusBarItem;
@@ -91,6 +95,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     log
   );
 
+  dashboardBottomProvider = new DashboardViewProvider(
+    context.extensionUri,
+    projectManager,
+    log
+  );
+
   beadsPanelProvider = new BeadsPanelViewProvider(
     context.extensionUri,
     projectManager,
@@ -118,6 +128,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.window.registerWebviewViewProvider("beadsDashboard", dashboardProvider, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
+    vscode.window.registerWebviewViewProvider("beadsDashboardBottom", dashboardBottomProvider, {
+      webviewOptions: { retainContextWhenHidden: true },
+    }),
     vscode.window.registerWebviewViewProvider("beadsPanel", beadsPanelProvider, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
@@ -141,25 +154,25 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Register all beads.* commands (see src/commands/registerCommands.ts).
   registerCommands(context, {
     projectManager,
-    dashboardProvider,
     detailsProvider,
     panelManager,
     log,
     eachIssuesView,
+    eachDashboardView,
     updateStatusBar,
   });
 
   // Subscribe to project changes to refresh views
   context.subscriptions.push(
     projectManager.onDataChanged(() => {
-      dashboardProvider.refresh();
+      eachDashboardView((view) => view.refresh());
       eachIssuesView((view) => view.refresh());
       detailsProvider.refresh();
     }),
 
     projectManager.onActiveProjectChanged(() => {
       eachIssuesView((view) => view.setSelectedBead(null)); // Clear selection on project switch
-      dashboardProvider.refreshForProjectChange();
+      eachDashboardView((view) => view.refreshForProjectChange());
       eachIssuesView((view) => view.refreshForProjectChange());
       detailsProvider.refreshForProjectChange();
       updateStatusBar();
@@ -190,7 +203,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
 
       // Refresh all views
-      dashboardProvider.refresh();
+      eachDashboardView((view) => view.refresh());
       eachIssuesView((view) => view.refresh());
       detailsProvider.refresh();
     })

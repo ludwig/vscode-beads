@@ -18,12 +18,13 @@ import { Logger } from "../utils/logger";
 
 export interface CommandDeps {
   projectManager: BeadsProjectManager;
-  dashboardProvider: DashboardViewProvider;
   detailsProvider: BeadDetailsViewProvider;
   panelManager: BeadPanelManager;
   log: Logger;
   /** Fan a call out to every Issues view instance (sidebar + bottom panel). */
   eachIssuesView: (fn: (view: BeadsPanelViewProvider) => void) => void;
+  /** Fan a call out to every Dashboard view instance (sidebar + bottom panel). */
+  eachDashboardView: (fn: (view: DashboardViewProvider) => void) => void;
   /** Recompute the Beads status-bar item from current project state. */
   updateStatusBar: () => void | Promise<void>;
 }
@@ -38,11 +39,11 @@ export function registerCommands(
 ): void {
   const {
     projectManager,
-    dashboardProvider,
     detailsProvider,
     panelManager,
     log,
     eachIssuesView,
+    eachDashboardView,
     updateStatusBar,
   } = deps;
 
@@ -134,7 +135,7 @@ export function registerCommands(
     vscode.commands.registerCommand("beads.refresh", async () => {
       log.info("Manual refresh triggered");
       await projectManager.refresh();
-      dashboardProvider.hardRefresh();
+      eachDashboardView((view) => view.hardRefresh());
       eachIssuesView((view) => view.hardRefresh());
       detailsProvider.hardRefresh();
       log.info("Refresh complete");
@@ -160,7 +161,7 @@ export function registerCommands(
         const output = await client.startDoltServer();
         log.info(`Started Dolt server for ${project.name}: ${output || "<no output>"}`);
         await projectManager.refresh();
-        dashboardProvider.refresh();
+        eachDashboardView((view) => view.refresh());
         eachIssuesView((view) => view.refresh());
         detailsProvider.refresh();
         await updateStatusBar();
@@ -182,7 +183,7 @@ export function registerCommands(
         const output = await client.stopDoltServer();
         log.info(`Stopped Dolt server for ${project.name}: ${output || "<no output>"}`);
         await projectManager.refresh();
-        dashboardProvider.refresh();
+        eachDashboardView((view) => view.refresh());
         eachIssuesView((view) => view.refresh());
         detailsProvider.refresh();
         await updateStatusBar();
