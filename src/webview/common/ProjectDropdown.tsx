@@ -8,6 +8,7 @@
 import React from "react";
 import { BeadsProject } from "../types";
 import { Dropdown, DropdownItem } from "./Dropdown";
+import { sharedPrefixWidthCh } from "./prefixWidth";
 
 interface ProjectDropdownProps {
   projects: BeadsProject[];
@@ -35,10 +36,21 @@ export function ProjectDropdown({
     onSelectProject(project);
   };
 
+  // Size every prefix badge to the widest prefix in the set so the name column
+  // starts at a common x rather than reading as ragged (vs-od3). `ch` is exact
+  // because the badges use a monospace font.
+  const prefixWidthCh = sharedPrefixWidthCh(projects.map((p) => p.prefix));
+  const prefixStyle: React.CSSProperties | undefined =
+    prefixWidthCh != null ? { minWidth: `${prefixWidthCh}ch` } : undefined;
+
   const triggerContent = (
     <>
       {prefix && (
-        <span className="project-dropdown-prefix" title={`Active issue prefix — IDs look like ${prefix}-123`}>
+        <span
+          className="project-dropdown-prefix"
+          style={prefixStyle}
+          title={`Active issue prefix — IDs look like ${prefix}-123`}
+        >
           {prefix}-
         </span>
       )}
@@ -68,6 +80,7 @@ export function ProjectDropdown({
           {project.prefix && (
             <span
               className="project-dropdown-item-prefix"
+              style={prefixStyle}
               title={`Issue prefix — IDs look like ${project.prefix}-123`}
             >
               {project.prefix}-

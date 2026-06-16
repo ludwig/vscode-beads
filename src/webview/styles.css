@@ -748,6 +748,10 @@ textarea {
 
 .project-dropdown-prefix {
   flex-shrink: 0;
+  box-sizing: border-box;
+  /* Shared min-width is set inline from the widest prefix so the name column
+     starts at a common x (vs-od3); center shorter prefixes within it. */
+  text-align: center;
   font-family: var(--vscode-editor-font-family, monospace);
   font-size: 0.85em;
   font-weight: 600;
@@ -810,7 +814,11 @@ textarea {
 
 .project-dropdown-item-prefix {
   flex-shrink: 0;
+  box-sizing: border-box;
   margin-top: 1px;
+  /* Shared min-width is set inline from the widest prefix so the name column
+     starts at a common x (vs-od3); center shorter prefixes within it. */
+  text-align: center;
   font-family: var(--vscode-editor-font-family, monospace);
   font-size: 0.85em;
   font-weight: 600;
