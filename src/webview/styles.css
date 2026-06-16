@@ -1909,32 +1909,25 @@ textarea {
   text-overflow: ellipsis;
 }
 
+/* Responsive grid of stat chips: one column on a narrow sidebar, packing into
+ * multiple columns as it widens (auto-fill) — no media queries, just tracks the
+ * container width. Keeps the table compact instead of sprawling label↔value. */
 .project-switcher-meta {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 5px;
   margin: var(--spacing-xs) 0 0;
   font-size: 11px;
-  border: 1px solid var(--vscode-panel-border);
-  border-radius: var(--border-radius);
-  overflow: hidden;
 }
 
 .project-switcher-meta-row {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: var(--spacing-sm);
-  padding: 4px 8px;
-  border-bottom: 1px solid var(--vscode-panel-border);
-}
-
-/* Subtle zebra + no trailing divider so it reads as a tidy key/value table. */
-.project-switcher-meta-row:nth-child(even) {
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 5px 8px;
   background: var(--vscode-list-hoverBackground);
-}
-
-.project-switcher-meta-row:last-child {
-  border-bottom: none;
+  border-radius: 4px;
 }
 
 .project-switcher-meta-row dt {
@@ -1947,8 +1940,10 @@ textarea {
 .project-switcher-meta-row dd {
   margin: 0;
   color: var(--vscode-foreground);
-  text-align: right;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .project-switcher-backend.running { color: var(--vscode-testing-iconPassed, #10b981); }
