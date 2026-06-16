@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Dashboard now has a collapsed **By Type** breakdown card (above By Label) — bead counts per issue type, each row drills into the Issues list filtered to that type (vs-eif)
+- Epic-type bead nodes in the **Graph** get a purple outline so structural containers stand out (vs-cop)
 - Graph node click gestures — single-click selects, double-click opens Details (sidebar), **triple-click opens the bead in an editor tab** (vs-myc)
 - Right-click a bead node in the **Graph** view for a context menu — **Focus** (narrow to its neighborhood), **Open Details** (editor tab), **Show Details** (sidebar), **Copy ID**, **Copy title** (vs-aml)
 - Right-click an **Issues table** row for the same context menu — **Open Details** (editor tab), **Show Details**, **Copy ID**, **Copy title** (vs-7mp)

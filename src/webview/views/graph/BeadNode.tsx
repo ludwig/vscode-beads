@@ -14,6 +14,7 @@ import {
   PRIORITY_COLORS,
   PRIORITY_LABELS,
   UNKNOWN_PRIORITY_COLOR,
+  TYPE_COLORS,
   BeadPriority,
 } from "../../types";
 import { TypeIcon } from "../../common/TypeIcon";
@@ -32,11 +33,14 @@ export function BeadNode({ data, selected }: NodeProps): React.ReactElement {
     priority === undefined ? UNKNOWN_PRIORITY_COLOR : PRIORITY_COLORS[priority as BeadPriority];
   const priorityLabel =
     priority === undefined ? "P?" : `P${priority} ${PRIORITY_LABELS[priority as BeadPriority]}`;
+  const isEpic = bead.type === "epic";
 
   return (
     <div
-      className={`graph-node${selected ? " selected" : ""}${dimmed ? " dimmed" : ""}`}
-      style={{ borderLeftColor: statusColor }}
+      className={`graph-node${isEpic ? " epic" : ""}${selected ? " selected" : ""}${dimmed ? " dimmed" : ""}`}
+      // Epics get a purple frame (status stays on the left rail) so structural
+      // container beads stand out in the graph.
+      style={{ borderColor: isEpic ? TYPE_COLORS.epic : undefined, borderLeftColor: statusColor }}
       title={`${bead.id} · ${bead.title}`}
     >
       <Handle type="target" position={Position.Top} className="graph-node-handle" />
