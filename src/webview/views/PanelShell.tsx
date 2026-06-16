@@ -10,14 +10,15 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { LayoutDashboard, ListTodo, Workflow, RefreshCw, ExternalLink, LucideIcon } from "lucide-react";
+import { LayoutDashboard, ListTodo, Workflow, ListTree, RefreshCw, ExternalLink, LucideIcon } from "lucide-react";
 import { Bead, BeadsSummary, DependencyGraph, IssuesFilter, WebviewSettings, vscode } from "../types";
 import { DashboardView } from "./DashboardView";
 import { IssuesView } from "./IssuesView";
 import { GraphView } from "./graph/GraphView";
+import { TreeView } from "./tree/TreeView";
 import { Loading } from "../common/Loading";
 
-type PanelTab = "issues" | "dashboard" | "graph";
+type PanelTab = "issues" | "dashboard" | "graph" | "tree";
 
 interface PanelShellProps {
   summary: BeadsSummary | null;
@@ -81,7 +82,11 @@ export function PanelShell({
     { id: "issues", label: "Issues", Icon: ListTodo },
     { id: "dashboard", label: "Dashboard", Icon: LayoutDashboard },
     { id: "graph", label: "Graph", Icon: Workflow },
+    { id: "tree", label: "Tree", Icon: ListTree },
   ];
+
+  // The Tree tab has no editor-tab route yet, so hide Open-in-Editor for it.
+  const canOpenInEditor = active !== "tree";
 
   return (
     <div className="panel-shell">
@@ -102,15 +107,17 @@ export function PanelShell({
           ))}
         </div>
         <div className="panel-shell-actions">
-          <button
-            type="button"
-            className="panel-shell-action"
-            title={`Open ${tabs.find((t) => t.id === active)?.label ?? "view"} in an editor tab`}
-            aria-label="Open in editor tab"
-            onClick={() => vscode.postMessage({ type: "openViewInTab", view: active })}
-          >
-            <ExternalLink size={14} strokeWidth={2} />
-          </button>
+          {canOpenInEditor && (
+            <button
+              type="button"
+              className="panel-shell-action"
+              title={`Open ${tabs.find((t) => t.id === active)?.label ?? "view"} in an editor tab`}
+              aria-label="Open in editor tab"
+              onClick={() => vscode.postMessage({ type: "openViewInTab", view: active })}
+            >
+              <ExternalLink size={14} strokeWidth={2} />
+            </button>
+          )}
           <button
             type="button"
             className="panel-shell-action"
@@ -124,7 +131,17 @@ export function PanelShell({
       </nav>
 
       <div className="panel-shell-body">
-        {active === "graph" ? (
+        {active === "tree" ? (
+          <TreeView
+            graph={graph}
+            loading={loading}
+            error={error}
+            selectedBeadId={selectedBeadId}
+            onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
+            onRequestGraph={requestGraph}
+            onRetry={() => vscode.postMessage({ type: "refresh" })}
+          />
+        ) : active === "graph" ? (
           <GraphView
             graph={graph}
             loading={loading}
