@@ -82,7 +82,7 @@ export function PanelShell({
     lastFocusIssuesSeq.current = focusIssuesSeq;
     setActive("issues");
     setPulsing(true);
-    const t = setTimeout(() => setPulsing(false), 700);
+    const t = setTimeout(() => setPulsing(false), 1600);
     return () => clearTimeout(t);
   }, [focusIssuesSeq]);
 

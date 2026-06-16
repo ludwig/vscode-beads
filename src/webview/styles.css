@@ -1692,7 +1692,7 @@ textarea {
   pointer-events: none;
   border: 2px solid var(--vscode-focusBorder);
   border-radius: 3px;
-  animation: panel-shell-pulse 0.7s ease-out forwards;
+  animation: panel-shell-pulse 1.6s ease-out forwards;
 }
 
 @keyframes panel-shell-pulse {
