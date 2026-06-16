@@ -70,7 +70,7 @@ export function DashboardView({
   buildDirty,
 }: DashboardViewProps): React.ReactElement {
   const [byStatusOpen, setByStatusOpen] = useState(true);
-  const [byLabelOpen, setByLabelOpen] = useState(true);
+  const [byLabelOpen, setByLabelOpen] = useState(false);
   const prefix = deriveIssuePrefix(beads.map((b) => b.id));
   const openBeads = beads.filter((b) => b.status === "open").slice(0, 5);
   const blockedBeads = beads.filter((b) => b.status === "blocked").slice(0, 5);
