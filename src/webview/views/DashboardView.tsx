@@ -118,9 +118,6 @@ export function DashboardView({
             showChevron={false}
             menuPlacement="bottom-end"
           >
-            <DropdownItem onClick={onRetry}>
-              <span className="dashboard-menu-item"><span className="dashboard-menu-item-icon">↻</span><span>Refresh</span></span>
-            </DropdownItem>
             <DropdownItem onClick={onShowStatus}>
               <span className="dashboard-menu-item"><span className="dashboard-menu-item-icon">i</span><span>Show Dolt Status</span></span>
             </DropdownItem>

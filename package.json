@@ -184,6 +184,11 @@
           "command": "beads.copyBeadId",
           "when": "view == beadsDetails && beads.hasSelectedBead",
           "group": "navigation@1"
+        },
+        {
+          "command": "beads.refresh",
+          "when": "view == beadsDetails",
+          "group": "navigation@2"
         }
       ]
     },
