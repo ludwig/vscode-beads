@@ -2872,6 +2872,11 @@ textarea {
   font-size: var(--text-body);
   line-height: 1.45;
   color: var(--vscode-foreground);
+  /* CRITICAL: the Markdown component also carries .description-text, whose
+     `white-space: pre-wrap` would render marked's pretty-printed newlines
+     BETWEEN block tags (</p>\n<ol>\n<li>…) as literal blank lines — huge gaps
+     everywhere. Markdown HTML must use normal whitespace collapsing. */
+  white-space: normal;
 }
 
 .markdown-content * {
