@@ -19,6 +19,7 @@ import {
   MarkerType,
   useNodesState,
   useEdgesState,
+  useReactFlow,
   type Node,
   type Edge,
 } from "@xyflow/react";
@@ -39,7 +40,6 @@ interface GraphViewProps {
   selectedBeadId: string | null;
   /** A bead to focus the neighborhood on (e.g. from a "View in graph" action). */
   focusBeadId: string | null;
-  onSelectBead: (beadId: string) => void;
   onOpenBead: (beadId: string) => void;
   onRequestGraph: () => void;
   onRetry: () => void;
@@ -51,17 +51,26 @@ function GraphCanvas({
   graph,
   selectedBeadId,
   focusBeadId,
-  onSelectBead,
   onOpenBead,
 }: Omit<GraphViewProps, "loading" | "error" | "onRequestGraph" | "onRetry">): React.ReactElement {
   const [mode, setMode] = useState<LayoutMode>("layered");
   const [focusEnabled, setFocusEnabled] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  // Selection is local to the canvas: a single click highlights + becomes the
+  // focus root without navigating away (double-click opens details). Falls back
+  // to the externally-selected bead until the user clicks a node here.
+  const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
+  const rf = useReactFlow();
 
   // A "view in graph" target arrives → focus on it automatically.
   useEffect(() => {
-    if (focusBeadId) setFocusEnabled(true);
+    if (focusBeadId) {
+      setLocalSelectedId(focusBeadId);
+      setFocusEnabled(true);
+    }
   }, [focusBeadId]);
+
+  const activeId = localSelectedId ?? selectedBeadId;
 
   const beads: Bead[] = useMemo(() => graph?.nodes ?? [], [graph]);
   const layoutEdges: LayoutEdge[] = useMemo(
@@ -72,13 +81,12 @@ function GraphCanvas({
   // Which beads are visible (focus neighborhood vs the whole board).
   const visibleIds = useMemo(() => {
     const allIds = beads.map((b) => b.id);
-    const root = focusBeadId ?? selectedBeadId;
-    if (focusEnabled && root) {
-      const hood = neighborhood(root, allIds, layoutEdges);
+    if (focusEnabled && activeId) {
+      const hood = neighborhood(activeId, allIds, layoutEdges);
       if (hood.size > 0) return hood;
     }
     return new Set(allIds);
-  }, [beads, layoutEdges, focusEnabled, focusBeadId, selectedBeadId]);
+  }, [beads, layoutEdges, focusEnabled, activeId]);
 
   // Layout positions — recomputed only when the visible graph or mode changes.
   const positioned = useMemo(() => {
@@ -101,10 +109,10 @@ function GraphCanvas({
         id: bead.id,
         type: "bead",
         position: positioned.positions.get(bead.id) ?? { x: 0, y: 0 },
-        selected: bead.id === selectedBeadId,
+        selected: bead.id === activeId,
         data: { bead, dimmed: highlightSet ? !highlightSet.has(bead.id) : false },
       }));
-  }, [beads, positioned, selectedBeadId, highlightSet]);
+  }, [beads, positioned, activeId, highlightSet]);
 
   const computedEdges: Edge[] = useMemo(() => {
     return (graph?.edges ?? [])
@@ -133,7 +141,14 @@ function GraphCanvas({
   useEffect(() => setNodes(computedNodes), [computedNodes, setNodes]);
   useEffect(() => setEdges(computedEdges), [computedEdges, setEdges]);
 
-  const hasFocusTarget = Boolean(focusBeadId ?? selectedBeadId);
+  // Refit the viewport whenever the visible set or layout changes — otherwise
+  // a focus-narrowed subgraph (or a layout swap) can land off-screen.
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => rf.fitView({ padding: 0.2, duration: 200 }));
+    return () => cancelAnimationFrame(raf);
+  }, [rf, mode, visibleIds]);
+
+  const hasFocusTarget = Boolean(activeId);
 
   return (
     <div className="graph-view">
@@ -184,7 +199,7 @@ function GraphCanvas({
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onNodeClick={(_, node) => onSelectBead(node.id)}
+        onNodeClick={(_, node) => setLocalSelectedId(node.id)}
         onNodeDoubleClick={(_, node) => onOpenBead(node.id)}
         onNodeMouseEnter={(_, node) => setHoveredId(node.id)}
         onNodeMouseLeave={() => setHoveredId(null)}
@@ -200,6 +215,10 @@ function GraphCanvas({
           pannable
           zoomable
           nodeColor={(n) => STATUS_COLORS[(n.data as BeadNodeData).bead.status] || "#888888"}
+          nodeStrokeColor="var(--vscode-contrastBorder, transparent)"
+          nodeStrokeWidth={3}
+          nodeBorderRadius={3}
+          maskColor="rgba(0, 0, 0, 0.45)"
         />
         <GraphLegend />
       </ReactFlow>
@@ -254,7 +273,6 @@ export function GraphView(props: GraphViewProps): React.ReactElement {
         graph={graph}
         selectedBeadId={props.selectedBeadId}
         focusBeadId={props.focusBeadId}
-        onSelectBead={props.onSelectBead}
         onOpenBead={props.onOpenBead}
       />
     </ReactFlowProvider>
