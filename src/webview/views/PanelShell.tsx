@@ -11,7 +11,7 @@
 
 import React, { useState } from "react";
 import { LayoutDashboard, ListTodo, RefreshCw, LucideIcon } from "lucide-react";
-import { Bead, BeadsProject, BeadsSummary, IssuesFilter, WebviewSettings, vscode } from "../types";
+import { Bead, BeadsSummary, IssuesFilter, WebviewSettings, vscode } from "../types";
 import { DashboardView } from "./DashboardView";
 import { IssuesView } from "./IssuesView";
 import { Loading } from "../common/Loading";
@@ -23,7 +23,6 @@ interface PanelShellProps {
   beads: Bead[];
   loading: boolean;
   error: string | null;
-  activeProject: BeadsProject | null;
   selectedBeadId: string | null;
   settings: WebviewSettings;
   issuesFilterRequest: { filter: IssuesFilter; seq: number } | null;
@@ -34,7 +33,6 @@ export function PanelShell({
   beads,
   loading,
   error,
-  activeProject,
   selectedBeadId,
   settings,
   issuesFilterRequest,
@@ -92,17 +90,11 @@ export function PanelShell({
             beads={beads}
             loading={loading}
             error={error}
-            activeProject={activeProject}
             version={settings.extensionVersion}
             buildSha={settings.buildSha}
             buildDirty={settings.buildDirty}
             onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onOpenIssues={(filter) => flipToIssues(filter)}
-            onShowStatus={() => vscode.postMessage({ type: "showDoltStatus" })}
-            onStartDolt={() => vscode.postMessage({ type: "startDoltServer" })}
-            onStopDolt={() => vscode.postMessage({ type: "stopDoltServer" })}
-            onOpenDoltLog={() => vscode.postMessage({ type: "openDoltLog" })}
-            onOpenProjectFolder={() => vscode.postMessage({ type: "openProjectFolder" })}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
           />
         ) : loading && beads.length === 0 ? (

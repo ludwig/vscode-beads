@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The sidebar Project view now leads with a header and shows basic context (issue prefix, backend status, project count, build/version) with a friendly empty state; the Details view shows a proper empty state (icon + guidance) instead of a bare line (vs-ed2)
 - Renamed the sidebar context view to **Active Project** and added an **Active Bead** section that pins the currently-selected bead (id + title) with a quick-open button — a reference anchor (and future seed root for the Graph view) (vs-14e)
 - The Dashboard's **By Label** breakdown now starts collapsed (vs-7r5)
+- Moved the Dolt actions (Show Status / Start / Stop / Open Log) from the Dashboard's menu into the **Active Project** view, and dropped the redundant directory header from the Dashboard so it leads with its metrics (vs-6mt)
+- Polished the Dashboard metric cards (accent rail per metric, larger tabular values, hover lift) and gave the Active Project info a defined key/value table (dividers + zebra) (vs-wgw, vs-293)
 
 ### Changed
 

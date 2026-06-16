@@ -10,6 +10,7 @@
 import React from "react";
 import { Bead, BeadsProject } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
+import { Dropdown, DropdownItem } from "../common/Dropdown";
 
 interface ProjectSwitcherViewProps {
   projects: BeadsProject[];
@@ -18,6 +19,10 @@ interface ProjectSwitcherViewProps {
   onSelectProject: (project: BeadsProject) => void;
   onOpenProjectFolder: () => void;
   onOpenBead: (beadId: string) => void;
+  onShowStatus: () => void;
+  onStartDolt: () => void;
+  onStopDolt: () => void;
+  onOpenDoltLog: () => void;
   version?: string;
   buildSha?: string;
   buildDirty?: boolean;
@@ -36,6 +41,10 @@ export function ProjectSwitcherView({
   onSelectProject,
   onOpenProjectFolder,
   onOpenBead,
+  onShowStatus,
+  onStartDolt,
+  onStopDolt,
+  onOpenDoltLog,
   version,
   buildSha,
   buildDirty,
@@ -45,7 +54,25 @@ export function ProjectSwitcherView({
   return (
     <div className="project-switcher-view">
       <section className="context-section">
-        <h2 className="context-heading">Active Project</h2>
+        <div className="context-section-head">
+          <h2 className="context-heading">Active Project</h2>
+          {activeProject && (
+            <Dropdown
+              trigger={<span className="context-menu-trigger">⋮</span>}
+              className="context-actions-dropdown"
+              triggerClassName="context-menu-btn"
+              menuClassName="context-actions-menu"
+              title="Project actions"
+              showChevron={false}
+              menuPlacement="bottom-end"
+            >
+              <DropdownItem onClick={onShowStatus}>Show Dolt Status</DropdownItem>
+              <DropdownItem onClick={onStartDolt}>Start Dolt</DropdownItem>
+              <DropdownItem onClick={onStopDolt}>Stop Dolt</DropdownItem>
+              <DropdownItem onClick={onOpenDoltLog}>Open Dolt Log</DropdownItem>
+            </Dropdown>
+          )}
+        </div>
 
         <ProjectDropdown
           projects={projects}

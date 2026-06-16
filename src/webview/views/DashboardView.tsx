@@ -10,7 +10,6 @@
 import React, { useState } from "react";
 import {
   Bead,
-  BeadsProject,
   BeadsSummary,
   BeadStatus,
   IssuesFilter,
@@ -20,7 +19,6 @@ import {
 import { ChevronIcon } from "../common/ChevronIcon";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { Loading } from "../common/Loading";
-import { Dropdown, DropdownItem } from "../common/Dropdown";
 import { StatusBadge } from "../common/StatusBadge";
 import { PriorityBadge } from "../common/PriorityBadge";
 import { LabelBadge } from "../common/LabelBadge";
@@ -31,14 +29,8 @@ interface DashboardViewProps {
   beads: Bead[];
   loading: boolean;
   error: string | null;
-  activeProject: BeadsProject | null;
   onSelectBead: (beadId: string) => void;
   onOpenIssues: (filter: IssuesFilter) => void;
-  onShowStatus: () => void;
-  onStartDolt: () => void;
-  onStopDolt: () => void;
-  onOpenDoltLog: () => void;
-  onOpenProjectFolder: () => void;
   onRetry: () => void;
   version?: string;
   buildSha?: string;
@@ -50,14 +42,8 @@ export function DashboardView({
   beads,
   loading,
   error,
-  activeProject,
   onSelectBead,
   onOpenIssues,
-  onShowStatus,
-  onStartDolt,
-  onStopDolt,
-  onOpenDoltLog,
-  onOpenProjectFolder,
   onRetry,
   version,
   buildSha,
@@ -81,46 +67,6 @@ export function DashboardView({
 
   return (
     <div className="dashboard dashboard-compact">
-      <header className="dashboard-header">
-        <span className="dashboard-header-label">Active Beads Directory</span>
-        {activeProject && (
-          <button
-            type="button"
-            className="dashboard-header-path"
-            title={activeProject.rootPath}
-            onClick={onOpenProjectFolder}
-          >
-            {activeProject.displayPath ?? activeProject.rootPath}
-          </button>
-        )}
-      </header>
-      <div className="dashboard-toolbar">
-        {activeProject && (
-          <Dropdown
-            trigger={<span className="dashboard-menu-trigger">⋮</span>}
-            className="dashboard-actions-dropdown"
-            triggerClassName="dashboard-menu-btn"
-            menuClassName="dashboard-actions-menu"
-            title="Project actions"
-            showChevron={false}
-            menuPlacement="bottom-end"
-          >
-            <DropdownItem onClick={onShowStatus}>
-              <span className="dashboard-menu-item"><span className="dashboard-menu-item-icon">i</span><span>Show Dolt Status</span></span>
-            </DropdownItem>
-            <DropdownItem onClick={onStartDolt}>
-              <span className="dashboard-menu-item"><span className="dashboard-menu-item-icon">▶</span><span>Start Dolt</span></span>
-            </DropdownItem>
-            <DropdownItem onClick={onStopDolt}>
-              <span className="dashboard-menu-item"><span className="dashboard-menu-item-icon">■</span><span>Stop Dolt</span></span>
-            </DropdownItem>
-            <DropdownItem onClick={onOpenDoltLog}>
-              <span className="dashboard-menu-item"><span className="dashboard-menu-item-icon">≡</span><span>Open Dolt Log</span></span>
-            </DropdownItem>
-          </Dropdown>
-        )}
-      </div>
-
       {error && !loading && <ErrorMessage message={error} onRetry={onRetry} />}
 
       {loading && !error && <Loading />}

@@ -149,7 +149,6 @@ export function App(): React.ReactElement {
             beads={state.beads}
             loading={state.loading}
             error={state.error}
-            activeProject={state.project}
             version={state.settings.extensionVersion}
             buildSha={state.settings.buildSha}
             buildDirty={state.settings.buildDirty}
@@ -159,11 +158,6 @@ export function App(): React.ReactElement {
             onOpenIssues={(filter) =>
               vscode.postMessage({ type: "openIssuesWithFilter", filter })
             }
-            onShowStatus={() => vscode.postMessage({ type: "showDoltStatus" })}
-            onStartDolt={() => vscode.postMessage({ type: "startDoltServer" })}
-            onStopDolt={() => vscode.postMessage({ type: "stopDoltServer" })}
-            onOpenDoltLog={() => vscode.postMessage({ type: "openDoltLog" })}
-            onOpenProjectFolder={() => vscode.postMessage({ type: "openProjectFolder" })}
             onRetry={() =>
               vscode.postMessage({ type: "refresh" })
             }
@@ -198,7 +192,6 @@ export function App(): React.ReactElement {
             beads={state.beads}
             loading={state.loading}
             error={state.error}
-            activeProject={state.project}
             selectedBeadId={state.selectedBeadId}
             settings={state.settings}
             issuesFilterRequest={state.issuesFilterRequest}
@@ -223,6 +216,10 @@ export function App(): React.ReactElement {
             }
             onOpenProjectFolder={() => vscode.postMessage({ type: "openProjectFolder" })}
             onOpenBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
+            onShowStatus={() => vscode.postMessage({ type: "showDoltStatus" })}
+            onStartDolt={() => vscode.postMessage({ type: "startDoltServer" })}
+            onStopDolt={() => vscode.postMessage({ type: "stopDoltServer" })}
+            onOpenDoltLog={() => vscode.postMessage({ type: "openDoltLog" })}
           />
         );
 
