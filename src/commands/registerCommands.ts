@@ -14,6 +14,7 @@ import { PanelShellViewProvider } from "../providers/PanelShellViewProvider";
 import { BeadDetailsViewProvider } from "../providers/BeadDetailsViewProvider";
 import { BeadsProjectSwitcherViewProvider } from "../providers/BeadsProjectSwitcherViewProvider";
 import { BeadPanelManager } from "../providers/BeadPanelManager";
+import { NavigationHistory } from "../providers/NavigationHistory";
 import { Logger } from "../utils/logger";
 
 export interface CommandDeps {
@@ -46,6 +47,34 @@ export function registerCommands(
     log,
     updateStatusBar,
   } = deps;
+
+  // Per-session Details navigation history (vs-xzq). Back/Forward walk a cursor
+  // along the beads the user has visited; a new navigation truncates the
+  // forward branch. Reset when the selection is cleared or the project changes.
+  const navHistory = new NavigationHistory();
+
+  const updateNavContext = (): void => {
+    vscode.commands.executeCommand("setContext", "beads.canNavigateBack", navHistory.canBack());
+    vscode.commands.executeCommand("setContext", "beads.canNavigateForward", navHistory.canForward());
+  };
+
+  // Drive every selection surface from one place: the sidebar Details view, the
+  // Issues table highlight, and the Active Bead pin — so traversal keeps them in
+  // sync (the Active Bead follows where the user actually is).
+  const selectBead = (beadId: string): void => {
+    detailsProvider.showBead(beadId);
+    shellProvider.setSelectedBead(beadId);
+    switcherProvider.setActiveBead(beadId);
+  };
+
+  // Reset history whenever the active project changes — bead ids don't carry
+  // across projects, so a stale trail would navigate to the wrong board.
+  context.subscriptions.push(
+    projectManager.onActiveProjectChanged(() => {
+      navHistory.reset();
+      updateNavContext();
+    })
+  );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("beads.switchProject", async () => {
@@ -109,19 +138,42 @@ export function registerCommands(
       }
 
       if (beadId) {
-        const selectedId = beadId;
-        detailsProvider.showBead(selectedId);
-        shellProvider.setSelectedBead(selectedId);
-        switcherProvider.setActiveBead(selectedId);
+        // A user navigation: record it (truncating any forward branch) and
+        // drive all selection surfaces.
+        navHistory.record(beadId);
+        selectBead(beadId);
+        updateNavContext();
+      }
+    }),
+
+    // Back/Forward through the Details navigation history (vs-xzq). These move
+    // the cursor and re-select WITHOUT recording, so they don't grow the trail.
+    vscode.commands.registerCommand("beads.navigateBack", () => {
+      const id = navHistory.back();
+      if (id) {
+        selectBead(id);
+        updateNavContext();
+      }
+    }),
+
+    vscode.commands.registerCommand("beads.navigateForward", () => {
+      const id = navHistory.forward();
+      if (id) {
+        selectBead(id);
+        updateNavContext();
       }
     }),
 
     // Clear the current selection across every surface that tracks it: the
     // sidebar Details view, the Issues table highlight, and the Active Bead pin.
+    // Also resets the navigation history — the trail is meaningless once the
+    // selection is gone.
     vscode.commands.registerCommand("beads.clearSelection", () => {
       detailsProvider.clearBead();
       shellProvider.setSelectedBead(null);
       switcherProvider.setActiveBead(null);
+      navHistory.reset();
+      updateNavContext();
     }),
 
     // vs-ask: open a bead's Details as an editor tab. With no argument, use the

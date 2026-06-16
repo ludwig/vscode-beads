@@ -76,6 +76,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // Initialize context for conditional menu items
   vscode.commands.executeCommand("setContext", "beads.hasSelectedBead", false);
+  vscode.commands.executeCommand("setContext", "beads.canNavigateBack", false);
+  vscode.commands.executeCommand("setContext", "beads.canNavigateForward", false);
 
   // Create view providers. The bottom Panel is one consolidated shell;
   // the slimmed sidebar holds the project switcher and Details.

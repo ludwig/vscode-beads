@@ -264,6 +264,14 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
         vscode.commands.executeCommand("beads.viewInGraph", message.beadId);
         break;
 
+      case "navigateBack":
+        vscode.commands.executeCommand("beads.navigateBack");
+        break;
+
+      case "navigateForward":
+        vscode.commands.executeCommand("beads.navigateForward");
+        break;
+
       case "createBead":
         try {
           const { title, type, priority, description, design, acceptanceCriteria, assignee, labels } =

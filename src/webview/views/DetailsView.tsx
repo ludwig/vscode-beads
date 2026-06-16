@@ -22,6 +22,7 @@ import {
   TYPE_LABELS,
   getTypeSortOrder,
   sortLabels,
+  vscode,
 } from "../types";
 import { Timestamp } from "../common/Timestamp";
 import { StatusPriorityPill } from "../common/StatusPriorityPill";
@@ -224,6 +225,25 @@ export function DetailsView({
       setEditedBead({});
     }
   }, [bead?.updatedAt]);
+
+  // Keyboard history navigation: Alt+Left / Alt+Right walk the Details
+  // back/forward trail (vs-xzq). Handled webview-side because the webview owns
+  // focus and would otherwise swallow the keystrokes before a VS Code
+  // keybinding could fire. Ignored while editing or typing in a field.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!e.altKey || (e.key !== "ArrowLeft" && e.key !== "ArrowRight")) return;
+      const target = e.target as HTMLElement | null;
+      const typing =
+        editMode ||
+        (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable));
+      if (typing) return;
+      e.preventDefault();
+      vscode.postMessage({ type: e.key === "ArrowLeft" ? "navigateBack" : "navigateForward" });
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [editMode]);
 
   const handleSave = useCallback(() => {
     if (bead && Object.keys(editedBead).length > 0) {

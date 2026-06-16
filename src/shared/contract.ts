@@ -194,6 +194,8 @@ export type WebviewToExtensionMessage =
   | { type: "clearActiveBead" }
   | { type: "copyText"; text: string; label?: string }
   | { type: "viewInGraph"; beadId: string }
+  | { type: "navigateBack" }
+  | { type: "navigateForward" }
   | { type: "requestGraph" }
   | { type: "openViewInTab"; view: "issues" | "dashboard" | "graph" }
   | { type: "copyBeadId"; beadId: string }
