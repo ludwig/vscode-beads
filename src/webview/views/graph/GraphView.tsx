@@ -242,11 +242,12 @@ function GraphCanvas({
           x={menu.x}
           y={menu.y}
           onClose={() => setMenu(null)}
-          items={buildMenuItems(menu.bead, {
+          items={buildMenuItems(menu.bead, focusEnabled, {
             onFocus: () => {
               setLocalSelectedId(menu.bead.id);
               setFocusEnabled(true);
             },
+            onUnfocus: () => setFocusEnabled(false),
           })}
         />
       )}
@@ -254,9 +255,15 @@ function GraphCanvas({
   );
 }
 
-function buildMenuItems(bead: Bead, handlers: { onFocus: () => void }): ContextMenuItem[] {
+function buildMenuItems(
+  bead: Bead,
+  focusEnabled: boolean,
+  handlers: { onFocus: () => void; onUnfocus: () => void },
+): ContextMenuItem[] {
   return [
-    { label: "Focus", onSelect: handlers.onFocus },
+    focusEnabled
+      ? { label: "Unfocus", onSelect: handlers.onUnfocus }
+      : { label: "Focus", onSelect: handlers.onFocus },
     {
       label: "Open Details (editor tab)",
       separatorBefore: true,

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Dashboard now has a collapsed **By Type** breakdown card (above By Label) — bead counts per issue type, each row drills into the Issues list filtered to that type (vs-eif)
 - Right-click a bead node in the **Graph** view for a context menu — **Focus** (narrow to its neighborhood), **Open Details** (editor tab), **Show Details** (sidebar), **Copy ID**, **Copy title** (vs-aml)
 - Right-click an **Issues table** row for the same context menu — **Open Details** (editor tab), **Show Details**, **Copy ID**, **Copy title** (vs-7mp)
 - The bottom Beads panel now has an **Open in Editor** button in its in-view nav row — pops the active subview (Issues / Dashboard / Graph) out into an editor tab; the Graph gets its own `beads.openGraphInTab` command + standalone editor route (vs-3bp)

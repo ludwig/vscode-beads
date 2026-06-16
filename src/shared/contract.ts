@@ -147,6 +147,7 @@ export interface CreateBeadFields {
 export interface IssuesFilter {
   statuses?: BeadStatus[];
   labels?: string[];
+  types?: string[];
 }
 
 // --- Message protocol -------------------------------------------------------

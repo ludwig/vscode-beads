@@ -239,10 +239,12 @@ export function IssuesView({
 
     const statuses = issuesFilterRequest.filter.statuses ?? [];
     const labels = issuesFilterRequest.filter.labels ?? [];
+    const types = issuesFilterRequest.filter.types ?? [];
     setColumnFilters((prev) => {
-      const others = prev.filter((f) => f.id !== "status" && f.id !== "labels");
+      const others = prev.filter((f) => f.id !== "status" && f.id !== "labels" && f.id !== "type");
       if (statuses.length > 0) others.push({ id: "status", value: statuses });
       if (labels.length > 0) others.push({ id: "labels", value: labels });
+      if (types.length > 0) others.push({ id: "type", value: types });
       return others;
     });
     // Reflect a matching status preset in the dropdown when one lines up and
