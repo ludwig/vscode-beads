@@ -14,6 +14,7 @@ import {
   UpdateIssueArgs,
 } from "./BeadsBackend";
 import { BeadsCommandRunner } from "./BeadsCommandRunner";
+import { normalizeSqlTimestamp } from "./sqlTimestamp";
 import type { DependencyType } from "../shared/contract";
 
 const DEPENDENCY_TYPES: ReadonlySet<string> = new Set<DependencyType>([
@@ -602,10 +603,11 @@ export class BeadsDoltBackend implements BeadsBackend {
   }
 
   private timestamp(value: unknown): string {
-    return this.str(value);
+    return normalizeSqlTimestamp(value);
   }
 
   private optionalTimestamp(value: unknown): string | undefined {
-    return this.optionalStr(value);
+    const normalized = normalizeSqlTimestamp(value);
+    return normalized.length > 0 ? normalized : undefined;
   }
 }
