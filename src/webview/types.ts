@@ -1,152 +1,37 @@
 /**
- * Webview-side type definitions
+ * Webview-side type definitions.
  *
- * These mirror the backend types but are used in the React webview.
+ * The webview↔extension protocol and the data shapes it carries come from the
+ * shared contract — the single source of truth for both sides (see
+ * src/shared/contract.ts). They are re-exported here (with the message unions
+ * aliased to the webview's historical names) so existing webview imports keep
+ * working. Only webview-only rendering concerns (colors, display labels, type
+ * metadata, the VS Code API handle) are defined locally below.
  */
 
-// Re-export types that are shared between extension and webview
-// These match beads canonical statuses: open, in_progress, blocked, closed
-export type BeadStatus = "open" | "in_progress" | "blocked" | "closed";
+import type {
+  BeadStatus,
+  BeadPriority,
+  WebviewToExtensionMessage,
+} from "../shared/contract";
 
-export type BeadPriority = 0 | 1 | 2 | 3 | 4;
-
-// Dependency relationship types
-export type DependencyType = "blocks" | "parent-child" | "related" | "discovered-from";
-
-export interface BeadComment {
-  id: string;
-  author: string;
-  text: string;
-  createdAt: string;
-}
-
-export interface BeadDependency {
-  id: string;
-  type?: string; // issue_type for coloring
-  dependencyType?: DependencyType; // relationship type: blocks, parent-child, etc.
-  title?: string;
-  status?: BeadStatus;
-  priority?: BeadPriority;
-}
-
-export interface Bead {
-  id: string;
-  title: string;
-  description?: string;
-  design?: string;
-  acceptanceCriteria?: string;
-  notes?: string;
-  type?: string;
-  priority?: BeadPriority;
-  status: BeadStatus;
-  assignee?: string;
-  labels?: string[];
-  estimatedMinutes?: number;
-  externalRef?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  closedAt?: string;
-  dependsOn?: BeadDependency[];
-  blocks?: BeadDependency[];
-  comments?: BeadComment[];
-  sortOrder?: number;
-  // True while this bead was painted optimistically from the list row and the
-  // authoritative `bd show` (deps + comments) has not yet returned (vs-7s7).
-  partial?: boolean;
-}
-
-export interface BeadsProject {
-  id: string;
-  name: string;
-  rootPath: string;
-  displayPath?: string;
-  beadsDir: string;
-  source?: "workspace" | "setting" | "env" | "default";
-  /** Effective issue prefix (explicit config value, or the dir name). */
-  prefix?: string;
-  dbPath?: string;
-  backendStatus: "running" | "stopped" | "unknown";
-  backendPid?: number;
-}
-
-export interface BeadsSummary {
-  total: number;
-  byStatus: Record<BeadStatus, number>;
-  byPriority: Record<BeadPriority, number>;
-  readyCount: number;
-  blockedCount: number;
-  inProgressCount: number;
-}
-
-export interface WebviewSettings {
-  renderMarkdown: boolean;
-  userId: string;
-  tooltipHoverDelay: number; // 0 = disabled
-  extensionVersion: string;
-  buildSha: string;
-  buildDirty: boolean;
-}
-
-// Fields for creating a new bead (camelCase; normalized in the provider)
-export interface CreateBeadFields {
-  title: string;
-  type?: string;
-  priority?: BeadPriority;
-  description?: string;
-  design?: string;
-  acceptanceCriteria?: string;
-  assignee?: string;
-  labels?: string[];
-}
-
-// Messages from extension to webview
-export type ExtensionMessage =
-  | { type: "setViewType"; viewType: string }
-  | { type: "setProject"; project: BeadsProject | null }
-  | { type: "setBeads"; beads: Bead[] }
-  | { type: "setBead"; bead: Bead | null }
-  | { type: "setSelectedBeadId"; beadId: string | null }
-  | { type: "setSummary"; summary: BeadsSummary }
-  | { type: "setProjects"; projects: BeadsProject[] }
-  | { type: "setLoading"; loading: boolean }
-  | { type: "setError"; error: string | null }
-  | { type: "setSettings"; settings: WebviewSettings }
-  | { type: "setCreateMode"; value: boolean }
-  | { type: "applyIssuesFilter"; filter: IssuesFilter }
-  | { type: "refresh" }
-  | { type: "showToast"; text: string };
-
-// Messages from webview to extension
-export type WebviewMessage =
-  | { type: "ready" }
-  | { type: "refresh" }
-  | { type: "selectProject"; projectId: string; projectRootPath?: string }
-  | { type: "showProjectMenu"; projectId: string }
-  | { type: "showDoltStatus" }
-  | { type: "startDoltServer" }
-  | { type: "stopDoltServer" }
-  | { type: "openDoltLog" }
-  | { type: "openProjectFolder" }
-  | { type: "selectBead"; beadId: string }
-  | { type: "updateBead"; beadId: string; updates: Partial<Bead> }
-  | { type: "deleteBead"; beadId: string }
-  | { type: "addDependency"; beadId: string; targetId: string; dependencyType: DependencyType; reverse: boolean }
-  | { type: "removeDependency"; beadId: string; dependsOnId: string }
-  | { type: "addComment"; beadId: string; text: string }
-  | { type: "openBeadDetails"; beadId: string }
-  | { type: "viewInGraph"; beadId: string }
-  | { type: "copyBeadId"; beadId: string }
-  | { type: "createBead"; fields: CreateBeadFields }
-  | { type: "cancelCreate" }
-  | { type: "openFile"; filePath: string; line?: number }
-  | { type: "openExternal"; url: string }
-  | { type: "openIssuesWithFilter"; filter: IssuesFilter };
-
-/** Drill-in filter pushed to the Issues view (see backend/types.ts). */
-export interface IssuesFilter {
-  statuses?: BeadStatus[];
-  labels?: string[];
-}
+export type {
+  BeadStatus,
+  BeadPriority,
+  DependencyType,
+  BeadComment,
+  BeadDependency,
+  Bead,
+  BeadsProject,
+  BeadsSummary,
+  WebviewSettings,
+  CreateBeadFields,
+  IssuesFilter,
+  // The webview historically named the two message unions ExtensionMessage /
+  // WebviewMessage; keep those names as aliases over the shared contract.
+  ExtensionToWebviewMessage as ExtensionMessage,
+  WebviewToExtensionMessage as WebviewMessage,
+} from "../shared/contract";
 
 // Human-readable labels
 export const PRIORITY_LABELS: Record<BeadPriority, string> = {
@@ -258,7 +143,7 @@ export function sortLabels(labels: string[] | undefined): string[] {
 declare global {
   interface Window {
     acquireVsCodeApi: () => {
-      postMessage: (message: WebviewMessage) => void;
+      postMessage: (message: WebviewToExtensionMessage) => void;
       getState: () => unknown;
       setState: (state: unknown) => void;
     };

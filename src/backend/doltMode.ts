@@ -2,7 +2,11 @@
 import * as fs from "fs";
 import * as path from "path";
 
-export type DoltMode = "embedded" | "server";
+// DoltMode is defined in the shared contract (it travels on BeadsProject in the
+// webview↔extension protocol); re-export it here so existing `./doltMode`
+// importers keep working.
+import type { DoltMode } from "../shared/contract";
+export type { DoltMode };
 export type BackendKind = "sql" | "cli";
 
 /** Pluggable inputs so detection is unit-testable without fs or the CLI. */
