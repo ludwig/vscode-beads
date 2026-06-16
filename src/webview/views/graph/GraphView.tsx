@@ -71,6 +71,10 @@ function GraphCanvas({
   }, [focusBeadId]);
 
   const activeId = localSelectedId ?? selectedBeadId;
+  // The neighborhood root only matters when Focus is on. Gating on this (rather
+  // than activeId directly) keeps the visible set identity stable when merely
+  // selecting a node with Focus off — so a plain click doesn't relayout/refit.
+  const focusRoot = focusEnabled ? activeId : null;
 
   const beads: Bead[] = useMemo(() => graph?.nodes ?? [], [graph]);
   const layoutEdges: LayoutEdge[] = useMemo(
@@ -81,12 +85,12 @@ function GraphCanvas({
   // Which beads are visible (focus neighborhood vs the whole board).
   const visibleIds = useMemo(() => {
     const allIds = beads.map((b) => b.id);
-    if (focusEnabled && activeId) {
-      const hood = neighborhood(activeId, allIds, layoutEdges);
+    if (focusRoot) {
+      const hood = neighborhood(focusRoot, allIds, layoutEdges);
       if (hood.size > 0) return hood;
     }
     return new Set(allIds);
-  }, [beads, layoutEdges, focusEnabled, activeId]);
+  }, [beads, layoutEdges, focusRoot]);
 
   // Layout positions — recomputed only when the visible graph or mode changes.
   const positioned = useMemo(() => {
@@ -96,12 +100,8 @@ function GraphCanvas({
     return { ids: new Set(ids), positions };
   }, [beads, layoutEdges, visibleIds, mode]);
 
-  // Highlight a hovered node's neighborhood; dim the rest.
-  const highlightSet = useMemo(() => {
-    if (!hoveredId) return null;
-    return neighborhood(hoveredId, [...positioned.ids], layoutEdges);
-  }, [hoveredId, positioned.ids, layoutEdges]);
-
+  // Nodes never dim — hovering only emphasizes the hovered node's own edges, so
+  // the board stays fully visible as the mouse moves.
   const computedNodes: Node<BeadNodeData>[] = useMemo(() => {
     return beads
       .filter((b) => positioned.ids.has(b.id))
@@ -110,30 +110,30 @@ function GraphCanvas({
         type: "bead",
         position: positioned.positions.get(bead.id) ?? { x: 0, y: 0 },
         selected: bead.id === activeId,
-        data: { bead, dimmed: highlightSet ? !highlightSet.has(bead.id) : false },
+        data: { bead, dimmed: false },
       }));
-  }, [beads, positioned, activeId, highlightSet]);
+  }, [beads, positioned, activeId]);
 
   const computedEdges: Edge[] = useMemo(() => {
     return (graph?.edges ?? [])
       .filter((e) => positioned.ids.has(e.from) && positioned.ids.has(e.to))
       .map((e) => {
         const st = edgeStyle(e.type);
-        const lit = !highlightSet || (highlightSet.has(e.from) && highlightSet.has(e.to));
+        const incident = hoveredId != null && (e.from === hoveredId || e.to === hoveredId);
+        const baseWidth = st.bold ? 2.5 : 1.5;
         return {
           id: `${e.from}->${e.to}:${e.type}`,
           source: e.from,
           target: e.to,
           style: {
             stroke: st.color,
-            strokeWidth: st.bold ? 2.5 : 1.5,
+            strokeWidth: incident ? baseWidth + 1.5 : baseWidth,
             strokeDasharray: st.dashed ? "6 4" : undefined,
-            opacity: lit ? 1 : 0.15,
           },
           markerEnd: { type: MarkerType.ArrowClosed, color: st.color },
         } satisfies Edge;
       });
-  }, [graph, positioned, highlightSet]);
+  }, [graph, positioned, hoveredId]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<BeadNodeData>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
