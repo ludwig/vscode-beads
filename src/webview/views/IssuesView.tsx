@@ -153,6 +153,20 @@ export function IssuesView({
 
   // UI state
   const [viewMode, setViewMode] = useState<"table" | "board">("table");
+  // Optimistic selection: highlight the clicked row instantly instead of waiting
+  // for the extension to echo setSelectedBeadId back (the round trip read as
+  // selection lag). Cleared whenever the authoritative prop updates so external
+  // selections still win.
+  const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
+  useEffect(() => setLocalSelectedId(null), [selectedBeadId]);
+  const activeSelectedId = localSelectedId ?? selectedBeadId;
+  const selectRow = useCallback(
+    (id: string) => {
+      setLocalSelectedId(id);
+      onSelectBead(id);
+    },
+    [onSelectBead],
+  );
   const [activePreset, setActivePreset] = useState<string>("not-closed");
   const [filterBarOpen, setFilterBarOpen] = useState(true);
   const [filterMenuOpen, setFilterMenuOpen] = useState<string | null>(null);
@@ -312,7 +326,7 @@ export function IssuesView({
               onClick={(e) => {
                 e.stopPropagation();
                 handleCopyId(info.row.original.id);
-                onSelectBead(info.row.original.id);
+                selectRow(info.row.original.id);
               }}
               title={copiedId === info.row.original.id ? "Copied!" : "Click to copy"}
             >
@@ -407,7 +421,7 @@ export function IssuesView({
         sortingFn: timestampSortingFn,
       }),
     ],
-    [copiedId]
+    [copiedId, selectRow]
   );
 
   const table = useReactTable({
@@ -1146,12 +1160,12 @@ export function IssuesView({
                   table.getRowModel().rows.map((row) => (
                     <tr
                       key={row.id}
-                      onClick={() => onSelectBead(row.original.id)}
+                      onClick={() => selectRow(row.original.id)}
                       onContextMenu={(e) => {
                         e.preventDefault();
                         setRowMenu({ x: e.clientX, y: e.clientY, bead: row.original });
                       }}
-                      className={`bead-row ${row.original.id === selectedBeadId ? "selected" : ""}`}
+                      className={`bead-row ${row.original.id === activeSelectedId ? "selected" : ""}`}
                     >
                       {row.getVisibleCells().map((cell) => {
                         const isIcon = cell.column.id === "icon";
@@ -1193,8 +1207,8 @@ export function IssuesView({
           )}
           <KanbanBoard
             beads={table.getFilteredRowModel().rows.map((r) => r.original)}
-            selectedBeadId={selectedBeadId}
-            onSelectBead={onSelectBead}
+            selectedBeadId={activeSelectedId}
+            onSelectBead={selectRow}
             onUpdateBead={onUpdateBead}
             hasActiveFilters={hasActiveFilters}
             unfilteredCounts={unfilteredStatusCounts}

@@ -108,6 +108,12 @@ export function TreeView({
   }, [onRequestGraph]);
 
   const [query, setQuery] = useState("");
+  // Optimistic selection: highlight the clicked node instantly rather than
+  // waiting for the extension to echo selectedBeadId back. Cleared when the
+  // authoritative prop updates so external selections win.
+  const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
+  useEffect(() => setLocalSelectedId(null), [selectedBeadId]);
+  const activeSelectedId = localSelectedId ?? selectedBeadId;
   // Scope the tree to the current Issues filter slice (vs-bo9), mirroring the
   // Graph's Filtered toggle (vs-v07).
   const [filterEnabled, setFilterEnabled] = useState(false);
@@ -140,6 +146,7 @@ export function TreeView({
   });
   const handleActivate = useCallback(
     (id: string) => {
+      setLocalSelectedId(id); // instant highlight, before the extension echoes back
       onSelectBead(id);
       const c = clickRef.current;
       if (c.id !== id) {
@@ -338,7 +345,7 @@ export function TreeView({
               key={node.bead.id}
               node={node}
               depth={0}
-              selectedBeadId={selectedBeadId}
+              selectedBeadId={activeSelectedId}
               collapsed={collapsed}
               forceExpand={filtering}
               onToggle={toggle}
