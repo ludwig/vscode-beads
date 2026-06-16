@@ -7,7 +7,7 @@
  * Reuses the lazily-fetched dependency graph (same data as the Graph tab).
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronRight, ChevronDown, Search, ArrowUp, ArrowDown } from "lucide-react";
 import {
   Bead,
@@ -120,6 +120,41 @@ export function TreeView({
   const openMenu = useCallback((x: number, y: number, bead: Bead) => {
     setMenu({ x, y, bead });
   }, []);
+
+  // Click-count router (mirrors the Graph): 1/2 clicks select + show the bead in
+  // the sidebar Details (double keeps it there), 3 clicks open it in an editor
+  // tab. Selection fires immediately on every click for instant feedback.
+  const clickRef = useRef<{ id: string; count: number; timer: ReturnType<typeof setTimeout> | null }>({
+    id: "",
+    count: 0,
+    timer: null,
+  });
+  const handleActivate = useCallback(
+    (id: string) => {
+      onSelectBead(id);
+      const c = clickRef.current;
+      if (c.id !== id) {
+        c.id = id;
+        c.count = 0;
+      }
+      c.count += 1;
+      if (c.timer) clearTimeout(c.timer);
+      c.timer = setTimeout(() => {
+        const n = c.count;
+        c.count = 0;
+        c.id = "";
+        c.timer = null;
+        if (n >= 3) vscode.postMessage({ type: "openBeadInTab", beadId: id });
+      }, 320);
+    },
+    [onSelectBead],
+  );
+  useEffect(
+    () => () => {
+      if (clickRef.current.timer) clearTimeout(clickRef.current.timer);
+    },
+    [],
+  );
 
   const forest = useMemo(
     () => (graph ? buildForest(graph.nodes, graph.edges, comparatorFor(sort)) : []),
@@ -275,7 +310,7 @@ export function TreeView({
               collapsed={collapsed}
               forceExpand={filtering}
               onToggle={toggle}
-              onSelectBead={onSelectBead}
+              onActivate={handleActivate}
               onContextMenu={openMenu}
               drag={drag}
             />
@@ -327,7 +362,7 @@ interface TreeRowProps {
   collapsed: Set<string>;
   forceExpand: boolean;
   onToggle: (id: string) => void;
-  onSelectBead: (beadId: string) => void;
+  onActivate: (beadId: string) => void;
   onContextMenu: (x: number, y: number, bead: Bead) => void;
   drag: DragApi;
 }
@@ -339,7 +374,7 @@ function TreeRow({
   collapsed,
   forceExpand,
   onToggle,
-  onSelectBead,
+  onActivate,
   onContextMenu,
   drag,
 }: TreeRowProps): React.ReactElement {
@@ -372,7 +407,7 @@ function TreeRow({
           drag.onDrop(bead.id);
         }}
         onDragEnd={drag.onEnd}
-        onClick={() => onSelectBead(bead.id)}
+        onClick={() => onActivate(bead.id)}
         onContextMenu={(e) => {
           e.preventDefault();
           onContextMenu(e.clientX, e.clientY, bead);
@@ -407,7 +442,7 @@ function TreeRow({
               collapsed={collapsed}
               forceExpand={forceExpand}
               onToggle={onToggle}
-              onSelectBead={onSelectBead}
+              onActivate={onActivate}
               onContextMenu={onContextMenu}
               drag={drag}
             />

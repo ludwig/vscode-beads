@@ -7,7 +7,7 @@
  * empty states.
  */
 
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, X } from "lucide-react";
 import { Bead, BeadsProject, STATUS_COLORS } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
@@ -21,6 +21,7 @@ interface ProjectSwitcherViewProps {
   onSelectProject: (project: BeadsProject) => void;
   onOpenProjectFolder: () => void;
   onOpenBead: (beadId: string) => void;
+  onOpenBeadInTab: (beadId: string) => void;
   onClearBead: () => void;
   onShowStatus: () => void;
   onStartDolt: () => void;
@@ -44,6 +45,7 @@ export function ProjectSwitcherView({
   onSelectProject,
   onOpenProjectFolder,
   onOpenBead,
+  onOpenBeadInTab,
   onClearBead,
   onShowStatus,
   onStartDolt,
@@ -56,6 +58,34 @@ export function ProjectSwitcherView({
   const backendState = activeProject?.backendStatus ?? "unknown";
   const [projectCollapsed, setProjectCollapsed] = useState(false);
   const [beadCollapsed, setBeadCollapsed] = useState(false);
+
+  // Click-count router on the Active Bead card (mirrors the Graph/Tree): 1/2
+  // clicks open it in the sidebar Details, 3 clicks open it in an editor tab.
+  const clickRef = useRef<{ count: number; timer: ReturnType<typeof setTimeout> | null }>({
+    count: 0,
+    timer: null,
+  });
+  const activateBead = useCallback(
+    (id: string) => {
+      onOpenBead(id);
+      const c = clickRef.current;
+      c.count += 1;
+      if (c.timer) clearTimeout(c.timer);
+      c.timer = setTimeout(() => {
+        const n = c.count;
+        c.count = 0;
+        c.timer = null;
+        if (n >= 3) onOpenBeadInTab(id);
+      }, 320);
+    },
+    [onOpenBead, onOpenBeadInTab],
+  );
+  useEffect(
+    () => () => {
+      if (clickRef.current.timer) clearTimeout(clickRef.current.timer);
+    },
+    [],
+  );
 
   return (
     <div className="project-switcher-view">
@@ -188,8 +218,8 @@ export function ProjectSwitcherView({
           <button
             type="button"
             className="active-bead"
-            title={`${activeBead.id} — ${activeBead.title}\nClick to open in Details`}
-            onClick={() => onOpenBead(activeBead.id)}
+            title={`${activeBead.id} — ${activeBead.title}\nClick to open in Details · triple-click to open in an editor tab`}
+            onClick={() => activateBead(activeBead.id)}
           >
             <div className="active-bead-main">
               <div className="active-bead-head">
