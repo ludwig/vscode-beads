@@ -37,6 +37,38 @@ export function edgeStyle(type: DependencyType): EdgeStyle {
 }
 
 /**
+ * Relationship choices offered when drawing a new edge on the canvas (vs-caz).
+ * The graph draws edges dependent→dependency (an edge A→B means "A depends on
+ * B"), so a drag from node A's source handle to node B's target handle is the
+ * *forward* direction — A relates to B as described. Labels read "A <label> B".
+ */
+export interface ConnectDepOption {
+  type: DependencyType;
+  label: string;
+}
+
+export const CONNECT_DEP_OPTIONS: ConnectDepOption[] = [
+  { type: "blocks", label: "Blocked by" },
+  { type: "parent-child", label: "Child of" },
+  { type: "related", label: "Related to" },
+  { type: "discovered-from", label: "Discovered from" },
+];
+
+/**
+ * Map a canvas connection (React Flow gives source→target) to an addDependency
+ * payload. The drag direction is the forward direction, so reverse is always
+ * false: the provider stores from_id=source, to_id=target, preserving the
+ * dependent→dependency arrow the user drew.
+ */
+export function connectionToAddDependency(
+  source: string,
+  target: string,
+  type: DependencyType,
+): { beadId: string; targetId: string; dependencyType: DependencyType; reverse: boolean } {
+  return { beadId: source, targetId: target, dependencyType: type, reverse: false };
+}
+
+/**
  * The weakly-connected neighborhood of `focusId`: the focus node plus every
  * node reachable by following edges in either direction. Used by focus-on-root
  * mode to show just the dependency chain a bead participates in. Returns an

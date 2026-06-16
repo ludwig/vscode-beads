@@ -1,4 +1,10 @@
-import { neighborhood, edgeStyle, EDGE_TYPE_ORDER } from "../graphModel";
+import {
+  neighborhood,
+  edgeStyle,
+  EDGE_TYPE_ORDER,
+  CONNECT_DEP_OPTIONS,
+  connectionToAddDependency,
+} from "../graphModel";
 
 const edges = [
   { from: "a", to: "b" },
@@ -54,5 +60,30 @@ describe("edgeStyle", () => {
     for (const type of EDGE_TYPE_ORDER) {
       expect(edgeStyle(type).color).toMatch(/^#/);
     }
+  });
+});
+
+describe("connectionToAddDependency", () => {
+  it("preserves the drawn direction as the forward (reverse=false) dependency", () => {
+    const payload = connectionToAddDependency("a", "b", "blocks");
+    // edge a->b means "a depends on b"; provider stores from_id=a, to_id=b
+    expect(payload).toEqual({
+      beadId: "a",
+      targetId: "b",
+      dependencyType: "blocks",
+      reverse: false,
+    });
+  });
+
+  it("carries the chosen relationship type through unchanged", () => {
+    for (const opt of CONNECT_DEP_OPTIONS) {
+      expect(connectionToAddDependency("x", "y", opt.type).dependencyType).toBe(opt.type);
+    }
+  });
+
+  it("offers one option per edge relationship type", () => {
+    expect(CONNECT_DEP_OPTIONS.map((o) => o.type).sort()).toEqual(
+      [...EDGE_TYPE_ORDER].sort(),
+    );
   });
 });

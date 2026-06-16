@@ -22,6 +22,7 @@ import {
   useReactFlow,
   type Node,
   type Edge,
+  type Connection,
 } from "@xyflow/react";
 import { GitBranch, Network, Crosshair, Wand2, Filter } from "lucide-react";
 import { Bead, DependencyGraph, STATUS_COLORS, vscode } from "../../types";
@@ -30,7 +31,14 @@ import { ErrorMessage } from "../../common/ErrorMessage";
 import { BeadNode, type BeadNodeData } from "./BeadNode";
 import { ContextMenu, type ContextMenuItem } from "../../common/ContextMenu";
 import { layeredLayout, forceLayout, type LayoutEdge } from "./layout";
-import { edgeStyle, neighborhood, EDGE_TYPE_ORDER, EDGE_STYLES } from "./graphModel";
+import {
+  edgeStyle,
+  neighborhood,
+  EDGE_TYPE_ORDER,
+  EDGE_STYLES,
+  CONNECT_DEP_OPTIONS,
+  connectionToAddDependency,
+} from "./graphModel";
 
 type LayoutMode = "layered" | "force";
 
@@ -68,6 +76,17 @@ function GraphCanvas({
   const [filterEnabled, setFilterEnabled] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; bead: Bead } | null>(null);
+  // Drawing a new edge (vs-caz): React Flow fires onConnect on a valid drop,
+  // then onConnectEnd with the pointer event — pair them to pop a relationship
+  // picker at the drop point. Clicking an existing edge offers removal.
+  const pendingConn = useRef<{ source: string; target: string } | null>(null);
+  const [connMenu, setConnMenu] = useState<{ x: number; y: number; source: string; target: string } | null>(null);
+  const [edgeMenu, setEdgeMenu] = useState<{ x: number; y: number; source: string; target: string } | null>(null);
+  const closeMenus = useCallback(() => {
+    setMenu(null);
+    setConnMenu(null);
+    setEdgeMenu(null);
+  }, []);
   // Bumped by Auto Layout to seed a new force-layout variant.
   const [layoutSeed, setLayoutSeed] = useState(0);
   // Selection is local to the canvas: a single click highlights + becomes the
@@ -218,6 +237,34 @@ function GraphCanvas({
     if (clickRef.current.timer) clearTimeout(clickRef.current.timer);
   }, []);
 
+  // Edge creation: stash the connection on a valid drop, then open the picker
+  // at the pointer once the gesture ends.
+  const onConnect = useCallback((c: Connection) => {
+    if (c.source && c.target && c.source !== c.target) {
+      pendingConn.current = { source: c.source, target: c.target };
+    }
+  }, []);
+  const onConnectEnd = useCallback((event: MouseEvent | TouchEvent) => {
+    const pc = pendingConn.current;
+    pendingConn.current = null;
+    if (!pc) return;
+    const point = "changedTouches" in event ? event.changedTouches[0] : event;
+    setConnMenu({ x: point.clientX, y: point.clientY, source: pc.source, target: pc.target });
+  }, []);
+  // Create the dependency the user drew. The provider re-pushes the graph, so
+  // the authoritative edge replaces nothing optimistic — just close the picker.
+  const createDependency = useCallback(
+    (source: string, target: string, type: (typeof CONNECT_DEP_OPTIONS)[number]["type"]) => {
+      vscode.postMessage({ type: "addDependency", ...connectionToAddDependency(source, target, type) });
+      setConnMenu(null);
+    },
+    [],
+  );
+  const removeDependency = useCallback((source: string, target: string) => {
+    vscode.postMessage({ type: "removeDependency", beadId: source, dependsOnId: target });
+    setEdgeMenu(null);
+  }, []);
+
   // Refit the viewport whenever the visible set or layout changes — otherwise
   // a focus-narrowed subgraph (or a layout swap) can land off-screen.
   useEffect(() => {
@@ -303,6 +350,8 @@ function GraphCanvas({
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        onConnectEnd={onConnectEnd}
         onNodeClick={(_, node) => handleNodeClick(node.id)}
         onNodeMouseEnter={(_, node) => setHoveredId(node.id)}
         onNodeMouseLeave={() => setHoveredId(null)}
@@ -310,7 +359,11 @@ function GraphCanvas({
           event.preventDefault();
           setMenu({ x: event.clientX, y: event.clientY, bead: (node.data as BeadNodeData).bead });
         }}
-        onPaneClick={() => setMenu(null)}
+        onEdgeClick={(event, edge) => {
+          event.stopPropagation();
+          setEdgeMenu({ x: event.clientX, y: event.clientY, source: edge.source, target: edge.target });
+        }}
+        onPaneClick={closeMenus}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.1}
@@ -342,6 +395,30 @@ function GraphCanvas({
             },
             onUnfocus: () => setFocusEnabled(false),
           })}
+        />
+      )}
+      {connMenu && (
+        <ContextMenu
+          x={connMenu.x}
+          y={connMenu.y}
+          onClose={() => setConnMenu(null)}
+          items={CONNECT_DEP_OPTIONS.map((opt) => ({
+            label: opt.label,
+            onSelect: () => createDependency(connMenu.source, connMenu.target, opt.type),
+          }))}
+        />
+      )}
+      {edgeMenu && (
+        <ContextMenu
+          x={edgeMenu.x}
+          y={edgeMenu.y}
+          onClose={() => setEdgeMenu(null)}
+          items={[
+            {
+              label: "Remove dependency",
+              onSelect: () => removeDependency(edgeMenu.source, edgeMenu.target),
+            },
+          ]}
         />
       )}
     </div>

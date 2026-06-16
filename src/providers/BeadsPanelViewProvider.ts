@@ -183,6 +183,31 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
         );
         break;
 
+      // Edge drawn / removed on the Graph canvas (vs-caz). Mirror the Details
+      // view's mapping (reverse swaps from/to), then re-push the graph so the
+      // edge change shows up without the user re-opening the tab.
+      case "addDependency":
+        try {
+          const fromId = message.reverse ? message.targetId : message.beadId;
+          const toId = message.reverse ? message.beadId : message.targetId;
+          await client.addDependency({ from_id: fromId, to_id: toId, dep_type: message.dependencyType });
+          this.projectManager.notifyDataChanged();
+          await this.sendGraph(client);
+        } catch (err) {
+          vscode.window.showErrorMessage(`Failed to add dependency: ${err}`);
+        }
+        break;
+
+      case "removeDependency":
+        try {
+          await client.removeDependency({ from_id: message.beadId, to_id: message.dependsOnId });
+          this.projectManager.notifyDataChanged();
+          await this.sendGraph(client);
+        } catch (err) {
+          vscode.window.showErrorMessage(`Failed to remove dependency: ${err}`);
+        }
+        break;
+
       case "requestGraph":
         await this.sendGraph(client);
         break;
