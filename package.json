@@ -148,9 +148,14 @@
     "menus": {
       "view/title": [
         {
-          "command": "beads.refresh",
+          "command": "beads.createIssue",
           "when": "view == beadsProjectSwitcher",
           "group": "navigation@0"
+        },
+        {
+          "command": "beads.refresh",
+          "when": "view == beadsProjectSwitcher",
+          "group": "navigation@1"
         },
         {
           "command": "beads.navigateBack",

@@ -2565,19 +2565,6 @@ textarea {
   transition: box-shadow 0.15s ease, filter 0.15s ease;
 }
 
-/* New — a ghost accent button: same blue family as Show Issues but outlined,
-   so the creation action reads as secondary to the solid primary actions. */
-.context-action-btn.new-issue {
-  background: transparent;
-  color: var(--beads-accent);
-  border: 1px solid var(--beads-accent);
-  flex: 0 0 auto;
-}
-.context-action-btn.new-issue:hover:not(:disabled) {
-  background: var(--beads-accent);
-  color: #fff;
-}
-
 /* Show Issues — muted (desaturated) steel blue accent, easier on the eyes than
    the vivid #2563eb. */
 .context-action-btn.show-issues {
