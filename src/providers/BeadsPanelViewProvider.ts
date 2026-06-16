@@ -33,7 +33,11 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
   private pendingFocusIssues = false;
   // Set once the Graph/Tree tab asks for the dependency graph, so a project
   // switch / refresh knows to re-push fresh graph data (not just the bead list).
-  private graphRequested = false;
+  // A dedicated graph view (GraphViewProvider) opts in at construction so the
+  // graph is pushed proactively on every load rather than waiting for the
+  // webview's lazy requestGraph round-trip (which races a freshly-opened editor
+  // tab → empty graph, vs-e4k).
+  protected graphRequested = false;
 
   /**
    * Apply a drill-in filter to the Issues list (empty filter = show all).

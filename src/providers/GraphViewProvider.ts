@@ -15,5 +15,10 @@ export class GraphViewProvider extends BeadsPanelViewProvider {
 
   constructor(extensionUri: vscode.Uri, projectManager: BeadsProjectManager, logger: Logger) {
     super(extensionUri, projectManager, logger);
+    // This tab IS the graph, so always push graph data alongside the bead list
+    // (on initial load, project switch, refresh, and re-show). Don't depend on
+    // the webview's one-shot requestGraph, which races initializeView in a
+    // freshly-opened editor tab and leaves the graph empty (vs-e4k).
+    this.graphRequested = true;
   }
 }
