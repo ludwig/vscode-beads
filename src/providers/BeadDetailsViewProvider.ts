@@ -169,6 +169,20 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
     }
   }
 
+  /**
+   * In an editor tab, bead-to-bead links navigate WITHIN the same tab rather
+   * than escaping to the sidebar Details view (vs-qvt). The sidebar instance
+   * keeps the default routing (via the global command). Everything else falls
+   * through to the shared handler.
+   */
+  protected async handleMessage(message: WebviewToExtensionMessage): Promise<void> {
+    if (this._host?.isEditorTab && message.type === "openBeadDetails") {
+      await this.showBead(message.beadId);
+      return;
+    }
+    await super.handleMessage(message);
+  }
+
   protected async handleCustomMessage(
     message: WebviewToExtensionMessage
   ): Promise<void> {

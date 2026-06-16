@@ -14,6 +14,8 @@ export interface WebviewHost {
   readonly webview: vscode.Webview;
   /** Whether the host is currently visible to the user. */
   readonly visible: boolean;
+  /** True for an editor-area tab (WebviewPanel), false for a sidebar view. */
+  readonly isEditorTab: boolean;
   /** Bring the host to the foreground (focus the view / reveal the tab). */
   reveal(preserveFocus?: boolean): void;
   /** Fires whenever the host's visibility changes. */
@@ -26,6 +28,7 @@ export interface WebviewHost {
 export function hostFromView(view: vscode.WebviewView): WebviewHost {
   return {
     webview: view.webview,
+    isEditorTab: false,
     get visible() {
       return view.visible;
     },
@@ -45,6 +48,7 @@ export function hostFromView(view: vscode.WebviewView): WebviewHost {
 export function hostFromPanel(panel: vscode.WebviewPanel): WebviewHost {
   return {
     webview: panel.webview,
+    isEditorTab: true,
     get visible() {
       return panel.visible;
     },
