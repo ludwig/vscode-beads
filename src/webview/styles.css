@@ -437,6 +437,13 @@ textarea {
   padding: 1px 6px;
   height: var(--badge-height-sm);
   border-radius: var(--badge-radius-rect);
+  /* Shared width so the Issues "Type" column and the type filter menu line up
+     instead of reading as ragged (vs-b48). Sized (with the inherited
+     border-box) to fit the common labels; the rare "merge-request" overflows
+     this and is an accepted outlier. Content is centered via the base
+     .type-badge justify-content. Relative to --badge-font-sm so it tracks the
+     badge font. */
+  min-width: 5.5em;
 }
 
 .status-badge-large,
