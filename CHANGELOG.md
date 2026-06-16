@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The dependency **Graph opened in an editor tab** ("Open in Editor") no longer renders empty — the dedicated graph view now pushes nodes + edges proactively instead of relying on a lazy request that raced the tab's first load (vs-e4k)
+
 ### Changed
 
 - Polished the sidebar **Active Project** and **Active Bead** sections — each is now an elevated, **collapsible** card; Active Bead reads as a pinned register slot (accent left rail, type icon + status dot); the Active Project meta table now also shows the **bd** CLI version and the **Extension** version (replacing the footer stamp) (vs-si0)
