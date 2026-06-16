@@ -212,6 +212,14 @@ export function DetailsView({
   const [newDependency, setNewDependency] = useState("");
   const [newDepOptionIndex, setNewDepOptionIndex] = useState(0); // Index into DEPENDENCY_TYPE_OPTIONS
   const [newComment, setNewComment] = useState("");
+  // Briefly spin the header Refresh icon on click so the action reads as
+  // registered (the data swap is otherwise silent).
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = useCallback(() => {
+    vscode.postMessage({ type: "refresh" });
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 800);
+  }, []);
 
   // Reset edit state when bead ID changes
   useEffect(() => {
@@ -369,9 +377,9 @@ export function DetailsView({
             className="icon-btn header-icon-btn"
             title="Refresh"
             aria-label="Refresh"
-            onClick={() => vscode.postMessage({ type: "refresh" })}
+            onClick={handleRefresh}
           >
-            <Icon name="refresh" size={13} />
+            <Icon name="refresh" size={13} className={refreshing ? "spinning" : ""} />
           </button>
           <span className="header-actions-sep" />
           {editMode ? (

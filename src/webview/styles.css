@@ -2434,6 +2434,17 @@ textarea {
   min-height: 0;
 }
 
+/* Spinning indicator for Refresh icons — a short rotation on click so the
+   reload reads as registered even when the data swap is instant. */
+@keyframes beads-spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinning {
+  transform-origin: center;
+  animation: beads-spin 0.8s linear;
+}
+
 /* The header block groups the ID/actions row, the title anchor, and the
    metadata chiclets, delimited from the body by a single divider so it reads
    as one composed header rather than three loose rows. */
@@ -2923,11 +2934,11 @@ textarea {
 .markdown-content li {
   margin: 0 !important;
   padding: 0 !important;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 .markdown-content li + li {
-  margin-top: 0.1em !important;
+  margin-top: 0 !important;
 }
 
 .markdown-content li::marker {

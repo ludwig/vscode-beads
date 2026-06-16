@@ -95,6 +95,15 @@ export function PanelShell({
   // tab is opened so the default Issues/Dashboard path pays no extra fetch.
   const requestGraph = useCallback(() => vscode.postMessage({ type: "requestGraph" }), []);
 
+  // Refresh: spin the icon briefly so the click reads as registered (the data
+  // swap is otherwise silent). Tied to the click, not background loads.
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = useCallback(() => {
+    vscode.postMessage({ type: "refresh" });
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 800);
+  }, []);
+
   const tabs: { id: PanelTab; label: string; Icon: LucideIcon }[] = [
     { id: "dashboard", label: "Dashboard", Icon: LayoutDashboard },
     { id: "issues", label: "Issues", Icon: ListTodo },
@@ -140,9 +149,9 @@ export function PanelShell({
             className="panel-shell-action"
             title="Refresh"
             aria-label="Refresh"
-            onClick={() => vscode.postMessage({ type: "refresh" })}
+            onClick={handleRefresh}
           >
-            <RefreshCw size={14} strokeWidth={2} />
+            <RefreshCw size={14} strokeWidth={2} className={refreshing ? "spinning" : undefined} />
           </button>
         </div>
       </nav>
