@@ -203,6 +203,9 @@ export function App(): React.ReactElement {
           <ProjectSwitcherView
             projects={state.projects}
             activeProject={state.project}
+            version={state.settings.extensionVersion}
+            buildSha={state.settings.buildSha}
+            buildDirty={state.settings.buildDirty}
             onSelectProject={(project) =>
               vscode.postMessage({
                 type: "selectProject",
@@ -226,8 +229,14 @@ export function App(): React.ReactElement {
         }
         if (!state.selectedBead && !state.loading) {
           return (
-            <div className="empty-state compact">
-              <p>Select an issue to view details</p>
+            <div className="empty-state">
+              <div className="empty-state-icon">🔖</div>
+              <h3>No issue selected</h3>
+              <p>
+                Pick an issue from the <strong>Issues</strong> list in the panel
+                below to see its details here — or hit <strong>+</strong> above
+                to create a new one.
+              </p>
             </div>
           );
         }

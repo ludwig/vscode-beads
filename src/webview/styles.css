@@ -1621,12 +1621,86 @@ textarea {
   color: var(--vscode-descriptionForeground);
 }
 
-/* Slimmed-sidebar project switcher (project dropdown + clickable path). */
+/* Slimmed-sidebar project switcher (header + dropdown + info + footer). */
 .project-switcher-view {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-sm);
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-sm);
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.project-switcher-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: var(--spacing-xs);
+}
+
+.project-switcher-eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--vscode-descriptionForeground);
+}
+
+.project-switcher-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--vscode-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.project-switcher-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: var(--spacing-xs) 0 0;
+  font-size: 11px;
+}
+
+.project-switcher-meta-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.project-switcher-meta-row dt {
+  color: var(--vscode-descriptionForeground);
+}
+
+.project-switcher-meta-row dd {
+  margin: 0;
+  color: var(--vscode-foreground);
+  text-align: right;
+}
+
+.project-switcher-backend.running { color: var(--vscode-testing-iconPassed, #10b981); }
+.project-switcher-backend.stopped { color: var(--vscode-list-warningForeground, #ff8800); }
+.project-switcher-backend.unknown { color: var(--vscode-descriptionForeground); }
+
+.project-switcher-empty {
+  padding: var(--spacing-md) 0;
+  color: var(--vscode-descriptionForeground);
+  font-size: 12px;
+}
+
+.project-switcher-empty p {
+  margin: 0 0 var(--spacing-sm);
+}
+
+.project-switcher-footer {
+  margin-top: auto;
+  padding-top: var(--spacing-sm);
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+  border-top: 1px solid var(--vscode-panel-border);
 }
 
 .project-switcher-path {
