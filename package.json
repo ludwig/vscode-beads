@@ -56,7 +56,7 @@
         {
           "type": "webview",
           "id": "beadsProjectSwitcher",
-          "name": "Active Project",
+          "name": "Context",
           "visibility": "visible"
         },
         {

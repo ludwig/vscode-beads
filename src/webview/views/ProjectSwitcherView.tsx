@@ -8,7 +8,7 @@
  */
 
 import React from "react";
-import { FolderGit2, Pin } from "lucide-react";
+import { FolderGit2, Folder, Pin } from "lucide-react";
 import { Bead, BeadsProject, STATUS_COLORS } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
@@ -94,7 +94,10 @@ export function ProjectSwitcherView({
               title={`${activeProject.rootPath}\nClick to reveal in Explorer`}
               onClick={onOpenProjectFolder}
             >
-              {activeProject.displayPath ?? activeProject.rootPath}
+              <Folder size={11} strokeWidth={2} className="project-switcher-path-icon" />
+              <span className="project-switcher-path-text">
+                {activeProject.displayPath ?? activeProject.rootPath}
+              </span>
             </button>
 
             <dl className="project-switcher-meta">

@@ -1948,22 +1948,40 @@ textarea {
   border-top: 1px solid var(--vscode-panel-border);
 }
 
+/* A caption tied to the selector above it: folder icon + abbreviated path. */
 .project-switcher-path {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   min-width: 0;
-  padding: 0;
+  margin-top: -2px;
+  padding: 0 2px;
   border: none;
   background: transparent;
   font-family: var(--vscode-editor-font-family);
   font-size: 11px;
   color: var(--vscode-descriptionForeground);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   text-align: left;
   cursor: pointer;
 }
 
+.project-switcher-path-icon {
+  flex: 0 0 auto;
+  opacity: 0.8;
+}
+
+.project-switcher-path-text {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .project-switcher-path:hover {
+  color: var(--vscode-foreground);
+}
+
+.project-switcher-path:hover .project-switcher-path-text {
   text-decoration: underline;
 }
 
