@@ -71,6 +71,12 @@ interface IssuesViewProps {
   onSelectBead: (beadId: string) => void;
   onUpdateBead: (beadId: string, updates: Partial<Bead>) => void;
   onRetry: () => void;
+  /**
+   * Published whenever the visible (filtered) row set changes, so the shell can
+   * scope the Graph view to the same slice (vs-v07). Carries the matching bead
+   * ids in current filter/search order.
+   */
+  onFilteredBeadsChange?: (beadIds: string[]) => void;
 }
 
 // Issue types sorted by TYPE_SORT_ORDER (epic first)
@@ -112,6 +118,7 @@ export function IssuesView({
   onSelectBead,
   onUpdateBead,
   onRetry,
+  onFilteredBeadsChange,
 }: IssuesViewProps): React.ReactElement {
   // Persisted column state (sorting, visibility, order)
   const defaultVisibility = {
@@ -663,6 +670,16 @@ export function IssuesView({
     const sorted = Array.from(counts.keys()).sort();
     return { uniqueLabels: sorted, labelCounts: counts, unlabeledCount: unlabeled };
   }, [table.getFilteredRowModel().rows]);
+
+  // Publish the filtered bead ids upward so the shell can scope the Graph view
+  // to the same slice (vs-v07). Fires whenever the filter/search result changes.
+  const filteredBeadIds = useMemo(
+    () => table.getFilteredRowModel().rows.map((r) => r.original.id),
+    [table.getFilteredRowModel().rows],
+  );
+  useEffect(() => {
+    onFilteredBeadsChange?.(filteredBeadIds);
+  }, [filteredBeadIds, onFilteredBeadsChange]);
 
   // Build label autocomplete options
   const labelOptions = useMemo((): AutocompleteOption[] => {

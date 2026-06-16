@@ -23,7 +23,7 @@ import {
   type Node,
   type Edge,
 } from "@xyflow/react";
-import { GitBranch, Network, Crosshair, Wand2 } from "lucide-react";
+import { GitBranch, Network, Crosshair, Wand2, Filter } from "lucide-react";
 import { Bead, DependencyGraph, STATUS_COLORS, vscode } from "../../types";
 import { Loading } from "../../common/Loading";
 import { ErrorMessage } from "../../common/ErrorMessage";
@@ -41,6 +41,11 @@ interface GraphViewProps {
   selectedBeadId: string | null;
   /** A bead to focus the neighborhood on (e.g. from a "View in graph" action). */
   focusBeadId: string | null;
+  /**
+   * Ids matching the current Issues filter/search, or null when unknown. The
+   * "Filtered" toggle scopes the graph to this set; null disables the toggle.
+   */
+  filteredBeadIds: string[] | null;
   onOpenBead: (beadId: string) => void;
   onRequestGraph: () => void;
   onRetry: () => void;
@@ -52,10 +57,15 @@ function GraphCanvas({
   graph,
   selectedBeadId,
   focusBeadId,
+  filteredBeadIds,
   onOpenBead,
 }: Omit<GraphViewProps, "loading" | "error" | "onRequestGraph" | "onRetry">): React.ReactElement {
   const [mode, setMode] = useState<LayoutMode>("layered");
   const [focusEnabled, setFocusEnabled] = useState(false);
+  // Scope the graph to the current Issues filter slice (vs-v07). Composes with
+  // Focus: the filter narrows the candidate set, focus narrows to a
+  // neighborhood within it.
+  const [filterEnabled, setFilterEnabled] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; bead: Bead } | null>(null);
   // Bumped by Auto Layout to seed a new force-layout variant.
@@ -80,7 +90,16 @@ function GraphCanvas({
   // selecting a node with Focus off — so a plain click doesn't relayout/refit.
   const focusRoot = focusEnabled ? activeId : null;
 
-  const beads: Bead[] = useMemo(() => graph?.nodes ?? [], [graph]);
+  // The candidate beads the graph draws from: the whole board, or — when the
+  // Filtered toggle is on and we have a filter slice — just the matching beads.
+  // Everything downstream (visible set, layout, neighborhood) works off this.
+  const filterActive = filterEnabled && filteredBeadIds != null;
+  const beads: Bead[] = useMemo(() => {
+    const all = graph?.nodes ?? [];
+    if (!filterActive) return all;
+    const allowed = new Set(filteredBeadIds);
+    return all.filter((b) => allowed.has(b.id));
+  }, [graph, filterActive, filteredBeadIds]);
   const layoutEdges: LayoutEdge[] = useMemo(
     () => (graph?.edges ?? []).map((e) => ({ from: e.from, to: e.to })),
     [graph],
@@ -251,6 +270,20 @@ function GraphCanvas({
         </button>
         <button
           type="button"
+          className={`graph-toggle-btn ${filterActive ? "active" : ""}`}
+          onClick={() => setFilterEnabled((v) => !v)}
+          disabled={filteredBeadIds == null}
+          title={
+            filteredBeadIds == null
+              ? "Open the Issues tab and set a filter to scope the graph"
+              : "Scope the graph to the current Issues filter"
+          }
+        >
+          <Filter size={14} strokeWidth={2} />
+          <span>Filtered</span>
+        </button>
+        <button
+          type="button"
           className="graph-toggle-btn"
           onClick={autoLayout}
           title={
@@ -392,6 +425,7 @@ export function GraphView(props: GraphViewProps): React.ReactElement {
         graph={graph}
         selectedBeadId={props.selectedBeadId}
         focusBeadId={props.focusBeadId}
+        filteredBeadIds={props.filteredBeadIds}
         onOpenBead={props.onOpenBead}
       />
     </ReactFlowProvider>

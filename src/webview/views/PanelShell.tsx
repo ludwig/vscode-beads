@@ -49,6 +49,12 @@ export function PanelShell({
   // Bead to focus on the Graph tab, set by a "View in graph" deep-link. Carried
   // into GraphView (which auto-enables Focus when it arrives).
   const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
+  // Ids of the rows currently matching the Issues filter/search, published by
+  // IssuesView. The Graph "Filtered" toggle scopes its nodes to this set
+  // (vs-v07). Stays current because the filter can only change on the Issues
+  // tab, and the last value persists while IssuesView is unmounted.
+  const [filteredBeadIds, setFilteredBeadIds] = useState<string[] | null>(null);
+  const handleFilteredBeads = useCallback((ids: string[]) => setFilteredBeadIds(ids), []);
 
   // A "View in graph" deep-link: flip to the Graph tab and focus the bead.
   // Keyed on `seq` so a repeat request for the same bead still re-fires.
@@ -125,6 +131,7 @@ export function PanelShell({
             error={error}
             selectedBeadId={selectedBeadId}
             focusBeadId={graphFocusId}
+            filteredBeadIds={filteredBeadIds}
             onOpenBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onRequestGraph={requestGraph}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
@@ -152,6 +159,7 @@ export function PanelShell({
             selectedBeadId={selectedBeadId}
             tooltipHoverDelay={settings.tooltipHoverDelay}
             issuesFilterRequest={localFilter ?? issuesFilterRequest}
+            onFilteredBeadsChange={handleFilteredBeads}
             onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onUpdateBead={(beadId, updates) => vscode.postMessage({ type: "updateBead", beadId, updates })}
             onRetry={() => vscode.postMessage({ type: "refresh" })}

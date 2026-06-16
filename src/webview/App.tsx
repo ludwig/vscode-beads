@@ -229,6 +229,7 @@ export function App(): React.ReactElement {
             error={state.error}
             selectedBeadId={state.selectedBeadId}
             focusBeadId={null}
+            filteredBeadIds={null}
             onOpenBead={(beadId) =>
               vscode.postMessage({ type: "openBeadDetails", beadId })
             }
