@@ -27,6 +27,11 @@
   --badge-font-lg: 13px;
   --badge-radius-pill: 10px;
   --badge-radius-rect: 3px;
+
+  /* Accent — muted steel blue, the primary-action color shared by Show Issues,
+     New Issue, etc. (the start of a small palette). */
+  --beads-accent: #3f5e96;
+  --beads-accent-hover: #354f80;
 }
 
 * {
@@ -670,8 +675,8 @@ textarea {
   padding: 6px 16px;
   border: none;
   border-radius: var(--border-radius);
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
+  background: var(--beads-accent);
+  color: #fff;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -679,7 +684,7 @@ textarea {
 }
 
 .empty-state-action:hover {
-  background: var(--vscode-button-hoverBackground, var(--vscode-button-background));
+  background: var(--beads-accent-hover);
 }
 
 .empty-state-action-icon {
@@ -2490,14 +2495,14 @@ textarea {
   transition: box-shadow 0.15s ease, filter 0.15s ease;
 }
 
-/* Show Issues — muted (desaturated) steel blue, easier on the eyes than the
-   vivid #2563eb. */
+/* Show Issues — muted (desaturated) steel blue accent, easier on the eyes than
+   the vivid #2563eb. */
 .context-action-btn.show-issues {
-  background: #3f5e96;
+  background: var(--beads-accent);
   color: #fff;
 }
 .context-action-btn.show-issues:hover {
-  background: #354f80;
+  background: var(--beads-accent-hover);
 }
 
 /* Pick Ready Bead — muted (desaturated) indigo, paired with the steel-blue
