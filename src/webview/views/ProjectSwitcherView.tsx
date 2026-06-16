@@ -7,8 +7,8 @@
  * empty states.
  */
 
-import React from "react";
-import { FolderGit2, Folder, Pin } from "lucide-react";
+import React, { useState } from "react";
+import { FolderGit2, Folder, Pin, ChevronDown, ChevronRight } from "lucide-react";
 import { Bead, BeadsProject, STATUS_COLORS } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
@@ -52,15 +52,26 @@ export function ProjectSwitcherView({
   buildDirty,
 }: ProjectSwitcherViewProps): React.ReactElement {
   const backendState = activeProject?.backendStatus ?? "unknown";
+  const [projectCollapsed, setProjectCollapsed] = useState(false);
 
   return (
     <div className="project-switcher-view">
       <section className="context-section">
         <div className="context-section-head">
-          <h2 className="context-heading">
+          <button
+            type="button"
+            className="context-heading context-heading-toggle"
+            aria-expanded={!projectCollapsed}
+            onClick={() => setProjectCollapsed((v) => !v)}
+          >
+            {projectCollapsed ? (
+              <ChevronRight size={13} strokeWidth={2} className="context-heading-chevron" />
+            ) : (
+              <ChevronDown size={13} strokeWidth={2} className="context-heading-chevron" />
+            )}
             <FolderGit2 size={13} strokeWidth={2} className="context-heading-icon" />
             <span>Active Project</span>
-          </h2>
+          </button>
           {activeProject && (
             <Dropdown
               trigger={<span className="context-menu-trigger">⋮</span>}
@@ -79,6 +90,8 @@ export function ProjectSwitcherView({
           )}
         </div>
 
+        {!projectCollapsed && (
+        <>
         <ProjectDropdown
           projects={projects}
           activeProject={activeProject}
@@ -131,6 +144,8 @@ export function ProjectSwitcherView({
             </p>
           </div>
         )}
+        </>
+        )}
       </section>
 
       <section className="context-section">
@@ -145,7 +160,6 @@ export function ProjectSwitcherView({
             title={`${activeBead.id} — ${activeBead.title}\nClick to open in Details`}
             onClick={() => onOpenBead(activeBead.id)}
           >
-            <Pin size={12} strokeWidth={2} className="active-bead-pin" />
             <div className="active-bead-main">
               <div className="active-bead-head">
                 {activeBead.type && <TypeIcon type={activeBead.type} size={13} />}

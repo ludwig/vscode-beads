@@ -1786,6 +1786,21 @@ textarea {
   flex: 0 0 auto;
 }
 
+/* Collapsible heading acts as a button while keeping the heading's look. */
+.context-heading-toggle {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 2px 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.context-heading-chevron {
+  color: var(--vscode-descriptionForeground);
+  flex: 0 0 auto;
+}
+
 .context-menu-btn {
   display: inline-flex;
   align-items: center;
@@ -1838,13 +1853,6 @@ textarea {
 .active-bead:hover {
   background: var(--vscode-list-hoverBackground);
   box-shadow: 0 0 0 1px var(--vscode-focusBorder);
-}
-
-.active-bead-pin {
-  margin-top: 2px;
-  color: var(--vscode-textLink-foreground, var(--vscode-focusBorder));
-  flex: 0 0 auto;
-  transform: rotate(35deg);
 }
 
 .active-bead-main {
