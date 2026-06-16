@@ -1123,14 +1123,14 @@ export function IssuesView({
                       className={`bead-row ${row.original.id === selectedBeadId ? "selected" : ""}`}
                     >
                       {row.getVisibleCells().map((cell) => {
-                        const isType = cell.column.id === "type";
+                        const isIcon = cell.column.id === "icon";
                         return (
                           <td
                             key={cell.id}
-                            className={`${cell.column.id}-cell${isType ? " type-cell-hoverable" : ""}`}
+                            className={`${cell.column.id}-cell${isIcon ? " icon-cell-hoverable" : ""}`}
                             style={cell.column.id === "title" ? {} : { width: cell.column.getSize() }}
-                            onMouseEnter={isType ? (e) => handleRowMouseEnter(e, row.original.id) : undefined}
-                            onMouseLeave={isType ? handleRowMouseLeave : undefined}
+                            onMouseEnter={isIcon ? (e) => handleRowMouseEnter(e, row.original.id) : undefined}
+                            onMouseLeave={isIcon ? handleRowMouseLeave : undefined}
                           >
                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                           </td>

@@ -1387,13 +1387,13 @@ textarea {
   background-color: var(--vscode-list-activeSelectionBackground);
 }
 
-/* The type-icon cell is the tooltip affordance: highlight it on hover (and use
- * a help cursor) so users learn to hover there for the bead's description. */
-.type-cell-hoverable {
+/* The (unnamed) icon cell is the tooltip affordance: highlight it on hover (and
+ * use a help cursor) so users learn to hover there for the bead's description. */
+.icon-cell-hoverable {
   cursor: help;
 }
 
-.bead-row .type-cell-hoverable:hover {
+.bead-row .icon-cell-hoverable:hover {
   background-color: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
   box-shadow: inset 0 0 0 1px var(--vscode-focusBorder);
   border-radius: 3px;
