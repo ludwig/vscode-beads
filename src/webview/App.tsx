@@ -225,6 +225,8 @@ export function App(): React.ReactElement {
             selectedBeadId={state.selectedBeadId}
             tooltipHoverDelay={state.settings.tooltipHoverDelay}
             issuesFilterRequest={state.issuesFilterRequest}
+            graph={state.graph}
+            onRequestGraph={() => vscode.postMessage({ type: "requestGraph" })}
             onSelectBead={(beadId) =>
               vscode.postMessage({ type: "openBeadDetails", beadId })
             }

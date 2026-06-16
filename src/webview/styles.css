@@ -1185,6 +1185,31 @@ textarea {
   line-height: 1;
 }
 
+/* Ready toggle (vs-bo9) — a composable filter alongside the presets/chips. */
+.ready-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  height: var(--badge-height-sm);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--vscode-foreground);
+  background: transparent;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 3px;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+.ready-toggle:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+.ready-toggle.active {
+  color: #fff;
+  background: var(--beads-accent);
+  border-color: var(--beads-accent);
+}
+
 .preset-dropdown-menu {
   min-width: 100px;
 }

@@ -30,6 +30,7 @@ import {
   BeadStatus,
   BeadPriority,
   BeadType,
+  DependencyGraph,
   IssuesFilter,
   STATUS_LABELS,
   STATUS_COLORS,
@@ -41,6 +42,7 @@ import {
   sortLabels,
   vscode,
 } from "../types";
+import { readyBeadIds } from "../../backend/readyBeads";
 import { StatusBadge } from "../common/StatusBadge";
 import { PriorityBadge } from "../common/PriorityBadge";
 import { TypeBadge } from "../common/TypeBadge";
@@ -48,7 +50,7 @@ import { TypeIcon } from "../common/TypeIcon";
 import { LabelBadge } from "../common/LabelBadge";
 import { FilterChip } from "../common/FilterChip";
 import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
-import { Table, Kanban, Rows3, Rows2 } from "lucide-react";
+import { Table, Kanban, Rows3, Rows2, Rocket } from "lucide-react";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { Loading } from "../common/Loading";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
@@ -68,6 +70,12 @@ interface IssuesViewProps {
   tooltipHoverDelay: number; // 0 = disabled
   /** Drill-in filter pushed from another view (e.g. a Dashboard card/badge). */
   issuesFilterRequest?: { filter: IssuesFilter; seq: number } | null;
+  /**
+   * Dependency graph (nodes + edges), used by the "Ready" toggle to compute
+   * open-with-no-open-blocker beads. Lazily fetched via onRequestGraph.
+   */
+  graph?: DependencyGraph | null;
+  onRequestGraph?: () => void;
   onSelectBead: (beadId: string) => void;
   onUpdateBead: (beadId: string, updates: Partial<Bead>) => void;
   onRetry: () => void;
@@ -115,6 +123,8 @@ export function IssuesView({
   selectedBeadId,
   tooltipHoverDelay,
   issuesFilterRequest,
+  graph,
+  onRequestGraph,
   onSelectBead,
   onUpdateBead,
   onRetry,
@@ -167,6 +177,25 @@ export function IssuesView({
     },
     [onSelectBead],
   );
+  // "Ready" filter (vs-bo9): show only open beads with no open blocker. Composes
+  // with the column filters/search (it narrows the data they then filter). Needs
+  // the dependency graph, fetched lazily on first enable.
+  const [readyOnly, setReadyOnly] = useState(false);
+  const readySet = useMemo(() => {
+    if (!graph) return null;
+    const blocks = graph.edges.filter((e) => e.type === "blocks");
+    return new Set(readyBeadIds(beads, blocks));
+  }, [graph, beads]);
+  const tableData = useMemo(
+    () => (readyOnly && readySet ? beads.filter((b) => readySet.has(b.id)) : beads),
+    [readyOnly, readySet, beads],
+  );
+  const toggleReady = useCallback(() => {
+    setReadyOnly((on) => {
+      if (!on && !graph) onRequestGraph?.(); // fetch the graph the first time it's needed
+      return !on;
+    });
+  }, [graph, onRequestGraph]);
   const [activePreset, setActivePreset] = useState<string>("not-closed");
   const [filterBarOpen, setFilterBarOpen] = useState(true);
   const [filterMenuOpen, setFilterMenuOpen] = useState<string | null>(null);
@@ -425,7 +454,7 @@ export function IssuesView({
   );
 
   const table = useReactTable({
-    data: beads,
+    data: tableData,
     columns,
     state: {
       sorting,
@@ -805,6 +834,18 @@ export function IssuesView({
               </DropdownItem>
             ))}
           </Dropdown>
+
+          {/* Ready toggle (vs-bo9) — composes with the presets/filter chips. */}
+          <button
+            type="button"
+            className={`ready-toggle ${readyOnly ? "active" : ""}`}
+            aria-pressed={readyOnly}
+            onClick={toggleReady}
+            title="Show only ready-to-work beads (open, no open blocker). Composes with the other filters."
+          >
+            <Rocket size={12} strokeWidth={2.25} />
+            <span>Ready</span>
+          </button>
 
           {/* Active filter chips */}
           {statusFilter.map((status) => (
@@ -1189,7 +1230,7 @@ export function IssuesView({
             </table>
           </div>
           {/* Filtered count overlay */}
-          {(hasActiveFilters || globalFilter) && filteredCount !== totalCount && (
+          {(hasActiveFilters || globalFilter || readyOnly) && filteredCount !== totalCount && (
             <div className="filter-count-overlay">
               {filteredCount} of {totalCount}
             </div>
