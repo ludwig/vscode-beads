@@ -79,10 +79,10 @@ export function PanelShell({
   const requestGraph = useCallback(() => vscode.postMessage({ type: "requestGraph" }), []);
 
   const tabs: { id: PanelTab; label: string; Icon: LucideIcon }[] = [
-    { id: "issues", label: "Issues", Icon: ListTodo },
     { id: "dashboard", label: "Dashboard", Icon: LayoutDashboard },
-    { id: "graph", label: "Graph", Icon: Workflow },
+    { id: "issues", label: "Issues", Icon: ListTodo },
     { id: "tree", label: "Tree", Icon: ListTree },
+    { id: "graph", label: "Graph", Icon: Workflow },
   ];
 
   // The Tree tab has no editor-tab route yet, so hide Open-in-Editor for it.
