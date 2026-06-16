@@ -98,6 +98,7 @@ export interface BeadsProject {
   backendStatus: "running" | "stopped" | "unknown";
   backendPid?: number;
   doltMode?: DoltMode; // Detected on activation: "embedded" | "server"
+  bdVersion?: string; // Detected `bd` CLI version (e.g. "1.0.5")
 }
 
 // Summary statistics for the dashboard.

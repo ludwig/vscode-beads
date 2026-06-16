@@ -1965,14 +1965,6 @@ textarea {
   margin: 0 0 var(--spacing-sm);
 }
 
-.project-switcher-footer {
-  margin-top: auto;
-  padding-top: var(--spacing-sm);
-  font-size: 10px;
-  color: var(--vscode-descriptionForeground);
-  border-top: 1px solid var(--vscode-panel-border);
-}
-
 .dashboard-header-path {
   min-width: 0;
   padding: 0;
@@ -3534,12 +3526,12 @@ textarea {
 
 .graph-node.selected {
   border-color: var(--vscode-focusBorder);
-  /* A bold ring + outer glow so the active bead reads clearly even on a dense,
-   * zoomed-out board. */
+  /* A bold ring + strong outer glow so the active bead reads clearly even on a
+   * dense, zoomed-out board (box-shadow scales down with zoom, so go large). */
   box-shadow:
-    0 0 0 2px var(--vscode-focusBorder),
-    0 0 14px 3px var(--vscode-focusBorder);
-  transform: scale(1.06);
+    0 0 0 3px var(--vscode-focusBorder),
+    0 0 28px 8px var(--vscode-focusBorder);
+  transform: scale(1.08);
   z-index: 1;
 }
 

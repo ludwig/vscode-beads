@@ -589,6 +589,7 @@ export class BeadsProjectManager implements vscode.Disposable {
 
     const compatibility = await this.backend.checkCompatibility();
     project.backendStatus = compatibility.supported ? "running" : "stopped";
+    project.bdVersion = compatibility.detectedVersion;
     if (compatibility.supported) {
       try {
         this.activePollToken = await this.backend.getChangeToken();

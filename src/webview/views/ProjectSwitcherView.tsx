@@ -8,7 +8,7 @@
  */
 
 import React, { useState } from "react";
-import { FolderGit2, Pin, ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { Bead, BeadsProject, STATUS_COLORS } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
@@ -70,7 +70,6 @@ export function ProjectSwitcherView({
             ) : (
               <ChevronDown size={13} strokeWidth={2} className="context-heading-chevron" />
             )}
-            <FolderGit2 size={13} strokeWidth={2} className="context-heading-icon" />
             <span>Active Project</span>
           </button>
           {activeProject && (
@@ -118,6 +117,25 @@ export function ProjectSwitcherView({
                   </span>
                 </dd>
               </div>
+              {activeProject.bdVersion && (
+                <div className="project-switcher-meta-row">
+                  <dt>bd</dt>
+                  <dd>{activeProject.bdVersion}</dd>
+                </div>
+              )}
+              {version && (
+                <div className="project-switcher-meta-row">
+                  <dt>Extension</dt>
+                  <dd
+                    title={`Beads v${version}${
+                      buildSha && buildSha !== "unknown" ? ` · commit ${buildSha}` : ""
+                    }${buildDirty ? " · built with uncommitted changes" : ""}`}
+                  >
+                    v{version}
+                    {buildDirty ? "✦" : ""}
+                  </dd>
+                </div>
+              )}
               <div className="project-switcher-meta-row">
                 <dt>Projects</dt>
                 <dd>{projects.length}</dd>
@@ -149,7 +167,6 @@ export function ProjectSwitcherView({
           ) : (
             <ChevronDown size={13} strokeWidth={2} className="context-heading-chevron" />
           )}
-          <Pin size={13} strokeWidth={2} className="context-heading-icon" />
           <span>Active Bead</span>
         </button>
         {!beadCollapsed && (activeBead ? (
@@ -178,19 +195,6 @@ export function ProjectSwitcherView({
           </div>
         ))}
       </section>
-
-      {version && (
-        <footer
-          className="project-switcher-footer"
-          title={`Beads v${version}${
-            buildSha && buildSha !== "unknown" ? ` · commit ${buildSha}` : ""
-          }${buildDirty ? " · built with uncommitted changes" : ""}`}
-        >
-          v{version}
-          {buildSha && buildSha !== "unknown" ? ` · ${buildSha}` : ""}
-          {buildDirty ? "✦" : ""}
-        </footer>
-      )}
     </div>
   );
 }
