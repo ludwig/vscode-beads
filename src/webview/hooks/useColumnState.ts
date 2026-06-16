@@ -90,9 +90,12 @@ export function useColumnState(options: UseColumnStateOptions = {}): UseColumnSt
     savedState?.compact ?? defaultCompact
   );
 
-  // Persist state changes to VS Code
+  // Persist state changes to VS Code. Merge into the existing blob — the webview
+  // state is a single object shared with other consumers (e.g. the Tree sort),
+  // so overwriting it wholesale would clobber their slices.
   useEffect(() => {
-    vscode.setState({ sorting, columnVisibility, columnOrder, compact });
+    const prev = (vscode.getState() as Record<string, unknown>) ?? {};
+    vscode.setState({ ...prev, sorting, columnVisibility, columnOrder, compact });
   }, [sorting, columnVisibility, columnOrder, compact]);
 
   const resetVisibility = () => {

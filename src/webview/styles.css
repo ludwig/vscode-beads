@@ -3487,17 +3487,23 @@ textarea {
   min-height: 0;
   padding: var(--spacing-sm);
   /* The whole board scrolls (both axes) rather than each column trapping cards
-     in a cramped inner scrollbar (vs-qlp). align-items:stretch keeps every lane
-     equal-height — at least the visible area (distinct lanes + full-lane drop
-     targets), growing taller and scrolling the board when a column overflows. */
+     in a cramped inner scrollbar (vs-qlp). Columns are content-height (so the
+     lane box CONTAINS all its cards) but floored to the viewport via
+     min-height:100% on the column (so short lanes stay full-height + droppable);
+     a tall column makes the board scroll. align-items:flex-start is required for
+     content-height columns — stretch would pin them to the viewport and let
+     cards overflow out the bottom. */
   overflow: auto;
-  align-items: stretch;
+  align-items: flex-start;
 }
 
 .kanban-column {
   flex: 1;
   min-width: 180px;
   max-width: 300px;
+  /* Fill at least the visible board height (distinct, droppable lanes) while
+     growing to contain all cards when there are more (board then scrolls). */
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   background: var(--vscode-sideBar-background);
@@ -3563,8 +3569,9 @@ textarea {
 }
 
 .kanban-column-body {
-  flex: 1;
-  /* Grow to fit all cards; the board scrolls instead of the column. */
+  /* Grow with content (basis auto) AND fill the floored column height (grow 1)
+     so the whole lane is a drop target; never an inner scrollbar. */
+  flex: 1 0 auto;
   overflow-y: visible;
   padding: var(--spacing-xs);
   display: flex;
@@ -3843,14 +3850,58 @@ textarea {
   padding: 4px 0;
 }
 
-.beads-tree-row {
-  display: flex;
+/* Sortable column-header row of the tree-table. Shares its grid template with
+   the rows so Type / Priority align under their headers (vs-wp5). */
+.beads-tree-colheader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content max-content;
+  column-gap: 8px;
   align-items: center;
-  gap: 6px;
+  padding: 3px 10px 4px 4px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  flex: 0 0 auto;
+}
+
+.beads-tree-col {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--vscode-descriptionForeground);
+  justify-self: start;
+}
+.beads-tree-col:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+  color: var(--vscode-foreground);
+}
+.beads-tree-col.active {
+  color: var(--vscode-foreground);
+}
+
+.beads-tree-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content max-content;
+  column-gap: 8px;
+  align-items: center;
   padding: 2px 10px 2px 4px;
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
+}
+
+/* The indented tree column (twisty + status rail + type icon + id + title). */
+.beads-tree-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
 }
 
 .beads-tree-row:hover {
@@ -3908,19 +3959,20 @@ textarea {
   flex: 1 1 auto;
 }
 
+/* Type column cell. */
 .beads-tree-type {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--vscode-descriptionForeground);
-  flex: 0 0 auto;
 }
 
-.beads-tree-priority {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex: 0 0 auto;
+/* Priority column cell — colored P0–P4 label (tabular for column alignment). */
+.beads-tree-prio {
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 .beads-tree-empty {

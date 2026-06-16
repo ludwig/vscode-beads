@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight, ChevronDown, Search, ArrowUp, ArrowDown, Filter } from "lucide-react";
+import { ChevronRight, ChevronDown, Search, ArrowUp, ArrowDown } from "lucide-react";
 import {
   Bead,
   BeadType,
@@ -38,10 +38,13 @@ interface DragApi {
 
 type SortKey = "id" | "type" | "title" | "priority";
 
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: "id", label: "ID" },
-  { key: "type", label: "Type" },
+// Sortable tree-table columns. Clicking a header cycles asc → desc → off; the
+// "off" state is the natural id order (so id sort needs no dedicated column).
+// The Title header occupies the indented tree column; Type/Priority align in
+// fixed columns across all depths.
+const COLUMNS: { key: SortKey; label: string }[] = [
   { key: "title", label: "Title" },
+  { key: "type", label: "Type" },
   { key: "priority", label: "Priority" },
 ];
 
@@ -114,10 +117,17 @@ export function TreeView({
   const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
   useEffect(() => setLocalSelectedId(null), [selectedBeadId]);
   const activeSelectedId = localSelectedId ?? selectedBeadId;
-  // Scope the tree to the current Issues filter slice (vs-bo9), mirroring the
-  // Graph's Filtered toggle (vs-v07).
-  const [filterEnabled, setFilterEnabled] = useState(false);
-  const [sort, setSort] = useState<SortState | null>(null);
+  // Sort persists across tab switches / reloads via the shared webview state
+  // (the Tree unmounts when another Panel tab is active, so local state alone
+  // would forget it). Merge into the blob so we don't clobber the Issues table's
+  // persisted column state.
+  const [sort, setSort] = useState<SortState | null>(
+    () => (vscode.getState() as { treeSort?: SortState | null } | undefined)?.treeSort ?? null,
+  );
+  useEffect(() => {
+    const prev = (vscode.getState() as Record<string, unknown>) ?? {};
+    vscode.setState({ ...prev, treeSort: sort });
+  }, [sort]);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [menu, setMenu] = useState<{ x: number; y: number; bead: Bead } | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -176,17 +186,17 @@ export function TreeView({
     () => (graph ? buildForest(graph.nodes, graph.edges, comparatorFor(sort)) : []),
     [graph, sort],
   );
-  // Scope to the Issues filter slice first (if the toggle is on), then narrow by
-  // the text query — both keep the ancestor path so the tree stays connected.
-  const filterActive = filterEnabled && filteredBeadIds != null;
+  // The Tree always reflects the current Issues filter set (vs-wp5): Issues is
+  // where filters are defined; the Tree scopes to that slice (keeping the
+  // ancestor path so it stays connected). Then narrow further by the text query.
   const scoped = useMemo(
-    () => (filterActive ? filterForestByIds(forest, new Set(filteredBeadIds)) : forest),
-    [forest, filterActive, filteredBeadIds],
+    () => (filteredBeadIds != null ? filterForestByIds(forest, new Set(filteredBeadIds)) : forest),
+    [forest, filteredBeadIds],
   );
   const visible = useMemo(() => filterForest(scoped, query), [scoped, query]);
-  // While filtering (text query or the scope toggle), ignore collapse state so
-  // matches are always revealed.
-  const filtering = query.trim().length > 0 || filterActive;
+  // Only the text query force-expands (to reveal matches); the always-on Issues
+  // scope must not, so the user can still collapse/expand within it.
+  const filtering = query.trim().length > 0;
 
   // Current parent per bead (first parent-child edge from=child wins).
   const parentOf = useMemo(() => {
@@ -290,46 +300,31 @@ export function TreeView({
           onChange={(e) => setQuery(e.target.value)}
           spellCheck={false}
         />
-        <button
-          type="button"
-          className={`beads-tree-sort-btn beads-tree-filter-toggle ${filterActive ? "active" : ""}`}
-          aria-pressed={filterActive}
-          onClick={() => setFilterEnabled((v) => !v)}
-          disabled={filteredBeadIds == null}
-          title={
-            filteredBeadIds == null
-              ? "Open the Issues tab and set a filter to scope the tree"
-              : "Scope the tree to the current Issues filter"
-          }
-        >
-          <Filter size={11} strokeWidth={2.5} />
-          <span>Filtered</span>
-        </button>
-        <div className="beads-tree-sort" role="group" aria-label="Sort beads">
-          <span className="beads-tree-sort-label">Sort</span>
-          {SORT_OPTIONS.map(({ key, label }) => {
-            const active = sort?.key === key;
-            return (
-              <button
-                key={key}
-                type="button"
-                className={`beads-tree-sort-btn ${active ? "active" : ""}`}
-                aria-pressed={active}
-                onClick={() => setSort((prev) => cycleSort(prev, key))}
-                title={`Sort siblings by ${label.toLowerCase()} (click to cycle ascending → descending → off)`}
-              >
-                <span>{label}</span>
-                {active ? (
-                  sort!.dir === "asc" ? (
-                    <ArrowUp size={11} strokeWidth={2.5} className="beads-tree-sort-dir" />
-                  ) : (
-                    <ArrowDown size={11} strokeWidth={2.5} className="beads-tree-sort-dir" />
-                  )
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
+      </div>
+      <div className="beads-tree-colheader" role="row">
+        {COLUMNS.map(({ key, label }) => {
+          const active = sort?.key === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              role="columnheader"
+              aria-sort={active ? (sort!.dir === "asc" ? "ascending" : "descending") : "none"}
+              className={`beads-tree-col beads-tree-col-${key} ${active ? "active" : ""}`}
+              onClick={() => setSort((prev) => cycleSort(prev, key))}
+              title={`Sort by ${label.toLowerCase()} (click to cycle ascending → descending → off)`}
+            >
+              <span>{label}</span>
+              {active ? (
+                sort!.dir === "asc" ? (
+                  <ArrowUp size={11} strokeWidth={2.5} className="beads-tree-sort-dir" />
+                ) : (
+                  <ArrowDown size={11} strokeWidth={2.5} className="beads-tree-sort-dir" />
+                )
+              ) : null}
+            </button>
+          );
+        })}
       </div>
       <div
         className={`beads-tree-body${canDetach ? " can-detach" : ""}`}
@@ -434,7 +429,6 @@ function TreeRow({
         role="treeitem"
         aria-expanded={hasChildren ? !isCollapsed : undefined}
         aria-selected={isSelected}
-        style={{ paddingLeft: depth * 16 }}
         draggable
         onDragStart={(e) => {
           e.stopPropagation();
@@ -453,23 +447,29 @@ function TreeRow({
         }}
         title={`${bead.id} · ${bead.title}`}
       >
-        <span
-          className="beads-tree-twisty"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (hasChildren) onToggle(bead.id);
-          }}
-        >
-          {hasChildren ? (
-            isCollapsed ? <ChevronRight size={13} strokeWidth={2} /> : <ChevronDown size={13} strokeWidth={2} />
-          ) : null}
+        {/* Tree column: indentation lives here (not on the row) so the Type /
+            Priority columns stay aligned across depths. */}
+        <span className="beads-tree-main" style={{ paddingLeft: depth * 16 }}>
+          <span
+            className="beads-tree-twisty"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (hasChildren) onToggle(bead.id);
+            }}
+          >
+            {hasChildren ? (
+              isCollapsed ? <ChevronRight size={13} strokeWidth={2} /> : <ChevronDown size={13} strokeWidth={2} />
+            ) : null}
+          </span>
+          <span className="beads-tree-rail" style={{ backgroundColor: statusColor }} />
+          {bead.type ? <TypeIcon type={bead.type} size={13} /> : null}
+          <span className="beads-tree-id">{bead.id}</span>
+          <span className="beads-tree-title">{bead.title}</span>
         </span>
-        <span className="beads-tree-rail" style={{ backgroundColor: statusColor }} />
-        {bead.type ? <TypeIcon type={bead.type} size={13} /> : null}
-        <span className="beads-tree-id">{bead.id}</span>
-        <span className="beads-tree-title">{bead.title}</span>
-        {bead.type ? <span className="beads-tree-type">{typeLabel(bead.type)}</span> : null}
-        <span className="beads-tree-priority" style={{ backgroundColor: priorityColor }} />
+        <span className="beads-tree-type">{bead.type ? typeLabel(bead.type) : ""}</span>
+        <span className="beads-tree-prio" style={{ color: priorityColor }}>
+          {bead.priority === undefined ? "—" : `P${bead.priority}`}
+        </span>
       </div>
       {hasChildren && !isCollapsed
         ? children.map((child) => (
