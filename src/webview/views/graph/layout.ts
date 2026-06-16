@@ -123,13 +123,34 @@ interface ForceNode extends SimulationNodeDatum {
   id: string;
 }
 
-/** Force-directed (freeform) layout (d3-force), run to a fixed settled state. */
-export function forceLayout(nodeIds: string[], edges: LayoutEdge[]): Positions {
+/** Small deterministic PRNG so a given seed reproduces the same variant. */
+function mulberry32(seed: number): () => number {
+  let a = (seed * 2654435761) >>> 0 || 1;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Force-directed (freeform) layout (d3-force), run to a fixed settled state.
+ * `seed` jitters the starting positions so each value yields a distinct but
+ * reproducible variant (seed 0 = the canonical deterministic arrangement).
+ */
+export function forceLayout(nodeIds: string[], edges: LayoutEdge[], seed = 0): Positions {
   const positions: Positions = new Map();
   if (nodeIds.length === 0) return positions;
 
   const ids = new Set(nodeIds);
-  const nodes: ForceNode[] = nodeIds.map((id) => ({ id }));
+  const rand = mulberry32(seed);
+  const spread = Math.max(200, nodeIds.length * 30);
+  // Seed 0 leaves positions unset (d3's deterministic phyllotaxis); any other
+  // seed scatters the start so the simulation settles to a different variant.
+  const nodes: ForceNode[] = nodeIds.map((id) =>
+    seed === 0 ? { id } : { id, x: (rand() - 0.5) * spread, y: (rand() - 0.5) * spread },
+  );
   const links = validEdges(ids, edges).map((e) => ({ source: e.from, target: e.to }));
 
   const simulation = forceSimulation(nodes)

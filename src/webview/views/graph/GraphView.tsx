@@ -58,6 +58,8 @@ function GraphCanvas({
   const [focusEnabled, setFocusEnabled] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; bead: Bead } | null>(null);
+  // Bumped by Auto Layout to seed a new force-layout variant.
+  const [layoutSeed, setLayoutSeed] = useState(0);
   // Selection is local to the canvas: a single click highlights + becomes the
   // focus root without navigating away (double-click opens details). Falls back
   // to the externally-selected bead until the user clicks a node here.
@@ -106,9 +108,9 @@ function GraphCanvas({
   const positioned = useMemo(() => {
     const ids = beads.filter((b) => visibleIds.has(b.id)).map((b) => b.id);
     const edges = layoutEdges.filter((e) => visibleIds.has(e.from) && visibleIds.has(e.to));
-    const positions = mode === "layered" ? layeredLayout(ids, edges) : forceLayout(ids, edges);
+    const positions = mode === "layered" ? layeredLayout(ids, edges) : forceLayout(ids, edges, layoutSeed);
     return { ids: new Set(ids), positions };
-  }, [beads, layoutEdges, visibleIds, mode]);
+  }, [beads, layoutEdges, visibleIds, mode, layoutSeed]);
 
   // Nodes never dim — hovering only emphasizes the hovered node's own edges, so
   // the board stays fully visible as the mouse moves.
@@ -151,11 +153,17 @@ function GraphCanvas({
   useEffect(() => setNodes(computedNodes), [computedNodes, setNodes]);
   useEffect(() => setEdges(computedEdges), [computedEdges, setEdges]);
 
-  // Re-apply the computed layout (discarding any manual drags) and refit.
+  // Auto Layout: in force mode, seed a fresh variant; in layered mode (canonical
+  // shape) just re-apply the computed layout, discarding manual drags. Either
+  // way the positioned memo recomputes → nodes reset → refit.
   const autoLayout = useCallback(() => {
-    setNodes(computedNodes);
+    if (mode === "force") {
+      setLayoutSeed((s) => s + 1);
+    } else {
+      setNodes(computedNodes);
+    }
     requestAnimationFrame(() => rf.fitView({ padding: 0.2, duration: 200 }));
-  }, [computedNodes, setNodes, rf]);
+  }, [mode, computedNodes, setNodes, rf]);
 
   // Click gesture router: React Flow fires click + dblclick on every press, so
   // count clicks within a short window and act once it settles — 1 = select,
@@ -245,7 +253,11 @@ function GraphCanvas({
           type="button"
           className="graph-toggle-btn"
           onClick={autoLayout}
-          title="Re-run the layout and fit to view (resets manual drags)"
+          title={
+            mode === "force"
+              ? "Shuffle a new force-layout variant and fit to view"
+              : "Re-apply the layout and fit to view (resets manual drags)"
+          }
         >
           <Wand2 size={14} strokeWidth={2} />
           <span>Auto Layout</span>

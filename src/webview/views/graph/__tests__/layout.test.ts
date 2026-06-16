@@ -105,4 +105,15 @@ describe("forceLayout", () => {
   it("returns an empty map for no nodes", () => {
     expect(forceLayout([], edges).size).toBe(0);
   });
+
+  it("produces distinct variants for different seeds, reproducible per seed", () => {
+    const ids = ["a", "b", "c", "d"];
+    const v1 = forceLayout(ids, edges, 1);
+    const v2 = forceLayout(ids, edges, 2);
+    const v1again = forceLayout(ids, edges, 1);
+    // Same seed → identical; different seeds → at least one node moved.
+    expect([...v1.entries()]).toEqual([...v1again.entries()]);
+    const moved = ids.some((id) => v1.get(id)!.x !== v2.get(id)!.x || v1.get(id)!.y !== v2.get(id)!.y);
+    expect(moved).toBe(true);
+  });
 });
