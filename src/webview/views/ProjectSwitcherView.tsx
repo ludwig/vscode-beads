@@ -8,7 +8,7 @@
  */
 
 import React, { useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, X } from "lucide-react";
 import { Bead, BeadsProject, STATUS_COLORS } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
@@ -21,6 +21,7 @@ interface ProjectSwitcherViewProps {
   onSelectProject: (project: BeadsProject) => void;
   onOpenProjectFolder: () => void;
   onOpenBead: (beadId: string) => void;
+  onClearBead: () => void;
   onShowStatus: () => void;
   onStartDolt: () => void;
   onStopDolt: () => void;
@@ -43,6 +44,7 @@ export function ProjectSwitcherView({
   onSelectProject,
   onOpenProjectFolder,
   onOpenBead,
+  onClearBead,
   onShowStatus,
   onStartDolt,
   onStopDolt,
@@ -156,19 +158,32 @@ export function ProjectSwitcherView({
       </section>
 
       <section className="context-section">
-        <button
-          type="button"
-          className="context-heading context-heading-toggle"
-          aria-expanded={!beadCollapsed}
-          onClick={() => setBeadCollapsed((v) => !v)}
-        >
-          {beadCollapsed ? (
-            <ChevronRight size={13} strokeWidth={2} className="context-heading-chevron" />
-          ) : (
-            <ChevronDown size={13} strokeWidth={2} className="context-heading-chevron" />
+        <div className="context-section-head">
+          <button
+            type="button"
+            className="context-heading context-heading-toggle"
+            aria-expanded={!beadCollapsed}
+            onClick={() => setBeadCollapsed((v) => !v)}
+          >
+            {beadCollapsed ? (
+              <ChevronRight size={13} strokeWidth={2} className="context-heading-chevron" />
+            ) : (
+              <ChevronDown size={13} strokeWidth={2} className="context-heading-chevron" />
+            )}
+            <span>Active Bead</span>
+          </button>
+          {activeBead && (
+            <button
+              type="button"
+              className="context-menu-btn"
+              title="Clear the pinned bead"
+              aria-label="Clear active bead"
+              onClick={onClearBead}
+            >
+              <X size={14} strokeWidth={2} />
+            </button>
           )}
-          <span>Active Bead</span>
-        </button>
+        </div>
         {!beadCollapsed && (activeBead ? (
           <button
             type="button"

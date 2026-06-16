@@ -10,6 +10,7 @@
 import * as vscode from "vscode";
 import { BaseViewProvider } from "./BaseViewProvider";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
+import { WebviewToExtensionMessage } from "../backend/types";
 import { Logger } from "../utils/logger";
 
 export class BeadsProjectSwitcherViewProvider extends BaseViewProvider {
@@ -47,5 +48,11 @@ export class BeadsProjectSwitcherViewProvider extends BaseViewProvider {
     // No bead list to load — the switcher only needs project/projects (pushed by
     // initializeView/refresh). Re-send the pinned active bead on (re)init.
     this.postActiveBead();
+  }
+
+  protected async handleCustomMessage(message: WebviewToExtensionMessage): Promise<void> {
+    if (message.type === "clearActiveBead") {
+      this.setActiveBead(null);
+    }
   }
 }

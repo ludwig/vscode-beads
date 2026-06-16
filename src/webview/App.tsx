@@ -240,6 +240,7 @@ export function App(): React.ReactElement {
             }
             onOpenProjectFolder={() => vscode.postMessage({ type: "openProjectFolder" })}
             onOpenBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
+            onClearBead={() => vscode.postMessage({ type: "clearActiveBead" })}
             onShowStatus={() => vscode.postMessage({ type: "showDoltStatus" })}
             onStartDolt={() => vscode.postMessage({ type: "startDoltServer" })}
             onStopDolt={() => vscode.postMessage({ type: "stopDoltServer" })}

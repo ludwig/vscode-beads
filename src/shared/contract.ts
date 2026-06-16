@@ -190,6 +190,7 @@ export type WebviewToExtensionMessage =
   | { type: "addComment"; beadId: string; text: string }
   | { type: "openBeadDetails"; beadId: string }
   | { type: "openBeadInTab"; beadId: string }
+  | { type: "clearActiveBead" }
   | { type: "copyText"; text: string; label?: string }
   | { type: "viewInGraph"; beadId: string }
   | { type: "requestGraph" }
