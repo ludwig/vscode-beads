@@ -52,7 +52,7 @@ export function DashboardView({
   buildSha,
   buildDirty,
 }: DashboardViewProps): React.ReactElement {
-  const [byStatusOpen, setByStatusOpen] = useState(true);
+  const [byStatusOpen, setByStatusOpen] = useState(false);
   const [byTypeOpen, setByTypeOpen] = useState(false);
   const [byLabelOpen, setByLabelOpen] = useState(false);
   const byType = Array.from(
