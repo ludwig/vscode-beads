@@ -2462,6 +2462,33 @@ textarea {
   align-items: center;
 }
 
+/* Utility icon buttons in the header (Open in tab, Refresh) — quiet until
+   hovered, so the Edit/Save action stays the cluster's focal point. */
+.header-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--border-radius);
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.header-icon-btn:hover {
+  color: var(--vscode-foreground);
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+}
+
+/* Hairline between the utility icons and the primary action. */
+.header-actions-sep {
+  width: 1px;
+  align-self: stretch;
+  margin: 2px 2px;
+  background: var(--vscode-panel-border);
+}
+
 .icon-btn {
   padding: 4px;
   background: transparent;

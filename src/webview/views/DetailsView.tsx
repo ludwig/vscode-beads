@@ -349,6 +349,23 @@ export function DetailsView({
           {bead.id}
         </span>
         <div className="header-actions">
+          <button
+            className="icon-btn header-icon-btn"
+            title="Open in editor tab"
+            aria-label="Open in editor tab"
+            onClick={() => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id })}
+          >
+            <Icon name="external-link" size={13} />
+          </button>
+          <button
+            className="icon-btn header-icon-btn"
+            title="Refresh"
+            aria-label="Refresh"
+            onClick={() => vscode.postMessage({ type: "refresh" })}
+          >
+            <Icon name="refresh" size={13} />
+          </button>
+          <span className="header-actions-sep" />
           {editMode ? (
             <>
               <button

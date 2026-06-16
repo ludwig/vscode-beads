@@ -152,34 +152,24 @@
           "group": "navigation@0"
         },
         {
-          "command": "beads.navigateBack",
+          "command": "beads.createIssue",
           "when": "view == beadsDetails",
           "group": "navigation@0"
         },
         {
-          "command": "beads.navigateForward",
+          "command": "beads.navigateBack",
           "when": "view == beadsDetails",
           "group": "navigation@1"
         },
         {
-          "command": "beads.createIssue",
+          "command": "beads.navigateForward",
           "when": "view == beadsDetails",
           "group": "navigation@2"
         },
         {
-          "command": "beads.openBeadInTab",
-          "when": "view == beadsDetails && beads.hasSelectedBead",
-          "group": "navigation@3"
-        },
-        {
-          "command": "beads.refresh",
-          "when": "view == beadsDetails",
-          "group": "navigation@4"
-        },
-        {
           "command": "beads.copyBeadId",
           "when": "view == beadsDetails && beads.hasSelectedBead",
-          "group": "navigation@5"
+          "group": "navigation@3"
         }
       ]
     },
