@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, X, Rocket, ListTodo } from "lucide-react";
+import { ChevronDown, ChevronRight, X, Rocket, ListTodo, Plus } from "lucide-react";
 import { Bead, BeadsProject, STATUS_COLORS } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
@@ -23,6 +23,7 @@ interface ProjectSwitcherViewProps {
   onOpenBead: (beadId: string) => void;
   onOpenBeadInTab: (beadId: string) => void;
   onClearBead: () => void;
+  onNewIssue: () => void;
   onPickReady: () => void;
   onShowIssues: () => void;
   onShowStatus: () => void;
@@ -49,6 +50,7 @@ export function ProjectSwitcherView({
   onOpenBead,
   onOpenBeadInTab,
   onClearBead,
+  onNewIssue,
   onPickReady,
   onShowIssues,
   onShowStatus,
@@ -248,6 +250,16 @@ export function ProjectSwitcherView({
       <div className="context-actions">
         <button
           type="button"
+          className="btn context-action-btn new-issue"
+          onClick={onNewIssue}
+          disabled={!activeProject}
+          title="Create a new issue"
+        >
+          <Plus size={14} strokeWidth={2.25} />
+          <span>New</span>
+        </button>
+        <button
+          type="button"
           className="btn context-action-btn show-issues"
           onClick={onShowIssues}
           title="Show the Issues panel"
@@ -263,7 +275,7 @@ export function ProjectSwitcherView({
           title="Pick a ready-to-work bead (open, no open blocker) and make it the active bead"
         >
           <Rocket size={14} strokeWidth={2} />
-          <span>Pick Ready Bead</span>
+          <span>Pick Ready</span>
         </button>
       </div>
     </div>

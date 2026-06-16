@@ -351,6 +351,14 @@ export function DetailsView({
         <div className="header-actions">
           <button
             className="icon-btn header-icon-btn"
+            title="New issue"
+            aria-label="New issue"
+            onClick={() => vscode.postMessage({ type: "startCreate" })}
+          >
+            <Icon name="plus" size={13} />
+          </button>
+          <button
+            className="icon-btn header-icon-btn"
             title="Open in editor tab"
             aria-label="Open in editor tab"
             onClick={() => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id })}
