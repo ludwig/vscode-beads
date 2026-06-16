@@ -1690,13 +1690,16 @@ textarea {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  border: 2px solid var(--vscode-focusBorder);
+  border: 2.5px solid var(--vscode-focusBorder);
   border-radius: 3px;
-  animation: panel-shell-pulse 1.6s ease-out forwards;
+  /* Hold the ring at full strength, then fade quickly at the tail — a steady
+     confirmation that lingers instead of a faint linear fade. */
+  animation: panel-shell-pulse 1.6s ease-in forwards;
 }
 
 @keyframes panel-shell-pulse {
-  0% { opacity: 0.9; }
+  0% { opacity: 1; }
+  70% { opacity: 1; }
   100% { opacity: 0; }
 }
 
@@ -2487,23 +2490,24 @@ textarea {
   transition: box-shadow 0.15s ease, filter 0.15s ease;
 }
 
-/* Show Issues — clean solid blue. */
+/* Show Issues — muted (desaturated) steel blue, easier on the eyes than the
+   vivid #2563eb. */
 .context-action-btn.show-issues {
-  background: #2563eb;
+  background: #3f5e96;
   color: #fff;
 }
 .context-action-btn.show-issues:hover {
-  background: #1d4ed8;
+  background: #354f80;
 }
 
-/* Pick Ready Bead — clean solid indigo (sits alongside the blue Show Issues
-   without the distracting aurora gradient). */
+/* Pick Ready Bead — muted (desaturated) indigo, paired with the steel-blue
+   Show Issues without the distracting aurora gradient. */
 .context-action-btn.pick-ready {
-  background: #4f46e5;
+  background: #564f96;
   color: #fff;
 }
 .context-action-btn.pick-ready:hover:not(:disabled) {
-  background: #4338ca;
+  background: #494380;
 }
 
 .btn:hover {
