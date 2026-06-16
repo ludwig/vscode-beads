@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight, ChevronDown, Search, ArrowUp, ArrowDown } from "lucide-react";
+import { ChevronRight, ChevronDown, Search, ArrowUp, ArrowDown, Filter } from "lucide-react";
 import {
   Bead,
   BeadType,
@@ -25,7 +25,7 @@ import { TypeIcon } from "../../common/TypeIcon";
 import { Loading } from "../../common/Loading";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { ContextMenu, type ContextMenuItem } from "../../common/ContextMenu";
-import { buildForest, filterForest, subtreeIds, compareById, type BeadComparator, type TreeNode } from "./treeModel";
+import { buildForest, filterForest, filterForestByIds, subtreeIds, compareById, type BeadComparator, type TreeNode } from "./treeModel";
 
 interface DragApi {
   draggedId: string | null;
@@ -82,6 +82,11 @@ interface TreeViewProps {
   loading: boolean;
   error: string | null;
   selectedBeadId: string | null;
+  /**
+   * Ids matching the current Issues filter/search, or null when unknown. The
+   * "Filtered" toggle scopes the tree to this set; null disables the toggle.
+   */
+  filteredBeadIds: string[] | null;
   onSelectBead: (beadId: string) => void;
   onRequestGraph: () => void;
   onRetry: () => void;
@@ -92,6 +97,7 @@ export function TreeView({
   loading,
   error,
   selectedBeadId,
+  filteredBeadIds,
   onSelectBead,
   onRequestGraph,
   onRetry,
@@ -102,6 +108,9 @@ export function TreeView({
   }, [onRequestGraph]);
 
   const [query, setQuery] = useState("");
+  // Scope the tree to the current Issues filter slice (vs-bo9), mirroring the
+  // Graph's Filtered toggle (vs-v07).
+  const [filterEnabled, setFilterEnabled] = useState(false);
   const [sort, setSort] = useState<SortState | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [menu, setMenu] = useState<{ x: number; y: number; bead: Bead } | null>(null);
@@ -160,9 +169,17 @@ export function TreeView({
     () => (graph ? buildForest(graph.nodes, graph.edges, comparatorFor(sort)) : []),
     [graph, sort],
   );
-  const visible = useMemo(() => filterForest(forest, query), [forest, query]);
-  // While filtering, ignore collapse state so matches are always revealed.
-  const filtering = query.trim().length > 0;
+  // Scope to the Issues filter slice first (if the toggle is on), then narrow by
+  // the text query — both keep the ancestor path so the tree stays connected.
+  const filterActive = filterEnabled && filteredBeadIds != null;
+  const scoped = useMemo(
+    () => (filterActive ? filterForestByIds(forest, new Set(filteredBeadIds)) : forest),
+    [forest, filterActive, filteredBeadIds],
+  );
+  const visible = useMemo(() => filterForest(scoped, query), [scoped, query]);
+  // While filtering (text query or the scope toggle), ignore collapse state so
+  // matches are always revealed.
+  const filtering = query.trim().length > 0 || filterActive;
 
   // Current parent per bead (first parent-child edge from=child wins).
   const parentOf = useMemo(() => {
@@ -266,6 +283,21 @@ export function TreeView({
           onChange={(e) => setQuery(e.target.value)}
           spellCheck={false}
         />
+        <button
+          type="button"
+          className={`beads-tree-sort-btn beads-tree-filter-toggle ${filterActive ? "active" : ""}`}
+          aria-pressed={filterActive}
+          onClick={() => setFilterEnabled((v) => !v)}
+          disabled={filteredBeadIds == null}
+          title={
+            filteredBeadIds == null
+              ? "Open the Issues tab and set a filter to scope the tree"
+              : "Scope the tree to the current Issues filter"
+          }
+        >
+          <Filter size={11} strokeWidth={2.5} />
+          <span>Filtered</span>
+        </button>
         <div className="beads-tree-sort" role="group" aria-label="Sort beads">
           <span className="beads-tree-sort-label">Sort</span>
           {SORT_OPTIONS.map(({ key, label }) => {

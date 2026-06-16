@@ -163,6 +163,7 @@ export function PanelShell({
             loading={loading}
             error={error}
             selectedBeadId={selectedBeadId}
+            filteredBeadIds={filteredBeadIds}
             onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onRequestGraph={requestGraph}
             onRetry={() => vscode.postMessage({ type: "refresh" })}

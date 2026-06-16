@@ -1,4 +1,4 @@
-import { buildForest, filterForest, subtreeIds, type TreeNode } from "../treeModel";
+import { buildForest, filterForest, filterForestByIds, subtreeIds, type TreeNode } from "../treeModel";
 import type { Bead } from "../../../types";
 
 function bead(id: string, title = id): Bead {
@@ -122,6 +122,37 @@ describe("filterForest", () => {
 
   it("drops everything when nothing matches", () => {
     expect(filterForest(forest, "zzz")).toEqual([]);
+  });
+});
+
+describe("filterForestByIds", () => {
+  // epic-1 ▸ {task-2, task-3 ▸ sub-4}, plus a standalone lone-5
+  const forest = buildForest(
+    [bead("epic-1"), bead("task-2"), bead("task-3"), bead("sub-4"), bead("lone-5")],
+    [pc("task-2", "epic-1"), pc("task-3", "epic-1"), pc("sub-4", "task-3")],
+  );
+
+  it("keeps an allowed leaf and the ancestor path to it, dropping siblings", () => {
+    const out = filterForestByIds(forest, new Set(["sub-4"]));
+    expect(ids(out)).toEqual(["epic-1"]); // ancestor connector
+    expect(ids(out[0].children)).toEqual(["task-3"]); // task-2 sibling dropped
+    expect(ids(out[0].children[0].children)).toEqual(["sub-4"]);
+  });
+
+  it("does NOT drag along non-allowed descendants of an allowed node", () => {
+    const out = filterForestByIds(forest, new Set(["task-3"]));
+    expect(ids(out)).toEqual(["epic-1"]);
+    expect(ids(out[0].children)).toEqual(["task-3"]);
+    expect(out[0].children[0].children).toEqual([]); // sub-4 not in set → pruned
+  });
+
+  it("keeps a standalone allowed root", () => {
+    const out = filterForestByIds(forest, new Set(["lone-5"]));
+    expect(ids(out)).toEqual(["lone-5"]);
+  });
+
+  it("returns an empty forest when nothing is allowed", () => {
+    expect(filterForestByIds(forest, new Set())).toEqual([]);
   });
 });
 

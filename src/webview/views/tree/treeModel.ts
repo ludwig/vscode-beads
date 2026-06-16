@@ -99,6 +99,25 @@ export function filterForest(forest: TreeNode[], query: string): TreeNode[] {
 }
 
 /**
+ * Prune a forest to an allowed id set (e.g. the current Issues filter slice,
+ * vs-bo9). A node is kept if it's in the set OR has a kept descendant — so the
+ * tree stays connected, retaining just the ancestor path to allowed beads.
+ * Unlike filterForest, a kept node does NOT drag along non-allowed descendants:
+ * the result is scoped to the set plus the connectors above it. `allowed` empty
+ * returns an empty forest; pass the whole forest when no filter is active.
+ */
+export function filterForestByIds(forest: TreeNode[], allowed: Set<string>): TreeNode[] {
+  const prune = (node: TreeNode): TreeNode | null => {
+    const kids = node.children.map(prune).filter((n): n is TreeNode => n !== null);
+    if (allowed.has(node.bead.id) || kids.length > 0) {
+      return { bead: node.bead, children: kids };
+    }
+    return null;
+  };
+  return forest.map(prune).filter((n): n is TreeNode => n !== null);
+}
+
+/**
  * All ids in the subtree rooted at `id` (including `id` itself), or an empty set
  * if `id` isn't in the forest. Used to reject an illegal reparent: a node may
  * not be dropped onto itself or any of its descendants (would make a cycle).

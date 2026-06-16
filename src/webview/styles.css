@@ -3770,6 +3770,20 @@ textarea {
   border-color: var(--vscode-focusBorder);
 }
 
+.beads-tree-sort-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.beads-tree-sort-btn:disabled:hover {
+  background: transparent;
+}
+
+/* The Filtered scope toggle sits just left of the Sort group. */
+.beads-tree-filter-toggle {
+  flex: 0 0 auto;
+  margin-right: 2px;
+}
+
 .beads-tree-body {
   flex: 1 1 auto;
   min-height: 0;
