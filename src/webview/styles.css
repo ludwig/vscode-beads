@@ -748,6 +748,13 @@ textarea {
 
 .project-dropdown-prefix {
   flex-shrink: 0;
+  /* content-box so the inline min-width (in `ch`) sizes the text, not the
+     text+padding — the global `* { box-sizing: border-box }` would otherwise
+     fold the padding in and the width never binds (vs-od3). */
+  box-sizing: content-box;
+  /* Shared min-width is set inline from the widest prefix so the name column
+     starts at a common x (vs-od3); center shorter prefixes within it. */
+  text-align: center;
   font-family: var(--vscode-editor-font-family, monospace);
   font-size: 0.85em;
   font-weight: 600;
@@ -810,7 +817,13 @@ textarea {
 
 .project-dropdown-item-prefix {
   flex-shrink: 0;
+  /* content-box: see .project-dropdown-prefix — min-width sizes text, not
+     text+padding, despite the global border-box reset (vs-od3). */
+  box-sizing: content-box;
   margin-top: 1px;
+  /* Shared min-width is set inline from the widest prefix so the name column
+     starts at a common x (vs-od3); center shorter prefixes within it. */
+  text-align: center;
   font-family: var(--vscode-editor-font-family, monospace);
   font-size: 0.85em;
   font-weight: 600;
