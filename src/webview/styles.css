@@ -53,12 +53,11 @@ body {
   color: var(--vscode-foreground);
   background-color: var(--vscode-editor-background);
   line-height: 1.5;
-  /* Typography polish: crisp antialiasing + ligatures/contextual alternates,
-     so the UI font renders the way it does in a well-set document. */
+  /* Typography polish: crisp antialiasing only. No ligatures/optimizeLegibility
+     — those turn code sequences (->, =>, !=, ===) into glyphs in the code font,
+     which reads as a "strange font" in rendered markdown. */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-  font-feature-settings: "liga" 1, "calt" 1;
 }
 
 /* Numbers that sit in columns or get scanned/compared — IDs, timestamps,
@@ -2835,7 +2834,7 @@ textarea {
 }
 
 .details-section {
-  margin-top: var(--spacing-md);
+  margin-top: var(--spacing-sm);
 }
 
 /* Section labels — small, tracked-out uppercase captions that quietly index
@@ -2851,7 +2850,7 @@ textarea {
 
 .description-text {
   font-size: var(--text-body);
-  line-height: 1.55;
+  line-height: 1.5;
   white-space: pre-wrap;
   margin: 0;
   color: var(--vscode-foreground);
@@ -2860,7 +2859,7 @@ textarea {
 /* Markdown content styles */
 .markdown-content {
   font-size: var(--text-body);
-  line-height: 1.55;
+  line-height: 1.5;
   color: var(--vscode-foreground);
 }
 
@@ -2882,7 +2881,7 @@ textarea {
 }
 
 .markdown-content p + p {
-  margin-top: 0.7em;
+  margin-top: 0.5em;
 }
 
 .markdown-content h1,
@@ -2891,7 +2890,7 @@ textarea {
 .markdown-content h4,
 .markdown-content h5,
 .markdown-content h6 {
-  margin: 1.1em 0 0.4em 0;
+  margin: 0.7em 0 0.25em 0;
   font-weight: 600;
   line-height: 1.25;
 }
@@ -2916,7 +2915,7 @@ textarea {
 
 .markdown-content ul,
 .markdown-content ol {
-  margin: 0.4em 0 !important;
+  margin: 0.3em 0 !important;
   padding: 0 0 0 1.4em !important;
   list-style-position: outside;
 }
@@ -2924,11 +2923,11 @@ textarea {
 .markdown-content li {
   margin: 0 !important;
   padding: 0 !important;
-  line-height: 1.55;
+  line-height: 1.45;
 }
 
 .markdown-content li + li {
-  margin-top: 0.25em !important;
+  margin-top: 0.1em !important;
 }
 
 .markdown-content li::marker {
@@ -2938,17 +2937,17 @@ textarea {
 /* Nested lists tuck in without an extra leading gap. */
 .markdown-content li > ul,
 .markdown-content li > ol {
-  margin: 0.25em 0 !important;
+  margin: 0.1em 0 !important;
 }
 
 .markdown-content p + ul,
 .markdown-content p + ol {
-  margin-top: 0.4em !important;
+  margin-top: 0.3em !important;
 }
 
 .markdown-content ul + p,
 .markdown-content ol + p {
-  margin-top: 0.7em !important;
+  margin-top: 0.5em !important;
 }
 
 .markdown-content p:empty,
@@ -2959,6 +2958,9 @@ textarea {
 .markdown-content code {
   font-family: var(--vscode-editor-font-family);
   font-size: 0.875em;
+  /* Render code literally — never ligate operators (->, =>, !=). */
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
   padding: 0.1em 0.4em;
   background: var(--vscode-textCodeBlock-background);
   border: 1px solid var(--vscode-panel-border);
@@ -2966,7 +2968,7 @@ textarea {
 }
 
 .markdown-content pre {
-  margin: 0.7em 0;
+  margin: 0.5em 0;
   padding: 10px 12px;
   background: var(--vscode-textCodeBlock-background);
   border: 1px solid var(--vscode-panel-border);
@@ -2983,7 +2985,7 @@ textarea {
 }
 
 .markdown-content blockquote {
-  margin: 0.7em 0;
+  margin: 0.5em 0;
   padding: 0.1em 0 0.1em 12px;
   border-left: 3px solid var(--beads-accent);
   color: var(--vscode-descriptionForeground);
@@ -3009,12 +3011,12 @@ textarea {
 .markdown-content hr {
   border: none;
   border-top: 1px solid var(--vscode-panel-border);
-  margin: 1em 0;
+  margin: 0.7em 0;
 }
 
 .markdown-content table {
   border-collapse: collapse;
-  margin: 0.7em 0;
+  margin: 0.5em 0;
   font-size: var(--text-sm);
   width: 100%;
 }
@@ -3040,7 +3042,7 @@ textarea {
 .description-input {
   width: 100%;
   font-size: var(--text-body);
-  line-height: 1.55;
+  line-height: 1.5;
   padding: var(--spacing-sm);
   resize: vertical;
 }
@@ -3270,7 +3272,7 @@ textarea {
 
 .comment-text {
   font-size: var(--text-body);
-  line-height: 1.55;
+  line-height: 1.5;
   white-space: pre-wrap;
 }
 
