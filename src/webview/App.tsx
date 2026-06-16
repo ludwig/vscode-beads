@@ -240,7 +240,6 @@ export function App(): React.ReactElement {
             onOpenBead={(beadId) =>
               vscode.postMessage({ type: "openBeadDetails", beadId })
             }
-            onRequestGraph={() => vscode.postMessage({ type: "requestGraph" })}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
           />
         );

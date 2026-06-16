@@ -55,7 +55,14 @@ interface GraphViewProps {
    */
   filteredBeadIds: string[] | null;
   onOpenBead: (beadId: string) => void;
-  onRequestGraph: () => void;
+  /**
+   * Lazily ask the provider for graph data on mount. Used by the multi-tab
+   * PanelShell (where the graph may never be opened). Omitted by the dedicated
+   * graph editor tab, whose provider pushes graph data proactively — passing it
+   * there (especially an unstable inline callback) would re-fire this on every
+   * render and loop request→setGraph→render (vs-e4k flashing).
+   */
+  onRequestGraph?: () => void;
   onRetry: () => void;
 }
 
@@ -523,8 +530,9 @@ export function GraphView(props: GraphViewProps): React.ReactElement {
   const { graph, loading, error, onRequestGraph, onRetry } = props;
 
   // Lazily ask the provider for the dependency graph when this tab mounts.
+  // No-op for the dedicated graph editor tab (provider pushes proactively).
   useEffect(() => {
-    onRequestGraph();
+    onRequestGraph?.();
   }, [onRequestGraph]);
 
   if (error) {
