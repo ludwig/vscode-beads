@@ -2004,6 +2004,10 @@ textarea {
   border-radius: 4px;
 }
 
+.project-switcher-meta-row .mono-figure {
+  font-variant-numeric: tabular-nums;
+}
+
 .project-switcher-meta-row dt {
   color: var(--vscode-descriptionForeground);
   text-transform: uppercase;

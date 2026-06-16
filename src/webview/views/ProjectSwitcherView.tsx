@@ -32,6 +32,13 @@ interface ProjectSwitcherViewProps {
   version?: string;
   buildSha?: string;
   buildDirty?: boolean;
+  /** Extension-host RSS in bytes (0 = not yet sampled). */
+  memoryBytes?: number;
+}
+
+/** Format a byte count as a compact MB figure, e.g. 248 MB. */
+function formatMb(bytes: number): string {
+  return `${Math.round(bytes / (1024 * 1024))} MB`;
 }
 
 const BACKEND_LABELS: Record<string, string> = {
@@ -58,6 +65,7 @@ export function ProjectSwitcherView({
   version,
   buildSha,
   buildDirty,
+  memoryBytes = 0,
 }: ProjectSwitcherViewProps): React.ReactElement {
   const backendState = activeProject?.backendStatus ?? "unknown";
   const [projectCollapsed, setProjectCollapsed] = useState(false);
@@ -176,6 +184,17 @@ export function ProjectSwitcherView({
                 <dt>Projects</dt>
                 <dd>{projects.length}</dd>
               </div>
+              {memoryBytes > 0 && (
+                <div className="project-switcher-meta-row">
+                  <dt>Memory</dt>
+                  <dd
+                    className="mono-figure"
+                    title="Resident memory of the VS Code extension-host process (shared by all extensions, not just Beads) — sampled periodically"
+                  >
+                    {formatMb(memoryBytes)}
+                  </dd>
+                </div>
+              )}
             </dl>
           </>
         ) : (

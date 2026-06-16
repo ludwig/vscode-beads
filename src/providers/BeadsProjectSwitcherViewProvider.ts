@@ -19,12 +19,45 @@ export class BeadsProjectSwitcherViewProvider extends BaseViewProvider {
   /** The currently-selected ("active") bead, pinned in the view for reference. */
   private activeBeadId: string | null = null;
 
+  // Low-frequency memory sampler (vs-f50): posts the extension-host RSS to the
+  // card while the view is visible. process.memoryUsage() is cheap; we still
+  // gate on visibility and tear down on dispose to keep it near-free.
+  private memoryTimer: ReturnType<typeof setInterval> | null = null;
+  private static readonly MEMORY_SAMPLE_MS = 4000;
+
   constructor(
     extensionUri: vscode.Uri,
     projectManager: BeadsProjectManager,
     logger: Logger
   ) {
     super(extensionUri, projectManager, logger.child("ProjectSwitcher"));
+  }
+
+  protected async initializeView(): Promise<void> {
+    await super.initializeView();
+    this.startMemorySampler();
+  }
+
+  private startMemorySampler(): void {
+    this.sampleMemory();
+    if (this.memoryTimer) return;
+    this.memoryTimer = setInterval(
+      () => this.sampleMemory(),
+      BeadsProjectSwitcherViewProvider.MEMORY_SAMPLE_MS
+    );
+  }
+
+  private sampleMemory(): void {
+    if (!this._host?.visible) return;
+    this.postMessage({ type: "setMemoryUsage", bytes: process.memoryUsage().rss });
+  }
+
+  public dispose(): void {
+    if (this.memoryTimer) {
+      clearInterval(this.memoryTimer);
+      this.memoryTimer = null;
+    }
+    super.dispose();
   }
 
   /**

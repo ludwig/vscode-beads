@@ -52,6 +52,9 @@ interface AppState {
   // Bumped when this (editor-tab) webview is revealed/opened, to flash a
   // confirmation ring so the tab is easy to spot (vs-c59).
   pulseSeq: number;
+  // Extension-host RSS (bytes), sampled periodically for the Active Project
+  // card (vs-f50). 0 until the first sample arrives.
+  memoryBytes: number;
 }
 
 const initialState: AppState = {
@@ -79,6 +82,7 @@ const initialState: AppState = {
   showGraphRequest: null,
   focusIssuesSeq: 0,
   pulseSeq: 0,
+  memoryBytes: 0,
 };
 
 export function App(): React.ReactElement {
@@ -148,6 +152,9 @@ export function App(): React.ReactElement {
         break;
       case "pulse":
         setState((prev) => ({ ...prev, pulseSeq: prev.pulseSeq + 1 }));
+        break;
+      case "setMemoryUsage":
+        setState((prev) => ({ ...prev, memoryBytes: message.bytes }));
         break;
       case "refresh":
         vscode.postMessage({ type: "refresh" });
@@ -271,6 +278,7 @@ export function App(): React.ReactElement {
             version={state.settings.extensionVersion}
             buildSha={state.settings.buildSha}
             buildDirty={state.settings.buildDirty}
+            memoryBytes={state.memoryBytes}
             onSelectProject={(project) =>
               vscode.postMessage({
                 type: "selectProject",

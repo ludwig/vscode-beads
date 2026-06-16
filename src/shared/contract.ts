@@ -172,6 +172,7 @@ export type ExtensionToWebviewMessage =
   | { type: "showGraph"; beadId: string }
   | { type: "focusIssuesTab" }
   | { type: "pulse" }
+  | { type: "setMemoryUsage"; bytes: number }
   | { type: "refresh" }
   | { type: "showToast"; text: string };
 
