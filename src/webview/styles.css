@@ -2001,7 +2001,16 @@ textarea {
   min-width: 0;
   padding: 5px 8px;
   background: var(--vscode-list-hoverBackground);
+  border: 1px solid transparent;
   border-radius: 4px;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+/* A quiet hover lift so the meta cards feel alive (they're informational, so
+   keep it subtle — not a clickable cue). */
+.project-switcher-meta-row:hover {
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+  border-color: var(--vscode-panel-border);
 }
 
 .project-switcher-meta-row .mono-figure {
