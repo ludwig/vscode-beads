@@ -160,6 +160,30 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
           "Delete functionality is not yet implemented"
         );
         break;
+
+      case "requestGraph":
+        await this.sendGraph(client);
+        break;
+    }
+  }
+
+  /**
+   * Assemble and push the dependency graph for the Graph subview. Nodes reuse
+   * the already-loaded bead list (no extra `bd list`); edges come from one
+   * mode-native fetch. Called lazily when the Graph tab opens.
+   */
+  private async sendGraph(client: NonNullable<ReturnType<BeadsProjectManager["getClient"]>>): Promise<void> {
+    try {
+      let nodes = this.projectManager.getCachedBeadList();
+      if (nodes.length === 0) {
+        const issues = await client.list();
+        nodes = issues.map(issueToWebviewBead).filter((b): b is Bead => b !== null);
+        this.projectManager.cacheBeadList(nodes);
+      }
+      const edges = await client.getDependencyGraph();
+      this.postMessage({ type: "setGraph", graph: { nodes, edges } });
+    } catch (err) {
+      this.handleBackendError("Failed to load dependency graph", err);
     }
   }
 }

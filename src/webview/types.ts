@@ -19,6 +19,7 @@ export type {
   BeadStatus,
   BeadPriority,
   DependencyType,
+  DependencyGraph,
   BeadComment,
   BeadDependency,
   Bead,

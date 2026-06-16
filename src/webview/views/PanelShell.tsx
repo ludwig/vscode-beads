@@ -9,18 +9,20 @@
  * this shell just routes between them client-side.
  */
 
-import React, { useState } from "react";
-import { LayoutDashboard, ListTodo, RefreshCw, LucideIcon } from "lucide-react";
-import { Bead, BeadsSummary, IssuesFilter, WebviewSettings, vscode } from "../types";
+import React, { useCallback, useState } from "react";
+import { LayoutDashboard, ListTodo, Workflow, RefreshCw, LucideIcon } from "lucide-react";
+import { Bead, BeadsSummary, DependencyGraph, IssuesFilter, WebviewSettings, vscode } from "../types";
 import { DashboardView } from "./DashboardView";
 import { IssuesView } from "./IssuesView";
+import { GraphView } from "./graph/GraphView";
 import { Loading } from "../common/Loading";
 
-type PanelTab = "issues" | "dashboard";
+type PanelTab = "issues" | "dashboard" | "graph";
 
 interface PanelShellProps {
   summary: BeadsSummary | null;
   beads: Bead[];
+  graph: DependencyGraph | null;
   loading: boolean;
   error: string | null;
   selectedBeadId: string | null;
@@ -31,6 +33,7 @@ interface PanelShellProps {
 export function PanelShell({
   summary,
   beads,
+  graph,
   loading,
   error,
   selectedBeadId,
@@ -47,9 +50,14 @@ export function PanelShell({
     setActive("issues");
   };
 
+  // Lazily ask the provider for the dependency graph; only fired when the Graph
+  // tab is opened so the default Issues/Dashboard path pays no extra fetch.
+  const requestGraph = useCallback(() => vscode.postMessage({ type: "requestGraph" }), []);
+
   const tabs: { id: PanelTab; label: string; Icon: LucideIcon }[] = [
     { id: "issues", label: "Issues", Icon: ListTodo },
     { id: "dashboard", label: "Dashboard", Icon: LayoutDashboard },
+    { id: "graph", label: "Graph", Icon: Workflow },
   ];
 
   return (
@@ -84,7 +92,19 @@ export function PanelShell({
       </nav>
 
       <div className="panel-shell-body">
-        {active === "dashboard" ? (
+        {active === "graph" ? (
+          <GraphView
+            graph={graph}
+            loading={loading}
+            error={error}
+            selectedBeadId={selectedBeadId}
+            focusBeadId={null}
+            onSelectBead={(beadId) => vscode.postMessage({ type: "selectBead", beadId })}
+            onOpenBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
+            onRequestGraph={requestGraph}
+            onRetry={() => vscode.postMessage({ type: "refresh" })}
+          />
+        ) : active === "dashboard" ? (
           <DashboardView
             summary={summary}
             beads={beads}

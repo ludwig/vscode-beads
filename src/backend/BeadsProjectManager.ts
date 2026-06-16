@@ -135,6 +135,11 @@ export class BeadsProjectManager implements vscode.Disposable {
     return this.cachedBeads.get(id) ?? null;
   }
 
+  /** All cached list rows (empty if the list hasn't been loaded yet). */
+  getCachedBeadList(): Bead[] {
+    return [...this.cachedBeads.values()];
+  }
+
   /**
    * Records the active issue prefix derived from the currently loaded issue
    * IDs. Fires onPrefixChanged only when the value actually changes so the
