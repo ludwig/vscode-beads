@@ -433,7 +433,9 @@ textarea {
 }
 
 .type-badge-small {
-  font-size: var(--badge-font-sm);
+  /* A touch smaller than --badge-font-sm (vs-xy5): tightens the type label and,
+     because min-width below is in em, shrinks the badge so it clears the column. */
+  font-size: 9px;
   padding: 1px 6px;
   height: var(--badge-height-sm);
   border-radius: var(--badge-radius-rect);
@@ -441,8 +443,7 @@ textarea {
      instead of reading as ragged (vs-b48). Sized (with the inherited
      border-box) to fit the common labels; the rare "merge-request" overflows
      this and is an accepted outlier. Content is centered via the base
-     .type-badge justify-content. Relative to --badge-font-sm so it tracks the
-     badge font. */
+     .type-badge justify-content. Relative to the font-size so it tracks it. */
   min-width: 5.5em;
 }
 
@@ -1318,7 +1319,10 @@ textarea {
 .beads-table td {
   padding: var(--spacing-sm) var(--spacing-md);
   border-bottom: 1px solid var(--vscode-panel-border);
-  vertical-align: middle;
+  /* With the 1.75-line rows (ID stacked over title), centering leaves the
+     leading icon and badges floating in the gap. Sink them to the bottom so
+     they rest on the title line instead (vs-xy5). */
+  vertical-align: bottom;
   overflow: hidden;
   white-space: nowrap;
 }

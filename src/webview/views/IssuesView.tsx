@@ -276,7 +276,8 @@ export function IssuesView({
       }),
       columnHelper.accessor("type", {
         header: "Type",
-        size: 70,
+        // Wider so the shared-width badge clears the cell's 24px padding (vs-xy5).
+        size: 78,
         minSize: 30,
         cell: (info) =>
           info.getValue() ? (
@@ -312,7 +313,8 @@ export function IssuesView({
       }),
       columnHelper.accessor("status", {
         header: "Status",
-        size: 80,
+        // Wider so the longest "In Progress" badge isn't clipped at the right (vs-xy5).
+        size: 96,
         minSize: 30,
         cell: (info) => <StatusBadge status={info.getValue()} size="small" />,
         filterFn: (row, columnId, filterValue: BeadStatus[]) => {

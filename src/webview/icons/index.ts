@@ -8,7 +8,7 @@
 // Issue type icons
 import bugSvg from "./bug.svg";
 import lightbulbSvg from "./lightbulb.svg";
-import squareCheckSvg from "./square-check.svg";
+import listUlSvg from "./list-ul.svg";
 import boltSvg from "./bolt.svg";
 import wrenchSvg from "./wrench.svg";
 import codeMergeSvg from "./code-merge.svg";
@@ -25,7 +25,7 @@ export const icons = {
   // Issue types
   bug: bugSvg,
   feature: lightbulbSvg,
-  task: squareCheckSvg,
+  task: listUlSvg,
   epic: boltSvg,
   chore: wrenchSvg,
   "merge-request": codeMergeSvg,
