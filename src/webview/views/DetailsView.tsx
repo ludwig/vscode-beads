@@ -328,7 +328,10 @@ export function DetailsView({
 
   return (
     <div className="bead-details">
-      {/* Header with icon, ID and actions */}
+      {/* Header block — the ID/actions row, title anchor, and metadata
+          chiclets, grouped and delimited from the body as one header unit. */}
+      <div className="details-headerblock">
+      {/* Header row: type icon, ID chip, action cluster */}
       <div className="details-header">
         <TypeIcon type={(displayBead.type || "task") as BeadType} size={20} />
         <span
@@ -525,6 +528,7 @@ export function DetailsView({
             )}
           </>
         )}
+      </div>
       </div>
 
       {/* Description */}
