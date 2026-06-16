@@ -9,7 +9,7 @@
  * dependency fetch when the Graph tab is actually opened.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -157,6 +157,40 @@ function GraphCanvas({
     requestAnimationFrame(() => rf.fitView({ padding: 0.2, duration: 200 }));
   }, [computedNodes, setNodes, rf]);
 
+  // Click gesture router: React Flow fires click + dblclick on every press, so
+  // count clicks within a short window and act once it settles — 1 = select,
+  // 2 = Show Details (sidebar), 3 = open in an editor tab.
+  const clickRef = useRef<{ id: string; count: number; timer: ReturnType<typeof setTimeout> | null }>({
+    id: "",
+    count: 0,
+    timer: null,
+  });
+  const handleNodeClick = useCallback(
+    (id: string) => {
+      setLocalSelectedId(id); // immediate selection feedback on the first click
+      const c = clickRef.current;
+      if (c.id !== id) {
+        c.id = id;
+        c.count = 0;
+      }
+      c.count += 1;
+      if (c.timer) clearTimeout(c.timer);
+      c.timer = setTimeout(() => {
+        const n = c.count;
+        c.count = 0;
+        c.id = "";
+        c.timer = null;
+        if (n >= 3) vscode.postMessage({ type: "openBeadInTab", beadId: id });
+        else if (n === 2) onOpenBead(id);
+      }, 320);
+    },
+    [onOpenBead],
+  );
+
+  useEffect(() => () => {
+    if (clickRef.current.timer) clearTimeout(clickRef.current.timer);
+  }, []);
+
   // Refit the viewport whenever the visible set or layout changes — otherwise
   // a focus-narrowed subgraph (or a layout swap) can land off-screen.
   useEffect(() => {
@@ -224,8 +258,7 @@ function GraphCanvas({
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onNodeClick={(_, node) => setLocalSelectedId(node.id)}
-        onNodeDoubleClick={(_, node) => onOpenBead(node.id)}
+        onNodeClick={(_, node) => handleNodeClick(node.id)}
         onNodeMouseEnter={(_, node) => setHoveredId(node.id)}
         onNodeMouseLeave={() => setHoveredId(null)}
         onNodeContextMenu={(event, node) => {
