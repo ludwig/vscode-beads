@@ -71,14 +71,24 @@ describe("buildForest", () => {
     expect(ids(forest)).toEqual(["a"]);
   });
 
-  it("sorts by type rank (epics first) then id, at every level", () => {
-    const epicFirst = (t: string | undefined) => (t === "epic" ? 0 : 1);
+  it("defaults to id order at every level", () => {
     const forest = buildForest(
       [typedBead("z-epic", "epic"), typedBead("a-task", "task"), typedBead("m-epic", "epic")],
       [],
-      epicFirst,
     );
-    // both epics precede the task, even though 'a-task' sorts first by id
+    expect(ids(forest)).toEqual(["a-task", "m-epic", "z-epic"]);
+  });
+
+  it("honors a custom comparator (e.g. type then id)", () => {
+    const rank = (t?: string) => (t === "epic" ? 0 : 1);
+    const byTypeThenId = (a: Bead, b: Bead) =>
+      rank(a.type) - rank(b.type) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+    const forest = buildForest(
+      [typedBead("z-epic", "epic"), typedBead("a-task", "task"), typedBead("m-epic", "epic")],
+      [],
+      byTypeThenId,
+    );
+    // epics first (by id within), then the task
     expect(ids(forest)).toEqual(["m-epic", "z-epic", "a-task"]);
   });
 });

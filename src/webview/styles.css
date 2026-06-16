@@ -3505,6 +3505,38 @@ textarea {
   border-color: var(--vscode-focusBorder);
 }
 
+.beads-tree-sort {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+
+.beads-tree-sort-label {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  margin-right: 2px;
+}
+
+.beads-tree-sort-btn {
+  background: transparent;
+  color: var(--vscode-foreground);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.beads-tree-sort-btn:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+
+.beads-tree-sort-btn.active {
+  background: var(--vscode-button-secondaryBackground, var(--vscode-toolbar-hoverBackground));
+  border-color: var(--vscode-focusBorder);
+}
+
 .beads-tree-body {
   flex: 1 1 auto;
   min-height: 0;
@@ -3559,6 +3591,14 @@ textarea {
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1 1 auto;
+}
+
+.beads-tree-type {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--vscode-descriptionForeground);
+  flex: 0 0 auto;
 }
 
 .beads-tree-priority {

@@ -21,20 +21,27 @@ interface GraphEdgeLike {
   type: DependencyType;
 }
 
+/** Compares two beads to order siblings within a level. */
+export type BeadComparator = (a: Bead, b: Bead) => number;
+
+/** Default sibling order: by id ascending (the natural/unchanged default). */
+export const compareById: BeadComparator = (a, b) =>
+  a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+
 /**
  * Build a forest of beads keyed on parent-child edges. Roots are beads with no
  * parent (including standalone beads). Guards against multi-parent (first parent
  * wins) and cycles (a node is never expanded twice along one branch).
  *
- * Ordering at every level: by `typeRank` (lower first — callers pass the type
- * sort order so epics cluster at the top), then by id. `typeRank` is injected
- * rather than imported so this module stays free of the webview's
- * window-touching `types` side-effects (and unit-testable). Defaults to id-only.
+ * Siblings at every level are ordered by `compare` (default: by id, so the tree
+ * keeps its natural order unless the caller opts into another sort). The
+ * comparator is injected rather than imported so this module stays free of the
+ * webview's window-touching `types` side-effects (and unit-testable).
  */
 export function buildForest(
   nodes: Bead[],
   edges: GraphEdgeLike[],
-  typeRank: (type: string | undefined) => number = () => 0,
+  compare: BeadComparator = compareById,
 ): TreeNode[] {
   const byId = new Map(nodes.map((b) => [b.id, b]));
   const parentOf = new Map<string, string>();
@@ -52,15 +59,8 @@ export function buildForest(
     childrenOf.get(parent)!.push(child);
   }
 
-  // Sort by type rank (epics first) then id, so the structural containers that
-  // usually hold children cluster at the top of each level.
   const sortIds = (ids: string[]): string[] =>
-    [...ids].sort((a, b) => {
-      const ta = typeRank(byId.get(a)?.type);
-      const tb = typeRank(byId.get(b)?.type);
-      if (ta !== tb) return ta - tb;
-      return a < b ? -1 : a > b ? 1 : 0;
-    });
+    [...ids].sort((a, b) => compare(byId.get(a)!, byId.get(b)!));
 
   const build = (id: string, ancestry: Set<string>): TreeNode => {
     const kidIds = sortIds((childrenOf.get(id) ?? []).filter((c) => !ancestry.has(c))); // cycle guard

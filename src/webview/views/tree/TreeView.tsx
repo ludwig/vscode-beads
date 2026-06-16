@@ -11,11 +11,13 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronRight, ChevronDown, Search } from "lucide-react";
 import {
   Bead,
+  BeadType,
   DependencyGraph,
   STATUS_COLORS,
   PRIORITY_COLORS,
   UNKNOWN_PRIORITY_COLOR,
   BeadPriority,
+  TYPE_LABELS,
   getTypeSortOrder,
   vscode,
 } from "../../types";
@@ -23,7 +25,30 @@ import { TypeIcon } from "../../common/TypeIcon";
 import { Loading } from "../../common/Loading";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { ContextMenu, type ContextMenuItem } from "../../common/ContextMenu";
-import { buildForest, filterForest, type TreeNode } from "./treeModel";
+import { buildForest, filterForest, compareById, type BeadComparator, type TreeNode } from "./treeModel";
+
+type SortKey = "id" | "type" | "title";
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: "id", label: "Default" },
+  { key: "type", label: "Type" },
+  { key: "title", label: "Title" },
+];
+
+const byTitle = (a: Bead, b: Bead) => a.title.localeCompare(b.title) || compareById(a, b);
+const byType = (a: Bead, b: Bead) =>
+  getTypeSortOrder(a.type) - getTypeSortOrder(b.type) || byTitle(a, b);
+
+function comparatorFor(key: SortKey): BeadComparator {
+  if (key === "type") return byType;
+  if (key === "title") return byTitle;
+  return compareById;
+}
+
+function typeLabel(type: string | undefined): string {
+  if (!type) return "";
+  return TYPE_LABELS[type as BeadType] ?? type;
+}
 
 interface TreeViewProps {
   graph: DependencyGraph | null;
@@ -50,6 +75,7 @@ export function TreeView({
   }, [onRequestGraph]);
 
   const [query, setQuery] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("id");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [menu, setMenu] = useState<{ x: number; y: number; bead: Bead } | null>(null);
 
@@ -67,8 +93,8 @@ export function TreeView({
   }, []);
 
   const forest = useMemo(
-    () => (graph ? buildForest(graph.nodes, graph.edges, getTypeSortOrder) : []),
-    [graph],
+    () => (graph ? buildForest(graph.nodes, graph.edges, comparatorFor(sortKey)) : []),
+    [graph, sortKey],
   );
   const visible = useMemo(() => filterForest(forest, query), [forest, query]);
   // While filtering, ignore collapse state so matches are always revealed.
@@ -93,6 +119,21 @@ export function TreeView({
           onChange={(e) => setQuery(e.target.value)}
           spellCheck={false}
         />
+        <div className="beads-tree-sort" role="group" aria-label="Sort beads">
+          <span className="beads-tree-sort-label">Sort</span>
+          {SORT_OPTIONS.map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              className={`beads-tree-sort-btn ${sortKey === key ? "active" : ""}`}
+              aria-pressed={sortKey === key}
+              onClick={() => setSortKey(key)}
+              title={`Sort siblings by ${label.toLowerCase()}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="beads-tree-body" role="tree">
         {visible.length === 0 ? (
@@ -210,6 +251,7 @@ function TreeRow({
         {bead.type ? <TypeIcon type={bead.type} size={13} /> : null}
         <span className="beads-tree-id">{bead.id}</span>
         <span className="beads-tree-title">{bead.title}</span>
+        {bead.type ? <span className="beads-tree-type">{typeLabel(bead.type)}</span> : null}
         <span className="beads-tree-priority" style={{ backgroundColor: priorityColor }} />
       </div>
       {hasChildren && !isCollapsed
