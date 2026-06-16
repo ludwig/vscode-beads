@@ -260,7 +260,8 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
         break;
 
       case "viewInGraph":
-        vscode.commands.executeCommand("beadsGraph.focus");
+        // Switch the panel to the Graph tab and focus this bead's neighborhood.
+        vscode.commands.executeCommand("beads.viewInGraph", message.beadId);
         break;
 
       case "createBead":

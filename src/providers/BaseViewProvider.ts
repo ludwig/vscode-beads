@@ -217,8 +217,8 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         break;
 
       case "viewInGraph":
-        // Focus the graph view and highlight the bead
-        vscode.commands.executeCommand("beadsGraph.focus");
+        // Switch the panel to the Graph tab and focus this bead's neighborhood.
+        vscode.commands.executeCommand("beads.viewInGraph", message.beadId);
         break;
 
       case "copyBeadId":

@@ -43,6 +43,10 @@ interface AppState {
   // `seq` changes on every request so the Issues view re-applies even if the
   // filter is identical to last time.
   issuesFilterRequest: { filter: IssuesFilter; seq: number } | null;
+  // Deep-link to focus a bead on the Graph tab, pushed from another view (e.g.
+  // the Details/table "View in graph" action). `seq` changes on every request
+  // so the panel re-switches to Graph even if it's the same bead as last time.
+  showGraphRequest: { beadId: string; seq: number } | null;
 }
 
 const initialState: AppState = {
@@ -66,6 +70,7 @@ const initialState: AppState = {
   },
   createMode: false,
   issuesFilterRequest: null,
+  showGraphRequest: null,
 };
 
 export function App(): React.ReactElement {
@@ -118,6 +123,15 @@ export function App(): React.ReactElement {
           issuesFilterRequest: {
             filter: message.filter,
             seq: (prev.issuesFilterRequest?.seq ?? 0) + 1,
+          },
+        }));
+        break;
+      case "showGraph":
+        setState((prev) => ({
+          ...prev,
+          showGraphRequest: {
+            beadId: message.beadId,
+            seq: (prev.showGraphRequest?.seq ?? 0) + 1,
           },
         }));
         break;
@@ -203,6 +217,7 @@ export function App(): React.ReactElement {
             selectedBeadId={state.selectedBeadId}
             settings={state.settings}
             issuesFilterRequest={state.issuesFilterRequest}
+            showGraphRequest={state.showGraphRequest}
           />
         );
 

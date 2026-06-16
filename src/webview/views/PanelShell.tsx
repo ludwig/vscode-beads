@@ -9,7 +9,7 @@
  * this shell just routes between them client-side.
  */
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { LayoutDashboard, ListTodo, Workflow, RefreshCw, ExternalLink, LucideIcon } from "lucide-react";
 import { Bead, BeadsSummary, DependencyGraph, IssuesFilter, WebviewSettings, vscode } from "../types";
 import { DashboardView } from "./DashboardView";
@@ -28,6 +28,7 @@ interface PanelShellProps {
   selectedBeadId: string | null;
   settings: WebviewSettings;
   issuesFilterRequest: { filter: IssuesFilter; seq: number } | null;
+  showGraphRequest: { beadId: string; seq: number } | null;
 }
 
 export function PanelShell({
@@ -39,11 +40,27 @@ export function PanelShell({
   selectedBeadId,
   settings,
   issuesFilterRequest,
+  showGraphRequest,
 }: PanelShellProps): React.ReactElement {
   // Issues is the default view when the panel first opens.
   const [active, setActive] = useState<PanelTab>("issues");
   // A Dashboard card click flips to Issues and carries its filter in-shell.
   const [localFilter, setLocalFilter] = useState<{ filter: IssuesFilter; seq: number } | null>(null);
+  // Bead to focus on the Graph tab, set by a "View in graph" deep-link. Carried
+  // into GraphView (which auto-enables Focus when it arrives).
+  const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
+
+  // A "View in graph" deep-link: flip to the Graph tab and focus the bead.
+  // Keyed on `seq` so a repeat request for the same bead still re-fires.
+  const lastShowGraphSeq = useRef<number | null>(null);
+  useEffect(() => {
+    if (!showGraphRequest || lastShowGraphSeq.current === showGraphRequest.seq) {
+      return;
+    }
+    lastShowGraphSeq.current = showGraphRequest.seq;
+    setGraphFocusId(showGraphRequest.beadId);
+    setActive("graph");
+  }, [showGraphRequest]);
 
   const flipToIssues = (filter: IssuesFilter) => {
     setLocalFilter((prev) => ({ filter, seq: (prev?.seq ?? 0) + 1 }));
@@ -107,7 +124,7 @@ export function PanelShell({
             loading={loading}
             error={error}
             selectedBeadId={selectedBeadId}
-            focusBeadId={null}
+            focusBeadId={graphFocusId}
             onOpenBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onRequestGraph={requestGraph}
             onRetry={() => vscode.postMessage({ type: "refresh" })}

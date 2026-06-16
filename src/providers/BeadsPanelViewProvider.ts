@@ -26,6 +26,10 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
   // Drill-in filter requested from another view (e.g. a Dashboard card/badge).
   // Held until the webview is ready so a freshly-focused panel still applies it.
   private pendingFilter: IssuesFilter | undefined;
+  // Deep-link to focus a bead on the Graph tab, requested from another view
+  // (e.g. the Details "View in graph" action). Held until the webview is ready
+  // so a freshly-focused panel still switches to the Graph tab and focuses it.
+  private pendingShowGraph: string | undefined;
 
   /**
    * Apply a drill-in filter to the Issues list (empty filter = show all).
@@ -37,6 +41,16 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     this.flushFilter();
   }
 
+  /**
+   * Switch the panel to the Graph tab and focus the given bead's neighborhood.
+   * Posts immediately when the webview is live; otherwise it's flushed once the
+   * webview signals ready (initializeView).
+   */
+  public showGraphForBead(beadId: string): void {
+    this.pendingShowGraph = beadId;
+    this.flushShowGraph();
+  }
+
   private flushFilter(): void {
     if (this.pendingFilter !== undefined && this._host?.visible) {
       this.postMessage({ type: "applyIssuesFilter", filter: this.pendingFilter });
@@ -44,9 +58,17 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     }
   }
 
+  private flushShowGraph(): void {
+    if (this.pendingShowGraph !== undefined && this._host?.visible) {
+      this.postMessage({ type: "showGraph", beadId: this.pendingShowGraph });
+      this.pendingShowGraph = undefined;
+    }
+  }
+
   protected async initializeView(): Promise<void> {
     await super.initializeView();
     this.flushFilter();
+    this.flushShowGraph();
   }
 
   constructor(

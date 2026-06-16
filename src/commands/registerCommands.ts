@@ -65,6 +65,18 @@ export function registerCommands(
       shellProvider.applyIssuesFilter(filter ?? {});
     }),
 
+    // Deep-link a bead into the Graph tab: focus the panel shell (so a closed
+    // panel resolves its webview), then hand the bead to the provider, which
+    // holds it until the webview is ready. Replaces the dead `beadsGraph.focus`
+    // command from the old standalone graph container (vs-iz8).
+    vscode.commands.registerCommand("beads.viewInGraph", async (beadId?: string) => {
+      if (!beadId) {
+        return;
+      }
+      await vscode.commands.executeCommand("beadsPanelShell.focus");
+      shellProvider.showGraphForBead(beadId);
+    }),
+
     vscode.commands.registerCommand("beads.openBeadDetails", async (beadId?: string) => {
       if (!beadId) {
         // Prompt for bead ID
