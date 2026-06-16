@@ -107,11 +107,19 @@ export function PanelShell({
 
   const tabs: { id: PanelTab; label: string; Icon: LucideIcon }[] = [
     { id: "dashboard", label: "Dashboard", Icon: LayoutDashboard },
-    { id: "kanban", label: "Kanban", Icon: Kanban },
     { id: "issues", label: "Issues", Icon: ListTodo },
+    { id: "kanban", label: "Kanban", Icon: Kanban },
     { id: "tree", label: "Tree", Icon: ListTree },
     { id: "graph", label: "Graph", Icon: Workflow },
   ];
+
+  // Whether the Issues filter currently narrows to a strict subset of the board.
+  // Drives the Kanban/Tree filter indicator (immediate-data views) and the
+  // Graph's auto-enabled "Filtered" toggle. Stays accurate while IssuesView is
+  // unmounted because filteredBeadIds holds the last published slice.
+  const totalCount = beads.length;
+  const filteredCount = filteredBeadIds?.length ?? totalCount;
+  const filterActive = filteredBeadIds != null && filteredCount < totalCount;
 
   // Tree and Kanban have no editor-tab route yet, so hide Open-in-Editor there.
   const canOpenInEditor = active !== "tree" && active !== "kanban";
@@ -162,6 +170,10 @@ export function PanelShell({
         {active === "kanban" ? (
           <KanbanBoard
             beads={beads}
+            filteredBeadIds={filteredBeadIds}
+            filterActive={filterActive}
+            filteredCount={filteredCount}
+            totalCount={totalCount}
             selectedBeadId={selectedBeadId}
             onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onUpdateBead={(beadId, updates) => vscode.postMessage({ type: "updateBead", beadId, updates })}
@@ -173,6 +185,9 @@ export function PanelShell({
             error={error}
             selectedBeadId={selectedBeadId}
             filteredBeadIds={filteredBeadIds}
+            filterActive={filterActive}
+            filteredCount={filteredCount}
+            totalCount={totalCount}
             onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onRequestGraph={requestGraph}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
@@ -185,6 +200,7 @@ export function PanelShell({
             selectedBeadId={selectedBeadId}
             focusBeadId={graphFocusId}
             filteredBeadIds={filteredBeadIds}
+            issuesFilterActive={filterActive}
             onOpenBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onRequestGraph={requestGraph}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
@@ -216,7 +232,6 @@ export function PanelShell({
             onRequestGraph={requestGraph}
             onFilteredBeadsChange={handleFilteredBeads}
             onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
-            onUpdateBead={(beadId, updates) => vscode.postMessage({ type: "updateBead", beadId, updates })}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
           />
         )}

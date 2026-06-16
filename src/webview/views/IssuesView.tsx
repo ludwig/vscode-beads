@@ -50,7 +50,7 @@ import { TypeIcon } from "../common/TypeIcon";
 import { LabelBadge } from "../common/LabelBadge";
 import { FilterChip } from "../common/FilterChip";
 import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
-import { Table, Kanban, Rows3, Rows2, Rocket } from "lucide-react";
+import { Rows3, Rows2, Rocket } from "lucide-react";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { Loading } from "../common/Loading";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
@@ -60,7 +60,6 @@ import { Markdown } from "../common/Markdown";
 import { getLabelColorStyle } from "../utils/label-colors";
 import { useClickOutside } from "../hooks/useClickOutside";
 import { useColumnState } from "../hooks/useColumnState";
-import { KanbanBoard } from "./KanbanBoard";
 
 interface IssuesViewProps {
   beads: Bead[];
@@ -77,7 +76,6 @@ interface IssuesViewProps {
   graph?: DependencyGraph | null;
   onRequestGraph?: () => void;
   onSelectBead: (beadId: string) => void;
-  onUpdateBead: (beadId: string, updates: Partial<Bead>) => void;
   onRetry: () => void;
   /**
    * Published whenever the visible (filtered) row set changes, so the shell can
@@ -126,7 +124,6 @@ export function IssuesView({
   graph,
   onRequestGraph,
   onSelectBead,
-  onUpdateBead,
   onRetry,
   onFilteredBeadsChange,
 }: IssuesViewProps): React.ReactElement {
@@ -162,7 +159,6 @@ export function IssuesView({
   const [isResizing, setIsResizing] = useState(false);
 
   // UI state
-  const [viewMode, setViewMode] = useState<"table" | "board">("table");
   // Optimistic selection: highlight the clicked row instantly instead of waiting
   // for the extension to echo setSelectedBeadId back (the round trip read as
   // selection lag). Cleared whenever the authoritative prop updates so external
@@ -180,7 +176,16 @@ export function IssuesView({
   // "Ready" filter (vs-bo9): show only open beads with no open blocker. Composes
   // with the column filters/search (it narrows the data they then filter). Needs
   // the dependency graph, fetched lazily on first enable.
-  const [readyOnly, setReadyOnly] = useState(false);
+  // Persisted across tab switches (IssuesView unmounts when another Panel tab is
+  // active, so plain state would forget it). Merged into the shared state blob so
+  // we don't clobber the Tree's persisted sort.
+  const [readyOnly, setReadyOnly] = useState<boolean>(
+    () => (vscode.getState() as { issuesReadyOnly?: boolean } | undefined)?.issuesReadyOnly ?? false,
+  );
+  useEffect(() => {
+    const prev = (vscode.getState() as Record<string, unknown>) ?? {};
+    vscode.setState({ ...prev, issuesReadyOnly: readyOnly });
+  }, [readyOnly]);
   const readySet = useMemo(() => {
     if (!graph) return null;
     const blocks = graph.edges.filter((e) => e.type === "blocks");
@@ -309,7 +314,6 @@ export function IssuesView({
           )
         : undefined;
     setActivePreset(matched ? matched.id : "");
-    setViewMode("table");
   }, [issuesFilterRequest]);
 
   // Column definitions
@@ -518,6 +522,10 @@ export function IssuesView({
         label: "Copy title",
         onSelect: () => vscode.postMessage({ type: "copyText", text: bead.title, label: "title" }),
       },
+      {
+        label: "Copy JSON",
+        onSelect: () => vscode.postMessage({ type: "copyBeadJson", beadId: bead.id }),
+      },
     ],
     [handleCopyId],
   );
@@ -656,6 +664,7 @@ export function IssuesView({
     setColumnFilters([]);
     setGlobalFilter("");
     setActivePreset("all");
+    setReadyOnly(false);
   };
 
   const filteredCount = table.getFilteredRowModel().rows.length;
@@ -668,16 +677,6 @@ export function IssuesView({
   const assigneeFacets = table.getColumn("assignee")?.getFacetedUniqueValues() ?? new Map();
 
   // Unfiltered counts per status (for kanban empty state messaging)
-  const unfilteredStatusCounts = useMemo(() => {
-    const counts: Record<BeadStatus, number> = { open: 0, in_progress: 0, blocked: 0, closed: 0 };
-    for (const bead of beads) {
-      if (bead.status in counts) {
-        counts[bead.status as BeadStatus]++;
-      }
-    }
-    return counts;
-  }, [beads]);
-
   // Get unique assignees from facets for filter menu
   const uniqueAssignees = useMemo(() => {
     const assignees = Array.from(assigneeFacets.keys()).filter((a): a is string => typeof a === "string" && a !== "");
@@ -786,32 +785,14 @@ export function IssuesView({
             <path d="M6 10.5v-1h4v1H6zm-2-3v-1h8v1H4zm-2-3v-1h12v1H2z" />
           </svg>
         </button>
-        <div className="view-toggle">
-          <button
-            className={viewMode === "table" ? "active" : ""}
-            onClick={() => setViewMode("table")}
-            title="Table view"
-          >
-            <Table size={14} />
-          </button>
-          <button
-            className={viewMode === "board" ? "active" : ""}
-            onClick={() => setViewMode("board")}
-            title="Board view"
-          >
-            <Kanban size={14} />
-          </button>
-        </div>
-        {viewMode === "table" && (
-          <button
-            className={`compact-toggle ${compact ? "active" : ""}`}
-            onClick={() => setCompact((c) => !c)}
-            title={compact ? "Comfortable rows" : "Compact rows"}
-            aria-pressed={compact}
-          >
-            {compact ? <Rows2 size={14} /> : <Rows3 size={14} />}
-          </button>
-        )}
+        <button
+          className={`compact-toggle ${compact ? "active" : ""}`}
+          onClick={() => setCompact((c) => !c)}
+          title={compact ? "Comfortable rows" : "Compact rows"}
+          aria-pressed={compact}
+        >
+          {compact ? <Rows2 size={14} /> : <Rows3 size={14} />}
+        </button>
       </div>
 
       {/* Row 2: Filter bar */}
@@ -1019,7 +1000,7 @@ export function IssuesView({
       )}
 
       {/* Table */}
-      {!error && viewMode === "table" && (
+      {!error && (
         <div className="beads-table-wrapper">
           {loading && (
             <div className="issues-loading-state">
@@ -1238,24 +1219,6 @@ export function IssuesView({
         </div>
       )}
 
-      {/* Kanban Board */}
-      {!error && viewMode === "board" && (
-        <>
-          {loading && (
-            <div className="issues-loading-state">
-              <Loading />
-            </div>
-          )}
-          <KanbanBoard
-            beads={table.getFilteredRowModel().rows.map((r) => r.original)}
-            selectedBeadId={activeSelectedId}
-            onSelectBead={selectRow}
-            onUpdateBead={onUpdateBead}
-            hasActiveFilters={hasActiveFilters}
-            unfilteredCounts={unfilteredStatusCounts}
-          />
-        </>
-      )}
 
       {/* Markdown tooltip */}
       {hoveredBead && tooltipPosition && (hoveredBead.description || hoveredBead.title) &&

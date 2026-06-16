@@ -261,6 +261,24 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         }
         break;
 
+      case "copyBeadJson":
+        if (message.beadId) {
+          // Copy the canonical bead record (via the backend) rather than the
+          // possibly-partial in-memory row, so the JSON is faithful.
+          const backend = this.projectManager.getBackend();
+          const issue = backend ? await backend.show(message.beadId) : null;
+          if (issue) {
+            await vscode.env.clipboard.writeText(JSON.stringify(issue, null, 2));
+            vscode.window.setStatusBarMessage(`$(check) Copied JSON: ${message.beadId}`, 2000);
+            if (message.toast) {
+              this.postMessage({ type: "showToast", text: `Copied JSON for ${message.beadId}` });
+            }
+          } else {
+            vscode.window.setStatusBarMessage(`$(error) Could not load ${message.beadId}`, 2000);
+          }
+        }
+        break;
+
       case "openBeadInTab":
         vscode.commands.executeCommand("beads.openBeadInTab", message.beadId);
         break;

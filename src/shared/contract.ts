@@ -206,6 +206,7 @@ export type WebviewToExtensionMessage =
   | { type: "requestGraph" }
   | { type: "openViewInTab"; view: "issues" | "dashboard" | "graph" }
   | { type: "copyBeadId"; beadId: string; toast?: boolean }
+  | { type: "copyBeadJson"; beadId: string; toast?: boolean }
   | { type: "createBead"; fields: CreateBeadFields }
   | { type: "startCreate" }
   | { type: "cancelCreate" }

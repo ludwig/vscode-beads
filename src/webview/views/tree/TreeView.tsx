@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight, ChevronDown, Search, ArrowUp, ArrowDown } from "lucide-react";
+import { ChevronRight, ChevronDown, Search, ArrowUp, ArrowDown, CornerLeftUp } from "lucide-react";
 import {
   Bead,
   BeadType,
@@ -17,11 +17,13 @@ import {
   UNKNOWN_PRIORITY_COLOR,
   BeadPriority,
   TYPE_LABELS,
+  STATUS_COLORS,
+  STATUS_LABELS,
   getTypeSortOrder,
   vscode,
 } from "../../types";
 import { TypeIcon } from "../../common/TypeIcon";
-import { StatusBadge } from "../../common/StatusBadge";
+import { FilterIndicator } from "../../common/FilterIndicator";
 import { Loading } from "../../common/Loading";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { ContextMenu, type ContextMenuItem } from "../../common/ContextMenu";
@@ -51,42 +53,63 @@ const COLUMNS: { key: SortKey; label: string }[] = [
 ];
 
 type SortDir = "asc" | "desc";
-interface SortState {
+interface SortSpec {
   key: SortKey;
   dir: SortDir;
 }
 
-// Tri-state cycle on a sort button: none → asc → desc → none (back to default).
-function cycleSort(prev: SortState | null, key: SortKey): SortState | null {
-  if (!prev || prev.key !== key) return { key, dir: "asc" };
-  if (prev.dir === "asc") return { key, dir: "desc" };
-  return null;
+// Click a header to make it the sole (primary) sort, cycling asc → desc → off.
+// Shift-click adds/cycles it as an additional (secondary, …) level, so the Tree
+// supports multi-column sort with explicit precedence (index 0 = primary).
+function applySort(prev: SortSpec[], key: SortKey, additive: boolean): SortSpec[] {
+  const existing = prev.find((s) => s.key === key);
+  if (additive) {
+    if (!existing) return [...prev, { key, dir: "asc" }];
+    if (existing.dir === "asc") return prev.map((s) => (s.key === key ? { key, dir: "desc" } : s));
+    return prev.filter((s) => s.key !== key); // asc → desc → drop this level
+  }
+  // Non-additive: this column becomes the only sort, cycling its own direction.
+  if (!existing || prev.length > 1) return [{ key, dir: "asc" }];
+  if (existing.dir === "asc") return [{ key, dir: "desc" }];
+  return []; // back to the default (natural id order)
 }
 
-const byTitle = (a: Bead, b: Bead) => a.title.localeCompare(b.title) || compareById(a, b);
-const byType = (a: Bead, b: Bead) =>
-  getTypeSortOrder(a.type) - getTypeSortOrder(b.type) || byTitle(a, b);
-// P0 (highest) first; missing priority sorts last, then by id.
-const byPriority = (a: Bead, b: Bead) =>
-  (a.priority ?? 99) - (b.priority ?? 99) || compareById(a, b);
-// Workflow order: open → in_progress → blocked → closed, then by id.
+// Pure per-key comparators (return 0 on a tie) so chained levels actually defer
+// to the next; the final compareById is the stable tiebreak.
+const cmpTitle = (a: Bead, b: Bead) => a.title.localeCompare(b.title);
+const cmpType = (a: Bead, b: Bead) => getTypeSortOrder(a.type) - getTypeSortOrder(b.type);
+// P0 (highest) first; missing priority sorts last.
+const cmpPriority = (a: Bead, b: Bead) => (a.priority ?? 99) - (b.priority ?? 99);
+// Workflow order: open → in_progress → blocked → closed.
 const STATUS_ORDER: Record<string, number> = { open: 0, in_progress: 1, blocked: 2, closed: 3 };
-const byStatus = (a: Bead, b: Bead) =>
-  (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99) || compareById(a, b);
+const cmpStatus = (a: Bead, b: Bead) => (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99);
 
-function comparatorFor(sort: SortState | null): BeadComparator {
-  if (!sort) return compareById;
-  const base =
-    sort.key === "type"
-      ? byType
-      : sort.key === "title"
-        ? byTitle
-        : sort.key === "priority"
-          ? byPriority
-          : sort.key === "status"
-            ? byStatus
-            : compareById;
-  return sort.dir === "asc" ? base : (a, b) => -base(a, b);
+function baseComparator(key: SortKey): BeadComparator {
+  switch (key) {
+    case "title":
+      return cmpTitle;
+    case "type":
+      return cmpType;
+    case "priority":
+      return cmpPriority;
+    case "status":
+      return cmpStatus;
+    default:
+      return compareById;
+  }
+}
+
+// Chain the sort specs in precedence order; fall through to the next level on a
+// tie, then to a stable id order.
+function comparatorFor(sorts: SortSpec[]): BeadComparator {
+  if (sorts.length === 0) return compareById;
+  return (a, b) => {
+    for (const s of sorts) {
+      const r = baseComparator(s.key)(a, b);
+      if (r !== 0) return s.dir === "asc" ? r : -r;
+    }
+    return compareById(a, b);
+  };
 }
 
 function typeLabel(type: string | undefined): string {
@@ -104,6 +127,10 @@ interface TreeViewProps {
    * "Filtered" toggle scopes the tree to this set; null disables the toggle.
    */
   filteredBeadIds: string[] | null;
+  /** Whether the Issues filter narrows to a strict subset (drives the indicator). */
+  filterActive?: boolean;
+  filteredCount?: number;
+  totalCount?: number;
   onSelectBead: (beadId: string) => void;
   onRequestGraph: () => void;
   onRetry: () => void;
@@ -115,6 +142,9 @@ export function TreeView({
   error,
   selectedBeadId,
   filteredBeadIds,
+  filterActive,
+  filteredCount,
+  totalCount,
   onSelectBead,
   onRequestGraph,
   onRetry,
@@ -135,17 +165,23 @@ export function TreeView({
   // (the Tree unmounts when another Panel tab is active, so local state alone
   // would forget it). Merge into the blob so we don't clobber the Issues table's
   // persisted column state.
-  const [sort, setSort] = useState<SortState | null>(
-    () => (vscode.getState() as { treeSort?: SortState | null } | undefined)?.treeSort ?? null,
-  );
+  const [sorts, setSorts] = useState<SortSpec[]>(() => {
+    const saved = (vscode.getState() as { treeSort?: unknown } | undefined)?.treeSort;
+    if (Array.isArray(saved)) return saved as SortSpec[];
+    // Migrate the old single-sort shape ({ key, dir } | null).
+    if (saved && typeof saved === "object" && "key" in saved) return [saved as SortSpec];
+    return [];
+  });
   useEffect(() => {
     const prev = (vscode.getState() as Record<string, unknown>) ?? {};
-    vscode.setState({ ...prev, treeSort: sort });
-  }, [sort]);
+    vscode.setState({ ...prev, treeSort: sorts });
+  }, [sorts]);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [menu, setMenu] = useState<{ x: number; y: number; bead: Bead } | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  // Highlight for the "Move to root" drop band while dragging over it.
+  const [rootZoneOver, setRootZoneOver] = useState(false);
 
   const toggle = useCallback((id: string) => {
     setCollapsed((prev) => {
@@ -197,8 +233,8 @@ export function TreeView({
   );
 
   const forest = useMemo(
-    () => (graph ? buildForest(graph.nodes, graph.edges, comparatorFor(sort)) : []),
-    [graph, sort],
+    () => (graph ? buildForest(graph.nodes, graph.edges, comparatorFor(sorts)) : []),
+    [graph, sorts],
   );
   // The Tree always reflects the current Issues filter set (vs-wp5): Issues is
   // where filters are defined; the Tree scopes to that slice (keeping the
@@ -278,6 +314,7 @@ export function TreeView({
     onEnd: useCallback(() => {
       setDraggedId(null);
       setDropTargetId(null);
+      setRootZoneOver(false);
     }, []),
   };
 
@@ -314,32 +351,63 @@ export function TreeView({
           onChange={(e) => setQuery(e.target.value)}
           spellCheck={false}
         />
+        {filterActive && (
+          <FilterIndicator
+            count={filteredCount ?? 0}
+            total={totalCount ?? 0}
+            className="beads-tree-filter-indicator"
+          />
+        )}
       </div>
       <div className="beads-tree-colheader" role="row">
         {COLUMNS.map(({ key, label }) => {
-          const active = sort?.key === key;
+          const idx = sorts.findIndex((s) => s.key === key);
+          const spec = idx >= 0 ? sorts[idx] : null;
+          const active = spec != null;
           return (
             <button
               key={key}
               type="button"
               role="columnheader"
-              aria-sort={active ? (sort!.dir === "asc" ? "ascending" : "descending") : "none"}
+              aria-sort={active ? (spec!.dir === "asc" ? "ascending" : "descending") : "none"}
               className={`beads-tree-col beads-tree-col-${key} ${active ? "active" : ""}`}
-              onClick={() => setSort((prev) => cycleSort(prev, key))}
-              title={`Sort by ${label.toLowerCase()} (click to cycle ascending → descending → off)`}
+              onClick={(e) => setSorts((prev) => applySort(prev, key, e.shiftKey))}
+              title={`Sort by ${label.toLowerCase()} — click to sort, Shift+click to add as a secondary sort`}
             >
               <span>{label}</span>
               {active ? (
-                sort!.dir === "asc" ? (
+                spec!.dir === "asc" ? (
                   <ArrowUp size={11} strokeWidth={2.5} className="beads-tree-sort-dir" />
                 ) : (
                   <ArrowDown size={11} strokeWidth={2.5} className="beads-tree-sort-dir" />
                 )
               ) : null}
+              {active && sorts.length > 1 ? (
+                <span className="beads-tree-sort-rank">{idx + 1}</span>
+              ) : null}
             </button>
           );
         })}
       </div>
+      {canDetach && (
+        <div
+          className={`beads-tree-rootzone${rootZoneOver ? " over" : ""}`}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setRootZoneOver(true);
+            setDropTargetId(null);
+          }}
+          onDragLeave={() => setRootZoneOver(false)}
+          onDrop={(e) => {
+            e.stopPropagation();
+            setRootZoneOver(false);
+            onBodyDrop();
+          }}
+        >
+          <CornerLeftUp size={13} strokeWidth={2} />
+          <span>Move to root</span>
+        </div>
+      )}
       <div
         className={`beads-tree-body${canDetach ? " can-detach" : ""}`}
         role="tree"
@@ -370,14 +438,20 @@ export function TreeView({
           x={menu.x}
           y={menu.y}
           onClose={() => setMenu(null)}
-          items={rowMenuItems(menu.bead)}
+          items={rowMenuItems(menu.bead, {
+            hasParent: parentOf.has(menu.bead.id),
+            onMoveToRoot: () => reparent(menu.bead.id, null),
+          })}
         />
       )}
     </div>
   );
 }
 
-function rowMenuItems(bead: Bead): ContextMenuItem[] {
+function rowMenuItems(
+  bead: Bead,
+  opts: { hasParent: boolean; onMoveToRoot: () => void },
+): ContextMenuItem[] {
   return [
     {
       label: "Open Details (editor tab)",
@@ -387,6 +461,15 @@ function rowMenuItems(bead: Bead): ContextMenuItem[] {
       label: "Show Details",
       onSelect: () => vscode.postMessage({ type: "openBeadDetails", beadId: bead.id }),
     },
+    ...(opts.hasParent
+      ? [
+          {
+            label: "Move to root",
+            separatorBefore: true,
+            onSelect: opts.onMoveToRoot,
+          } satisfies ContextMenuItem,
+        ]
+      : []),
     {
       label: "Focus on Graph",
       onSelect: () => vscode.postMessage({ type: "viewInGraph", beadId: bead.id }),
@@ -399,6 +482,10 @@ function rowMenuItems(bead: Bead): ContextMenuItem[] {
     {
       label: "Copy title",
       onSelect: () => vscode.postMessage({ type: "copyText", text: bead.title, label: "title" }),
+    },
+    {
+      label: "Copy JSON",
+      onSelect: () => vscode.postMessage({ type: "copyBeadJson", beadId: bead.id }),
     },
   ];
 }
@@ -461,8 +548,16 @@ function TreeRow({
         title={`${bead.id} · ${bead.title}`}
       >
         {/* Tree column: indentation lives here (not on the row) so the Type /
-            Priority columns stay aligned across depths. */}
-        <span className="beads-tree-main" style={{ paddingLeft: depth * 16 }}>
+            Priority columns stay aligned across depths. One guide line per
+            ancestor level draws the subtle hierarchy rails (file-explorer style). */}
+        <span className="beads-tree-main">
+          {depth > 0 && (
+            <span className="beads-tree-guides" aria-hidden="true">
+              {Array.from({ length: depth }, (_, i) => (
+                <span key={i} className="beads-tree-guide" />
+              ))}
+            </span>
+          )}
           <span
             className="beads-tree-twisty"
             onClick={(e) => {
@@ -478,7 +573,9 @@ function TreeRow({
           <span className="beads-tree-id">{bead.id}</span>
           <span className="beads-tree-title">{bead.title}</span>
         </span>
-        <span className="beads-tree-status"><StatusBadge status={bead.status} size="small" /></span>
+        <span className="beads-tree-status" style={{ color: STATUS_COLORS[bead.status] }}>
+          {STATUS_LABELS[bead.status] ?? bead.status}
+        </span>
         <span className="beads-tree-type">{bead.type ? typeLabel(bead.type) : ""}</span>
         <span className="beads-tree-prio" style={{ color: priorityColor }}>
           {bead.priority === undefined ? "—" : `P${bead.priority}`}

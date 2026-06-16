@@ -3480,30 +3480,72 @@ textarea {
 
 /* ==================== Kanban Board ==================== */
 
+/* Kanban tab root: a flex column holding the optional filter bar + the board.
+   min-height:100% (against the definite-height .panel-shell-body) floors it to
+   the viewport; flex:0 0 auto lets it grow past that with a tall board so the
+   OUTER .panel-shell-body scrolls the whole thing. */
+.kanban {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+/* Ad-hoc quick-filter bar for the board (mirrors the Tree's filter row). Hosts
+   the local card filter and, when scoped to an Issues filter, the "N of M" chip
+   (right-aligned). */
+.kanban-filterbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px var(--spacing-sm);
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+.kanban-filter-icon {
+  flex: 0 0 auto;
+  color: var(--vscode-descriptionForeground);
+}
+.kanban-filter-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, transparent);
+  border-radius: 3px;
+  padding: 3px 6px;
+  font-size: 12px;
+  outline: none;
+}
+.kanban-filter-input:focus {
+  border-color: var(--vscode-focusBorder);
+}
+.kanban-filter-indicator {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
 .kanban-board {
   display: flex;
   gap: var(--spacing-sm);
-  flex: 1;
-  min-height: 0;
   padding: var(--spacing-sm);
-  /* The whole board scrolls (both axes) rather than each column trapping cards
-     in a cramped inner scrollbar (vs-qlp). Columns are content-height (so the
-     lane box CONTAINS all its cards) but floored to the viewport via
-     min-height:100% on the column (so short lanes stay full-height + droppable);
-     a tall column makes the board scroll. align-items:flex-start is required for
-     content-height columns — stretch would pin them to the viewport and let
-     cards overflow out the bottom. */
-  overflow: auto;
-  align-items: flex-start;
+  box-sizing: border-box;
+  /* The board grows with its tallest lane and lets the OUTER scroller
+     (.panel-shell-body, via .kanban) scroll it — it must NOT be its own
+     overflow:auto container, which (nested inside panel-shell-body's auto) left
+     the board height indefinite, so a tall lane's cards spilled past the lane
+     with no scrollbar to reach them (vs-qlp). flex:1 0 auto fills the remaining
+     .kanban height and grows with content; align-items:stretch makes every lane
+     equal-height so each lane box CONTAINS all of its own cards. */
+  flex: 1 0 auto;
+  align-items: stretch;
 }
 
 .kanban-column {
   flex: 1;
   min-width: 180px;
   max-width: 300px;
-  /* Fill at least the visible board height (distinct, droppable lanes) while
-     growing to contain all cards when there are more (board then scrolls). */
-  min-height: 100%;
   display: flex;
   flex-direction: column;
   background: var(--vscode-sideBar-background);
@@ -3685,37 +3727,6 @@ textarea {
 }
 
 /* View toggle */
-.view-toggle {
-  display: flex;
-  border: 1px solid var(--vscode-panel-border);
-  border-radius: var(--border-radius);
-  overflow: hidden;
-}
-
-.view-toggle button {
-  padding: 4px 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  color: var(--vscode-descriptionForeground);
-  border: none;
-  cursor: pointer;
-}
-
-.view-toggle button:not(:last-child) {
-  border-right: 1px solid var(--vscode-panel-border);
-}
-
-.view-toggle button.active {
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-}
-
-.view-toggle button:hover:not(.active) {
-  background: var(--vscode-list-hoverBackground);
-}
-
 .compact-toggle {
   display: flex;
   align-items: center;
@@ -3843,6 +3854,30 @@ textarea {
   margin-right: 2px;
 }
 
+/* "Acting on a filtered subset" chip — shown on the immediate-data views
+   (Tree, Kanban) so it's unmistakable they're scoped to the Issues filter. */
+.filter-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  padding: 2px 7px;
+  border-radius: var(--badge-radius-pill, 10px);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--vscode-badge-foreground);
+  background: var(--vscode-badge-background);
+  white-space: nowrap;
+}
+.filter-indicator svg {
+  opacity: 0.9;
+}
+/* In the Tree filter row, push the chip to the trailing edge. */
+.beads-tree-filter-indicator {
+  margin-left: auto;
+}
+
 .beads-tree-body {
   flex: 1 1 auto;
   min-height: 0;
@@ -3850,11 +3885,13 @@ textarea {
   padding: 4px 0;
 }
 
-/* Sortable column-header row of the tree-table. Shares its grid template with
-   the rows so Type / Priority align under their headers (vs-wp5). */
+/* Sortable column-header row of the tree-table. MUST keep this grid template
+   in lockstep with .beads-tree-row below: each row is its own grid, so the
+   trailing columns are fixed-width (not max-content) — otherwise every row
+   sizes its own columns from its own content and nothing lines up (vs-wp5). */
 .beads-tree-colheader {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content max-content max-content;
+  grid-template-columns: minmax(0, 1fr) 92px 64px 32px;
   column-gap: 8px;
   align-items: center;
   padding: 3px 10px 4px 4px;
@@ -3862,6 +3899,9 @@ textarea {
   flex: 0 0 auto;
 }
 
+/* Matches the Issues table header (.beads-table th): Title-case, weight 600,
+   foreground color — not the old uppercase/gray treatment, which read as a
+   different control than the Issues tab. */
 .beads-tree-col {
   display: inline-flex;
   align-items: center;
@@ -3871,11 +3911,15 @@ textarea {
   cursor: pointer;
   padding: 2px 4px;
   border-radius: 3px;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--vscode-descriptionForeground);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
   justify-self: start;
+}
+/* Status / Type / Priority headers sit over fixed-width tracks; align each
+   header with its column's cell content. */
+.beads-tree-col-priority {
+  justify-self: end;
 }
 .beads-tree-col:hover {
   background: var(--vscode-toolbar-hoverBackground);
@@ -3884,10 +3928,25 @@ textarea {
 .beads-tree-col.active {
   color: var(--vscode-foreground);
 }
+/* Precedence badge (1 = primary, 2 = secondary, …) shown only in multi-sort. */
+.beads-tree-sort-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 13px;
+  height: 13px;
+  padding: 0 3px;
+  border-radius: 7px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--vscode-badge-foreground);
+  background: var(--vscode-badge-background);
+}
 
 .beads-tree-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content max-content max-content;
+  grid-template-columns: minmax(0, 1fr) 92px 64px 32px;
   column-gap: 8px;
   align-items: center;
   padding: 2px 10px 2px 4px;
@@ -3902,6 +3961,21 @@ textarea {
   align-items: center;
   gap: 6px;
   min-width: 0;
+  /* Stretch so the indent guides span the full row height (continuous rails). */
+  align-self: stretch;
+}
+
+/* Indentation guides: one 16px rail per ancestor level, line on the trailing
+   edge so the deepest rail meets the twisty (file-explorer style). */
+.beads-tree-guides {
+  display: flex;
+  flex: 0 0 auto;
+  align-self: stretch;
+}
+.beads-tree-guide {
+  flex: 0 0 16px;
+  width: 16px;
+  border-right: 1px solid var(--vscode-tree-indentGuidesStroke, var(--vscode-panel-border));
 }
 
 .beads-tree-row:hover {
@@ -3929,6 +4003,27 @@ textarea {
   outline-offset: -3px;
 }
 
+/* "Move to root" drop band — appears while dragging a parented bead, so detach
+   works even when the tree fills the viewport (no empty space to drop on). */
+.beads-tree-rootzone {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 4px 8px;
+  padding: 5px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  border: 1px dashed var(--vscode-input-border, var(--vscode-panel-border));
+  border-radius: 4px;
+}
+.beads-tree-rootzone.over {
+  color: var(--vscode-foreground);
+  border-color: var(--vscode-focusBorder);
+  background: var(--vscode-list-dropBackground, var(--vscode-list-hoverBackground));
+}
+
 .beads-tree-twisty {
   display: inline-flex;
   align-items: center;
@@ -3953,9 +4048,16 @@ textarea {
 }
 
 /* Status column cell. */
+/* Status as subtle colored text (color from STATUS_COLORS, set inline), to match
+   the Priority column's treatment — filled badges stood out too much here. */
 .beads-tree-status {
-  display: inline-flex;
-  align-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Type column cell. */

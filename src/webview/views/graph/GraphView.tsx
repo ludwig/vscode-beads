@@ -54,6 +54,14 @@ interface GraphViewProps {
    * "Filtered" toggle scopes the graph to this set; null disables the toggle.
    */
   filteredBeadIds: string[] | null;
+  /**
+   * Whether the Issues filter narrows to a strict subset. The "Filtered" toggle
+   * auto-follows this: it enables when a filter is added/updated and clears when
+   * filters are cleared. The user can still toggle it manually between filter
+   * changes (this value only changes on the Issues tab, while this view is
+   * unmounted). Absent on the dedicated graph editor tab (no Issues context).
+   */
+  issuesFilterActive?: boolean;
   onOpenBead: (beadId: string) => void;
   /**
    * Lazily ask the provider for graph data on mount. Used by the multi-tab
@@ -73,14 +81,20 @@ function GraphCanvas({
   selectedBeadId,
   focusBeadId,
   filteredBeadIds,
+  issuesFilterActive,
   onOpenBead,
 }: Omit<GraphViewProps, "loading" | "error" | "onRequestGraph" | "onRetry">): React.ReactElement {
   const [mode, setMode] = useState<LayoutMode>("layered");
   const [focusEnabled, setFocusEnabled] = useState(false);
   // Scope the graph to the current Issues filter slice (vs-v07). Composes with
   // Focus: the filter narrows the candidate set, focus narrows to a
-  // neighborhood within it.
-  const [filterEnabled, setFilterEnabled] = useState(false);
+  // neighborhood within it. Auto-follows the Issues filter: on when a filter is
+  // in place, off when cleared — initialized here and re-synced by the effect
+  // below so opening the tab with a filter active starts scoped.
+  const [filterEnabled, setFilterEnabled] = useState<boolean>(issuesFilterActive ?? false);
+  useEffect(() => {
+    setFilterEnabled(issuesFilterActive ?? false);
+  }, [issuesFilterActive]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; bead: Bead } | null>(null);
   // Drawing a new edge (vs-caz): React Flow fires onConnect on a valid drop,
@@ -500,6 +514,10 @@ function buildMenuItems(
       label: "Copy title",
       onSelect: () => vscode.postMessage({ type: "copyText", text: bead.title, label: "title" }),
     },
+    {
+      label: "Copy JSON",
+      onSelect: () => vscode.postMessage({ type: "copyBeadJson", beadId: bead.id }),
+    },
   ];
 }
 
@@ -552,6 +570,7 @@ export function GraphView(props: GraphViewProps): React.ReactElement {
         selectedBeadId={props.selectedBeadId}
         focusBeadId={props.focusBeadId}
         filteredBeadIds={props.filteredBeadIds}
+        issuesFilterActive={props.issuesFilterActive}
         onOpenBead={props.onOpenBead}
       />
     </ReactFlowProvider>

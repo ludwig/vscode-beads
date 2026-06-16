@@ -231,9 +231,6 @@ export function App(): React.ReactElement {
             onSelectBead={(beadId) =>
               vscode.postMessage({ type: "openBeadDetails", beadId })
             }
-            onUpdateBead={(beadId, updates) =>
-              vscode.postMessage({ type: "updateBead", beadId, updates })
-            }
             onRetry={() =>
               vscode.postMessage({ type: "refresh" })
             }
