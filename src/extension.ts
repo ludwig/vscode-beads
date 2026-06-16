@@ -13,6 +13,7 @@ import { BeadsProjectManager } from "./backend/BeadsProjectManager";
 import { DashboardViewProvider } from "./providers/DashboardViewProvider";
 import { BeadsPanelViewProvider } from "./providers/BeadsPanelViewProvider";
 import { BeadDetailsViewProvider } from "./providers/BeadDetailsViewProvider";
+import { BeadsProjectSwitcherViewProvider } from "./providers/BeadsProjectSwitcherViewProvider";
 import { BeadPanelManager } from "./providers/BeadPanelManager";
 import { registerCommands } from "./commands/registerCommands";
 import { createLogger, Logger } from "./utils/logger";
@@ -22,22 +23,22 @@ import { setAppInfo } from "./appInfo";
 let log: Logger;
 let projectManager: BeadsProjectManager;
 let dashboardProvider: DashboardViewProvider;
-let dashboardBottomProvider: DashboardViewProvider;
-let beadsPanelProvider: BeadsPanelViewProvider;
 let beadsBottomPanelProvider: BeadsPanelViewProvider;
 let detailsProvider: BeadDetailsViewProvider;
+let switcherProvider: BeadsProjectSwitcherViewProvider;
 
 /**
- * Dashboard and Issues are each shown in two places — the sidebar (`beads`
- * container) and the bottom panel next to the terminal (`beadsBottomPanel`).
- * Each pair shares one provider class and must stay in sync, so every
- * refresh/selection/filter call fans out to both instances.
+ * Dashboard and Issues live in the bottom Panel (`beadsBottomPanel`); the
+ * slimmed sidebar holds just the project switcher and Details. These fan-outs
+ * remain so refresh/selection/filter calls have a single funnel even though
+ * each surface is currently a single instance (a panel + sidebar twin can be
+ * re-added without touching call sites).
  */
 function eachIssuesView(fn: (view: BeadsPanelViewProvider) => void): void {
-  [beadsPanelProvider, beadsBottomPanelProvider].forEach(fn);
+  [beadsBottomPanelProvider].forEach(fn);
 }
 function eachDashboardView(fn: (view: DashboardViewProvider) => void): void {
-  [dashboardProvider, dashboardBottomProvider].forEach(fn);
+  [dashboardProvider].forEach(fn);
 }
 let panelManager: BeadPanelManager;
 let statusBar: vscode.StatusBarItem;
@@ -88,26 +89,21 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Initialize context for conditional menu items
   vscode.commands.executeCommand("setContext", "beads.hasSelectedBead", false);
 
-  // Create view providers
+  // Create view providers. Dashboard + Issues are bound to the bottom Panel;
+  // the slimmed sidebar holds the project switcher and Details.
   dashboardProvider = new DashboardViewProvider(
     context.extensionUri,
     projectManager,
     log
   );
 
-  dashboardBottomProvider = new DashboardViewProvider(
-    context.extensionUri,
-    projectManager,
-    log
-  );
-
-  beadsPanelProvider = new BeadsPanelViewProvider(
-    context.extensionUri,
-    projectManager,
-    log
-  );
-
   beadsBottomPanelProvider = new BeadsPanelViewProvider(
+    context.extensionUri,
+    projectManager,
+    log
+  );
+
+  switcherProvider = new BeadsProjectSwitcherViewProvider(
     context.extensionUri,
     projectManager,
     log
@@ -125,13 +121,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // Register webview providers
   context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider("beadsDashboard", dashboardProvider, {
+    vscode.window.registerWebviewViewProvider("beadsProjectSwitcher", switcherProvider, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
-    vscode.window.registerWebviewViewProvider("beadsDashboardBottom", dashboardBottomProvider, {
-      webviewOptions: { retainContextWhenHidden: true },
-    }),
-    vscode.window.registerWebviewViewProvider("beadsPanel", beadsPanelProvider, {
+    vscode.window.registerWebviewViewProvider("beadsDashboardBottom", dashboardProvider, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
     vscode.window.registerWebviewViewProvider("beadsPanelBottom", beadsBottomPanelProvider, {
@@ -168,6 +161,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       eachDashboardView((view) => view.refresh());
       eachIssuesView((view) => view.refresh());
       detailsProvider.refresh();
+      switcherProvider.refresh();
     }),
 
     projectManager.onActiveProjectChanged(() => {
@@ -175,6 +169,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       eachDashboardView((view) => view.refreshForProjectChange());
       eachIssuesView((view) => view.refreshForProjectChange());
       detailsProvider.refreshForProjectChange();
+      switcherProvider.refreshForProjectChange();
       updateStatusBar();
     }),
 
@@ -206,6 +201,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       eachDashboardView((view) => view.refresh());
       eachIssuesView((view) => view.refresh());
       detailsProvider.refresh();
+      switcherProvider.refresh();
     })
   );
 

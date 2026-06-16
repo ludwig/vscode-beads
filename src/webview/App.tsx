@@ -18,6 +18,7 @@ import {
 import { DashboardView } from "./views/DashboardView";
 import { IssuesView } from "./views/IssuesView";
 import { DetailsView } from "./views/DetailsView";
+import { ProjectSwitcherView } from "./views/ProjectSwitcherView";
 import { CreateBeadForm } from "./views/CreateBeadForm";
 import { Loading } from "./common/Loading";
 import { ToastProvider, triggerToast } from "./common/Toast";
@@ -194,6 +195,22 @@ export function App(): React.ReactElement {
             onRetry={() =>
               vscode.postMessage({ type: "refresh" })
             }
+          />
+        );
+
+      case "beadsProjectSwitcher":
+        return (
+          <ProjectSwitcherView
+            projects={state.projects}
+            activeProject={state.project}
+            onSelectProject={(project) =>
+              vscode.postMessage({
+                type: "selectProject",
+                projectId: project.id,
+                projectRootPath: project.rootPath,
+              })
+            }
+            onOpenProjectFolder={() => vscode.postMessage({ type: "openProjectFolder" })}
           />
         );
 

@@ -53,7 +53,7 @@ export function registerCommands(
     }),
 
     vscode.commands.registerCommand("beads.openBeadsPanel", () => {
-      vscode.commands.executeCommand("beadsPanel.focus");
+      vscode.commands.executeCommand("beadsPanelBottom.focus");
     }),
 
     // Open the Issues panel pre-filtered to a slice (empty filter = all).

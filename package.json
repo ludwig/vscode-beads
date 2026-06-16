@@ -55,14 +55,8 @@
       "beads": [
         {
           "type": "webview",
-          "id": "beadsDashboard",
-          "name": "Dashboard",
-          "visibility": "visible"
-        },
-        {
-          "type": "webview",
-          "id": "beadsPanel",
-          "name": "Issues",
+          "id": "beadsProjectSwitcher",
+          "name": "Project",
           "visibility": "visible"
         },
         {
@@ -137,24 +131,9 @@
     "menus": {
       "view/title": [
         {
-          "command": "beads.openDashboardInTab",
-          "when": "view == beadsDashboard",
-          "group": "navigation@0"
-        },
-        {
           "command": "beads.refresh",
-          "when": "view == beadsDashboard",
-          "group": "navigation@1"
-        },
-        {
-          "command": "beads.openIssuesInTab",
-          "when": "view == beadsPanel",
+          "when": "view == beadsProjectSwitcher",
           "group": "navigation@0"
-        },
-        {
-          "command": "beads.refresh",
-          "when": "view == beadsPanel",
-          "group": "navigation@1"
         },
         {
           "command": "beads.openDashboardInTab",

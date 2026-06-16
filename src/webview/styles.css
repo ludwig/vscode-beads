@@ -1621,6 +1621,33 @@ textarea {
   color: var(--vscode-descriptionForeground);
 }
 
+/* Slimmed-sidebar project switcher (project dropdown + clickable path). */
+.project-switcher-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+}
+
+.project-switcher-path {
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-family: var(--vscode-editor-font-family);
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+  cursor: pointer;
+}
+
+.project-switcher-path:hover {
+  text-decoration: underline;
+}
+
 .dashboard-header-path {
   min-width: 0;
   padding: 0;
