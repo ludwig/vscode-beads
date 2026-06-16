@@ -164,7 +164,7 @@ export function IssuesView({
     return beads.find((b) => b.id === hoveredRowId);
   }, [hoveredRowId, beads]);
 
-  const handleRowMouseEnter = useCallback((e: React.MouseEvent<HTMLTableRowElement>, beadId: string) => {
+  const handleRowMouseEnter = useCallback((e: React.MouseEvent<HTMLElement>, beadId: string) => {
     // Skip if tooltips are disabled
     if (tooltipHoverDelay === 0) return;
 
@@ -1121,18 +1121,21 @@ export function IssuesView({
                         setRowMenu({ x: e.clientX, y: e.clientY, bead: row.original });
                       }}
                       className={`bead-row ${row.original.id === selectedBeadId ? "selected" : ""}`}
-                      onMouseEnter={(e) => handleRowMouseEnter(e, row.original.id)}
-                      onMouseLeave={handleRowMouseLeave}
                     >
-                      {row.getVisibleCells().map((cell) => (
-                        <td
-                          key={cell.id}
-                          className={`${cell.column.id}-cell`}
-                          style={cell.column.id === "title" ? {} : { width: cell.column.getSize() }}
-                        >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </td>
-                      ))}
+                      {row.getVisibleCells().map((cell) => {
+                        const isType = cell.column.id === "type";
+                        return (
+                          <td
+                            key={cell.id}
+                            className={`${cell.column.id}-cell${isType ? " type-cell-hoverable" : ""}`}
+                            style={cell.column.id === "title" ? {} : { width: cell.column.getSize() }}
+                            onMouseEnter={isType ? (e) => handleRowMouseEnter(e, row.original.id) : undefined}
+                            onMouseLeave={isType ? handleRowMouseLeave : undefined}
+                          >
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </td>
+                        );
+                      })}
                       <td className="row-spacer" />
                     </tr>
                   ))
