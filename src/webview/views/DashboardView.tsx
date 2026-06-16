@@ -89,7 +89,7 @@ export function DashboardView({
   return (
     <div className="dashboard dashboard-compact">
       <header className="dashboard-header">
-        <span className="dashboard-header-label">Beads Directory</span>
+        <span className="dashboard-header-label">Active Beads Directory</span>
         {activeProject && (
           <button
             type="button"

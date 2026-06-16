@@ -34,6 +34,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rebranded the fork's extension identity: id is now `ludwig.vscode-beads-pm` (`publisher` `planet57`→`ludwig`, `name` `vscode-beads`→`vscode-beads-pm`, `displayName` `Beads`→`Beads (ludwig)`), so this private fork coexists with upstream's build; also corrected `repository.url` (vs-m6k)
 - Issues list now shows all beads (open and closed) instead of the newest 50 — the CLI backend no longer inherits bd's default `--limit 50` (vs-0bq)
 
+### Changed
+
+- Dashboard header label now reads "Active Beads Directory" (slightly larger), and the project-switcher dropdown header reads "Beads directory" (was "Bead directory") (vs-d7s)
+
 ### Fixed
 
 - Project-switcher prefix badges now share a width (sized to the widest prefix in the set), so the project name/path column starts at a common x instead of reading as ragged (vs-od3)
