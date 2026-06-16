@@ -84,15 +84,23 @@ function GraphCanvas({
     [graph],
   );
 
-  // Which beads are visible (focus neighborhood vs the whole board).
-  const visibleIds = useMemo(() => {
+  // Which beads are visible (focus neighborhood vs the whole board), as a stable
+  // content key. Keying on the sorted id list (not the Set identity) means
+  // selecting another node *within the same focused neighborhood* doesn't
+  // produce a new set — so it never triggers a needless relayout/refit/zoom.
+  const visibleKey = useMemo(() => {
     const allIds = beads.map((b) => b.id);
     if (focusRoot) {
       const hood = neighborhood(focusRoot, allIds, layoutEdges);
-      if (hood.size > 0) return hood;
+      if (hood.size > 0) return [...hood].sort().join(",");
     }
-    return new Set(allIds);
+    return [...allIds].sort().join(",");
   }, [beads, layoutEdges, focusRoot]);
+
+  const visibleIds = useMemo(
+    () => new Set(visibleKey ? visibleKey.split(",") : []),
+    [visibleKey],
+  );
 
   // Layout positions — recomputed only when the visible graph or mode changes.
   const positioned = useMemo(() => {
