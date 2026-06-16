@@ -360,14 +360,16 @@ export function DetailsView({
           {bead.id}
         </span>
         <div className="header-actions">
-          <button
-            className="icon-btn header-icon-btn"
-            title="New issue"
-            aria-label="New issue"
-            onClick={() => vscode.postMessage({ type: "startCreate" })}
-          >
-            <Icon name="plus" size={13} />
-          </button>
+          {!isEditorTab && (
+            <button
+              className="icon-btn header-icon-btn"
+              title="New issue"
+              aria-label="New issue"
+              onClick={() => vscode.postMessage({ type: "startCreate" })}
+            >
+              <Icon name="plus" size={13} />
+            </button>
+          )}
           {!isEditorTab && (
             <button
               className="icon-btn header-icon-btn"
