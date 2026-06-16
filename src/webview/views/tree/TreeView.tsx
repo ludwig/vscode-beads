@@ -25,7 +25,16 @@ import { TypeIcon } from "../../common/TypeIcon";
 import { Loading } from "../../common/Loading";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { ContextMenu, type ContextMenuItem } from "../../common/ContextMenu";
-import { buildForest, filterForest, compareById, type BeadComparator, type TreeNode } from "./treeModel";
+import { buildForest, filterForest, subtreeIds, compareById, type BeadComparator, type TreeNode } from "./treeModel";
+
+interface DragApi {
+  draggedId: string | null;
+  dropTargetId: string | null;
+  onStart: (id: string) => void;
+  onOver: (id: string, e: React.DragEvent) => void;
+  onDrop: (id: string) => void;
+  onEnd: () => void;
+}
 
 type SortKey = "id" | "type" | "title";
 
@@ -78,6 +87,8 @@ export function TreeView({
   const [sortKey, setSortKey] = useState<SortKey>("id");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [menu, setMenu] = useState<{ x: number; y: number; bead: Bead } | null>(null);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
 
   const toggle = useCallback((id: string) => {
     setCollapsed((prev) => {
@@ -99,6 +110,89 @@ export function TreeView({
   const visible = useMemo(() => filterForest(forest, query), [forest, query]);
   // While filtering, ignore collapse state so matches are always revealed.
   const filtering = query.trim().length > 0;
+
+  // Current parent per bead (first parent-child edge from=child wins).
+  const parentOf = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const e of graph?.edges ?? []) {
+      if (e.type === "parent-child" && !m.has(e.from)) m.set(e.from, e.to);
+    }
+    return m;
+  }, [graph]);
+
+  // Drag-to-reparent (vs-jb6): drop A onto B = make B the parent of A. Illegal
+  // if B is A itself, A's current parent (no-op), or in A's subtree (cycle).
+  const isLegalTarget = useCallback(
+    (targetId: string): boolean => {
+      if (!draggedId || targetId === draggedId) return false;
+      if ((parentOf.get(draggedId) ?? null) === targetId) return false;
+      return !subtreeIds(forest, draggedId).has(targetId);
+    },
+    [draggedId, parentOf, forest],
+  );
+
+  const reparent = useCallback(
+    (dragged: string, newParent: string | null) => {
+      const oldParent = parentOf.get(dragged) ?? null;
+      if (oldParent === newParent) return;
+      if (newParent && newParent !== dragged && subtreeIds(forest, dragged).has(newParent)) return;
+      if (oldParent) {
+        vscode.postMessage({ type: "removeDependency", beadId: dragged, dependsOnId: oldParent });
+      }
+      if (newParent) {
+        vscode.postMessage({
+          type: "addDependency",
+          beadId: dragged,
+          targetId: newParent,
+          dependencyType: "parent-child",
+          reverse: false,
+        });
+      }
+    },
+    [parentOf, forest],
+  );
+
+  const drag: DragApi = {
+    draggedId,
+    dropTargetId,
+    onStart: useCallback((id: string) => setDraggedId(id), []),
+    onOver: useCallback(
+      (id: string, e: React.DragEvent) => {
+        e.stopPropagation();
+        if (isLegalTarget(id)) {
+          e.preventDefault();
+          setDropTargetId(id);
+        }
+      },
+      [isLegalTarget],
+    ),
+    onDrop: useCallback(
+      (id: string) => {
+        if (draggedId && isLegalTarget(id)) reparent(draggedId, id);
+        setDraggedId(null);
+        setDropTargetId(null);
+      },
+      [draggedId, isLegalTarget, reparent],
+    ),
+    onEnd: useCallback(() => {
+      setDraggedId(null);
+      setDropTargetId(null);
+    }, []),
+  };
+
+  // Detach to root: drop on empty body space removes the dragged bead's parent.
+  const canDetach = draggedId != null && parentOf.has(draggedId);
+  const onBodyDragOver = (e: React.DragEvent) => {
+    if (canDetach) {
+      e.preventDefault();
+      setDropTargetId(null);
+    }
+  };
+  const onBodyDrop = () => {
+    if (draggedId && parentOf.has(draggedId)) reparent(draggedId, null);
+    setDraggedId(null);
+    setDropTargetId(null);
+  };
 
   if (error) {
     return <ErrorMessage message={error} onRetry={onRetry} />;
@@ -135,7 +229,12 @@ export function TreeView({
           ))}
         </div>
       </div>
-      <div className="beads-tree-body" role="tree">
+      <div
+        className={`beads-tree-body${canDetach ? " can-detach" : ""}`}
+        role="tree"
+        onDragOver={onBodyDragOver}
+        onDrop={onBodyDrop}
+      >
         {visible.length === 0 ? (
           <div className="beads-tree-empty">{forest.length === 0 ? "No beads to show." : "No matches."}</div>
         ) : (
@@ -150,6 +249,7 @@ export function TreeView({
               onToggle={toggle}
               onSelectBead={onSelectBead}
               onContextMenu={openMenu}
+              drag={drag}
             />
           ))
         )}
@@ -201,6 +301,7 @@ interface TreeRowProps {
   onToggle: (id: string) => void;
   onSelectBead: (beadId: string) => void;
   onContextMenu: (x: number, y: number, bead: Bead) => void;
+  drag: DragApi;
 }
 
 function TreeRow({
@@ -212,11 +313,14 @@ function TreeRow({
   onToggle,
   onSelectBead,
   onContextMenu,
+  drag,
 }: TreeRowProps): React.ReactElement {
   const { bead, children } = node;
   const hasChildren = children.length > 0;
   const isCollapsed = !forceExpand && collapsed.has(bead.id);
   const isSelected = bead.id === selectedBeadId;
+  const isDragging = drag.draggedId === bead.id;
+  const isDropTarget = drag.dropTargetId === bead.id;
   const statusColor = STATUS_COLORS[bead.status] || "#888888";
   const priorityColor =
     bead.priority === undefined ? UNKNOWN_PRIORITY_COLOR : PRIORITY_COLORS[bead.priority as BeadPriority];
@@ -224,11 +328,22 @@ function TreeRow({
   return (
     <>
       <div
-        className={`beads-tree-row${isSelected ? " selected" : ""}`}
+        className={`beads-tree-row${isSelected ? " selected" : ""}${isDragging ? " dragging" : ""}${isDropTarget ? " drop-target" : ""}`}
         role="treeitem"
         aria-expanded={hasChildren ? !isCollapsed : undefined}
         aria-selected={isSelected}
         style={{ paddingLeft: depth * 16 }}
+        draggable
+        onDragStart={(e) => {
+          e.stopPropagation();
+          drag.onStart(bead.id);
+        }}
+        onDragOver={(e) => drag.onOver(bead.id, e)}
+        onDrop={(e) => {
+          e.stopPropagation();
+          drag.onDrop(bead.id);
+        }}
+        onDragEnd={drag.onEnd}
         onClick={() => onSelectBead(bead.id)}
         onContextMenu={(e) => {
           e.preventDefault();
@@ -266,6 +381,7 @@ function TreeRow({
               onToggle={onToggle}
               onSelectBead={onSelectBead}
               onContextMenu={onContextMenu}
+              drag={drag}
             />
           ))
         : null}

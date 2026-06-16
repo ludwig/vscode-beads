@@ -97,3 +97,28 @@ export function filterForest(forest: TreeNode[], query: string): TreeNode[] {
 
   return forest.map(prune).filter((n): n is TreeNode => n !== null);
 }
+
+/**
+ * All ids in the subtree rooted at `id` (including `id` itself), or an empty set
+ * if `id` isn't in the forest. Used to reject an illegal reparent: a node may
+ * not be dropped onto itself or any of its descendants (would make a cycle).
+ */
+export function subtreeIds(forest: TreeNode[], id: string): Set<string> {
+  const out = new Set<string>();
+  const find = (nodes: TreeNode[]): TreeNode | null => {
+    for (const n of nodes) {
+      if (n.bead.id === id) return n;
+      const hit = find(n.children);
+      if (hit) return hit;
+    }
+    return null;
+  };
+  const start = find(forest);
+  if (!start) return out;
+  const collect = (n: TreeNode) => {
+    out.add(n.bead.id);
+    n.children.forEach(collect);
+  };
+  collect(start);
+  return out;
+}

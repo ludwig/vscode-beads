@@ -1,4 +1,4 @@
-import { buildForest, filterForest, type TreeNode } from "../treeModel";
+import { buildForest, filterForest, subtreeIds, type TreeNode } from "../treeModel";
 import type { Bead } from "../../../types";
 
 function bead(id: string, title = id): Bead {
@@ -122,5 +122,31 @@ describe("filterForest", () => {
 
   it("drops everything when nothing matches", () => {
     expect(filterForest(forest, "zzz")).toEqual([]);
+  });
+});
+
+describe("subtreeIds", () => {
+  const forest = buildForest(
+    [bead("root"), bead("mid"), bead("leaf"), bead("other")],
+    [pc("mid", "root"), pc("leaf", "mid")],
+  );
+
+  it("includes the node and all its descendants", () => {
+    expect([...subtreeIds(forest, "root")].sort()).toEqual(["leaf", "mid", "root"]);
+  });
+
+  it("returns just the node for a leaf", () => {
+    expect([...subtreeIds(forest, "leaf")]).toEqual(["leaf"]);
+  });
+
+  it("returns an empty set for an unknown id", () => {
+    expect(subtreeIds(forest, "ghost").size).toBe(0);
+  });
+
+  it("supports the reparent cycle guard (descendant is illegal target)", () => {
+    // dropping 'root' onto 'leaf' is illegal: leaf is in root's subtree
+    expect(subtreeIds(forest, "root").has("leaf")).toBe(true);
+    // dropping 'root' onto 'other' is fine: other is not a descendant
+    expect(subtreeIds(forest, "root").has("other")).toBe(false);
   });
 });

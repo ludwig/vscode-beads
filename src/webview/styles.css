@@ -3563,6 +3563,22 @@ textarea {
   color: var(--vscode-list-activeSelectionForeground);
 }
 
+.beads-tree-row.dragging {
+  opacity: 0.5;
+}
+
+.beads-tree-row.drop-target {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+  background: var(--vscode-list-dropBackground, var(--vscode-list-hoverBackground));
+}
+
+/* Subtle hint that releasing on empty space detaches (makes a root). */
+.beads-tree-body.can-detach {
+  outline: 1px dashed var(--vscode-input-border, var(--vscode-panel-border));
+  outline-offset: -3px;
+}
+
 .beads-tree-twisty {
   display: inline-flex;
   align-items: center;
