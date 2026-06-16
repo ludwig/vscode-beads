@@ -195,7 +195,7 @@ export type WebviewToExtensionMessage =
   | { type: "openBeadDetails"; beadId: string }
   | { type: "openBeadInTab"; beadId: string }
   | { type: "clearActiveBead" }
-  | { type: "copyText"; text: string; label?: string }
+  | { type: "copyText"; text: string; label?: string; toast?: boolean }
   | { type: "viewInGraph"; beadId: string }
   | { type: "navigateBack" }
   | { type: "navigateForward" }
@@ -203,7 +203,7 @@ export type WebviewToExtensionMessage =
   | { type: "showIssues" }
   | { type: "requestGraph" }
   | { type: "openViewInTab"; view: "issues" | "dashboard" | "graph" }
-  | { type: "copyBeadId"; beadId: string }
+  | { type: "copyBeadId"; beadId: string; toast?: boolean }
   | { type: "createBead"; fields: CreateBeadFields }
   | { type: "startCreate" }
   | { type: "cancelCreate" }

@@ -355,7 +355,7 @@ export function App(): React.ReactElement {
               vscode.postMessage({ type: "openBeadDetails", beadId })
             }
             onCopyId={(beadId) =>
-              vscode.postMessage({ type: "copyBeadId", beadId })
+              vscode.postMessage({ type: "copyBeadId", beadId, toast: true })
             }
           />
         );

@@ -241,16 +241,22 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
       case "copyBeadId":
         if (message.beadId) {
           await vscode.env.clipboard.writeText(message.beadId);
-          // A local in-view toast reads right where the user clicked, rather
-          // than way down on the VS Code status bar.
-          this.postMessage({ type: "showToast", text: `Copied ${message.beadId}` });
+          // Status-bar confirmation is the default. A few callers (the Details
+          // view, far from the status bar) opt into an in-view toast as well.
+          vscode.window.setStatusBarMessage(`$(check) Copied: ${message.beadId}`, 2000);
+          if (message.toast) {
+            this.postMessage({ type: "showToast", text: `Copied ${message.beadId}` });
+          }
         }
         break;
 
       case "copyText":
         if (message.text) {
           await vscode.env.clipboard.writeText(message.text);
-          this.postMessage({ type: "showToast", text: `Copied ${message.label ?? "text"}` });
+          vscode.window.setStatusBarMessage(`$(check) Copied ${message.label ?? "text"}`, 2000);
+          if (message.toast) {
+            this.postMessage({ type: "showToast", text: `Copied ${message.label ?? "text"}` });
+          }
         }
         break;
 
