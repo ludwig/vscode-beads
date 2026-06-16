@@ -258,6 +258,8 @@ export function App(): React.ReactElement {
             onOpenBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onOpenBeadInTab={(beadId) => vscode.postMessage({ type: "openBeadInTab", beadId })}
             onClearBead={() => vscode.postMessage({ type: "clearActiveBead" })}
+            onPickReady={() => vscode.postMessage({ type: "pickReadyBead" })}
+            onShowIssues={() => vscode.postMessage({ type: "showIssues" })}
             onShowStatus={() => vscode.postMessage({ type: "showDoltStatus" })}
             onStartDolt={() => vscode.postMessage({ type: "startDoltServer" })}
             onStopDolt={() => vscode.postMessage({ type: "stopDoltServer" })}

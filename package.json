@@ -145,19 +145,9 @@
     "menus": {
       "view/title": [
         {
-          "command": "beads.pickReadyBead",
-          "when": "view == beadsProjectSwitcher",
-          "group": "navigation@0"
-        },
-        {
-          "command": "beads.openBeadsPanel",
-          "when": "view == beadsProjectSwitcher",
-          "group": "navigation@1"
-        },
-        {
           "command": "beads.refresh",
           "when": "view == beadsProjectSwitcher",
-          "group": "navigation@2"
+          "group": "navigation@0"
         },
         {
           "command": "beads.navigateBack",

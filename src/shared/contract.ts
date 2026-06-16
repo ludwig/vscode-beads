@@ -196,6 +196,8 @@ export type WebviewToExtensionMessage =
   | { type: "viewInGraph"; beadId: string }
   | { type: "navigateBack" }
   | { type: "navigateForward" }
+  | { type: "pickReadyBead" }
+  | { type: "showIssues" }
   | { type: "requestGraph" }
   | { type: "openViewInTab"; view: "issues" | "dashboard" | "graph" }
   | { type: "copyBeadId"; beadId: string }

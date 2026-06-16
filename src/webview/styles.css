@@ -2446,6 +2446,25 @@ textarea {
   padding: 3px 8px;
 }
 
+/* Prominent action buttons at the top of the Context view (Pick Ready / Show Issues) */
+.context-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px 6px;
+}
+
+.context-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
 .btn:hover {
   background: var(--vscode-button-secondaryHoverBackground);
 }
