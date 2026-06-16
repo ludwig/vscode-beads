@@ -68,7 +68,7 @@ export function ProjectDropdown({
       menuClassName="project-dropdown-menu"
       title={activeProject?.rootPath}
     >
-      <div className="project-dropdown-header">Bead directory</div>
+      <div className="project-dropdown-header">Beads directory</div>
       {projects.map((project) => (
         <DropdownItem
           key={`${project.id}:${project.rootPath}`}
