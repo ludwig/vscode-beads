@@ -208,6 +208,8 @@
     "package": "vsce package"
   },
   "devDependencies": {
+    "@types/d3-force": "^3.0.10",
+    "@types/dagre": "^0.7.54",
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
@@ -224,6 +226,9 @@
   },
   "dependencies": {
     "@tanstack/react-table": "^8.21.3",
+    "@xyflow/react": "^12.11.0",
+    "d3-force": "^3.0.0",
+    "dagre": "^0.8.5",
     "dompurify": "^3.4.10",
     "lucide-react": "^0.563.0",
     "marked": "^17.0.1",
