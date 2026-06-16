@@ -52,7 +52,9 @@ export class BeadsProjectSwitcherViewProvider extends BaseViewProvider {
 
   protected async handleCustomMessage(message: WebviewToExtensionMessage): Promise<void> {
     if (message.type === "clearActiveBead") {
-      this.setActiveBead(null);
+      // Clear every selection surface (Details + table highlight + pin), not
+      // just this view's pin.
+      await vscode.commands.executeCommand("beads.clearSelection");
     }
   }
 }

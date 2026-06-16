@@ -104,6 +104,14 @@ export function registerCommands(
       }
     }),
 
+    // Clear the current selection across every surface that tracks it: the
+    // sidebar Details view, the Issues table highlight, and the Active Bead pin.
+    vscode.commands.registerCommand("beads.clearSelection", () => {
+      detailsProvider.clearBead();
+      shellProvider.setSelectedBead(null);
+      switcherProvider.setActiveBead(null);
+    }),
+
     // vs-ask: open a bead's Details as an editor tab. With no argument, use the
     // bead currently shown in the sidebar Details view.
     vscode.commands.registerCommand("beads.openBeadInTab", async (beadId?: string) => {
