@@ -9,7 +9,6 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, X, Rocket, ListTodo } from "lucide-react";
-import prettyBytes from "pretty-bytes";
 import { Bead, BeadsProject, STATUS_COLORS } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
@@ -35,6 +34,12 @@ interface ProjectSwitcherViewProps {
   buildDirty?: boolean;
   /** Extension-host RSS in bytes (0 = not yet sampled). */
   memoryBytes?: number;
+}
+
+/** Auto-scaled binary size, e.g. 248 MB / 1.5 GB. */
+function formatBytes(bytes: number): string {
+  const mb = bytes / (1024 * 1024);
+  return mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${Math.round(mb)} MB`;
 }
 
 const BACKEND_LABELS: Record<string, string> = {
@@ -182,12 +187,12 @@ export function ProjectSwitcherView({
               </div>
               {memoryBytes > 0 && (
                 <div className="project-switcher-meta-row">
-                  <dt>Memory</dt>
+                  <dt>Host RAM</dt>
                   <dd
                     className="mono-figure"
-                    title="JS heap (heapUsed) of the VS Code extension-host process — shared by all JS extensions, not just Beads. Sampled periodically."
+                    title="Resident memory (RSS) of the whole VS Code extension-host process — shared by ALL installed extensions plus the Node/V8 runtime, not just Beads. There's no per-extension figure; this is a superset. Read from the OS via process.memoryUsage().rss, sampled periodically."
                   >
-                    {prettyBytes(memoryBytes, { binary: true })}
+                    {formatBytes(memoryBytes)}
                   </dd>
                 </div>
               )}
