@@ -83,8 +83,13 @@
       },
       {
         "command": "beads.openBeadsPanel",
-        "title": "Beads: Open Issues Panel",
+        "title": "Beads: Show Issues Panel",
         "icon": "$(list-unordered)"
+      },
+      {
+        "command": "beads.pickReadyBead",
+        "title": "Beads: Pick Ready Bead",
+        "icon": "$(rocket)"
       },
       {
         "command": "beads.openBeadDetails",
@@ -140,9 +145,19 @@
     "menus": {
       "view/title": [
         {
-          "command": "beads.refresh",
+          "command": "beads.pickReadyBead",
           "when": "view == beadsProjectSwitcher",
           "group": "navigation@0"
+        },
+        {
+          "command": "beads.openBeadsPanel",
+          "when": "view == beadsProjectSwitcher",
+          "group": "navigation@1"
+        },
+        {
+          "command": "beads.refresh",
+          "when": "view == beadsProjectSwitcher",
+          "group": "navigation@2"
         },
         {
           "command": "beads.navigateBack",

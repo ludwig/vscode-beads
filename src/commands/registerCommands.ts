@@ -8,7 +8,8 @@
  */
 
 import * as vscode from "vscode";
-import { IssuesFilter } from "../backend/types";
+import { IssuesFilter, Bead, issueToWebviewBead } from "../backend/types";
+import { nextReadyBead } from "../backend/readyBeads";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
 import { PanelShellViewProvider } from "../providers/PanelShellViewProvider";
 import { BeadDetailsViewProvider } from "../providers/BeadDetailsViewProvider";
@@ -52,6 +53,9 @@ export function registerCommands(
   // along the beads the user has visited; a new navigation truncates the
   // forward branch. Reset when the selection is cleared or the project changes.
   const navHistory = new NavigationHistory();
+  // Cursor for "Pick Ready Bead" so repeated invocations cycle through the
+  // ready set rather than re-picking the same top bead.
+  let lastReadyId: string | null = null;
 
   const updateNavContext = (): void => {
     vscode.commands.executeCommand("setContext", "beads.canNavigateBack", navHistory.canBack());
@@ -72,6 +76,7 @@ export function registerCommands(
   context.subscriptions.push(
     projectManager.onActiveProjectChanged(() => {
       navHistory.reset();
+      lastReadyId = null;
       updateNavContext();
     })
   );
@@ -161,6 +166,36 @@ export function registerCommands(
       if (id) {
         selectBead(id);
         updateNavContext();
+      }
+    }),
+
+    // Pick a ready-to-work bead (open, no open blocker) and make it the active
+    // bead. Repeated invocations cycle through the ready set. (vs-ih1)
+    vscode.commands.registerCommand("beads.pickReadyBead", async () => {
+      const client = projectManager.getClient();
+      if (!client) {
+        vscode.window.showWarningMessage("No active Beads project");
+        return;
+      }
+      try {
+        const issues = await client.list();
+        const beads = issues.map(issueToWebviewBead).filter((b): b is Bead => b !== null);
+        const edges = await client.getDependencyGraph();
+        const blocks = edges
+          .filter((e) => e.type === "blocks")
+          .map((e) => ({ from: e.from, to: e.to }));
+        const pick = nextReadyBead(beads, blocks, lastReadyId);
+        if (!pick) {
+          vscode.window.showInformationMessage(
+            "No ready beads — everything is blocked, in progress, or done."
+          );
+          return;
+        }
+        lastReadyId = pick;
+        await vscode.commands.executeCommand("beads.openBeadDetails", pick);
+        vscode.window.setStatusBarMessage(`$(rocket) Ready: ${pick}`, 2500);
+      } catch (err) {
+        vscode.window.showErrorMessage(`Failed to pick a ready bead: ${err}`);
       }
     }),
 
