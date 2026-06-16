@@ -99,12 +99,14 @@
       {
         "command": "beads.navigateBack",
         "title": "Beads: Back",
-        "icon": "$(arrow-left)"
+        "icon": "$(arrow-left)",
+        "enablement": "beads.canNavigateBack"
       },
       {
         "command": "beads.navigateForward",
         "title": "Beads: Forward",
-        "icon": "$(arrow-right)"
+        "icon": "$(arrow-right)",
+        "enablement": "beads.canNavigateForward"
       },
       {
         "command": "beads.refresh",
@@ -151,12 +153,12 @@
         },
         {
           "command": "beads.navigateBack",
-          "when": "view == beadsDetails && beads.canNavigateBack",
+          "when": "view == beadsDetails",
           "group": "navigation@0"
         },
         {
           "command": "beads.navigateForward",
-          "when": "view == beadsDetails && beads.canNavigateForward",
+          "when": "view == beadsDetails",
           "group": "navigation@1"
         },
         {
