@@ -42,6 +42,13 @@
           "title": "Beads",
           "icon": "resources/beads-icon.svg"
         }
+      ],
+      "panel": [
+        {
+          "id": "beadsBottomPanel",
+          "title": "Beads",
+          "icon": "resources/beads-icon.svg"
+        }
       ]
     },
     "views": {
@@ -62,6 +69,14 @@
           "type": "webview",
           "id": "beadsDetails",
           "name": "Details",
+          "visibility": "visible"
+        }
+      ],
+      "beadsBottomPanel": [
+        {
+          "type": "webview",
+          "id": "beadsPanelBottom",
+          "name": "Issues",
           "visibility": "visible"
         }
       ]
@@ -143,6 +158,21 @@
         {
           "command": "beads.refresh",
           "when": "view == beadsPanel",
+          "group": "navigation@2"
+        },
+        {
+          "command": "beads.createIssue",
+          "when": "view == beadsPanelBottom",
+          "group": "navigation@0"
+        },
+        {
+          "command": "beads.openIssuesInTab",
+          "when": "view == beadsPanelBottom",
+          "group": "navigation@1"
+        },
+        {
+          "command": "beads.refresh",
+          "when": "view == beadsPanelBottom",
           "group": "navigation@2"
         },
         {

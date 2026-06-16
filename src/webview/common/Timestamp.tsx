@@ -104,7 +104,10 @@ function getRelativeTime(date: Date): string {
   const diffHour = Math.floor(diffMin / 60);
   const diffDay = Math.floor(diffHour / 24);
 
-  if (diffSec < 60) return "just now";
+  // Clamp small clock skew (timestamp slightly in the future) to "just now"
+  // rather than rendering a negative age.
+  if (diffSec < 10) return "just now";
+  if (diffSec < 60) return `${diffSec}s ago`;
   if (diffMin < 60) return `${diffMin}m ago`;
   if (diffHour < 24) return `${diffHour}h ago`;
   if (diffDay === 1) return "yesterday";

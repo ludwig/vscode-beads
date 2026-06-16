@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Declared the `beads.projects` setting in the configuration schema so it appears in the Settings UI with validation (vs-b7o)
 - Create issues from the UI: a "New Issue" button on the Issues/Dashboard views and a `beads.createIssue` command open a create form in the Details view (vs-69z)
 - Surface the active issue prefix (e.g. `vs`), derived from the loaded issue IDs, in the project dropdown trigger and the status bar so it's always clear which root is active (vs-kmt)
+- Issues list is now also available as a tab in the bottom panel (next to Terminal/Problems), as an independent view that stays in sync with the sidebar Issues list
 
 ### Changed
 
@@ -44,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dropdown menus no longer render semi-transparent — the menu background falls back through universal surface tokens when `--vscode-dropdown-listBackground` is undefined (vs-k71)
 - `beads.userId` and `beads.pathToBd` now expand `${env:VAR}` placeholders (#60)
 - Edits now refresh sibling views (panel, dashboard, details) immediately instead of waiting for a manual Refresh (vs-mxq)
+- Relative timestamps no longer say "just now" for up to a minute — only the first 10 seconds read "just now", then "Ns ago" — so the Details footer stops over-reporting "now"
 - Restored a valid TypeScript `module`/`moduleResolution` pairing so `tsc` type-checks again
 
 ### Performance

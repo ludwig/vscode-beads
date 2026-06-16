@@ -23,7 +23,18 @@ let log: Logger;
 let projectManager: BeadsProjectManager;
 let dashboardProvider: DashboardViewProvider;
 let beadsPanelProvider: BeadsPanelViewProvider;
+let beadsBottomPanelProvider: BeadsPanelViewProvider;
 let detailsProvider: BeadDetailsViewProvider;
+
+/**
+ * The Issues list is shown in two places: the sidebar (`beadsPanel`) and the
+ * bottom panel next to the terminal (`beadsPanelBottom`). They share the same
+ * provider class and must stay in sync, so all refresh/selection/filter calls
+ * fan out to both instances.
+ */
+function eachIssuesView(fn: (view: BeadsPanelViewProvider) => void): void {
+  [beadsPanelProvider, beadsBottomPanelProvider].forEach(fn);
+}
 let panelManager: BeadPanelManager;
 let statusBar: vscode.StatusBarItem;
 
@@ -86,6 +97,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     log
   );
 
+  beadsBottomPanelProvider = new BeadsPanelViewProvider(
+    context.extensionUri,
+    projectManager,
+    log
+  );
+
   detailsProvider = new BeadDetailsViewProvider(
     context.extensionUri,
     projectManager,
@@ -102,6 +119,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       webviewOptions: { retainContextWhenHidden: true },
     }),
     vscode.window.registerWebviewViewProvider("beadsPanel", beadsPanelProvider, {
+      webviewOptions: { retainContextWhenHidden: true },
+    }),
+    vscode.window.registerWebviewViewProvider("beadsPanelBottom", beadsBottomPanelProvider, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
     vscode.window.registerWebviewViewProvider("beadsDetails", detailsProvider, {
@@ -125,7 +145,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // (which holds it until the webview is ready).
     vscode.commands.registerCommand("beads.openIssuesWithFilter", async (filter?: IssuesFilter) => {
       await vscode.commands.executeCommand("beadsPanel.focus");
-      beadsPanelProvider.applyIssuesFilter(filter ?? {});
+      eachIssuesView((view) => view.applyIssuesFilter(filter ?? {}));
     }),
 
     vscode.commands.registerCommand("beads.openBeadDetails", async (beadId?: string) => {
@@ -160,8 +180,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
 
       if (beadId) {
-        detailsProvider.showBead(beadId);
-        beadsPanelProvider.setSelectedBead(beadId);
+        const selectedId = beadId;
+        detailsProvider.showBead(selectedId);
+        eachIssuesView((view) => view.setSelectedBead(selectedId));
       }
     }),
 
@@ -198,7 +219,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       log.info("Manual refresh triggered");
       await projectManager.refresh();
       dashboardProvider.hardRefresh();
-      beadsPanelProvider.hardRefresh();
+      eachIssuesView((view) => view.hardRefresh());
       detailsProvider.hardRefresh();
       log.info("Refresh complete");
       vscode.window.setStatusBarMessage("$(check) Beads: Refreshed", 2000);
@@ -224,7 +245,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         log.info(`Started Dolt server for ${project.name}: ${output || "<no output>"}`);
         await projectManager.refresh();
         dashboardProvider.refresh();
-        beadsPanelProvider.refresh();
+        eachIssuesView((view) => view.refresh());
         detailsProvider.refresh();
         await updateStatusBar();
         vscode.window.showInformationMessage(`Dolt server started for ${project.name}.`);
@@ -246,7 +267,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         log.info(`Stopped Dolt server for ${project.name}: ${output || "<no output>"}`);
         await projectManager.refresh();
         dashboardProvider.refresh();
-        beadsPanelProvider.refresh();
+        eachIssuesView((view) => view.refresh());
         detailsProvider.refresh();
         await updateStatusBar();
         vscode.window.showInformationMessage(`Dolt server stopped for ${project.name}.`);
@@ -352,14 +373,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(
     projectManager.onDataChanged(() => {
       dashboardProvider.refresh();
-      beadsPanelProvider.refresh();
+      eachIssuesView((view) => view.refresh());
       detailsProvider.refresh();
     }),
 
     projectManager.onActiveProjectChanged(() => {
-      beadsPanelProvider.setSelectedBead(null); // Clear selection on project switch
+      eachIssuesView((view) => view.setSelectedBead(null)); // Clear selection on project switch
       dashboardProvider.refreshForProjectChange();
-      beadsPanelProvider.refreshForProjectChange();
+      eachIssuesView((view) => view.refreshForProjectChange());
       detailsProvider.refreshForProjectChange();
       updateStatusBar();
     }),
@@ -390,7 +411,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
       // Refresh all views
       dashboardProvider.refresh();
-      beadsPanelProvider.refresh();
+      eachIssuesView((view) => view.refresh());
       detailsProvider.refresh();
     })
   );
