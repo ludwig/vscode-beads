@@ -17,7 +17,9 @@ import { Logger } from "../utils/logger";
 import { deriveIssuePrefix } from "../utils/issue-prefix";
 
 export class BeadsPanelViewProvider extends BaseViewProvider {
-  protected readonly viewType = "beadsPanel";
+  // Declared as `string` (not the inferred literal) so subclasses like the
+  // panel shell can override with their own routing key.
+  protected readonly viewType: string = "beadsPanel";
   private static readonly MIN_LOADING_MS = 500;
   private selectedBeadId: string | null = null;
   private loadSequence = 0;
@@ -68,6 +70,7 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     const client = this.projectManager.getClient();
     if (!client) {
       this.postMessage({ type: "setBeads", beads: [] });
+      this.onBeadsLoaded([]);
       return;
     }
 
@@ -93,6 +96,7 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
       // before the cold `bd show` spawn returns (vs-7s7).
       this.projectManager.cacheBeadList(beads);
       this.projectManager.setActivePrefix(deriveIssuePrefix(issues.map((i) => i.id)));
+      this.onBeadsLoaded(beads);
       this.setLoading(false);
     } catch (err) {
       if (showLoading) {
@@ -111,6 +115,16 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
         this.setLoading(false);
       }
     }
+  }
+
+  /**
+   * Hook invoked after the bead list is loaded (or cleared when there's no
+   * client). Subclasses override to derive extra payloads from the same list
+   * without spawning a second `bd list` — e.g. the panel shell emits the
+   * Dashboard summary here. Default: no-op.
+   */
+  protected onBeadsLoaded(_beads: Bead[]): void {
+    // no-op
   }
 
   private async waitForMinimumLoading(startedAt: number): Promise<void> {

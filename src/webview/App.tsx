@@ -19,6 +19,7 @@ import { DashboardView } from "./views/DashboardView";
 import { IssuesView } from "./views/IssuesView";
 import { DetailsView } from "./views/DetailsView";
 import { ProjectSwitcherView } from "./views/ProjectSwitcherView";
+import { PanelShell } from "./views/PanelShell";
 import { CreateBeadForm } from "./views/CreateBeadForm";
 import { Loading } from "./common/Loading";
 import { ToastProvider, triggerToast } from "./common/Toast";
@@ -195,6 +196,21 @@ export function App(): React.ReactElement {
             onRetry={() =>
               vscode.postMessage({ type: "refresh" })
             }
+          />
+        );
+
+      case "beadsPanelShell":
+        return (
+          <PanelShell
+            summary={state.summary}
+            beads={state.beads}
+            loading={state.loading}
+            error={state.error}
+            projects={state.projects}
+            activeProject={state.project}
+            selectedBeadId={state.selectedBeadId}
+            settings={state.settings}
+            issuesFilterRequest={state.issuesFilterRequest}
           />
         );
 

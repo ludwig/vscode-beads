@@ -10,21 +10,18 @@
 import * as vscode from "vscode";
 import { IssuesFilter } from "../backend/types";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
-import { DashboardViewProvider } from "../providers/DashboardViewProvider";
-import { BeadsPanelViewProvider } from "../providers/BeadsPanelViewProvider";
+import { PanelShellViewProvider } from "../providers/PanelShellViewProvider";
 import { BeadDetailsViewProvider } from "../providers/BeadDetailsViewProvider";
 import { BeadPanelManager } from "../providers/BeadPanelManager";
 import { Logger } from "../utils/logger";
 
 export interface CommandDeps {
   projectManager: BeadsProjectManager;
+  /** The consolidated bottom-Panel shell (Dashboard + Issues data + selection). */
+  shellProvider: PanelShellViewProvider;
   detailsProvider: BeadDetailsViewProvider;
   panelManager: BeadPanelManager;
   log: Logger;
-  /** Fan a call out to every Issues view instance (sidebar + bottom panel). */
-  eachIssuesView: (fn: (view: BeadsPanelViewProvider) => void) => void;
-  /** Fan a call out to every Dashboard view instance (sidebar + bottom panel). */
-  eachDashboardView: (fn: (view: DashboardViewProvider) => void) => void;
   /** Recompute the Beads status-bar item from current project state. */
   updateStatusBar: () => void | Promise<void>;
 }
@@ -39,11 +36,10 @@ export function registerCommands(
 ): void {
   const {
     projectManager,
+    shellProvider,
     detailsProvider,
     panelManager,
     log,
-    eachIssuesView,
-    eachDashboardView,
     updateStatusBar,
   } = deps;
 
@@ -53,7 +49,7 @@ export function registerCommands(
     }),
 
     vscode.commands.registerCommand("beads.openBeadsPanel", () => {
-      vscode.commands.executeCommand("beadsPanelBottom.focus");
+      vscode.commands.executeCommand("beadsPanelShell.focus");
     }),
 
     // Open the Issues panel pre-filtered to a slice (empty filter = all).
@@ -61,8 +57,8 @@ export function registerCommands(
     // a closed panel resolves its webview, then hand the filter to the provider
     // (which holds it until the webview is ready).
     vscode.commands.registerCommand("beads.openIssuesWithFilter", async (filter?: IssuesFilter) => {
-      await vscode.commands.executeCommand("beadsPanel.focus");
-      eachIssuesView((view) => view.applyIssuesFilter(filter ?? {}));
+      await vscode.commands.executeCommand("beadsPanelShell.focus");
+      shellProvider.applyIssuesFilter(filter ?? {});
     }),
 
     vscode.commands.registerCommand("beads.openBeadDetails", async (beadId?: string) => {
@@ -99,7 +95,7 @@ export function registerCommands(
       if (beadId) {
         const selectedId = beadId;
         detailsProvider.showBead(selectedId);
-        eachIssuesView((view) => view.setSelectedBead(selectedId));
+        shellProvider.setSelectedBead(selectedId);
       }
     }),
 
@@ -135,8 +131,7 @@ export function registerCommands(
     vscode.commands.registerCommand("beads.refresh", async () => {
       log.info("Manual refresh triggered");
       await projectManager.refresh();
-      eachDashboardView((view) => view.hardRefresh());
-      eachIssuesView((view) => view.hardRefresh());
+      shellProvider.hardRefresh();
       detailsProvider.hardRefresh();
       log.info("Refresh complete");
       vscode.window.setStatusBarMessage("$(check) Beads: Refreshed", 2000);
@@ -161,8 +156,7 @@ export function registerCommands(
         const output = await client.startDoltServer();
         log.info(`Started Dolt server for ${project.name}: ${output || "<no output>"}`);
         await projectManager.refresh();
-        eachDashboardView((view) => view.refresh());
-        eachIssuesView((view) => view.refresh());
+        shellProvider.refresh();
         detailsProvider.refresh();
         await updateStatusBar();
         vscode.window.showInformationMessage(`Dolt server started for ${project.name}.`);
@@ -183,8 +177,7 @@ export function registerCommands(
         const output = await client.stopDoltServer();
         log.info(`Stopped Dolt server for ${project.name}: ${output || "<no output>"}`);
         await projectManager.refresh();
-        eachDashboardView((view) => view.refresh());
-        eachIssuesView((view) => view.refresh());
+        shellProvider.refresh();
         detailsProvider.refresh();
         await updateStatusBar();
         vscode.window.showInformationMessage(`Dolt server stopped for ${project.name}.`);

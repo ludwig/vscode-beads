@@ -69,14 +69,8 @@
       "beadsBottomPanel": [
         {
           "type": "webview",
-          "id": "beadsDashboardBottom",
-          "name": "Dashboard",
-          "visibility": "visible"
-        },
-        {
-          "type": "webview",
-          "id": "beadsPanelBottom",
-          "name": "Issues",
+          "id": "beadsPanelShell",
+          "name": "Beads",
           "visibility": "visible"
         }
       ]
@@ -134,26 +128,6 @@
           "command": "beads.refresh",
           "when": "view == beadsProjectSwitcher",
           "group": "navigation@0"
-        },
-        {
-          "command": "beads.openDashboardInTab",
-          "when": "view == beadsDashboardBottom",
-          "group": "navigation@0"
-        },
-        {
-          "command": "beads.refresh",
-          "when": "view == beadsDashboardBottom",
-          "group": "navigation@1"
-        },
-        {
-          "command": "beads.openIssuesInTab",
-          "when": "view == beadsPanelBottom",
-          "group": "navigation@0"
-        },
-        {
-          "command": "beads.refresh",
-          "when": "view == beadsPanelBottom",
-          "group": "navigation@1"
         },
         {
           "command": "beads.createIssue",

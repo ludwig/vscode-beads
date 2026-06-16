@@ -1621,6 +1621,76 @@ textarea {
   color: var(--vscode-descriptionForeground);
 }
 
+/* Consolidated bottom-Panel shell: in-view nav row + full-area subview. */
+.panel-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.panel-shell-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  padding: 4px var(--spacing-sm);
+  border-bottom: 1px solid var(--vscode-panel-border);
+  background: var(--vscode-sideBar-background);
+}
+
+.panel-shell-tabs {
+  display: flex;
+  gap: 2px;
+}
+
+.panel-shell-tab {
+  padding: 4px 12px;
+  border: none;
+  border-radius: var(--border-radius);
+  background: transparent;
+  color: var(--vscode-foreground);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.panel-shell-tab:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.panel-shell-tab.active {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+  font-weight: 600;
+}
+
+.panel-shell-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.panel-shell-action {
+  padding: 2px 8px;
+  border: none;
+  border-radius: var(--border-radius);
+  background: transparent;
+  color: var(--vscode-foreground);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.panel-shell-action:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.panel-shell-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Slimmed-sidebar project switcher (header + dropdown + info + footer). */
 .project-switcher-view {
   display: flex;
