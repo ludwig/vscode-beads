@@ -2679,8 +2679,8 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
-  max-height: 200px;
-  overflow-y: auto;
+  /* Let comments flow in the Details view (the whole pane scrolls) rather than
+     trapping a long thread in a cramped 200px inner scrollbar (vs-3kq). */
   margin-bottom: var(--spacing-sm);
 }
 
