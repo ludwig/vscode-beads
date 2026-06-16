@@ -119,6 +119,7 @@ export interface WebviewSettings {
   extensionVersion: string; // e.g. "0.14.0"
   buildSha: string; // short git SHA at build time, or "unknown"
   buildDirty: boolean; // built with uncommitted changes
+  isEditorTab: boolean; // true when this webview is an editor-area tab, not a sidebar view
 }
 
 // Placeholder for the (not yet implemented) graph view.

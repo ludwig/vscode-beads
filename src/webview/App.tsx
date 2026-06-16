@@ -72,6 +72,7 @@ const initialState: AppState = {
     extensionVersion: "",
     buildSha: "",
     buildDirty: false,
+    isEditorTab: false,
   },
   createMode: false,
   issuesFilterRequest: null,
@@ -333,6 +334,7 @@ export function App(): React.ReactElement {
             loading={state.loading}
             renderMarkdown={state.settings.renderMarkdown}
             userId={state.settings.userId}
+            isEditorTab={state.settings.isEditorTab}
             knownAssignees={knownAssignees}
             onUpdateBead={(beadId, updates) =>
               vscode.postMessage({ type: "updateBead", beadId, updates })

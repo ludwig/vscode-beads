@@ -170,6 +170,8 @@ interface DetailsViewProps {
   loading: boolean;
   renderMarkdown?: boolean;
   userId?: string;
+  /** True when this view is already an editor tab — hides the Open-in-tab action. */
+  isEditorTab?: boolean;
   knownAssignees?: string[];
   onUpdateBead: (beadId: string, updates: Partial<Bead>) => void;
   onAddDependency: (beadId: string, targetId: string, dependencyType: DependencyType, reverse: boolean) => void;
@@ -193,6 +195,7 @@ export function DetailsView({
   loading,
   renderMarkdown = true,
   userId = "",
+  isEditorTab = false,
   knownAssignees = [],
   onUpdateBead,
   onAddDependency,
@@ -365,14 +368,16 @@ export function DetailsView({
           >
             <Icon name="plus" size={13} />
           </button>
-          <button
-            className="icon-btn header-icon-btn"
-            title="Open in editor tab"
-            aria-label="Open in editor tab"
-            onClick={() => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id })}
-          >
-            <Icon name="external-link" size={13} />
-          </button>
+          {!isEditorTab && (
+            <button
+              className="icon-btn header-icon-btn"
+              title="Open in editor tab"
+              aria-label="Open in editor tab"
+              onClick={() => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id })}
+            >
+              <Icon name="external-link" size={13} />
+            </button>
+          )}
           <button
             className="icon-btn header-icon-btn"
             title="Refresh"
