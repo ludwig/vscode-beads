@@ -30,6 +30,9 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
   // (e.g. the Details "View in graph" action). Held until the webview is ready
   // so a freshly-focused panel still switches to the Graph tab and focuses it.
   private pendingShowGraph: string | undefined;
+  // Set once the Graph/Tree tab asks for the dependency graph, so a project
+  // switch / refresh knows to re-push fresh graph data (not just the bead list).
+  private graphRequested = false;
 
   /**
    * Apply a drill-in filter to the Issues list (empty filter = show all).
@@ -99,7 +102,13 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     const showLoading = reason === "initial" || reason === "projectChange" || reason === "manualRefresh";
     const loadingStartedAt = showLoading ? Date.now() : 0;
     if (showLoading) {
-      this.postMessage({ type: "setBeads", beads: [] });
+      // Don't blank existing data on a project switch / refresh — keep the prior
+      // rows visible and swap them in place once the new data arrives, so the
+      // view updates instead of flashing to empty. Only the very first load has
+      // nothing to preserve.
+      if (reason === "initial") {
+        this.postMessage({ type: "setBeads", beads: [] });
+      }
       this.setLoading(true);
     }
     this.setError(null);
@@ -119,6 +128,12 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
       this.projectManager.cacheBeadList(beads);
       this.projectManager.setActivePrefix(deriveIssuePrefix(issues.map((i) => i.id)));
       this.onBeadsLoaded(beads);
+      // If the Graph/Tree have been viewed this session, refresh their data too
+      // on a project switch / explicit refresh — otherwise they'd keep showing
+      // the previous project's graph (they only fetch lazily on tab open).
+      if (this.graphRequested && reason !== "background") {
+        await this.sendGraph(client);
+      }
       this.setLoading(false);
     } catch (err) {
       if (showLoading) {
@@ -128,7 +143,7 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
         return;
       }
       this.setError(String(err));
-      if (showLoading) {
+      if (reason === "initial") {
         this.postMessage({ type: "setBeads", beads: [] });
       }
       this.handleBackendError("Failed to load beads", err);
@@ -209,6 +224,7 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
         break;
 
       case "requestGraph":
+        this.graphRequested = true;
         await this.sendGraph(client);
         break;
     }
