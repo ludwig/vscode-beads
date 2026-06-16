@@ -13,7 +13,6 @@ import {
   Bead,
   BeadType,
   DependencyGraph,
-  STATUS_COLORS,
   PRIORITY_COLORS,
   UNKNOWN_PRIORITY_COLOR,
   BeadPriority,
@@ -22,6 +21,7 @@ import {
   vscode,
 } from "../../types";
 import { TypeIcon } from "../../common/TypeIcon";
+import { StatusBadge } from "../../common/StatusBadge";
 import { Loading } from "../../common/Loading";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { ContextMenu, type ContextMenuItem } from "../../common/ContextMenu";
@@ -36,14 +36,16 @@ interface DragApi {
   onEnd: () => void;
 }
 
-type SortKey = "id" | "type" | "title" | "priority";
+type SortKey = "id" | "type" | "title" | "priority" | "status";
 
 // Sortable tree-table columns. Clicking a header cycles asc → desc → off; the
 // "off" state is the natural id order (so id sort needs no dedicated column).
-// The Title header occupies the indented tree column; Type/Priority align in
-// fixed columns across all depths.
+// The Title header occupies the indented tree column; Status/Type/Priority align
+// in fixed columns across all depths. (The Status column replaces the old
+// per-row colored rail.)
 const COLUMNS: { key: SortKey; label: string }[] = [
   { key: "title", label: "Title" },
+  { key: "status", label: "Status" },
   { key: "type", label: "Type" },
   { key: "priority", label: "Priority" },
 ];
@@ -67,11 +69,23 @@ const byType = (a: Bead, b: Bead) =>
 // P0 (highest) first; missing priority sorts last, then by id.
 const byPriority = (a: Bead, b: Bead) =>
   (a.priority ?? 99) - (b.priority ?? 99) || compareById(a, b);
+// Workflow order: open → in_progress → blocked → closed, then by id.
+const STATUS_ORDER: Record<string, number> = { open: 0, in_progress: 1, blocked: 2, closed: 3 };
+const byStatus = (a: Bead, b: Bead) =>
+  (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99) || compareById(a, b);
 
 function comparatorFor(sort: SortState | null): BeadComparator {
   if (!sort) return compareById;
   const base =
-    sort.key === "type" ? byType : sort.key === "title" ? byTitle : sort.key === "priority" ? byPriority : compareById;
+    sort.key === "type"
+      ? byType
+      : sort.key === "title"
+        ? byTitle
+        : sort.key === "priority"
+          ? byPriority
+          : sort.key === "status"
+            ? byStatus
+            : compareById;
   return sort.dir === "asc" ? base : (a, b) => -base(a, b);
 }
 
@@ -418,7 +432,6 @@ function TreeRow({
   const isSelected = bead.id === selectedBeadId;
   const isDragging = drag.draggedId === bead.id;
   const isDropTarget = drag.dropTargetId === bead.id;
-  const statusColor = STATUS_COLORS[bead.status] || "#888888";
   const priorityColor =
     bead.priority === undefined ? UNKNOWN_PRIORITY_COLOR : PRIORITY_COLORS[bead.priority as BeadPriority];
 
@@ -461,11 +474,11 @@ function TreeRow({
               isCollapsed ? <ChevronRight size={13} strokeWidth={2} /> : <ChevronDown size={13} strokeWidth={2} />
             ) : null}
           </span>
-          <span className="beads-tree-rail" style={{ backgroundColor: statusColor }} />
           {bead.type ? <TypeIcon type={bead.type} size={13} /> : null}
           <span className="beads-tree-id">{bead.id}</span>
           <span className="beads-tree-title">{bead.title}</span>
         </span>
+        <span className="beads-tree-status"><StatusBadge status={bead.status} size="small" /></span>
         <span className="beads-tree-type">{bead.type ? typeLabel(bead.type) : ""}</span>
         <span className="beads-tree-prio" style={{ color: priorityColor }}>
           {bead.priority === undefined ? "—" : `P${bead.priority}`}

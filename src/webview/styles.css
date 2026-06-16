@@ -3854,7 +3854,7 @@ textarea {
    the rows so Type / Priority align under their headers (vs-wp5). */
 .beads-tree-colheader {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content max-content;
+  grid-template-columns: minmax(0, 1fr) max-content max-content max-content;
   column-gap: 8px;
   align-items: center;
   padding: 3px 10px 4px 4px;
@@ -3887,7 +3887,7 @@ textarea {
 
 .beads-tree-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content max-content;
+  grid-template-columns: minmax(0, 1fr) max-content max-content max-content;
   column-gap: 8px;
   align-items: center;
   padding: 2px 10px 2px 4px;
@@ -3938,13 +3938,6 @@ textarea {
   color: var(--vscode-descriptionForeground);
 }
 
-.beads-tree-rail {
-  width: 3px;
-  height: 14px;
-  border-radius: 2px;
-  flex: 0 0 auto;
-}
-
 .beads-tree-id {
   font-family: var(--vscode-editor-font-family, monospace);
   font-size: 11px;
@@ -3957,6 +3950,12 @@ textarea {
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1 1 auto;
+}
+
+/* Status column cell. */
+.beads-tree-status {
+  display: inline-flex;
+  align-items: center;
 }
 
 /* Type column cell. */
