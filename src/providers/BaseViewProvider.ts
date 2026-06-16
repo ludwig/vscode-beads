@@ -139,6 +139,7 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         buildSha: appInfo.sha,
         buildDirty: appInfo.dirty,
         isEditorTab: this._host?.isEditorTab ?? false,
+        bundleBytes: appInfo.bundleBytes,
       },
     });
 

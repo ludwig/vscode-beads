@@ -47,16 +47,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   let buildSha = "unknown";
   let buildDirty = false;
   let builtAt: string | null = null;
+  let bundleBytes = 0;
   try {
     const raw = fs.readFileSync(path.join(ext.extensionPath, "dist", "build-info.json"), "utf8");
-    const info = JSON.parse(raw) as { sha?: string; dirty?: boolean; builtAt?: string };
+    const info = JSON.parse(raw) as { sha?: string; dirty?: boolean; builtAt?: string; bundleBytes?: number };
     buildSha = info.sha || "unknown";
     buildDirty = info.dirty === true;
     builtAt = info.builtAt ?? null;
+    bundleBytes = info.bundleBytes ?? 0;
   } catch {
     // no build-info.json → leave defaults
   }
-  setAppInfo({ version, sha: buildSha, dirty: buildDirty, builtAt });
+  setAppInfo({ version, sha: buildSha, dirty: buildDirty, builtAt, bundleBytes });
   log.info(`Build ${buildSha}${buildDirty ? " (dirty)" : ""}`);
 
   const config = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);

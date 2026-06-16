@@ -76,6 +76,7 @@ const initialState: AppState = {
     buildSha: "",
     buildDirty: false,
     isEditorTab: false,
+    bundleBytes: 0,
   },
   createMode: false,
   issuesFilterRequest: null,
@@ -281,6 +282,7 @@ export function App(): React.ReactElement {
             buildSha={state.settings.buildSha}
             buildDirty={state.settings.buildDirty}
             memoryBytes={state.memoryBytes}
+            bundleBytes={state.settings.bundleBytes}
             onSelectProject={(project) =>
               vscode.postMessage({
                 type: "selectProject",

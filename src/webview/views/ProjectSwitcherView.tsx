@@ -34,6 +34,8 @@ interface ProjectSwitcherViewProps {
   buildDirty?: boolean;
   /** Extension-host RSS in bytes (0 = not yet sampled). */
   memoryBytes?: number;
+  /** On-disk size of our built bundle in bytes (0 = unknown). */
+  bundleBytes?: number;
 }
 
 /** Auto-scaled binary size, e.g. 248 MB / 1.5 GB. */
@@ -67,6 +69,7 @@ export function ProjectSwitcherView({
   buildSha,
   buildDirty,
   memoryBytes = 0,
+  bundleBytes = 0,
 }: ProjectSwitcherViewProps): React.ReactElement {
   const backendState = activeProject?.backendStatus ?? "unknown";
   const [projectCollapsed, setProjectCollapsed] = useState(false);
@@ -185,6 +188,17 @@ export function ProjectSwitcherView({
                 <dt>Projects</dt>
                 <dd>{projects.length}</dd>
               </div>
+              {bundleBytes > 0 && (
+                <div className="project-switcher-meta-row">
+                  <dt>Bundle</dt>
+                  <dd
+                    className="mono-figure"
+                    title="On-disk size of the Beads extension bundle (dist/extension.js + webview main.js/css) — an attributable 'this is Beads' figure (code on disk, not runtime RAM)."
+                  >
+                    {formatBytes(bundleBytes)}
+                  </dd>
+                </div>
+              )}
               {memoryBytes > 0 && (
                 <div className="project-switcher-meta-row">
                   <dt>Host RAM</dt>

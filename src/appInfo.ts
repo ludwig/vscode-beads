@@ -12,9 +12,11 @@ export interface AppInfo {
   dirty: boolean;
   /** ISO build timestamp, or null when unknown. */
   builtAt: string | null;
+  /** On-disk size of the built extension + webview bundle, in bytes (0 if unknown). */
+  bundleBytes: number;
 }
 
-let current: AppInfo = { version: "unknown", sha: "unknown", dirty: false, builtAt: null };
+let current: AppInfo = { version: "unknown", sha: "unknown", dirty: false, builtAt: null, bundleBytes: 0 };
 
 export function setAppInfo(info: AppInfo): void {
   current = info;
