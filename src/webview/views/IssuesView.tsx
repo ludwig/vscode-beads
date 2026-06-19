@@ -1191,6 +1191,7 @@ export function IssuesView({
                     <tr
                       key={row.id}
                       onClick={() => selectRow(row.original.id)}
+                      onDoubleClick={() => vscode.postMessage({ type: "openBeadInTab", beadId: row.original.id })}
                       onContextMenu={(e) => {
                         e.preventDefault();
                         setRowMenu({ x: e.clientX, y: e.clientY, bead: row.original });

@@ -2075,8 +2075,8 @@ textarea {
 .view-end-flourish {
   color: var(--vscode-descriptionForeground);
   opacity: 0.45;
-  width: 92%;
-  max-width: 340px;
+  width: 96%;
+  max-width: 460px;
   height: auto;
   transition: opacity 0.2s ease;
 }
