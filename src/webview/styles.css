@@ -2084,6 +2084,39 @@ textarea {
   opacity: 0.7;
 }
 
+/* Variant: Band — interwoven guilloché weave, full-width. Kept faint and faded
+ * at both edges (mask) so it reads as an artful rule, not an interactive handle. */
+.view-end-band {
+  width: 100%;
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.4;
+  /* Dissolve into the background at both ends so it never looks like a control. */
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    #000 28%,
+    #000 72%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    #000 28%,
+    #000 72%,
+    transparent 100%
+  );
+  transition: opacity 0.2s ease;
+}
+
+.view-end-band:hover {
+  opacity: 0.6;
+}
+
+.view-end-band-svg {
+  display: block;
+  width: 100%;
+}
+
 /* Variant: Dots — three minimal dots. */
 .view-end-dots {
   display: flex;

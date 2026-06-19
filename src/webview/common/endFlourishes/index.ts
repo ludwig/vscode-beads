@@ -5,21 +5,24 @@
  * (the single import site for views) by changing its ACTIVE constant.
  *
  * Variants:
- * - Dots    — three minimal dots (default; quietest)
+ * - Band    — interwoven guilloché weave, full-width, fading at both edges
+ * - Dots    — three minimal dots (quietest)
  * - Baroque — wide symmetric scrollwork divider with a central medallion
  * - Ivy     — full-width hairline with climbing ivy tendrils at each edge
  */
 
 import type React from "react";
+import { Band } from "./Band";
 import { Dots } from "./Dots";
 import { Baroque } from "./Baroque";
 import { Ivy } from "./Ivy";
 
-export { Dots, Baroque, Ivy };
+export { Band, Dots, Baroque, Ivy };
 
-export type EndFlourishVariant = "dots" | "baroque" | "ivy";
+export type EndFlourishVariant = "band" | "dots" | "baroque" | "ivy";
 
 export const END_FLOURISHES: Record<EndFlourishVariant, () => React.ReactElement> = {
+  band: Band,
   dots: Dots,
   baroque: Baroque,
   ivy: Ivy,
