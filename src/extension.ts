@@ -159,6 +159,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       panelManager.publishFavorites(ids);
     }),
 
+    // When a project's bead list (re)caches, re-publish favorites so their
+    // id→title/type resolution fills in. On a project switch the cache is
+    // cleared then refilled asynchronously, so the initial post-switch publish
+    // resolves to bare ids until this fires (vs-sd5.1).
+    projectManager.onBeadsCached(() => {
+      const ids = favorites.list();
+      detailsProvider.publishFavorites(ids);
+      switcherProvider.publishFavorites(ids);
+      panelManager.publishFavorites(ids);
+    }),
+
     projectManager.onDataChanged(() => {
       shellProvider.refresh();
       detailsProvider.refresh();

@@ -2008,8 +2008,9 @@ textarea {
   text-overflow: ellipsis;
 }
 
-/* Favorites section (vs-sd5.1). Reuses the .active-bead card visuals per row,
- * with a per-row unstar (X) control to the right. */
+/* Bead-card rows in the context panel (vs-sd5.1): a clickable .active-bead card
+ * paired with an inline X control to the right. Shared by the Active Bead card
+ * (X clears the pin) and each Favorites row (X unstars). */
 .context-heading-count {
   margin-left: 6px;
   padding: 0 5px;
@@ -2026,18 +2027,18 @@ textarea {
   gap: 5px;
 }
 
-.favorite-row {
+.context-card-row {
   display: flex;
   align-items: stretch;
   gap: 4px;
 }
 
-.favorite-open {
+.context-card-open {
   flex: 1 1 auto;
   min-width: 0;
 }
 
-.favorite-unstar {
+.context-card-x {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
@@ -2053,13 +2054,33 @@ textarea {
   transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
 }
 
-.favorite-row:hover .favorite-unstar {
+.context-card-row:hover .context-card-x {
   opacity: 1;
 }
 
-.favorite-unstar:hover {
+.context-card-x:hover {
   background: var(--vscode-toolbar-hoverBackground);
   color: var(--vscode-foreground);
+}
+
+/* End-of-view marker: a centered hairline + dot so a scrollable view reads as
+ * "this is the bottom" instead of stopping cold, plus breathing room below. */
+.view-end {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 0 28px;
+  opacity: 0.4;
+}
+
+.view-end-mark {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--vscode-descriptionForeground);
+  box-shadow:
+    -10px 0 0 -1px var(--vscode-descriptionForeground),
+    10px 0 0 -1px var(--vscode-descriptionForeground);
 }
 
 /* Responsive grid of stat chips: one column on a narrow sidebar, packing into

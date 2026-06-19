@@ -232,6 +232,28 @@ export function ProjectSwitcherView({
         )}
       </section>
 
+      <div className="context-actions">
+        <button
+          type="button"
+          className="btn context-action-btn pick-ready"
+          onClick={onPickReady}
+          disabled={!activeProject}
+          title="Pick a ready-to-work bead (open, no open blocker) and make it the active bead"
+        >
+          <Rocket size={14} strokeWidth={2} />
+          <span>Pick Ready Bead</span>
+        </button>
+        <button
+          type="button"
+          className="btn context-action-btn show-issues"
+          onClick={onShowIssues}
+          title="Show the Issues panel"
+        >
+          <ListTodo size={14} strokeWidth={2} />
+          <span>Show Issues</span>
+        </button>
+      </div>
+
       <section className="context-section">
         <div className="context-section-head">
           <button
@@ -247,38 +269,38 @@ export function ProjectSwitcherView({
             )}
             <span>Active Bead</span>
           </button>
-          {activeBead && (
+        </div>
+        {!beadCollapsed && (activeBead ? (
+          <div className="context-card-row">
             <button
               type="button"
-              className="context-menu-btn"
+              className="active-bead context-card-open"
+              title={`${activeBead.id} — ${activeBead.title}\nClick to open in Details · triple-click to open in an editor tab`}
+              onClick={() => activateBead(activeBead.id)}
+            >
+              <div className="active-bead-main">
+                <div className="active-bead-head">
+                  {activeBead.type && <TypeIcon type={activeBead.type} size={13} />}
+                  <span className="active-bead-id">{activeBead.id}</span>
+                  <span
+                    className="active-bead-status"
+                    style={{ backgroundColor: STATUS_COLORS[activeBead.status] || "#888888" }}
+                    title={activeBead.status}
+                  />
+                </div>
+                <span className="active-bead-title">{activeBead.title}</span>
+              </div>
+            </button>
+            <button
+              type="button"
+              className="context-card-x"
               title="Clear the pinned bead"
               aria-label="Clear active bead"
               onClick={onClearBead}
             >
-              <X size={14} strokeWidth={2} />
+              <X size={13} strokeWidth={2} />
             </button>
-          )}
-        </div>
-        {!beadCollapsed && (activeBead ? (
-          <button
-            type="button"
-            className="active-bead"
-            title={`${activeBead.id} — ${activeBead.title}\nClick to open in Details · triple-click to open in an editor tab`}
-            onClick={() => activateBead(activeBead.id)}
-          >
-            <div className="active-bead-main">
-              <div className="active-bead-head">
-                {activeBead.type && <TypeIcon type={activeBead.type} size={13} />}
-                <span className="active-bead-id">{activeBead.id}</span>
-                <span
-                  className="active-bead-status"
-                  style={{ backgroundColor: STATUS_COLORS[activeBead.status] || "#888888" }}
-                  title={activeBead.status}
-                />
-              </div>
-              <span className="active-bead-title">{activeBead.title}</span>
-            </div>
-          </button>
+          </div>
         ) : (
           <div className="context-empty">
             <p>No active bead — select one from the Issues list to pin it here.</p>
@@ -308,10 +330,10 @@ export function ProjectSwitcherView({
         {!favoritesCollapsed && (favorites.length > 0 ? (
           <div className="favorites-list">
             {favorites.map((fav) => (
-              <div key={fav.id} className="favorite-row">
+              <div key={fav.id} className="context-card-row">
                 <button
                   type="button"
-                  className="active-bead favorite-open"
+                  className="active-bead context-card-open"
                   title={`${fav.id}${fav.title ? ` — ${fav.title}` : ""}\nClick to open in Details · triple-click to open in an editor tab`}
                   onClick={() => activateBead(fav.id)}
                 >
@@ -332,7 +354,7 @@ export function ProjectSwitcherView({
                 </button>
                 <button
                   type="button"
-                  className="favorite-unstar"
+                  className="context-card-x"
                   title="Unstar this bead"
                   aria-label={`Unstar ${fav.id}`}
                   onClick={() => onUnfavorite(fav.id)}
@@ -349,26 +371,8 @@ export function ProjectSwitcherView({
         ))}
       </section>
 
-      <div className="context-actions">
-        <button
-          type="button"
-          className="btn context-action-btn pick-ready"
-          onClick={onPickReady}
-          disabled={!activeProject}
-          title="Pick a ready-to-work bead (open, no open blocker) and make it the active bead"
-        >
-          <Rocket size={14} strokeWidth={2} />
-          <span>Pick Ready Bead</span>
-        </button>
-        <button
-          type="button"
-          className="btn context-action-btn show-issues"
-          onClick={onShowIssues}
-          title="Show the Issues panel"
-        >
-          <ListTodo size={14} strokeWidth={2} />
-          <span>Show Issues</span>
-        </button>
+      <div className="view-end" aria-hidden="true">
+        <span className="view-end-mark" />
       </div>
     </div>
   );
