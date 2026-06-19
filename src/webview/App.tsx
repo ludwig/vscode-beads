@@ -55,6 +55,8 @@ interface AppState {
   // Extension-host RSS (bytes), sampled periodically for the Active Project
   // card (vs-f50). 0 until the first sample arrives.
   memoryBytes: number;
+  // Per-tab Back/Forward enablement for an editor-tab Details view (vs-9u8).
+  tabNav: { canBack: boolean; canForward: boolean };
 }
 
 const initialState: AppState = {
@@ -84,6 +86,7 @@ const initialState: AppState = {
   focusIssuesSeq: 0,
   pulseSeq: 0,
   memoryBytes: 0,
+  tabNav: { canBack: false, canForward: false },
 };
 
 export function App(): React.ReactElement {
@@ -156,6 +159,13 @@ export function App(): React.ReactElement {
         break;
       case "setMemoryUsage":
         setState((prev) => ({ ...prev, memoryBytes: message.bytes }));
+        break;
+
+      case "setTabNavState":
+        setState((prev) => ({
+          ...prev,
+          tabNav: { canBack: message.canBack, canForward: message.canForward },
+        }));
         break;
       case "refresh":
         vscode.postMessage({ type: "refresh" });
@@ -366,6 +376,10 @@ export function App(): React.ReactElement {
             onCopyId={(beadId) =>
               vscode.postMessage({ type: "copyBeadId", beadId, toast: true })
             }
+            canNavigateBack={state.tabNav.canBack}
+            canNavigateForward={state.tabNav.canForward}
+            onNavigateBack={() => vscode.postMessage({ type: "navigateBack" })}
+            onNavigateForward={() => vscode.postMessage({ type: "navigateForward" })}
           />
         );
       }

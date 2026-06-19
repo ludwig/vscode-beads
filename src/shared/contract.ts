@@ -174,6 +174,8 @@ export type ExtensionToWebviewMessage =
   | { type: "focusIssuesTab" }
   | { type: "pulse" }
   | { type: "setMemoryUsage"; bytes: number }
+  // Per-tab Back/Forward enablement for an editor-tab Details view (vs-9u8).
+  | { type: "setTabNavState"; canBack: boolean; canForward: boolean }
   | { type: "refresh" }
   | { type: "showToast"; text: string };
 

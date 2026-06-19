@@ -180,6 +180,11 @@ interface DetailsViewProps {
   onViewInGraph: (beadId: string) => void;
   onSelectBead?: (beadId: string) => void;
   onCopyId?: (beadId: string) => void;
+  /** Per-tab Back/Forward enablement + handlers (editor tabs only, vs-9u8). */
+  canNavigateBack?: boolean;
+  canNavigateForward?: boolean;
+  onNavigateBack?: () => void;
+  onNavigateForward?: () => void;
 }
 
 // Helper to render text content - markdown or plain
@@ -204,11 +209,17 @@ export function DetailsView({
   onViewInGraph: _onViewInGraph,
   onSelectBead,
   onCopyId,
+  canNavigateBack = false,
+  canNavigateForward = false,
+  onNavigateBack,
+  onNavigateForward,
 }: DetailsViewProps): React.ReactElement {
   // Toast and onViewInGraph kept for potential future use
   const { showToast: _showToast } = useToast();
   void _onViewInGraph;
   void _showToast;
+  // Platform-aware label for the history nav shortcut shown in button tooltips.
+  const navMod = navigator.platform.toUpperCase().includes("MAC") ? "⌘" : "Ctrl+";
   const [editMode, setEditMode] = useState(false);
   const [editedBead, setEditedBead] = useState<Partial<Bead>>({});
   const [newLabel, setNewLabel] = useState("");
@@ -237,13 +248,16 @@ export function DetailsView({
     }
   }, [bead?.updatedAt]);
 
-  // Keyboard history navigation: Alt+Left / Alt+Right walk the Details
-  // back/forward trail (vs-xzq). Handled webview-side because the webview owns
-  // focus and would otherwise swallow the keystrokes before a VS Code
-  // keybinding could fire. Ignored while editing or typing in a field.
+  // Keyboard history navigation: Cmd/Ctrl+← / Cmd/Ctrl+→ (and Alt+←/→) walk the
+  // Details back/forward trail (vs-9u8). Because each editor tab is its own
+  // webview, only the focused tab receives the keystroke, so it walks that tab's
+  // own per-tab trail. Handled webview-side because the webview owns focus and
+  // would otherwise swallow the keystrokes before a VS Code keybinding could
+  // fire. Ignored while editing or typing in a field.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (!e.altKey || (e.key !== "ArrowLeft" && e.key !== "ArrowRight")) return;
+      const navModifier = e.metaKey || e.ctrlKey || e.altKey;
+      if (!navModifier || (e.key !== "ArrowLeft" && e.key !== "ArrowRight")) return;
       const target = e.target as HTMLElement | null;
       const typing =
         editMode ||
@@ -360,6 +374,33 @@ export function DetailsView({
           {bead.id}
         </span>
         <div className="header-actions">
+          {isEditorTab && (
+            <>
+              <button
+                className="icon-btn header-icon-btn"
+                title={`Back (${navMod}←)`}
+                aria-label="Back"
+                disabled={!canNavigateBack}
+                onClick={() => onNavigateBack?.()}
+              >
+                <svg width={13} height={13} viewBox="0 0 16 16" aria-hidden="true">
+                  <path fill="currentColor" d="M10.5 3L5.5 8l5 5L9 14.5 2.5 8 9 1.5z" />
+                </svg>
+              </button>
+              <button
+                className="icon-btn header-icon-btn"
+                title={`Forward (${navMod}→)`}
+                aria-label="Forward"
+                disabled={!canNavigateForward}
+                onClick={() => onNavigateForward?.()}
+              >
+                <svg width={13} height={13} viewBox="0 0 16 16" aria-hidden="true">
+                  <path fill="currentColor" d="M5.5 3l5 5-5 5L7 14.5 13.5 8 7 1.5z" />
+                </svg>
+              </button>
+              <span className="header-actions-sep" />
+            </>
+          )}
           {!isEditorTab && (
             <button
               className="icon-btn header-icon-btn"
