@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.1] - 2026-06-19
+
+### Fixed
+
+- **Favorites filter** showed an empty list in the bottom panel — the favorites set was never wired to the panel's Issues view, so it matched nothing (vs-sd5.6)
+
+### Changed
+
+- The **Favorites filter** now shows favorited beads **and their relatives** (direct dependency neighbors), so a favorite appears with its context rather than alone (vs-sd5.7)
+
 ## [0.16.0] - 2026-06-19
 
 ### Added
