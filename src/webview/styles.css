@@ -2075,7 +2075,8 @@ textarea {
 .view-end-flourish {
   color: var(--vscode-descriptionForeground);
   opacity: 0.45;
-  max-width: 70%;
+  width: 92%;
+  max-width: 340px;
   height: auto;
   transition: opacity 0.2s ease;
 }
@@ -3886,6 +3887,38 @@ textarea {
 
 .beads-tree-filter-input:focus {
   border-color: var(--vscode-focusBorder);
+}
+
+/* Expand-all / collapse-all controls (vs-fpp). */
+.beads-tree-foldctl {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+
+.beads-tree-foldbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  transition: color var(--transition-fast, 0.12s ease), background var(--transition-fast, 0.12s ease);
+}
+
+.beads-tree-foldbtn:hover:not(:disabled) {
+  color: var(--vscode-foreground);
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+}
+
+.beads-tree-foldbtn:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .beads-tree-sort {

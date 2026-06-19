@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight, ChevronDown, Search, ArrowUp, ArrowDown, CornerLeftUp } from "lucide-react";
+import { ChevronRight, ChevronDown, Search, ArrowUp, ArrowDown, CornerLeftUp, UnfoldVertical, FoldVertical } from "lucide-react";
 import {
   Bead,
   BeadType,
@@ -186,15 +186,6 @@ export function TreeView({
   // Highlight for the "Move to root" drop band while dragging over it.
   const [rootZoneOver, setRootZoneOver] = useState(false);
 
-  const toggle = useCallback((id: string) => {
-    setCollapsed((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
-
   const openMenu = useCallback((x: number, y: number, bead: Bead) => {
     setMenu({ x, y, bead });
   }, []);
@@ -250,6 +241,46 @@ export function TreeView({
   // Only the text query force-expands (to reveal matches); the always-on Issues
   // scope must not, so the user can still collapse/expand within it.
   const filtering = query.trim().length > 0;
+
+  // Every id that owns children — the set the expand/collapse-all controls act
+  // on, and the basis for the "all collapsed / all expanded" affordances (vs-fpp).
+  const parentIds = useMemo(() => {
+    const ids = new Set<string>();
+    const walk = (nodes: typeof visible) => {
+      for (const n of nodes) {
+        if (n.children.length > 0) {
+          ids.add(n.bead.id);
+          walk(n.children);
+        }
+      }
+    };
+    walk(visible);
+    return ids;
+  }, [visible]);
+  const expandAll = useCallback(() => setCollapsed(new Set()), []);
+  const collapseAll = useCallback(() => setCollapsed(new Set(parentIds)), [parentIds]);
+
+  // Toggle a node's collapse state. `recursive` (shift-click) applies the
+  // clicked node's *resulting* state to its whole subtree (vs-fpp) — collapse a
+  // branch wholesale, or blow it fully open.
+  const toggle = useCallback(
+    (id: string, recursive = false) => {
+      setCollapsed((prev) => {
+        const next = new Set(prev);
+        const willCollapse = !next.has(id);
+        const targets = recursive ? subtreeIds(forest, id) : new Set([id]);
+        for (const tid of targets) {
+          if (willCollapse) next.add(tid);
+          else next.delete(tid);
+        }
+        return next;
+      });
+    },
+    [forest],
+  );
+  // Disable the control that's already a no-op (everything open / everything shut).
+  const allExpanded = [...parentIds].every((id) => !collapsed.has(id));
+  const allCollapsed = parentIds.size > 0 && [...parentIds].every((id) => collapsed.has(id));
 
   // Current parent per bead (first parent-child edge from=child wins).
   const parentOf = useMemo(() => {
@@ -360,6 +391,30 @@ export function TreeView({
             total={totalCount ?? 0}
             className="beads-tree-filter-indicator"
           />
+        )}
+        {parentIds.size > 0 && (
+          <div className="beads-tree-foldctl" role="group" aria-label="Expand or collapse the tree">
+            <button
+              type="button"
+              className="beads-tree-foldbtn"
+              title="Expand all (⇧-click a row's chevron to expand just its subtree)"
+              aria-label="Expand all"
+              disabled={allExpanded || filtering}
+              onClick={expandAll}
+            >
+              <UnfoldVertical size={14} strokeWidth={2} />
+            </button>
+            <button
+              type="button"
+              className="beads-tree-foldbtn"
+              title="Collapse all (⇧-click a row's chevron to collapse just its subtree)"
+              aria-label="Collapse all"
+              disabled={allCollapsed || filtering}
+              onClick={collapseAll}
+            >
+              <FoldVertical size={14} strokeWidth={2} />
+            </button>
+          </div>
         )}
       </div>
       <div className="beads-tree-colheader" role="row">
@@ -505,7 +560,7 @@ interface TreeRowProps {
   selectedBeadId: string | null;
   collapsed: Set<string>;
   forceExpand: boolean;
-  onToggle: (id: string) => void;
+  onToggle: (id: string, recursive?: boolean) => void;
   onActivate: (beadId: string) => void;
   onContextMenu: (x: number, y: number, bead: Bead) => void;
   drag: DragApi;
@@ -571,7 +626,7 @@ function TreeRow({
             className="beads-tree-twisty"
             onClick={(e) => {
               e.stopPropagation();
-              if (hasChildren) onToggle(bead.id);
+              if (hasChildren) onToggle(bead.id, e.shiftKey);
             }}
           >
             {hasChildren ? (
