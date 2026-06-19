@@ -2740,7 +2740,7 @@ textarea {
   padding: 3px 8px;
 }
 
-/* Action buttons in the Context view flow (Show Issues · Pick Ready Bead) —
+/* Action buttons in the Repository view flow (Show Issues · Pick Ready Bead) —
    a single row of plump, hard-to-miss buttons. */
 .context-actions {
   display: flex;
@@ -3455,6 +3455,13 @@ textarea {
   border: 1px solid var(--vscode-panel-border);
   /* A quiet left rail reads the card as a threaded note. */
   border-left: 2px solid var(--beads-accent);
+  transition: background-color 0.1s ease, border-color 0.1s ease;
+}
+
+/* Highlight on hover for contrast against the many dark elements (vs-nxd). */
+.comment:hover {
+  background: var(--vscode-list-hoverBackground);
+  border-color: var(--vscode-focusBorder);
 }
 
 .comment-header {
