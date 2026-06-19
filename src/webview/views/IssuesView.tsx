@@ -43,6 +43,7 @@ import {
   vscode,
 } from "../types";
 import { readyBeadIds } from "../../backend/readyBeads";
+import { favoritesWithRelatives } from "../../backend/favoritesScope";
 import { StatusBadge } from "../common/StatusBadge";
 import { PriorityBadge } from "../common/PriorityBadge";
 import { TypeBadge } from "../common/TypeBadge";
@@ -205,8 +206,11 @@ export function IssuesView({
     const prev = (vscode.getState() as Record<string, unknown>) ?? {};
     vscode.setState({ ...prev, issuesReadyOnly: readyOnly });
   }, [readyOnly]);
-  // "Favorites" filter (vs-sd5.6): show only starred beads. Persisted like
-  // readyOnly, and composes with it + the column filters/search.
+  // "Favorites" filter (vs-sd5.6): show starred beads AND their relatives —
+  // the 1-hop dependency neighbors over any edge (vs-sd5.7), so a favorite
+  // appears with its context rather than stripped bare. Needs the dependency
+  // graph (fetched lazily on first enable, like Ready). Persisted like readyOnly
+  // and composes with it + the column filters/search.
   const [favoritesOnly, setFavoritesOnly] = useState<boolean>(
     () => (vscode.getState() as { issuesFavoritesOnly?: boolean } | undefined)?.issuesFavoritesOnly ?? false,
   );
@@ -214,20 +218,29 @@ export function IssuesView({
     const prev = (vscode.getState() as Record<string, unknown>) ?? {};
     vscode.setState({ ...prev, issuesFavoritesOnly: favoritesOnly });
   }, [favoritesOnly]);
+  const toggleFavoritesOnly = useCallback(() => {
+    setFavoritesOnly((on) => {
+      if (!on && !graph) onRequestGraph?.(); // fetch the graph to resolve relatives
+      return !on;
+    });
+  }, [graph, onRequestGraph]);
   const readySet = useMemo(() => {
     if (!graph) return null;
     const blocks = graph.edges.filter((e) => e.type === "blocks");
     return new Set(readyBeadIds(beads, blocks));
   }, [graph, beads]);
+  // Favorites + their 1-hop neighbors (relatives), or null when the filter is
+  // off. Until the graph loads it's just the favorites themselves.
+  const favoritesScope = useMemo(
+    () => (favoritesOnly ? favoritesWithRelatives(favoriteIds, graph?.edges ?? []) : null),
+    [favoritesOnly, favoriteIds, graph],
+  );
   const tableData = useMemo(() => {
     let rows = beads;
     if (readyOnly && readySet) rows = rows.filter((b) => readySet.has(b.id));
-    if (favoritesOnly) {
-      const fav = new Set(favoriteIds);
-      rows = rows.filter((b) => fav.has(b.id));
-    }
+    if (favoritesScope) rows = rows.filter((b) => favoritesScope.has(b.id));
     return rows;
-  }, [readyOnly, readySet, favoritesOnly, favoriteIds, beads]);
+  }, [readyOnly, readySet, favoritesScope, beads]);
   const toggleReady = useCallback(() => {
     setReadyOnly((on) => {
       if (!on && !graph) onRequestGraph?.(); // fetch the graph the first time it's needed
@@ -876,13 +889,13 @@ export function IssuesView({
             <span>Ready</span>
           </button>
 
-          {/* Favorites toggle (vs-sd5.6) — composes with Ready + the filters. */}
+          {/* Favorites toggle (vs-sd5.6/.7) — favorites + their relatives. */}
           <button
             type="button"
             className={`ready-toggle ${favoritesOnly ? "active" : ""}`}
             aria-pressed={favoritesOnly}
-            onClick={() => setFavoritesOnly((v) => !v)}
-            title="Show only favorited (starred) beads. Composes with the other filters."
+            onClick={toggleFavoritesOnly}
+            title="Show favorited (starred) beads and their relatives (direct dependency neighbors). Composes with the other filters."
           >
             <Star size={12} strokeWidth={2.25} />
             <span>Favorites</span>

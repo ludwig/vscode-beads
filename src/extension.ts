@@ -154,6 +154,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Fan the favorites set out to every live view whenever it changes (a
     // star/unstar in one view, or a project switch). vs-sd5.1.
     favorites.onDidChange((ids) => {
+      shellProvider.publishFavorites(ids);
       detailsProvider.publishFavorites(ids);
       switcherProvider.publishFavorites(ids);
       panelManager.publishFavorites(ids);
@@ -165,6 +166,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // resolves to bare ids until this fires (vs-sd5.1).
     projectManager.onBeadsCached(() => {
       const ids = favorites.list();
+      shellProvider.publishFavorites(ids);
       detailsProvider.publishFavorites(ids);
       switcherProvider.publishFavorites(ids);
       panelManager.publishFavorites(ids);

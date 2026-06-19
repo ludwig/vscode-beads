@@ -67,7 +67,7 @@ export class BeadPanelManager implements vscode.Disposable {
     if (this.reveal(key)) return;
 
     const panel = this.createPanel("Issues");
-    const provider = new BeadsPanelViewProvider(this.extensionUri, this.projectManager, this.log);
+    const provider = new BeadsPanelViewProvider(this.extensionUri, this.projectManager, this.log, this.favorites);
     provider.attach(hostFromPanel(panel));
 
     this.track(key, panel, provider);
