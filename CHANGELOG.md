@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.1] - 2026-06-19
+
 ### Fixed
 
 - **Add to Favorites** from the bottom panel (Issues table, Kanban, Graph) silently did nothing — the panel's provider was never given the shared favorites service, so the toggle no-op'd and the Repository view's Favorites card never updated. The panel is now wired to the service, and a missing-service toggle is logged instead of swallowed (vs-94o)
