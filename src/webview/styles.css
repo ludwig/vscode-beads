@@ -2063,14 +2063,48 @@ textarea {
   color: var(--vscode-foreground);
 }
 
-/* End-of-view ornament: a full-width hairline that turns down into leafy ivy
- * curls at each end, so a scrollable view reads as "this is the bottom" instead
- * of stopping cold. Breathing room below. */
+/* End-of-view ornament slot: closes a scrollable view so it reads as "this is
+ * the bottom" instead of stopping cold. The ornament itself is one of the
+ * interchangeable variants in webview/common/endFlourishes (Dots/Baroque/Ivy);
+ * shared color/opacity below, variant-specific layout further down. */
 .view-end {
-  display: block;
-  padding: 16px 2px 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 4px 26px;
 }
 
+.view-end-flourish {
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.45;
+  transition: opacity 0.2s ease;
+}
+
+.view-end-flourish:hover {
+  opacity: 0.7;
+}
+
+/* Variant: Dots — three minimal dots. */
+.view-end-dots {
+  display: flex;
+  gap: 11px;
+}
+
+.view-end-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Variant: Baroque — wide centered scrollwork divider. */
+.view-end-baroque {
+  width: 92%;
+  max-width: 460px;
+  height: auto;
+}
+
+/* Variant: Ivy — full-width hairline with climbing tendril caps. */
 .view-end-rule {
   display: flex;
   align-items: flex-start;
