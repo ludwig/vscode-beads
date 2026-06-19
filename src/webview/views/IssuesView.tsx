@@ -99,6 +99,15 @@ const typeSortingFn = (rowA: { getValue: (id: string) => unknown }, rowB: { getV
   return a - b;
 };
 
+// Shape of the slice of the shared webview state blob this view persists
+// (vs-1q1). Keys are namespaced so they coexist with the column-layout /
+// readyOnly keys other hooks/views store in the same blob.
+interface PersistedIssuesState {
+  issuesColumnFilters?: ColumnFiltersState;
+  issuesGlobalFilter?: string;
+  issuesActivePreset?: string;
+}
+
 // Filter presets
 interface FilterPreset {
   id: string;
@@ -152,11 +161,18 @@ export function IssuesView({
     defaultVisibility,
   });
 
-  // Non-persisted TanStack state
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([
-    { id: "status", value: ["open", "in_progress", "blocked"] }, // Default: Not Closed
-  ]);
-  const [globalFilter, setGlobalFilter] = useState("");
+  // Active filters + search persist across reloads and Panel-tab switches
+  // (IssuesView unmounts when another tab is active, so plain state would
+  // forget them). Merged into the same shared vscode state blob as the column
+  // layout / readyOnly so we don't clobber the Tree's persisted sort (vs-1q1).
+  const persisted = (vscode.getState() as PersistedIssuesState | undefined) ?? {};
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
+    () =>
+      persisted.issuesColumnFilters ?? [
+        { id: "status", value: ["open", "in_progress", "blocked"] }, // Default: Not Closed
+      ],
+  );
+  const [globalFilter, setGlobalFilter] = useState(() => persisted.issuesGlobalFilter ?? "");
   const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [isResizing, setIsResizing] = useState(false);
@@ -204,7 +220,17 @@ export function IssuesView({
       return !on;
     });
   }, [graph, onRequestGraph]);
-  const [activePreset, setActivePreset] = useState<string>("not-closed");
+  const [activePreset, setActivePreset] = useState<string>(() => persisted.issuesActivePreset ?? "not-closed");
+  // Persist filters + search + preset whenever they change (merge, don't clobber).
+  useEffect(() => {
+    const prev = (vscode.getState() as Record<string, unknown>) ?? {};
+    vscode.setState({
+      ...prev,
+      issuesColumnFilters: columnFilters,
+      issuesGlobalFilter: globalFilter,
+      issuesActivePreset: activePreset,
+    });
+  }, [columnFilters, globalFilter, activePreset]);
   const [filterBarOpen, setFilterBarOpen] = useState(true);
   const [filterMenuOpen, setFilterMenuOpen] = useState<string | null>(null);
   const [columnMenuOpen, setColumnMenuOpen] = useState(false);
