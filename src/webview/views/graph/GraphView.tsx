@@ -325,7 +325,7 @@ function GraphCanvas({
             type="button"
             role="radio"
             aria-checked={mode === "layered"}
-            className={`graph-toggle-btn ${mode === "layered" ? "active" : ""}`}
+            className={`graph-segment ${mode === "layered" ? "active" : ""}`}
             onClick={() => setMode("layered")}
             title="Layered (hierarchical) layout"
           >
@@ -336,7 +336,7 @@ function GraphCanvas({
             type="button"
             role="radio"
             aria-checked={mode === "force"}
-            className={`graph-toggle-btn ${mode === "force" ? "active" : ""}`}
+            className={`graph-segment ${mode === "force" ? "active" : ""}`}
             onClick={() => setMode("force")}
             title="Force-directed (freeform) layout"
           >
@@ -347,7 +347,7 @@ function GraphCanvas({
             type="button"
             role="radio"
             aria-checked={mode === "tree"}
-            className={`graph-toggle-btn ${mode === "tree" ? "active" : ""}`}
+            className={`graph-segment ${mode === "tree" ? "active" : ""}`}
             onClick={() => setMode("tree")}
             title="Tidy-tree layout (dependency hierarchy: blocks + parent-child)"
           >
@@ -358,7 +358,7 @@ function GraphCanvas({
             type="button"
             role="radio"
             aria-checked={mode === "radial"}
-            className={`graph-toggle-btn ${mode === "radial" ? "active" : ""}`}
+            className={`graph-segment ${mode === "radial" ? "active" : ""}`}
             onClick={() => setMode("radial")}
             title="Radial tree layout (dependency hierarchy: blocks + parent-child)"
           >
