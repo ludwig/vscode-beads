@@ -2068,7 +2068,7 @@ textarea {
  * of stopping cold. Breathing room below. */
 .view-end {
   display: block;
-  padding: 20px 14px 30px;
+  padding: 16px 2px 26px;
 }
 
 .view-end-rule {
@@ -2085,11 +2085,12 @@ textarea {
 }
 
 /* The flexible middle: a hairline sitting at the height the caps' vines enter
- * (near their top), so line and foliage connect seamlessly. */
+ * (one third down — see EndFlourish geometry note), so line and foliage connect
+ * seamlessly while the caps climb above and below it. */
 .view-end-line {
   flex: 1 1 auto;
   height: 0;
-  margin-top: 1px;
+  margin-top: 15px;
   border-top: 1px solid currentColor;
 }
 
