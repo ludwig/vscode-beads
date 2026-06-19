@@ -2063,26 +2063,39 @@ textarea {
   color: var(--vscode-foreground);
 }
 
-/* End-of-view ornament: a centered baroque flourish so a scrollable view reads
- * as "this is the bottom" instead of stopping cold, plus breathing room below. */
+/* End-of-view ornament: a full-width hairline that turns down into leafy ivy
+ * curls at each end, so a scrollable view reads as "this is the bottom" instead
+ * of stopping cold. Breathing room below. */
 .view-end {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 22px 0 32px;
+  display: block;
+  padding: 20px 14px 30px;
 }
 
-.view-end-flourish {
+.view-end-rule {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
   color: var(--vscode-descriptionForeground);
-  opacity: 0.45;
-  width: 96%;
-  max-width: 460px;
-  height: auto;
+  opacity: 0.5;
   transition: opacity 0.2s ease;
 }
 
-.view-end-flourish:hover {
-  opacity: 0.7;
+.view-end-rule:hover {
+  opacity: 0.75;
+}
+
+/* The flexible middle: a hairline sitting at the height the caps' vines enter
+ * (near their top), so line and foliage connect seamlessly. */
+.view-end-line {
+  flex: 1 1 auto;
+  height: 0;
+  margin-top: 1px;
+  border-top: 1px solid currentColor;
+}
+
+.view-end-cap {
+  flex: 0 0 auto;
+  display: block;
 }
 
 /* Responsive grid of stat chips: one column on a narrow sidebar, packing into

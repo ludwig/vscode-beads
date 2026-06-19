@@ -1,77 +1,60 @@
 /**
  * EndFlourish — a decorative "end of content" ornament (vs-sd5.1 polish).
  *
- * A wide, symmetric baroque flourish: each half sends a primary swash curling
- * into a large terminal volute, with a secondary inner scroll, acanthus leaves,
- * a fine upper tendril, and a row of graduated beads along the stem — all
- * mirrored around a central medallion-and-lozenge cartouche framing a bead (a
- * nod to "beads"). Drawn in currentColor at low opacity so it reads as a quiet
- * typographic dingbat closing the view, not a UI control. aria-hidden.
+ * A full-width hairline that, at each end, turns downward and curls into a
+ * leafy ivy tendril. Built as [leaf cap][flexible rule][leaf cap] so the rule
+ * spans the entire available width while the caps stay a fixed size — the line
+ * sits near the top and the foliage hangs below it. Drawn in currentColor at
+ * low opacity so it reads as a quiet closing dingbat, not a UI control.
+ * aria-hidden.
  */
 
 import React from "react";
 
-// One half of the flourish, sweeping right from the centre (x=220). The left
-// half is this same group mirrored, so the ornament is perfectly symmetric.
-function FlourishHalf(): React.ReactElement {
+// One end cap: the rule arrives at the top-left (0,2), dips right, turns down,
+// and curls into a small tendril, with two ivy leaves branching off. The right
+// cap renders this directly; the left cap mirrors it.
+function LeafCap({ flip }: { flip?: boolean }): React.ReactElement {
   return (
-    <g fill="none" stroke="currentColor" strokeWidth={1} strokeLinecap="round">
-      {/* Primary swash curling into a large terminal volute */}
-      <path d="M220 24 C 252 24 264 10 290 10 C 318 10 325 31 305 32 C 289 32.8 289 16 304 16.6" />
-      {/* Secondary inner scroll, doubling the stem with a tighter curl */}
-      <path d="M250 24 C 268 24 276 15 292 16 C 305 16.8 306 26 296 25.6" />
-      {/* Lower counter-scroll mirroring the upper sweep */}
-      <path d="M220 24 C 246 24 254 35 273 35 C 290 35 293 24.5 280 23.6" />
-      {/* Fine upper tendril ending in a dot */}
-      <path d="M264 15 C 276 6 289 4 299 8" />
-      <circle cx="300" cy="7.6" r="1.1" fill="currentColor" stroke="none" />
-      {/* Acanthus leaves tucked into the curls */}
-      <path
-        d="M290 10 C 295 3 306 3 311 8.5 C 304 12 296 12 290 10 Z"
-        fill="currentColor"
-        stroke="none"
-      />
-      <path
-        d="M273 35 C 278 41 287 41 291 36 C 286 33.5 279 33.5 273 35 Z"
-        fill="currentColor"
-        stroke="none"
-      />
-      {/* Graduated beads marching out along the stem */}
-      <circle cx="236" cy="24" r="1.7" fill="currentColor" stroke="none" />
-      <circle cx="252" cy="24" r="1.3" fill="currentColor" stroke="none" />
-      <circle cx="266" cy="24" r="0.9" fill="currentColor" stroke="none" />
-    </g>
+    <svg
+      className="view-end-cap"
+      viewBox="0 0 64 44"
+      width="48"
+      height="33"
+      role="presentation"
+      aria-hidden="true"
+      style={flip ? { transform: "scaleX(-1)" } : undefined}
+    >
+      <g fill="none" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round">
+        {/* Vine: enters level, descends, turns down, curls back into a tendril */}
+        <path d="M0 2 C 20 2 36 3 46 13 C 54 21 54 33 45 36 C 38 38.5 33 31 39 27.5" />
+        {/* Upper ivy leaf */}
+        <path
+          d="M42 11 C 45 4 53 4 57 9 C 52 13.5 45 13.5 42 11 Z"
+          fill="currentColor"
+          stroke="none"
+        />
+        <path d="M44 10.5 L55 8" strokeWidth={0.8} />
+        {/* Lower ivy leaf, hanging off the downturn */}
+        <path
+          d="M50 22 C 57 23 61 30 58 37 C 52 35.5 48 28 50 22 Z"
+          fill="currentColor"
+          stroke="none"
+        />
+        <path d="M51 24 L56 34" strokeWidth={0.8} />
+        {/* Tendril terminal dot */}
+        <circle cx="40.5" cy="28" r="1.1" fill="currentColor" stroke="none" />
+      </g>
+    </svg>
   );
 }
 
 export function EndFlourish(): React.ReactElement {
   return (
-    <svg
-      className="view-end-flourish"
-      viewBox="0 0 440 48"
-      width="380"
-      height="41"
-      role="presentation"
-      aria-hidden="true"
-    >
-      {/* Central cartouche: a medallion + lozenge framing a bead, with four
-          radiating points. */}
-      <g fill="none" stroke="currentColor" strokeWidth={1}>
-        <path d="M220 9 L235 24 L220 39 L205 24 Z" />
-        <circle cx="220" cy="24" r="6.5" />
-      </g>
-      <circle cx="220" cy="24" r="2.8" fill="currentColor" />
-      <g fill="currentColor" stroke="none">
-        <circle cx="220" cy="11.5" r="1" />
-        <circle cx="220" cy="36.5" r="1" />
-        <circle cx="207.5" cy="24" r="1" />
-        <circle cx="232.5" cy="24" r="1" />
-      </g>
-      {/* Right half, then the same group mirrored to form the left half */}
-      <FlourishHalf />
-      <g transform="matrix(-1 0 0 1 440 0)">
-        <FlourishHalf />
-      </g>
-    </svg>
+    <div className="view-end-rule" aria-hidden="true">
+      <LeafCap flip />
+      <span className="view-end-line" />
+      <LeafCap />
+    </div>
   );
 }
