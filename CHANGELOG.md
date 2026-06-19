@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-06-19
+
 ### Added
 
 - Comment cards in the Details view now highlight on hover for better contrast against surrounding dark elements (vs-nxd)
