@@ -8,8 +8,8 @@
 import React from "react";
 import { END_FLOURISHES, type EndFlourishVariant } from "./endFlourishes";
 
-// Active ornament. Tasteful dots for now; "baroque" and "ivy" are also ready.
-const ACTIVE: EndFlourishVariant = "dots";
+// Active ornament. A faded woven band; "dots", "baroque" and "ivy" are also ready.
+const ACTIVE: EndFlourishVariant = "band";
 
 export function EndFlourish(): React.ReactElement {
   const Variant = END_FLOURISHES[ACTIVE];

@@ -95,7 +95,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   shellProvider = new PanelShellViewProvider(
     context.extensionUri,
     projectManager,
-    log
+    log,
+    favorites
   );
 
   switcherProvider = new BeadsProjectSwitcherViewProvider(
