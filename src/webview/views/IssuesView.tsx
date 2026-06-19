@@ -50,7 +50,7 @@ import { TypeIcon } from "../common/TypeIcon";
 import { LabelBadge } from "../common/LabelBadge";
 import { FilterChip } from "../common/FilterChip";
 import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
-import { Rows3, Rows2, Rocket } from "lucide-react";
+import { Rows3, Rows2, Rocket, Star } from "lucide-react";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { Loading } from "../common/Loading";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
@@ -205,15 +205,29 @@ export function IssuesView({
     const prev = (vscode.getState() as Record<string, unknown>) ?? {};
     vscode.setState({ ...prev, issuesReadyOnly: readyOnly });
   }, [readyOnly]);
+  // "Favorites" filter (vs-sd5.6): show only starred beads. Persisted like
+  // readyOnly, and composes with it + the column filters/search.
+  const [favoritesOnly, setFavoritesOnly] = useState<boolean>(
+    () => (vscode.getState() as { issuesFavoritesOnly?: boolean } | undefined)?.issuesFavoritesOnly ?? false,
+  );
+  useEffect(() => {
+    const prev = (vscode.getState() as Record<string, unknown>) ?? {};
+    vscode.setState({ ...prev, issuesFavoritesOnly: favoritesOnly });
+  }, [favoritesOnly]);
   const readySet = useMemo(() => {
     if (!graph) return null;
     const blocks = graph.edges.filter((e) => e.type === "blocks");
     return new Set(readyBeadIds(beads, blocks));
   }, [graph, beads]);
-  const tableData = useMemo(
-    () => (readyOnly && readySet ? beads.filter((b) => readySet.has(b.id)) : beads),
-    [readyOnly, readySet, beads],
-  );
+  const tableData = useMemo(() => {
+    let rows = beads;
+    if (readyOnly && readySet) rows = rows.filter((b) => readySet.has(b.id));
+    if (favoritesOnly) {
+      const fav = new Set(favoriteIds);
+      rows = rows.filter((b) => fav.has(b.id));
+    }
+    return rows;
+  }, [readyOnly, readySet, favoritesOnly, favoriteIds, beads]);
   const toggleReady = useCallback(() => {
     setReadyOnly((on) => {
       if (!on && !graph) onRequestGraph?.(); // fetch the graph the first time it's needed
@@ -860,6 +874,18 @@ export function IssuesView({
           >
             <Rocket size={12} strokeWidth={2.25} />
             <span>Ready</span>
+          </button>
+
+          {/* Favorites toggle (vs-sd5.6) — composes with Ready + the filters. */}
+          <button
+            type="button"
+            className={`ready-toggle ${favoritesOnly ? "active" : ""}`}
+            aria-pressed={favoritesOnly}
+            onClick={() => setFavoritesOnly((v) => !v)}
+            title="Show only favorited (starred) beads. Composes with the other filters."
+          >
+            <Star size={12} strokeWidth={2.25} />
+            <span>Favorites</span>
           </button>
 
           {/* Active filter chips */}
