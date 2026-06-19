@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Favorites** — star/unstar a bead (Details header) to pin it in a new **Favorites** section in the sidebar context panel. The set is persisted per project (survives reloads) and published to every view (vs-sd5.1)
+
 ## [0.15.1] - 2026-06-19
 
 ### Added

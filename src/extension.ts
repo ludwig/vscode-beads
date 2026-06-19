@@ -10,6 +10,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
 import { BeadsProjectManager } from "./backend/BeadsProjectManager";
+import { FavoritesService } from "./backend/FavoritesService";
 import { PanelShellViewProvider } from "./providers/PanelShellViewProvider";
 import { BeadDetailsViewProvider } from "./providers/BeadDetailsViewProvider";
 import { BeadsProjectSwitcherViewProvider } from "./providers/BeadsProjectSwitcherViewProvider";
@@ -29,6 +30,7 @@ let shellProvider: PanelShellViewProvider;
 let detailsProvider: BeadDetailsViewProvider;
 let switcherProvider: BeadsProjectSwitcherViewProvider;
 let panelManager: BeadPanelManager;
+let favorites: FavoritesService;
 let statusBar: vscode.StatusBarItem;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
@@ -76,6 +78,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   projectManager = new BeadsProjectManager(context, log);
   await projectManager.initialize();
 
+  // Favorites: per-project set of starred beads, persisted in workspaceState
+  // and published to every view (vs-sd5.1). Point it at the active project up
+  // front so the first render shows the right set.
+  favorites = new FavoritesService(context.workspaceState);
+  favorites.setActiveProject(projectManager.getActiveProject()?.id ?? null);
+  context.subscriptions.push(favorites);
+
   // Initialize context for conditional menu items
   vscode.commands.executeCommand("setContext", "beads.hasSelectedBead", false);
   vscode.commands.executeCommand("setContext", "beads.canNavigateBack", false);
@@ -92,17 +101,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   switcherProvider = new BeadsProjectSwitcherViewProvider(
     context.extensionUri,
     projectManager,
-    log
+    log,
+    favorites
   );
 
   detailsProvider = new BeadDetailsViewProvider(
     context.extensionUri,
     projectManager,
-    log
+    log,
+    favorites
   );
 
   // Manages bead webviews opened as editor tabs (vs-ask, vs-fx4).
-  panelManager = new BeadPanelManager(context.extensionUri, projectManager, log);
+  panelManager = new BeadPanelManager(context.extensionUri, projectManager, log, favorites);
   context.subscriptions.push(panelManager);
 
   // Register webview providers
@@ -140,6 +151,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // Subscribe to project changes to refresh views
   context.subscriptions.push(
+    // Fan the favorites set out to every live view whenever it changes (a
+    // star/unstar in one view, or a project switch). vs-sd5.1.
+    favorites.onDidChange((ids) => {
+      detailsProvider.publishFavorites(ids);
+      switcherProvider.publishFavorites(ids);
+      panelManager.publishFavorites(ids);
+    }),
+
     projectManager.onDataChanged(() => {
       shellProvider.refresh();
       detailsProvider.refresh();
@@ -147,6 +166,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
 
     projectManager.onActiveProjectChanged(() => {
+      // Re-point favorites at the new project (fires onDidChange → re-publishes).
+      favorites.setActiveProject(projectManager.getActiveProject()?.id ?? null);
       shellProvider.setSelectedBead(null); // Clear selection on project switch
       switcherProvider.setActiveBead(null);
       shellProvider.refreshForProjectChange();

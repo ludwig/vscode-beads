@@ -13,6 +13,7 @@
 
 import * as vscode from "vscode";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
+import { FavoritesService } from "../backend/FavoritesService";
 import { Logger } from "../utils/logger";
 import { BaseViewProvider } from "./BaseViewProvider";
 import { BeadDetailsViewProvider } from "./BeadDetailsViewProvider";
@@ -33,7 +34,8 @@ export class BeadPanelManager implements vscode.Disposable {
   constructor(
     private readonly extensionUri: vscode.Uri,
     private readonly projectManager: BeadsProjectManager,
-    private readonly log: Logger
+    private readonly log: Logger,
+    private readonly favorites?: FavoritesService
   ) {
     // Keep open tabs in sync with the rest of the extension.
     this.subscriptions.push(
@@ -50,7 +52,7 @@ export class BeadPanelManager implements vscode.Disposable {
     if (this.reveal(key)) return;
 
     const panel = this.createPanel(beadId);
-    const provider = new BeadDetailsViewProvider(this.extensionUri, this.projectManager, this.log);
+    const provider = new BeadDetailsViewProvider(this.extensionUri, this.projectManager, this.log, this.favorites);
     provider.attach(hostFromPanel(panel));
     // currentBeadId is set synchronously, so the webview's "ready" handshake
     // (which triggers initializeView → loadData) renders this bead.
@@ -137,6 +139,11 @@ export class BeadPanelManager implements vscode.Disposable {
 
   private forEachProvider(fn: (provider: BaseViewProvider) => void): void {
     for (const { provider } of this.entries.values()) fn(provider);
+  }
+
+  /** Push the favorites set to every open editor-tab panel (vs-sd5.1). */
+  public publishFavorites(favorites: string[]): void {
+    this.forEachProvider((p) => p.publishFavorites(favorites));
   }
 
   public dispose(): void {

@@ -81,6 +81,22 @@ export interface Bead {
   partial?: boolean;
 }
 
+/**
+ * A favorite/starred bead as published to the views (vs-sd5.1). The persisted
+ * truth is just the id (ordered, per project); the host resolves each id to
+ * this lightweight summary from its bead cache so the Favorites section can
+ * render id + title + type icon like the Active Bead card. Fields beyond `id`
+ * are best-effort: a favorite whose row isn't cached yet resolves to `{ id }`.
+ * Consumers that only need the id set use `favorites.map((f) => f.id)`.
+ */
+export interface FavoriteBead {
+  id: string;
+  title?: string;
+  type?: string;
+  status?: BeadStatus;
+  priority?: BeadPriority;
+}
+
 // A Beads project (database/workspace).
 export interface BeadsProject {
   id: string; // Stable ID (hash of db path or root path)
@@ -174,6 +190,9 @@ export type ExtensionToWebviewMessage =
   | { type: "focusIssuesTab" }
   | { type: "pulse" }
   | { type: "setMemoryUsage"; bytes: number }
+  // The active project's favorites, in curated order, resolved to lightweight
+  // summaries (id + title + type icon) for display (vs-sd5.1).
+  | { type: "setFavorites"; favorites: FavoriteBead[] }
   // Per-tab Back/Forward enablement for an editor-tab Details view (vs-9u8).
   | { type: "setTabNavState"; canBack: boolean; canForward: boolean }
   | { type: "refresh" }
@@ -214,4 +233,7 @@ export type WebviewToExtensionMessage =
   | { type: "cancelCreate" }
   | { type: "openFile"; filePath: string; line?: number }
   | { type: "openExternal"; url: string }
-  | { type: "openIssuesWithFilter"; filter: IssuesFilter };
+  | { type: "openIssuesWithFilter"; filter: IssuesFilter }
+  // Star/unstar a bead in the active project's favorites set (vs-sd5.1).
+  | { type: "toggleFavorite"; beadId: string }
+  | { type: "removeFavorite"; beadId: string };

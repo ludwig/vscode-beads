@@ -2008,6 +2008,60 @@ textarea {
   text-overflow: ellipsis;
 }
 
+/* Favorites section (vs-sd5.1). Reuses the .active-bead card visuals per row,
+ * with a per-row unstar (X) control to the right. */
+.context-heading-count {
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+}
+
+.favorites-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.favorite-row {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.favorite-open {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.favorite-unstar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  padding: 0;
+  border: none;
+  border-radius: var(--border-radius);
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+
+.favorite-row:hover .favorite-unstar {
+  opacity: 1;
+}
+
+.favorite-unstar:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+  color: var(--vscode-foreground);
+}
+
 /* Responsive grid of stat chips: one column on a narrow sidebar, packing into
  * multiple columns as it widens (auto-fill) — no media queries, just tracks the
  * container width. Keeps the table compact instead of sprawling label↔value. */
@@ -2570,6 +2624,12 @@ textarea {
 .header-icon-btn:disabled {
   opacity: 0.35;
   cursor: default;
+}
+
+/* Lit star when the shown bead is a favorite (vs-sd5.1). */
+.header-icon-btn.is-favorite,
+.header-icon-btn.is-favorite:hover:not(:disabled) {
+  color: var(--vscode-charts-yellow, #d7ba7d);
 }
 
 /* Hairline between the utility icons and the primary action. */

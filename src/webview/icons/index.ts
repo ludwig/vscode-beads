@@ -20,6 +20,8 @@ import tagSvg from "./tag.svg";
 import externalLinkSvg from "./external-link.svg";
 import plusSvg from "./plus.svg";
 import arrowsRotateSvg from "./arrows-rotate.svg";
+import starSvg from "./star.svg";
+import starOutlineSvg from "./star-outline.svg";
 import notdefSvg from "./notdef.svg";
 
 export const icons = {
@@ -37,6 +39,8 @@ export const icons = {
   "external-link": externalLinkSvg,
   plus: plusSvg,
   refresh: arrowsRotateSvg,
+  star: starSvg,
+  "star-outline": starOutlineSvg,
   notdef: notdefSvg,
 } as const;
 

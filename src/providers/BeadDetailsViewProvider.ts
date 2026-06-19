@@ -11,6 +11,7 @@
 import * as vscode from "vscode";
 import { BaseViewProvider } from "./BaseViewProvider";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
+import { FavoritesService } from "../backend/FavoritesService";
 import { WebviewToExtensionMessage, issueToWebviewBead } from "../backend/types";
 import { Logger } from "../utils/logger";
 import { NavigationHistory } from "./NavigationHistory";
@@ -31,9 +32,10 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
   constructor(
     extensionUri: vscode.Uri,
     projectManager: BeadsProjectManager,
-    logger: Logger
+    logger: Logger,
+    favorites?: FavoritesService
   ) {
-    super(extensionUri, projectManager, logger.child("Details"));
+    super(extensionUri, projectManager, logger.child("Details"), favorites);
   }
 
   /**

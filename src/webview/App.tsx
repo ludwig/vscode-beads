@@ -12,6 +12,7 @@ import {
   BeadsSummary,
   DependencyGraph,
   ExtensionMessage,
+  FavoriteBead,
   IssuesFilter,
   WebviewSettings,
   vscode,
@@ -57,6 +58,9 @@ interface AppState {
   memoryBytes: number;
   // Per-tab Back/Forward enablement for an editor-tab Details view (vs-9u8).
   tabNav: { canBack: boolean; canForward: boolean };
+  // The active project's favorites, in curated order, resolved to summaries
+  // for display (vs-sd5.1). Shared by the Favorites section + Details star.
+  favorites: FavoriteBead[];
 }
 
 const initialState: AppState = {
@@ -87,6 +91,7 @@ const initialState: AppState = {
   pulseSeq: 0,
   memoryBytes: 0,
   tabNav: { canBack: false, canForward: false },
+  favorites: [],
 };
 
 export function App(): React.ReactElement {
@@ -166,6 +171,9 @@ export function App(): React.ReactElement {
           ...prev,
           tabNav: { canBack: message.canBack, canForward: message.canForward },
         }));
+        break;
+      case "setFavorites":
+        setState((prev) => ({ ...prev, favorites: message.favorites }));
         break;
       case "refresh":
         vscode.postMessage({ type: "refresh" });
@@ -285,6 +293,7 @@ export function App(): React.ReactElement {
             projects={state.projects}
             activeProject={state.project}
             activeBead={state.selectedBead}
+            favorites={state.favorites}
             version={state.settings.extensionVersion}
             buildSha={state.settings.buildSha}
             buildDirty={state.settings.buildDirty}
@@ -301,6 +310,7 @@ export function App(): React.ReactElement {
             onOpenBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onOpenBeadInTab={(beadId) => vscode.postMessage({ type: "openBeadInTab", beadId })}
             onClearBead={() => vscode.postMessage({ type: "clearActiveBead" })}
+            onUnfavorite={(beadId) => vscode.postMessage({ type: "removeFavorite", beadId })}
             onPickReady={() => vscode.postMessage({ type: "pickReadyBead" })}
             onShowIssues={() => vscode.postMessage({ type: "showIssues" })}
             onShowStatus={() => vscode.postMessage({ type: "showDoltStatus" })}
@@ -375,6 +385,10 @@ export function App(): React.ReactElement {
             }
             onCopyId={(beadId) =>
               vscode.postMessage({ type: "copyBeadId", beadId, toast: true })
+            }
+            isFavorite={state.favorites.some((f) => f.id === state.selectedBead?.id)}
+            onToggleFavorite={(beadId) =>
+              vscode.postMessage({ type: "toggleFavorite", beadId })
             }
             canNavigateBack={state.tabNav.canBack}
             canNavigateForward={state.tabNav.canForward}
