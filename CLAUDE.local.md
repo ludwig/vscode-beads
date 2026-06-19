@@ -53,12 +53,16 @@ do that. Rules:
 
 ## Architecture gotchas in this codebase
 
-- **Message-type unions are duplicated**: `src/backend/types.ts`
+- **Message-type unions live in ONE place now**: the webview↔extension
+  protocol and its payload shapes are a single source of truth in
+  `src/shared/contract.ts`. Both `src/backend/types.ts`
   (`ExtensionToWebviewMessage` / `WebviewToExtensionMessage`) and
-  `src/webview/types.ts` (`ExtensionMessage` / `WebviewMessage`) are maintained
-  *by hand* and must stay in sync. Adding a message variant means editing BOTH;
-  drift compiles cleanly on each side and only breaks at runtime. A shared
-  types module is the real fix — prefer that over adding to both again.
+  `src/webview/types.ts` (`ExtensionMessage` / `WebviewMessage`) just *re-export*
+  from it. Add a new message/payload variant ONCE in `contract.ts` — never
+  hand-edit both sides again. A compile-time parity test
+  (`src/shared/contract-parity.type-test.ts`) guards the two sides.
+  (Historical note: these unions used to be duplicated and hand-maintained,
+  which drifted silently; the shared module fixed that.)
 - **Editing a base/shared CSS class? Grep its usages first.** `.bead-id` /
   `.bead-title` are shared by the Issues table AND the Dashboard cards; a global
   change there regressed the Dashboard. When changing default behavior of a
