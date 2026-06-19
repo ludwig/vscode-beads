@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Editor-tab Back/Forward now has per-tab memory** — a Details tab records its own navigation trail as you click through related beads, so Alt+←/Alt+→ walk *that tab's* history instead of moving the sidebar's shared cursor (vs-9u8)
 - The dependency **Graph opened in an editor tab** ("Open in Editor") no longer renders empty — the dedicated graph view now pushes nodes + edges proactively instead of relying on a lazy request that raced the tab's first load (vs-e4k)
 
 ### Changed

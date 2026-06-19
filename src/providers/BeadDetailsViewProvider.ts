@@ -13,6 +13,7 @@ import { BaseViewProvider } from "./BaseViewProvider";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
 import { WebviewToExtensionMessage, issueToWebviewBead } from "../backend/types";
 import { Logger } from "../utils/logger";
+import { NavigationHistory } from "./NavigationHistory";
 
 export class BeadDetailsViewProvider extends BaseViewProvider {
   protected readonly viewType = "beadsDetails";
@@ -20,6 +21,12 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
   private currentProjectId: string | null = null;
   private loadSequence = 0; // Tracks request order to prevent stale responses
   private createMode = false; // True while the create-bead form is shown
+  // Per-tab Back/Forward trail (vs-9u8). Each editor tab instance owns its own
+  // history so navigating within a tab has tab-scoped "memory" — unlike the
+  // sidebar, which shares the single global NavigationHistory in registerCommands.
+  // Unused by the sidebar instance (isEditorTab === false), which records into
+  // the global history via the beads.navigateBack/Forward commands instead.
+  private readonly history = new NavigationHistory();
 
   constructor(
     extensionUri: vscode.Uri,
@@ -30,9 +37,20 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
   }
 
   /**
-   * Show details for a specific bead
+   * Show details for a specific bead in response to a *user* navigation
+   * (initial open, or clicking a related bead/dependency). In an editor tab
+   * this records a step in the per-tab Back/Forward trail (vs-9u8); history-
+   * driven moves use {@link navigate} instead, which renders without recording.
    */
   public async showBead(beadId: string): Promise<void> {
+    if (this._host?.isEditorTab) {
+      this.history.record(beadId);
+    }
+    await this.renderBead(beadId);
+  }
+
+  /** Render a bead without touching the navigation trail. */
+  private async renderBead(beadId: string): Promise<void> {
     if (this.createMode) {
       this.createMode = false;
       this.postMessage({ type: "setCreateMode", value: false });
@@ -101,10 +119,23 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
   }
 
   /**
+   * Move along this tab's Back/Forward trail and render the target without
+   * recording (a history move must not truncate the forward branch). No-op at
+   * the ends of the trail. Editor-tab only — the sidebar uses the global history.
+   */
+  private async navigate(direction: "back" | "forward"): Promise<void> {
+    const id = direction === "back" ? this.history.back() : this.history.forward();
+    if (id) {
+      await this.renderBead(id);
+    }
+  }
+
+  /**
    * Clear the current bead (e.g., when switching projects)
    */
   public clearBead(): void {
     this.currentBeadId = null;
+    this.history.reset();
     this.createMode = false;
     vscode.commands.executeCommand("setContext", "beads.hasSelectedBead", false);
     this.postMessage({ type: "setCreateMode", value: false });
@@ -120,9 +151,10 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
     const client = this.projectManager.getClient();
     const activeProjectId = this.projectManager.getActiveProject()?.id;
 
-    // Clear selection if project changed
+    // Clear selection (and the per-tab trail) if project changed
     if (this.currentProjectId && activeProjectId !== this.currentProjectId) {
       this.currentBeadId = null;
+      this.history.reset();
       this.currentProjectId = activeProjectId || null;
     }
 
@@ -287,11 +319,21 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
         break;
 
       case "navigateBack":
-        vscode.commands.executeCommand("beads.navigateBack");
+        // Editor tabs walk their own per-tab trail (vs-9u8); the sidebar
+        // delegates to the global history command.
+        if (this._host?.isEditorTab) {
+          await this.navigate("back");
+        } else {
+          vscode.commands.executeCommand("beads.navigateBack");
+        }
         break;
 
       case "navigateForward":
-        vscode.commands.executeCommand("beads.navigateForward");
+        if (this._host?.isEditorTab) {
+          await this.navigate("forward");
+        } else {
+          vscode.commands.executeCommand("beads.navigateForward");
+        }
         break;
 
       case "createBead":
