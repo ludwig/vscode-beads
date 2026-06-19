@@ -326,11 +326,23 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         break;
 
       case "toggleFavorite":
-        await this.favorites?.toggle(message.beadId);
+        if (!this.favorites) {
+          // This view renders favorite-toggle UI but wasn't wired to the shared
+          // FavoritesService at construction — the toggle would silently no-op
+          // (the bug behind the panel's "Add to Favorites" doing nothing). Make
+          // it loud instead of swallowing it.
+          this.log.warn(`toggleFavorite ignored: ${this.viewType} has no FavoritesService`);
+          break;
+        }
+        await this.favorites.toggle(message.beadId);
         break;
 
       case "removeFavorite":
-        await this.favorites?.remove(message.beadId);
+        if (!this.favorites) {
+          this.log.warn(`removeFavorite ignored: ${this.viewType} has no FavoritesService`);
+          break;
+        }
+        await this.favorites.remove(message.beadId);
         break;
 
       case "startCreate":
