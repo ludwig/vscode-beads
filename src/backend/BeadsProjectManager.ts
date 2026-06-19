@@ -39,6 +39,14 @@ export class BeadsProjectManager implements vscode.Disposable {
   private readonly _onDataChanged = new vscode.EventEmitter<void>();
   public readonly onDataChanged = this._onDataChanged.event;
 
+  // Fires whenever the bead-list cache is (re)populated, so consumers that
+  // resolve ids against it — e.g. the favorites section's id→title lookup
+  // (vs-sd5.1) — can re-resolve once a project's list lands. The cache is
+  // cleared on project switch and refilled asynchronously by the panel load,
+  // so this is the signal that titles are now available.
+  private readonly _onBeadsCached = new vscode.EventEmitter<void>();
+  public readonly onBeadsCached = this._onBeadsCached.event;
+
   /**
    * Most recently loaded list of beads, keyed by id. Lets the Details view
    * paint known fields (title/status/priority/description/labels/type/assignee)
@@ -125,6 +133,7 @@ export class BeadsProjectManager implements vscode.Disposable {
    */
   cacheBeadList(beads: Bead[]): void {
     this.cachedBeads = new Map(beads.map((bead) => [bead.id, bead]));
+    this._onBeadsCached.fire();
   }
 
   /**
@@ -304,6 +313,7 @@ export class BeadsProjectManager implements vscode.Disposable {
     this._onProjectsChanged.dispose();
     this._onActiveProjectChanged.dispose();
     this._onDataChanged.dispose();
+    this._onBeadsCached.dispose();
     this._onPrefixChanged.dispose();
   }
 

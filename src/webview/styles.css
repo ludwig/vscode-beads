@@ -2008,6 +2008,131 @@ textarea {
   text-overflow: ellipsis;
 }
 
+/* Bead-card rows in the context panel (vs-sd5.1): a clickable .active-bead card
+ * paired with an inline X control to the right. Shared by the Active Bead card
+ * (X clears the pin) and each Favorites row (X unstars). */
+.context-heading-count {
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+}
+
+.favorites-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.context-card-row {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.context-card-open {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.context-card-x {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  padding: 0;
+  border: none;
+  border-radius: var(--border-radius);
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+
+.context-card-row:hover .context-card-x {
+  opacity: 1;
+}
+
+.context-card-x:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+  color: var(--vscode-foreground);
+}
+
+/* End-of-view ornament slot: closes a scrollable view so it reads as "this is
+ * the bottom" instead of stopping cold. The ornament itself is one of the
+ * interchangeable variants in webview/common/endFlourishes (Dots/Baroque/Ivy);
+ * shared color/opacity below, variant-specific layout further down. */
+.view-end {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 4px 26px;
+}
+
+.view-end-flourish {
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.45;
+  transition: opacity 0.2s ease;
+}
+
+.view-end-flourish:hover {
+  opacity: 0.7;
+}
+
+/* Variant: Dots — three minimal dots. */
+.view-end-dots {
+  display: flex;
+  gap: 11px;
+}
+
+.view-end-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Variant: Baroque — wide centered scrollwork divider. */
+.view-end-baroque {
+  width: 92%;
+  max-width: 460px;
+  height: auto;
+}
+
+/* Variant: Ivy — full-width hairline with climbing tendril caps. */
+.view-end-rule {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+.view-end-rule:hover {
+  opacity: 0.75;
+}
+
+/* The flexible middle: a hairline sitting at the height the caps' vines enter
+ * (one third down — see EndFlourish geometry note), so line and foliage connect
+ * seamlessly while the caps climb above and below it. */
+.view-end-line {
+  flex: 1 1 auto;
+  height: 0;
+  margin-top: 15px;
+  border-top: 1px solid currentColor;
+}
+
+.view-end-cap {
+  flex: 0 0 auto;
+  display: block;
+}
+
 /* Responsive grid of stat chips: one column on a narrow sidebar, packing into
  * multiple columns as it widens (auto-fill) — no media queries, just tracks the
  * container width. Keeps the table compact instead of sprawling label↔value. */
@@ -2570,6 +2695,12 @@ textarea {
 .header-icon-btn:disabled {
   opacity: 0.35;
   cursor: default;
+}
+
+/* Lit star when the shown bead is a favorite (vs-sd5.1). */
+.header-icon-btn.is-favorite,
+.header-icon-btn.is-favorite:hover:not(:disabled) {
+  color: var(--vscode-charts-yellow, #d7ba7d);
 }
 
 /* Hairline between the utility icons and the primary action. */
@@ -3806,6 +3937,38 @@ textarea {
   border-color: var(--vscode-focusBorder);
 }
 
+/* Expand-all / collapse-all controls (vs-fpp). */
+.beads-tree-foldctl {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+
+.beads-tree-foldbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  transition: color var(--transition-fast, 0.12s ease), background var(--transition-fast, 0.12s ease);
+}
+
+.beads-tree-foldbtn:hover:not(:disabled) {
+  color: var(--vscode-foreground);
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+}
+
+.beads-tree-foldbtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 .beads-tree-sort {
   display: flex;
   align-items: center;
@@ -4097,9 +4260,43 @@ textarea {
   flex: 0 0 auto;
 }
 
+/* Layout-mode picker as an explicit segmented control (vs-xnw): one bordered
+ * pill of connected segments, so it reads as "pick one layout" rather than four
+ * loose buttons sitting next to the standalone Focus/Filtered/Auto-Layout ones. */
 .graph-layout-toggle {
   display: inline-flex;
-  gap: 2px;
+  gap: 0;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--vscode-input-background, transparent);
+}
+
+.graph-segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  font-size: 12px;
+  color: var(--vscode-foreground);
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--vscode-panel-border);
+  cursor: pointer;
+  transition: background var(--transition-fast, 0.12s ease), color var(--transition-fast, 0.12s ease);
+}
+
+.graph-segment:first-child {
+  border-left: none;
+}
+
+.graph-segment:hover:not(.active) {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+
+.graph-segment.active {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
 }
 
 .graph-toggle-btn {

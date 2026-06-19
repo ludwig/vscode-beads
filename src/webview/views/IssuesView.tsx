@@ -43,6 +43,7 @@ import {
   vscode,
 } from "../types";
 import { readyBeadIds } from "../../backend/readyBeads";
+import { favoritesWithRelatives } from "../../backend/favoritesScope";
 import { StatusBadge } from "../common/StatusBadge";
 import { PriorityBadge } from "../common/PriorityBadge";
 import { TypeBadge } from "../common/TypeBadge";
@@ -50,7 +51,7 @@ import { TypeIcon } from "../common/TypeIcon";
 import { LabelBadge } from "../common/LabelBadge";
 import { FilterChip } from "../common/FilterChip";
 import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
-import { Rows3, Rows2, Rocket } from "lucide-react";
+import { Rows3, Rows2, Rocket, Star } from "lucide-react";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { Loading } from "../common/Loading";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
@@ -66,6 +67,8 @@ interface IssuesViewProps {
   loading: boolean;
   error: string | null;
   selectedBeadId: string | null;
+  /** Favorite bead ids — drives the right-click Add/Remove Favorites item (vs-sd5.5). */
+  favoriteIds?: string[];
   tooltipHoverDelay: number; // 0 = disabled
   /** Drill-in filter pushed from another view (e.g. a Dashboard card/badge). */
   issuesFilterRequest?: { filter: IssuesFilter; seq: number } | null;
@@ -97,6 +100,15 @@ const typeSortingFn = (rowA: { getValue: (id: string) => unknown }, rowB: { getV
   return a - b;
 };
 
+// Shape of the slice of the shared webview state blob this view persists
+// (vs-1q1). Keys are namespaced so they coexist with the column-layout /
+// readyOnly keys other hooks/views store in the same blob.
+interface PersistedIssuesState {
+  issuesColumnFilters?: ColumnFiltersState;
+  issuesGlobalFilter?: string;
+  issuesActivePreset?: string;
+}
+
 // Filter presets
 interface FilterPreset {
   id: string;
@@ -119,6 +131,7 @@ export function IssuesView({
   loading,
   error,
   selectedBeadId,
+  favoriteIds = [],
   tooltipHoverDelay,
   issuesFilterRequest,
   graph,
@@ -149,11 +162,18 @@ export function IssuesView({
     defaultVisibility,
   });
 
-  // Non-persisted TanStack state
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([
-    { id: "status", value: ["open", "in_progress", "blocked"] }, // Default: Not Closed
-  ]);
-  const [globalFilter, setGlobalFilter] = useState("");
+  // Active filters + search persist across reloads and Panel-tab switches
+  // (IssuesView unmounts when another tab is active, so plain state would
+  // forget them). Merged into the same shared vscode state blob as the column
+  // layout / readyOnly so we don't clobber the Tree's persisted sort (vs-1q1).
+  const persisted = (vscode.getState() as PersistedIssuesState | undefined) ?? {};
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
+    () =>
+      persisted.issuesColumnFilters ?? [
+        { id: "status", value: ["open", "in_progress", "blocked"] }, // Default: Not Closed
+      ],
+  );
+  const [globalFilter, setGlobalFilter] = useState(() => persisted.issuesGlobalFilter ?? "");
   const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [isResizing, setIsResizing] = useState(false);
@@ -186,22 +206,58 @@ export function IssuesView({
     const prev = (vscode.getState() as Record<string, unknown>) ?? {};
     vscode.setState({ ...prev, issuesReadyOnly: readyOnly });
   }, [readyOnly]);
+  // "Favorites" filter (vs-sd5.6): show starred beads AND their relatives —
+  // the 1-hop dependency neighbors over any edge (vs-sd5.7), so a favorite
+  // appears with its context rather than stripped bare. Needs the dependency
+  // graph (fetched lazily on first enable, like Ready). Persisted like readyOnly
+  // and composes with it + the column filters/search.
+  const [favoritesOnly, setFavoritesOnly] = useState<boolean>(
+    () => (vscode.getState() as { issuesFavoritesOnly?: boolean } | undefined)?.issuesFavoritesOnly ?? false,
+  );
+  useEffect(() => {
+    const prev = (vscode.getState() as Record<string, unknown>) ?? {};
+    vscode.setState({ ...prev, issuesFavoritesOnly: favoritesOnly });
+  }, [favoritesOnly]);
+  const toggleFavoritesOnly = useCallback(() => {
+    setFavoritesOnly((on) => {
+      if (!on && !graph) onRequestGraph?.(); // fetch the graph to resolve relatives
+      return !on;
+    });
+  }, [graph, onRequestGraph]);
   const readySet = useMemo(() => {
     if (!graph) return null;
     const blocks = graph.edges.filter((e) => e.type === "blocks");
     return new Set(readyBeadIds(beads, blocks));
   }, [graph, beads]);
-  const tableData = useMemo(
-    () => (readyOnly && readySet ? beads.filter((b) => readySet.has(b.id)) : beads),
-    [readyOnly, readySet, beads],
+  // Favorites + their 1-hop neighbors (relatives), or null when the filter is
+  // off. Until the graph loads it's just the favorites themselves.
+  const favoritesScope = useMemo(
+    () => (favoritesOnly ? favoritesWithRelatives(favoriteIds, graph?.edges ?? []) : null),
+    [favoritesOnly, favoriteIds, graph],
   );
+  const tableData = useMemo(() => {
+    let rows = beads;
+    if (readyOnly && readySet) rows = rows.filter((b) => readySet.has(b.id));
+    if (favoritesScope) rows = rows.filter((b) => favoritesScope.has(b.id));
+    return rows;
+  }, [readyOnly, readySet, favoritesScope, beads]);
   const toggleReady = useCallback(() => {
     setReadyOnly((on) => {
       if (!on && !graph) onRequestGraph?.(); // fetch the graph the first time it's needed
       return !on;
     });
   }, [graph, onRequestGraph]);
-  const [activePreset, setActivePreset] = useState<string>("not-closed");
+  const [activePreset, setActivePreset] = useState<string>(() => persisted.issuesActivePreset ?? "not-closed");
+  // Persist filters + search + preset whenever they change (merge, don't clobber).
+  useEffect(() => {
+    const prev = (vscode.getState() as Record<string, unknown>) ?? {};
+    vscode.setState({
+      ...prev,
+      issuesColumnFilters: columnFilters,
+      issuesGlobalFilter: globalFilter,
+      issuesActivePreset: activePreset,
+    });
+  }, [columnFilters, globalFilter, activePreset]);
   const [filterBarOpen, setFilterBarOpen] = useState(true);
   const [filterMenuOpen, setFilterMenuOpen] = useState<string | null>(null);
   const [columnMenuOpen, setColumnMenuOpen] = useState(false);
@@ -514,6 +570,11 @@ export function IssuesView({
         onSelect: () => vscode.postMessage({ type: "viewInGraph", beadId: bead.id }),
       },
       {
+        label: favoriteIds.includes(bead.id) ? "Remove from Favorites" : "Add to Favorites",
+        separatorBefore: true,
+        onSelect: () => vscode.postMessage({ type: "toggleFavorite", beadId: bead.id }),
+      },
+      {
         label: "Copy ID",
         separatorBefore: true,
         onSelect: () => handleCopyId(bead.id),
@@ -527,7 +588,7 @@ export function IssuesView({
         onSelect: () => vscode.postMessage({ type: "copyBeadJson", beadId: bead.id }),
       },
     ],
-    [handleCopyId],
+    [handleCopyId, favoriteIds],
   );
 
   // Filter helpers
@@ -826,6 +887,18 @@ export function IssuesView({
           >
             <Rocket size={12} strokeWidth={2.25} />
             <span>Ready</span>
+          </button>
+
+          {/* Favorites toggle (vs-sd5.6/.7) — favorites + their relatives. */}
+          <button
+            type="button"
+            className={`ready-toggle ${favoritesOnly ? "active" : ""}`}
+            aria-pressed={favoritesOnly}
+            onClick={toggleFavoritesOnly}
+            title="Show favorited (starred) beads and their relatives (direct dependency neighbors). Composes with the other filters."
+          >
+            <Star size={12} strokeWidth={2.25} />
+            <span>Favorites</span>
           </button>
 
           {/* Active filter chips */}
@@ -1183,6 +1256,7 @@ export function IssuesView({
                     <tr
                       key={row.id}
                       onClick={() => selectRow(row.original.id)}
+                      onDoubleClick={() => vscode.postMessage({ type: "openBeadInTab", beadId: row.original.id })}
                       onContextMenu={(e) => {
                         e.preventDefault();
                         setRowMenu({ x: e.clientX, y: e.clientY, bead: row.original });

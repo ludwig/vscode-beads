@@ -18,6 +18,8 @@ import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
 interface KanbanBoardProps {
   beads: Bead[];
   selectedBeadId: string | null;
+  /** Favorite bead ids — drives the right-click Add/Remove Favorites item (vs-sd5.5). */
+  favoriteIds?: string[];
   onSelectBead: (beadId: string) => void;
   onUpdateBead?: (beadId: string, updates: Partial<Bead>) => void;
   /** Whether any filters are active (affects empty state messaging) */
@@ -39,7 +41,7 @@ interface KanbanBoardProps {
 
 const COLUMNS: BeadStatus[] = ["open", "in_progress", "blocked", "closed"];
 
-export function KanbanBoard({ beads, selectedBeadId, onSelectBead, onUpdateBead, hasActiveFilters, unfilteredCounts, filteredBeadIds, filterActive, filteredCount, totalCount }: KanbanBoardProps): React.ReactElement {
+export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], onSelectBead, onUpdateBead, hasActiveFilters, unfilteredCounts, filteredBeadIds, filterActive, filteredCount, totalCount }: KanbanBoardProps): React.ReactElement {
   // Track which columns are collapsed (closed is collapsed by default)
   const [collapsedColumns, setCollapsedColumns] = useState<Set<BeadStatus>>(new Set(["closed"]));
   // Track which column is being dragged over
@@ -251,14 +253,14 @@ export function KanbanBoard({ beads, selectedBeadId, onSelectBead, onUpdateBead,
           x={menu.x}
           y={menu.y}
           onClose={() => setMenu(null)}
-          items={cardMenuItems(menu.bead)}
+          items={cardMenuItems(menu.bead, favoriteIds.includes(menu.bead.id))}
         />
       )}
     </div>
   );
 }
 
-function cardMenuItems(bead: Bead): ContextMenuItem[] {
+function cardMenuItems(bead: Bead, isFavorite: boolean): ContextMenuItem[] {
   return [
     {
       label: "Open Details (editor tab)",
@@ -271,6 +273,11 @@ function cardMenuItems(bead: Bead): ContextMenuItem[] {
     {
       label: "Focus on Graph",
       onSelect: () => vscode.postMessage({ type: "viewInGraph", beadId: bead.id }),
+    },
+    {
+      label: isFavorite ? "Remove from Favorites" : "Add to Favorites",
+      separatorBefore: true,
+      onSelect: () => vscode.postMessage({ type: "toggleFavorite", beadId: bead.id }),
     },
     {
       label: "Copy ID",

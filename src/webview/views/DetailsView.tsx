@@ -180,6 +180,9 @@ interface DetailsViewProps {
   onViewInGraph: (beadId: string) => void;
   onSelectBead?: (beadId: string) => void;
   onCopyId?: (beadId: string) => void;
+  /** Whether the shown bead is a favorite, and a toggle handler (vs-sd5.1). */
+  isFavorite?: boolean;
+  onToggleFavorite?: (beadId: string) => void;
   /** Per-tab Back/Forward enablement + handlers (editor tabs only, vs-9u8). */
   canNavigateBack?: boolean;
   canNavigateForward?: boolean;
@@ -209,6 +212,8 @@ export function DetailsView({
   onViewInGraph: _onViewInGraph,
   onSelectBead,
   onCopyId,
+  isFavorite = false,
+  onToggleFavorite,
   canNavigateBack = false,
   canNavigateForward = false,
   onNavigateBack,
@@ -421,6 +426,15 @@ export function DetailsView({
               <Icon name="external-link" size={13} />
             </button>
           )}
+          <button
+            className={`icon-btn header-icon-btn${isFavorite ? " is-favorite" : ""}`}
+            title={isFavorite ? "Unstar (remove from Favorites)" : "Star (add to Favorites)"}
+            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+            aria-pressed={isFavorite}
+            onClick={() => onToggleFavorite?.(bead.id)}
+          >
+            <Icon name={isFavorite ? "star" : "star-outline"} size={13} />
+          </button>
           <button
             className="icon-btn header-icon-btn"
             title="Refresh"

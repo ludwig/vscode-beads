@@ -10,8 +10,10 @@
 
 import * as vscode from "vscode";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
+import { FavoritesService } from "../backend/FavoritesService";
 import {
   ExtensionToWebviewMessage,
+  FavoriteBead,
   WebviewToExtensionMessage,
 } from "../backend/types";
 import { Logger } from "../utils/logger";
@@ -25,6 +27,10 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
   protected readonly extensionUri: vscode.Uri;
   protected readonly projectManager: BeadsProjectManager;
   protected readonly log: Logger;
+  // Shared favorites set (vs-sd5.1). Optional so providers that don't surface
+  // favorites can omit it; when present, the base wires star/unstar messages
+  // and publishes the current set on (re)init.
+  protected readonly favorites?: FavoritesService;
   protected abstract readonly viewType: string;
   private readonly disposables: vscode.Disposable[] = [];
   // When set, the webview is pulsed once it signals "ready" — used by editor
@@ -35,11 +41,13 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
   constructor(
     extensionUri: vscode.Uri,
     projectManager: BeadsProjectManager,
-    logger: Logger
+    logger: Logger,
+    favorites?: FavoritesService
   ) {
     this.extensionUri = extensionUri;
     this.projectManager = projectManager;
     this.log = logger;
+    this.favorites = favorites;
   }
 
   public resolveWebviewView(
@@ -143,10 +151,32 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
       },
     });
 
+    // Publish the current favorites set so the view can render it immediately
+    // on (re)mount (vs-sd5.1).
+    if (this.favorites) {
+      this.publishFavorites(this.favorites.list());
+    }
+
     // Load view-specific data only for visible views.
     if (this._host.visible) {
       await this.loadData("initial");
     }
+  }
+
+  /**
+   * Push the favorites set to this view (called when the shared set changes).
+   * The ids are the persisted truth; we resolve each to a lightweight summary
+   * from the bead cache so the Favorites section can show id + title + type
+   * icon. Uncached favorites degrade gracefully to `{ id }` (vs-sd5.1).
+   */
+  public publishFavorites(ids: string[]): void {
+    const favorites: FavoriteBead[] = ids.map((id) => {
+      const bead = this.projectManager.getCachedBead(id);
+      return bead
+        ? { id, title: bead.title, type: bead.type, status: bead.status, priority: bead.priority }
+        : { id };
+    });
+    this.postMessage({ type: "setFavorites", favorites });
   }
 
   /**
@@ -293,6 +323,14 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
 
       case "openIssuesWithFilter":
         await vscode.commands.executeCommand("beads.openIssuesWithFilter", message.filter);
+        break;
+
+      case "toggleFavorite":
+        await this.favorites?.toggle(message.beadId);
+        break;
+
+      case "removeFavorite":
+        await this.favorites?.remove(message.beadId);
         break;
 
       case "startCreate":

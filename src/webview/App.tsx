@@ -12,6 +12,7 @@ import {
   BeadsSummary,
   DependencyGraph,
   ExtensionMessage,
+  FavoriteBead,
   IssuesFilter,
   WebviewSettings,
   vscode,
@@ -57,6 +58,9 @@ interface AppState {
   memoryBytes: number;
   // Per-tab Back/Forward enablement for an editor-tab Details view (vs-9u8).
   tabNav: { canBack: boolean; canForward: boolean };
+  // The active project's favorites, in curated order, resolved to summaries
+  // for display (vs-sd5.1). Shared by the Favorites section + Details star.
+  favorites: FavoriteBead[];
 }
 
 const initialState: AppState = {
@@ -87,6 +91,7 @@ const initialState: AppState = {
   pulseSeq: 0,
   memoryBytes: 0,
   tabNav: { canBack: false, canForward: false },
+  favorites: [],
 };
 
 export function App(): React.ReactElement {
@@ -167,6 +172,9 @@ export function App(): React.ReactElement {
           tabNav: { canBack: message.canBack, canForward: message.canForward },
         }));
         break;
+      case "setFavorites":
+        setState((prev) => ({ ...prev, favorites: message.favorites }));
+        break;
       case "refresh":
         vscode.postMessage({ type: "refresh" });
         break;
@@ -197,6 +205,10 @@ export function App(): React.ReactElement {
     const t = setTimeout(() => setPulsing(false), 1600);
     return () => clearTimeout(t);
   }, [state.pulseSeq]);
+
+  // Favorite bead ids (vs-sd5.1) — passed to the bead-context-menu views so a
+  // right-click can star/unstar, and labelled Add/Remove based on membership.
+  const favoriteIds = state.favorites.map((f) => f.id);
 
   // Render the appropriate view
   const renderView = () => {
@@ -234,6 +246,7 @@ export function App(): React.ReactElement {
             loading={state.loading}
             error={state.error}
             selectedBeadId={state.selectedBeadId}
+            favoriteIds={favoriteIds}
             tooltipHoverDelay={state.settings.tooltipHoverDelay}
             issuesFilterRequest={state.issuesFilterRequest}
             graph={state.graph}
@@ -256,6 +269,7 @@ export function App(): React.ReactElement {
             loading={state.loading}
             error={state.error}
             selectedBeadId={state.selectedBeadId}
+            favoriteIds={favoriteIds}
             settings={state.settings}
             issuesFilterRequest={state.issuesFilterRequest}
             showGraphRequest={state.showGraphRequest}
@@ -270,6 +284,7 @@ export function App(): React.ReactElement {
             loading={state.loading}
             error={state.error}
             selectedBeadId={state.selectedBeadId}
+            favoriteIds={favoriteIds}
             focusBeadId={null}
             filteredBeadIds={null}
             onOpenBead={(beadId) =>
@@ -285,6 +300,7 @@ export function App(): React.ReactElement {
             projects={state.projects}
             activeProject={state.project}
             activeBead={state.selectedBead}
+            favorites={state.favorites}
             version={state.settings.extensionVersion}
             buildSha={state.settings.buildSha}
             buildDirty={state.settings.buildDirty}
@@ -301,6 +317,8 @@ export function App(): React.ReactElement {
             onOpenBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onOpenBeadInTab={(beadId) => vscode.postMessage({ type: "openBeadInTab", beadId })}
             onClearBead={() => vscode.postMessage({ type: "clearActiveBead" })}
+            onUnfavorite={(beadId) => vscode.postMessage({ type: "removeFavorite", beadId })}
+            onToggleFavorite={(beadId) => vscode.postMessage({ type: "toggleFavorite", beadId })}
             onPickReady={() => vscode.postMessage({ type: "pickReadyBead" })}
             onShowIssues={() => vscode.postMessage({ type: "showIssues" })}
             onShowStatus={() => vscode.postMessage({ type: "showDoltStatus" })}
@@ -375,6 +393,10 @@ export function App(): React.ReactElement {
             }
             onCopyId={(beadId) =>
               vscode.postMessage({ type: "copyBeadId", beadId, toast: true })
+            }
+            isFavorite={state.favorites.some((f) => f.id === state.selectedBead?.id)}
+            onToggleFavorite={(beadId) =>
+              vscode.postMessage({ type: "toggleFavorite", beadId })
             }
             canNavigateBack={state.tabNav.canBack}
             canNavigateForward={state.tabNav.canForward}

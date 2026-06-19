@@ -25,6 +25,7 @@ export type {
   Bead,
   BeadsProject,
   BeadsSummary,
+  FavoriteBead,
   WebviewSettings,
   CreateBeadFields,
   IssuesFilter,

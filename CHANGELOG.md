@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.1] - 2026-06-19
+
+### Fixed
+
+- **Favorites filter** showed an empty list in the bottom panel — the favorites set was never wired to the panel's Issues view, so it matched nothing (vs-sd5.6)
+
+### Changed
+
+- The **Favorites filter** now shows favorited beads **and their relatives** (direct dependency neighbors), so a favorite appears with its context rather than alone (vs-sd5.7)
+
+## [0.16.0] - 2026-06-19
+
+### Added
+
+- **Favorites** — star/unstar a bead (Details header) to pin it in a new **Favorites** section in the sidebar context panel. The set is persisted per project (survives reloads) and published to every view (vs-sd5.1)
+- **Favorites from right-click** — Add/Remove Favorites in the bead context menu across the Issues table, Graph, Kanban, Tree, and the context-panel Active Bead/Favorites cards (vs-sd5.5)
+- **Favorites filter** — a persistent **Favorites** toggle in the Issues filter bar (next to Ready) shows only starred beads; composes with Ready and the other filters (vs-sd5.6)
+- **Tree expand/collapse** — Expand All / Collapse All controls in the Tree filter bar; ⇧-click a row's chevron to collapse/expand its whole subtree (vs-fpp)
+- **Issues double-click** — double-clicking a row opens that bead in an editor tab (single-click still selects) (vs-sn1)
+- A decorative end-of-view ornament closes the context panel so it no longer stops cold at the bottom
+
+### Changed
+
+- **Graph layout modes** (Layered/Force/Tree/Radial) now render as an explicit segmented control, distinct from the Focus/Filtered/Auto-Layout toggles (vs-xnw)
+- **Issues filters + search persist** across reloads and Panel-tab switches, alongside the existing sort/column state (vs-1q1)
+- Context panel polish — Pick Ready Bead / Show Issues moved above the bead cards; the Active Bead card's clear (×) now sits inline like the Favorites rows (vs-sd5.1)
+
+### Fixed
+
+- Favorites titles no longer go blank after switching projects and back — they re-resolve once the new project's list re-caches (vs-sd5.1)
+
 ## [0.15.1] - 2026-06-19
 
 ### Added

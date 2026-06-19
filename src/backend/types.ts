@@ -32,6 +32,7 @@ export type {
   Bead,
   BeadsProject,
   BeadsSummary,
+  FavoriteBead,
   WebviewSettings,
   DependencyGraph,
   CreateBeadFields,

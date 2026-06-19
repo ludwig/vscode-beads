@@ -47,6 +47,8 @@ interface GraphViewProps {
   loading: boolean;
   error: string | null;
   selectedBeadId: string | null;
+  /** Favorite bead ids — drives the right-click Add/Remove Favorites item (vs-sd5.5). */
+  favoriteIds?: string[];
   /** A bead to focus the neighborhood on (e.g. from a "View in graph" action). */
   focusBeadId: string | null;
   /**
@@ -79,6 +81,7 @@ const nodeTypes = { bead: BeadNode };
 function GraphCanvas({
   graph,
   selectedBeadId,
+  favoriteIds = [],
   focusBeadId,
   filteredBeadIds,
   issuesFilterActive,
@@ -322,7 +325,7 @@ function GraphCanvas({
             type="button"
             role="radio"
             aria-checked={mode === "layered"}
-            className={`graph-toggle-btn ${mode === "layered" ? "active" : ""}`}
+            className={`graph-segment ${mode === "layered" ? "active" : ""}`}
             onClick={() => setMode("layered")}
             title="Layered (hierarchical) layout"
           >
@@ -333,7 +336,7 @@ function GraphCanvas({
             type="button"
             role="radio"
             aria-checked={mode === "force"}
-            className={`graph-toggle-btn ${mode === "force" ? "active" : ""}`}
+            className={`graph-segment ${mode === "force" ? "active" : ""}`}
             onClick={() => setMode("force")}
             title="Force-directed (freeform) layout"
           >
@@ -344,7 +347,7 @@ function GraphCanvas({
             type="button"
             role="radio"
             aria-checked={mode === "tree"}
-            className={`graph-toggle-btn ${mode === "tree" ? "active" : ""}`}
+            className={`graph-segment ${mode === "tree" ? "active" : ""}`}
             onClick={() => setMode("tree")}
             title="Tidy-tree layout (dependency hierarchy: blocks + parent-child)"
           >
@@ -355,7 +358,7 @@ function GraphCanvas({
             type="button"
             role="radio"
             aria-checked={mode === "radial"}
-            className={`graph-toggle-btn ${mode === "radial" ? "active" : ""}`}
+            className={`graph-segment ${mode === "radial" ? "active" : ""}`}
             onClick={() => setMode("radial")}
             title="Radial tree layout (dependency hierarchy: blocks + parent-child)"
           >
@@ -450,7 +453,7 @@ function GraphCanvas({
           x={menu.x}
           y={menu.y}
           onClose={() => setMenu(null)}
-          items={buildMenuItems(menu.bead, focusEnabled, {
+          items={buildMenuItems(menu.bead, focusEnabled, favoriteIds.includes(menu.bead.id), {
             onFocus: () => {
               setLocalSelectedId(menu.bead.id);
               setFocusEnabled(true);
@@ -490,6 +493,7 @@ function GraphCanvas({
 function buildMenuItems(
   bead: Bead,
   focusEnabled: boolean,
+  isFavorite: boolean,
   handlers: { onFocus: () => void; onUnfocus: () => void },
 ): ContextMenuItem[] {
   return [
@@ -504,6 +508,11 @@ function buildMenuItems(
     {
       label: "Show Details",
       onSelect: () => vscode.postMessage({ type: "openBeadDetails", beadId: bead.id }),
+    },
+    {
+      label: isFavorite ? "Remove from Favorites" : "Add to Favorites",
+      separatorBefore: true,
+      onSelect: () => vscode.postMessage({ type: "toggleFavorite", beadId: bead.id }),
     },
     {
       label: "Copy ID",
@@ -568,6 +577,7 @@ export function GraphView(props: GraphViewProps): React.ReactElement {
       <GraphCanvas
         graph={graph}
         selectedBeadId={props.selectedBeadId}
+        favoriteIds={props.favoriteIds}
         focusBeadId={props.focusBeadId}
         filteredBeadIds={props.filteredBeadIds}
         issuesFilterActive={props.issuesFilterActive}

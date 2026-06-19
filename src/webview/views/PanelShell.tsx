@@ -28,6 +28,8 @@ interface PanelShellProps {
   loading: boolean;
   error: string | null;
   selectedBeadId: string | null;
+  /** Favorite bead ids, for the views' right-click star/unstar item (vs-sd5.5). */
+  favoriteIds: string[];
   settings: WebviewSettings;
   issuesFilterRequest: { filter: IssuesFilter; seq: number } | null;
   showGraphRequest: { beadId: string; seq: number } | null;
@@ -41,6 +43,7 @@ export function PanelShell({
   loading,
   error,
   selectedBeadId,
+  favoriteIds,
   settings,
   issuesFilterRequest,
   showGraphRequest,
@@ -175,6 +178,7 @@ export function PanelShell({
             filteredCount={filteredCount}
             totalCount={totalCount}
             selectedBeadId={selectedBeadId}
+            favoriteIds={favoriteIds}
             onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onUpdateBead={(beadId, updates) => vscode.postMessage({ type: "updateBead", beadId, updates })}
           />
@@ -184,6 +188,7 @@ export function PanelShell({
             loading={loading}
             error={error}
             selectedBeadId={selectedBeadId}
+            favoriteIds={favoriteIds}
             filteredBeadIds={filteredBeadIds}
             filterActive={filterActive}
             filteredCount={filteredCount}
@@ -198,6 +203,7 @@ export function PanelShell({
             loading={loading}
             error={error}
             selectedBeadId={selectedBeadId}
+            favoriteIds={favoriteIds}
             focusBeadId={graphFocusId}
             filteredBeadIds={filteredBeadIds}
             issuesFilterActive={filterActive}
@@ -226,6 +232,7 @@ export function PanelShell({
             loading={loading}
             error={error}
             selectedBeadId={selectedBeadId}
+            favoriteIds={favoriteIds}
             tooltipHoverDelay={settings.tooltipHoverDelay}
             issuesFilterRequest={localFilter ?? issuesFilterRequest}
             graph={graph}
