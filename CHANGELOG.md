@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Favorites** — star/unstar a bead (Details header) to pin it in a new **Favorites** section in the sidebar context panel. The set is persisted per project (survives reloads) and published to every view (vs-sd5.1)
+- **Favorites from right-click** — Add/Remove Favorites in the bead context menu across the Issues table, Graph, Kanban, Tree, and the context-panel Active Bead/Favorites cards (vs-sd5.5)
 
 ## [0.15.1] - 2026-06-19
 

@@ -66,6 +66,8 @@ interface IssuesViewProps {
   loading: boolean;
   error: string | null;
   selectedBeadId: string | null;
+  /** Favorite bead ids — drives the right-click Add/Remove Favorites item (vs-sd5.5). */
+  favoriteIds?: string[];
   tooltipHoverDelay: number; // 0 = disabled
   /** Drill-in filter pushed from another view (e.g. a Dashboard card/badge). */
   issuesFilterRequest?: { filter: IssuesFilter; seq: number } | null;
@@ -119,6 +121,7 @@ export function IssuesView({
   loading,
   error,
   selectedBeadId,
+  favoriteIds = [],
   tooltipHoverDelay,
   issuesFilterRequest,
   graph,
@@ -514,6 +517,11 @@ export function IssuesView({
         onSelect: () => vscode.postMessage({ type: "viewInGraph", beadId: bead.id }),
       },
       {
+        label: favoriteIds.includes(bead.id) ? "Remove from Favorites" : "Add to Favorites",
+        separatorBefore: true,
+        onSelect: () => vscode.postMessage({ type: "toggleFavorite", beadId: bead.id }),
+      },
+      {
         label: "Copy ID",
         separatorBefore: true,
         onSelect: () => handleCopyId(bead.id),
@@ -527,7 +535,7 @@ export function IssuesView({
         onSelect: () => vscode.postMessage({ type: "copyBeadJson", beadId: bead.id }),
       },
     ],
-    [handleCopyId],
+    [handleCopyId, favoriteIds],
   );
 
   // Filter helpers

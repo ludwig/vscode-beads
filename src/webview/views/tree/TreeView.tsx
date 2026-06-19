@@ -122,6 +122,8 @@ interface TreeViewProps {
   loading: boolean;
   error: string | null;
   selectedBeadId: string | null;
+  /** Favorite bead ids — drives the right-click Add/Remove Favorites item (vs-sd5.5). */
+  favoriteIds?: string[];
   /**
    * Ids matching the current Issues filter/search, or null when unknown. The
    * "Filtered" toggle scopes the tree to this set; null disables the toggle.
@@ -141,6 +143,7 @@ export function TreeView({
   loading,
   error,
   selectedBeadId,
+  favoriteIds = [],
   filteredBeadIds,
   filterActive,
   filteredCount,
@@ -440,6 +443,7 @@ export function TreeView({
           onClose={() => setMenu(null)}
           items={rowMenuItems(menu.bead, {
             hasParent: parentOf.has(menu.bead.id),
+            isFavorite: favoriteIds.includes(menu.bead.id),
             onMoveToRoot: () => reparent(menu.bead.id, null),
           })}
         />
@@ -450,7 +454,7 @@ export function TreeView({
 
 function rowMenuItems(
   bead: Bead,
-  opts: { hasParent: boolean; onMoveToRoot: () => void },
+  opts: { hasParent: boolean; isFavorite: boolean; onMoveToRoot: () => void },
 ): ContextMenuItem[] {
   return [
     {
@@ -460,6 +464,11 @@ function rowMenuItems(
     {
       label: "Show Details",
       onSelect: () => vscode.postMessage({ type: "openBeadDetails", beadId: bead.id }),
+    },
+    {
+      label: opts.isFavorite ? "Remove from Favorites" : "Add to Favorites",
+      separatorBefore: true,
+      onSelect: () => vscode.postMessage({ type: "toggleFavorite", beadId: bead.id }),
     },
     ...(opts.hasParent
       ? [

@@ -206,6 +206,10 @@ export function App(): React.ReactElement {
     return () => clearTimeout(t);
   }, [state.pulseSeq]);
 
+  // Favorite bead ids (vs-sd5.1) — passed to the bead-context-menu views so a
+  // right-click can star/unstar, and labelled Add/Remove based on membership.
+  const favoriteIds = state.favorites.map((f) => f.id);
+
   // Render the appropriate view
   const renderView = () => {
       if (state.viewType === "beadsPanel" && state.loading && state.beads.length === 0) {
@@ -242,6 +246,7 @@ export function App(): React.ReactElement {
             loading={state.loading}
             error={state.error}
             selectedBeadId={state.selectedBeadId}
+            favoriteIds={favoriteIds}
             tooltipHoverDelay={state.settings.tooltipHoverDelay}
             issuesFilterRequest={state.issuesFilterRequest}
             graph={state.graph}
@@ -264,6 +269,7 @@ export function App(): React.ReactElement {
             loading={state.loading}
             error={state.error}
             selectedBeadId={state.selectedBeadId}
+            favoriteIds={favoriteIds}
             settings={state.settings}
             issuesFilterRequest={state.issuesFilterRequest}
             showGraphRequest={state.showGraphRequest}
@@ -278,6 +284,7 @@ export function App(): React.ReactElement {
             loading={state.loading}
             error={state.error}
             selectedBeadId={state.selectedBeadId}
+            favoriteIds={favoriteIds}
             focusBeadId={null}
             filteredBeadIds={null}
             onOpenBead={(beadId) =>
@@ -311,6 +318,7 @@ export function App(): React.ReactElement {
             onOpenBeadInTab={(beadId) => vscode.postMessage({ type: "openBeadInTab", beadId })}
             onClearBead={() => vscode.postMessage({ type: "clearActiveBead" })}
             onUnfavorite={(beadId) => vscode.postMessage({ type: "removeFavorite", beadId })}
+            onToggleFavorite={(beadId) => vscode.postMessage({ type: "toggleFavorite", beadId })}
             onPickReady={() => vscode.postMessage({ type: "pickReadyBead" })}
             onShowIssues={() => vscode.postMessage({ type: "showIssues" })}
             onShowStatus={() => vscode.postMessage({ type: "showDoltStatus" })}

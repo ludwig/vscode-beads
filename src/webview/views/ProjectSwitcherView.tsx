@@ -13,6 +13,8 @@ import { Bead, BeadsProject, FavoriteBead, STATUS_COLORS } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
 import { TypeIcon } from "../common/TypeIcon";
+import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
+import { EndFlourish } from "../common/EndFlourish";
 
 interface ProjectSwitcherViewProps {
   projects: BeadsProject[];
@@ -27,6 +29,8 @@ interface ProjectSwitcherViewProps {
   onClearBead: () => void;
   /** Unstar a favorite from the section's per-row control. */
   onUnfavorite: (beadId: string) => void;
+  /** Star/unstar a bead from the card right-click menu (vs-sd5.5). */
+  onToggleFavorite: (beadId: string) => void;
   onPickReady: () => void;
   onShowIssues: () => void;
   onShowStatus: () => void;
@@ -65,6 +69,7 @@ export function ProjectSwitcherView({
   onOpenBeadInTab,
   onClearBead,
   onUnfavorite,
+  onToggleFavorite,
   onPickReady,
   onShowIssues,
   onShowStatus,
@@ -81,6 +86,29 @@ export function ProjectSwitcherView({
   const [projectCollapsed, setProjectCollapsed] = useState(false);
   const [beadCollapsed, setBeadCollapsed] = useState(false);
   const [favoritesCollapsed, setFavoritesCollapsed] = useState(false);
+
+  // Right-click menu for a bead card/row (vs-sd5.5). `isFavorite` is captured at
+  // open time so the toggle label reads correctly for the menu's bead.
+  const [cardMenu, setCardMenu] = useState<{ x: number; y: number; id: string; isFavorite: boolean } | null>(null);
+  const openCardMenu = useCallback(
+    (e: React.MouseEvent, id: string, isFavorite: boolean) => {
+      e.preventDefault();
+      setCardMenu({ x: e.clientX, y: e.clientY, id, isFavorite });
+    },
+    [],
+  );
+  const cardMenuItems = useCallback(
+    (id: string, isFavorite: boolean): ContextMenuItem[] => [
+      { label: "Show Details", onSelect: () => onOpenBead(id) },
+      { label: "Open in editor tab", onSelect: () => onOpenBeadInTab(id) },
+      {
+        label: isFavorite ? "Remove from Favorites" : "Add to Favorites",
+        separatorBefore: true,
+        onSelect: () => onToggleFavorite(id),
+      },
+    ],
+    [onOpenBead, onOpenBeadInTab, onToggleFavorite],
+  );
 
   // Click-count router on the Active Bead card (mirrors the Graph/Tree): 1/2
   // clicks open it in the sidebar Details, 3 clicks open it in an editor tab.
@@ -277,6 +305,9 @@ export function ProjectSwitcherView({
               className="active-bead context-card-open"
               title={`${activeBead.id} — ${activeBead.title}\nClick to open in Details · triple-click to open in an editor tab`}
               onClick={() => activateBead(activeBead.id)}
+              onContextMenu={(e) =>
+                openCardMenu(e, activeBead.id, favorites.some((f) => f.id === activeBead.id))
+              }
             >
               <div className="active-bead-main">
                 <div className="active-bead-head">
@@ -336,6 +367,7 @@ export function ProjectSwitcherView({
                   className="active-bead context-card-open"
                   title={`${fav.id}${fav.title ? ` — ${fav.title}` : ""}\nClick to open in Details · triple-click to open in an editor tab`}
                   onClick={() => activateBead(fav.id)}
+                  onContextMenu={(e) => openCardMenu(e, fav.id, true)}
                 >
                   <div className="active-bead-main">
                     <div className="active-bead-head">
@@ -372,8 +404,17 @@ export function ProjectSwitcherView({
       </section>
 
       <div className="view-end" aria-hidden="true">
-        <span className="view-end-mark" />
+        <EndFlourish />
       </div>
+
+      {cardMenu && (
+        <ContextMenu
+          x={cardMenu.x}
+          y={cardMenu.y}
+          onClose={() => setCardMenu(null)}
+          items={cardMenuItems(cardMenu.id, cardMenu.isFavorite)}
+        />
+      )}
     </div>
   );
 }
