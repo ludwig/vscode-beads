@@ -2562,9 +2562,14 @@ textarea {
   transition: color var(--transition-fast), background var(--transition-fast);
 }
 
-.header-icon-btn:hover {
+.header-icon-btn:hover:not(:disabled) {
   color: var(--vscode-foreground);
   background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+}
+
+.header-icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 /* Hairline between the utility icons and the primary action. */

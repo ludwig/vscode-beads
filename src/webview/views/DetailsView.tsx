@@ -180,6 +180,11 @@ interface DetailsViewProps {
   onViewInGraph: (beadId: string) => void;
   onSelectBead?: (beadId: string) => void;
   onCopyId?: (beadId: string) => void;
+  /** Per-tab Back/Forward enablement + handlers (editor tabs only, vs-9u8). */
+  canNavigateBack?: boolean;
+  canNavigateForward?: boolean;
+  onNavigateBack?: () => void;
+  onNavigateForward?: () => void;
 }
 
 // Helper to render text content - markdown or plain
@@ -204,6 +209,10 @@ export function DetailsView({
   onViewInGraph: _onViewInGraph,
   onSelectBead,
   onCopyId,
+  canNavigateBack = false,
+  canNavigateForward = false,
+  onNavigateBack,
+  onNavigateForward,
 }: DetailsViewProps): React.ReactElement {
   // Toast and onViewInGraph kept for potential future use
   const { showToast: _showToast } = useToast();
@@ -360,6 +369,33 @@ export function DetailsView({
           {bead.id}
         </span>
         <div className="header-actions">
+          {isEditorTab && (
+            <>
+              <button
+                className="icon-btn header-icon-btn"
+                title="Back (Alt+←)"
+                aria-label="Back"
+                disabled={!canNavigateBack}
+                onClick={() => onNavigateBack?.()}
+              >
+                <svg width={13} height={13} viewBox="0 0 16 16" aria-hidden="true">
+                  <path fill="currentColor" d="M10.5 3L5.5 8l5 5L9 14.5 2.5 8 9 1.5z" />
+                </svg>
+              </button>
+              <button
+                className="icon-btn header-icon-btn"
+                title="Forward (Alt+→)"
+                aria-label="Forward"
+                disabled={!canNavigateForward}
+                onClick={() => onNavigateForward?.()}
+              >
+                <svg width={13} height={13} viewBox="0 0 16 16" aria-hidden="true">
+                  <path fill="currentColor" d="M5.5 3l5 5-5 5L7 14.5 13.5 8 7 1.5z" />
+                </svg>
+              </button>
+              <span className="header-actions-sep" />
+            </>
+          )}
           {!isEditorTab && (
             <button
               className="icon-btn header-icon-btn"

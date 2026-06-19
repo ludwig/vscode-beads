@@ -45,8 +45,23 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
   public async showBead(beadId: string): Promise<void> {
     if (this._host?.isEditorTab) {
       this.history.record(beadId);
+      this.postNavState();
     }
     await this.renderBead(beadId);
+  }
+
+  /**
+   * Push the per-tab Back/Forward enablement to the webview so the editor-tab
+   * header buttons reflect this tab's own trail (vs-9u8). No-op for the sidebar,
+   * which has no per-tab buttons and uses the global history's context keys.
+   */
+  private postNavState(): void {
+    if (!this._host?.isEditorTab) return;
+    this.postMessage({
+      type: "setTabNavState",
+      canBack: this.history.canBack(),
+      canForward: this.history.canForward(),
+    });
   }
 
   /** Render a bead without touching the navigation trail. */
@@ -109,6 +124,9 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
     if (this.createMode) {
       this.postMessage({ type: "setCreateMode", value: true });
     }
+    // Re-assert per-tab Back/Forward enablement after a (re)resolve so the
+    // editor-tab header buttons aren't stuck disabled on mount/reveal (vs-9u8).
+    this.postNavState();
   }
 
   /**
@@ -127,6 +145,7 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
     const id = direction === "back" ? this.history.back() : this.history.forward();
     if (id) {
       await this.renderBead(id);
+      this.postNavState();
     }
   }
 
