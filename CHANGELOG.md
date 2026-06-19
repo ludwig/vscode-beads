@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.1] - 2026-06-19
+
 ### Added
 
 - Editor-tab navigation history now responds to **⌘←/⌘→** (Ctrl+←/→ on Windows/Linux), alongside the existing Alt+←/→ — each tab walks its own per-tab Back/Forward trail since only the focused tab's webview receives the keystroke (vs-9u8)
