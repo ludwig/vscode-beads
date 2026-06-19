@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Comment cards in the Details view now highlight on hover for better contrast against surrounding dark elements (vs-nxd)
+
 ### Changed
 
 - Renamed the sidebar **Context** view to **Repository** — "Project" is overloaded inside a VS Code workspace, so "Beads repository" is the clearer term for the active board
