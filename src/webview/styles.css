@@ -2740,7 +2740,7 @@ textarea {
   padding: 3px 8px;
 }
 
-/* Action buttons in the Context view flow (Show Issues · Pick Ready Bead) —
+/* Action buttons in the Repository view flow (Show Issues · Pick Ready Bead) —
    a single row of plump, hard-to-miss buttons. */
 .context-actions {
   display: flex;

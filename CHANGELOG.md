@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Renamed the sidebar **Context** view to **Repository** — "Project" is overloaded inside a VS Code workspace, so "Beads repository" is the clearer term for the active board
+
 ## [0.16.1] - 2026-06-19
 
 ### Fixed
