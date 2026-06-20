@@ -7,7 +7,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { Search } from "lucide-react";
-import { Bead, BeadStatus, BeadType, STATUS_LABELS, STATUS_COLORS, vscode } from "../types";
+import { Bead, BeadStatus, BuiltInStatus, BeadType, STATUS_LABELS, STATUS_COLORS, vscode } from "../types";
 import { TypeIcon } from "../common/TypeIcon";
 import { PriorityBadge } from "../common/PriorityBadge";
 import { LabelBadge } from "../common/LabelBadge";
@@ -25,7 +25,7 @@ interface KanbanBoardProps {
   /** Whether any filters are active (affects empty state messaging) */
   hasActiveFilters?: boolean;
   /** Unfiltered counts per status (to show "0 of N" when filtering) */
-  unfilteredCounts?: Record<BeadStatus, number>;
+  unfilteredCounts?: Record<string, number>;
   /**
    * Ids matching the current Issues filter, or null/undefined when the board
    * should show every bead. When set, the board scopes its cards to this slice
@@ -39,11 +39,28 @@ interface KanbanBoardProps {
   totalCount?: number;
 }
 
-const COLUMNS: BeadStatus[] = ["open", "in_progress", "blocked", "closed"];
+// bd's seven built-in statuses in lifecycle order: backlog → ready → doing →
+// done, with the persistent "pinned" lane parked at the far end (it lives
+// outside the normal flow). Full dynamic lane derivation (incl. custom statuses)
+// + persisted collapse is vs-9ph; for now we surface all built-ins so
+// deferred/pinned/hooked beads are no longer dropped.
+const COLUMNS: BuiltInStatus[] = [
+  "deferred", // backlog — parked for later (frozen)
+  "open", // ready (active)
+  "in_progress", // doing (wip)
+  "hooked", // claimed by a worker (wip)
+  "blocked", // started but stuck (wip)
+  "closed", // done
+  "pinned", // standing / persistent (frozen) — outside the flow
+];
 
 export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], onSelectBead, onUpdateBead, hasActiveFilters, unfilteredCounts, filteredBeadIds, filterActive, filteredCount, totalCount }: KanbanBoardProps): React.ReactElement {
-  // Track which columns are collapsed (closed is collapsed by default)
-  const [collapsedColumns, setCollapsedColumns] = useState<Set<BeadStatus>>(new Set(["closed"]));
+  // Track which columns are collapsed. The quiet lanes (closed + the frozen
+  // deferred/pinned) start collapsed; good per-lane defaults + persistence are
+  // vs-9ph.
+  const [collapsedColumns, setCollapsedColumns] = useState<Set<BeadStatus>>(
+    new Set(["closed", "deferred", "pinned"])
+  );
   // Track which column is being dragged over
   const [dragOverColumn, setDragOverColumn] = useState<BeadStatus | null>(null);
   // Optimistic status overrides for instant visual feedback

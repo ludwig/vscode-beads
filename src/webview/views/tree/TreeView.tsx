@@ -17,8 +17,8 @@ import {
   UNKNOWN_PRIORITY_COLOR,
   BeadPriority,
   TYPE_LABELS,
-  STATUS_COLORS,
-  STATUS_LABELS,
+  statusColor,
+  statusLabel,
   getTypeSortOrder,
   vscode,
 } from "../../types";
@@ -637,8 +637,8 @@ function TreeRow({
           <span className="beads-tree-id">{bead.id}</span>
           <span className="beads-tree-title">{bead.title}</span>
         </span>
-        <span className="beads-tree-status" style={{ color: STATUS_COLORS[bead.status] }}>
-          {STATUS_LABELS[bead.status] ?? bead.status}
+        <span className="beads-tree-status" style={{ color: statusColor(bead.status) }}>
+          {statusLabel(bead.status)}
         </span>
         <span className="beads-tree-type">{bead.type ? typeLabel(bead.type) : ""}</span>
         <span className="beads-tree-prio" style={{ color: priorityColor }}>

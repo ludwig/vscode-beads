@@ -5,7 +5,7 @@
  */
 
 import React from "react";
-import { BeadStatus, STATUS_LABELS, STATUS_COLORS } from "../types";
+import { BeadStatus, statusLabel, statusColor } from "../types";
 
 interface StatusBadgeProps {
   status: BeadStatus;
@@ -16,8 +16,8 @@ export function StatusBadge({
   status,
   size = "medium",
 }: StatusBadgeProps): React.ReactElement {
-  const label = STATUS_LABELS[status] || status;
-  const color = STATUS_COLORS[status] || "#888888";
+  const label = statusLabel(status);
+  const color = statusColor(status);
 
   return (
     <span
