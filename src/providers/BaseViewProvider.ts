@@ -14,6 +14,7 @@ import { FavoritesService } from "../backend/FavoritesService";
 import {
   ExtensionToWebviewMessage,
   FavoriteBead,
+  FilterSnapshot,
   WebviewToExtensionMessage,
 } from "../backend/types";
 import { Logger } from "../utils/logger";
@@ -42,6 +43,10 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
   // `null` or an array = seeded, pushed to the webview on (re)init so a fresh
   // Kanban/Tree/Graph tab inherits the panel's active filter.
   private seedFilteredBeadIds: string[] | null | undefined = undefined;
+  // Full Issues-filter snapshot for an Issues editor tab opened from the panel
+  // (vs-tle). `undefined` = not seeded; when set, pushed to the webview on init
+  // so the tab opens matching the panel's filter spec.
+  private seedIssuesFilterSnapshot: FilterSnapshot | undefined = undefined;
 
   constructor(
     extensionUri: vscode.Uri,
@@ -162,6 +167,9 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     if (this.seedFilteredBeadIds !== undefined) {
       this.postMessage({ type: "seedFilter", filteredBeadIds: this.seedFilteredBeadIds });
     }
+    if (this.seedIssuesFilterSnapshot !== undefined) {
+      this.postMessage({ type: "applyIssuesFilterSnapshot", snapshot: this.seedIssuesFilterSnapshot });
+    }
 
     // Publish the current favorites set so the view can render it immediately
     // on (re)mount (vs-sd5.1).
@@ -238,11 +246,23 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
           kanban: "beads.openKanbanInTab",
           tree: "beads.openTreeInTab",
         }[message.view];
-        // Pass the current filter snapshot so the new tab opens scoped to the
-        // panel's active filter rather than unfiltered (vs-nme).
-        vscode.commands.executeCommand(command, message.filteredBeadIds ?? null);
+        // Seed the new tab so it opens scoped, not unfiltered: Issues inherits
+        // the full filter spec (vs-tle), the id-driven views inherit the bead-id
+        // slice (vs-nme).
+        const seed = message.view === "issues" ? (message.issuesFilter ?? null) : (message.filteredBeadIds ?? null);
+        vscode.commands.executeCommand(command, seed);
         break;
       }
+
+      case "applyFilterGlobally":
+        // Fan out this Issues tab's filter to every open surface (vs-dzm). The
+        // command (registerCommands) holds the shell provider + panel manager.
+        vscode.commands.executeCommand(
+          "beads.applyFilterGlobally",
+          message.snapshot,
+          message.filteredBeadIds
+        );
+        break;
 
       case "pickReadyBead":
         vscode.commands.executeCommand("beads.pickReadyBead");
@@ -499,6 +519,31 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
    */
   public seedFilter(filteredBeadIds: string[] | null): void {
     this.seedFilteredBeadIds = filteredBeadIds;
+  }
+
+  /**
+   * Seed this view with a full Issues-filter snapshot before its "ready"
+   * handshake (vs-tle), so an Issues editor tab opens matching the panel.
+   */
+  public seedIssuesFilter(snapshot: FilterSnapshot): void {
+    this.seedIssuesFilterSnapshot = snapshot;
+  }
+
+  /**
+   * Push a filter update to an already-live view (vs-dzm "Apply to all"). For
+   * id-driven views (Kanban/Tree/Graph) pass the bead-id slice; for Issues
+   * views pass the full snapshot. Also updates the retained seed so a webview
+   * reload re-applies it. No-op when the webview isn't mounted yet — the seed
+   * carries it in via initializeView.
+   */
+  public pushFilter(update: { filteredBeadIds: string[] } | { snapshot: FilterSnapshot }): void {
+    if ("snapshot" in update) {
+      this.seedIssuesFilterSnapshot = update.snapshot;
+      this.postMessage({ type: "applyIssuesFilterSnapshot", snapshot: update.snapshot });
+    } else {
+      this.seedFilteredBeadIds = update.filteredBeadIds;
+      this.postMessage({ type: "seedFilter", filteredBeadIds: update.filteredBeadIds });
+    }
   }
 
   /**

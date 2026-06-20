@@ -14,6 +14,7 @@
 import * as vscode from "vscode";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
 import { FavoritesService } from "../backend/FavoritesService";
+import { FilterSnapshot } from "../backend/types";
 import { Logger } from "../utils/logger";
 import { BaseViewProvider } from "./BaseViewProvider";
 import { BeadDetailsViewProvider } from "./BeadDetailsViewProvider";
@@ -65,14 +66,19 @@ export class BeadPanelManager implements vscode.Disposable {
     this.track(key, panel, provider);
   }
 
-  /** Open (or focus) the Issues list as an editor tab. */
-  public openIssues(): void {
+  /**
+   * Open (or focus) the Issues list as an editor tab. `seed` is a full
+   * Issues-filter snapshot (vs-tle) so the tab opens matching the panel's
+   * filter; re-opening an existing tab keeps its own state and is not reseeded.
+   */
+  public openIssues(seed: FilterSnapshot | null = null): void {
     const key = "beadsPanel";
     if (this.reveal(key)) return;
 
     const panel = this.createPanel("Issues");
     const provider = new BeadsPanelViewProvider(this.extensionUri, this.projectManager, this.log, this.favorites);
     provider.attach(hostFromPanel(panel));
+    if (seed) provider.seedIssuesFilter(seed);
 
     this.track(key, panel, provider);
   }
@@ -195,6 +201,22 @@ export class BeadPanelManager implements vscode.Disposable {
   /** Push the favorites set to every open editor-tab panel (vs-sd5.1). */
   public publishFavorites(favorites: string[]): void {
     this.forEachProvider((p) => p.publishFavorites(favorites));
+  }
+
+  /**
+   * Fan out an "Apply to all" broadcast to every open editor tab (vs-dzm):
+   * id-driven views (Kanban/Tree/Graph) get reseeded with the matching bead
+   * ids; an open Issues tab applies the full snapshot. The source Issues tab
+   * re-applies its own snapshot idempotently.
+   */
+  public applyFilterToOpenTabs(snapshot: FilterSnapshot, filteredBeadIds: string[]): void {
+    for (const [key, { provider }] of this.entries) {
+      if (key === "beadsKanban" || key === "beadsTree" || key === "beadsGraph") {
+        provider.pushFilter({ filteredBeadIds });
+      } else if (key === "beadsPanel") {
+        provider.pushFilter({ snapshot });
+      }
+    }
   }
 
   public dispose(): void {

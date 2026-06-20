@@ -11,7 +11,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { LayoutDashboard, ListTodo, Workflow, ListTree, Kanban, RefreshCw, ExternalLink, LucideIcon } from "lucide-react";
-import { Bead, BeadsSummary, DependencyGraph, IssuesFilter, WebviewSettings, vscode } from "../types";
+import { Bead, BeadsSummary, DependencyGraph, FilterSnapshot, IssuesFilter, WebviewSettings, vscode } from "../types";
 import { DashboardView } from "./DashboardView";
 import { IssuesView } from "./IssuesView";
 import { KanbanBoard } from "./KanbanBoard";
@@ -20,6 +20,23 @@ import { TreeView } from "./tree/TreeView";
 import { Loading } from "../common/Loading";
 
 type PanelTab = "issues" | "dashboard" | "kanban" | "graph" | "tree";
+
+// The five persisted keys that fully define the Issues filter, read straight
+// from the shared webview state blob (IssuesView's own source of truth). Used
+// to seed an Issues editor tab so it opens matching the panel (vs-tle).
+// Defaults mirror IssuesView's initial state (¬closed preset).
+function readIssuesFilterSnapshot(): FilterSnapshot {
+  const s = (vscode.getState() as Record<string, unknown> | undefined) ?? {};
+  return {
+    columnFilters: (s.issuesColumnFilters as { id: string; value: unknown }[] | undefined) ?? [
+      { id: "status", value: ["__not-closed__"] },
+    ],
+    globalFilter: (s.issuesGlobalFilter as string | undefined) ?? "",
+    activePreset: (s.issuesActivePreset as string | undefined) ?? "not-closed",
+    readyOnly: (s.issuesReadyOnly as boolean | undefined) ?? false,
+    favoritesOnly: (s.issuesFavoritesOnly as boolean | undefined) ?? false,
+  };
+}
 
 interface PanelShellProps {
   summary: BeadsSummary | null;
@@ -32,6 +49,9 @@ interface PanelShellProps {
   favoriteIds: string[];
   settings: WebviewSettings;
   issuesFilterRequest: { filter: IssuesFilter; seq: number } | null;
+  // Full Issues-filter snapshot to apply, landed by an "Apply to all" broadcast
+  // (vs-dzm). Forwarded to the embedded IssuesView.
+  applySnapshotRequest: { snapshot: FilterSnapshot; seq: number } | null;
   showGraphRequest: { beadId: string; seq: number } | null;
   focusIssuesSeq: number;
   focusKanbanSeq: number;
@@ -47,6 +67,7 @@ export function PanelShell({
   favoriteIds,
   settings,
   issuesFilterRequest,
+  applySnapshotRequest,
   showGraphRequest,
   focusIssuesSeq,
   focusKanbanSeq,
@@ -165,9 +186,15 @@ export function PanelShell({
             title={`Open ${tabs.find((t) => t.id === active)?.label ?? "view"} in an editor tab`}
             aria-label="Open in editor tab"
             onClick={() =>
-              // Seed the new tab with the current filter snapshot (vs-nme) so
-              // Kanban/Tree/Graph open scoped to the panel's active filter.
-              vscode.postMessage({ type: "openViewInTab", view: active, filteredBeadIds })
+              // Seed the new tab with the panel's active filter so it opens
+              // scoped, not blank: Kanban/Tree/Graph inherit the bead-id slice
+              // (vs-nme); the Issues tab inherits the full filter spec (vs-tle).
+              vscode.postMessage({
+                type: "openViewInTab",
+                view: active,
+                filteredBeadIds,
+                issuesFilter: active === "issues" ? readIssuesFilterSnapshot() : null,
+              })
             }
           >
             <ExternalLink size={14} strokeWidth={2} />
@@ -250,6 +277,7 @@ export function PanelShell({
             favoriteIds={favoriteIds}
             tooltipHoverDelay={settings.tooltipHoverDelay}
             issuesFilterRequest={localFilter ?? issuesFilterRequest}
+            applySnapshotRequest={applySnapshotRequest}
             graph={graph}
             onRequestGraph={requestGraph}
             onFilteredBeadsChange={handleFilteredBeads}

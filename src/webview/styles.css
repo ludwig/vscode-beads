@@ -1253,6 +1253,25 @@ textarea {
   display: block;
 }
 
+/* "Apply to all views" — editor-tab Issues only (vs-dzm). */
+.apply-all-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 3px 9px;
+  font-size: 11px;
+  border: 1px solid var(--vscode-button-border, transparent);
+  border-radius: var(--border-radius);
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  cursor: pointer;
+}
+
+.apply-all-btn:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
 /* Legacy toolbar - keep for now */
 .panel-toolbar {
   display: flex;

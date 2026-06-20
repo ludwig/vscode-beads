@@ -13,6 +13,7 @@ import {
   DependencyGraph,
   ExtensionMessage,
   FavoriteBead,
+  FilterSnapshot,
   IssuesFilter,
   WebviewSettings,
   vscode,
@@ -74,6 +75,10 @@ interface AppState {
   // ribbon's "Show all" (vs-zq2). The snapshot itself is retained so they can
   // flip back to "Show filtered". Reset whenever a fresh seed arrives.
   seedFilterCleared: boolean;
+  // A full Issues-filter snapshot to apply to the IssuesView — seeds an Issues
+  // editor tab on open (vs-tle) and lands an "Apply to all" broadcast (vs-dzm).
+  // `seq` bumps each time so an identical snapshot still re-applies.
+  applySnapshotRequest: { snapshot: FilterSnapshot; seq: number } | null;
 }
 
 const initialState: AppState = {
@@ -108,6 +113,7 @@ const initialState: AppState = {
   favorites: [],
   seedFilteredBeadIds: null,
   seedFilterCleared: false,
+  applySnapshotRequest: null,
 };
 
 export function App(): React.ReactElement {
@@ -199,6 +205,15 @@ export function App(): React.ReactElement {
           ...prev,
           seedFilteredBeadIds: message.filteredBeadIds,
           seedFilterCleared: false,
+        }));
+        break;
+      case "applyIssuesFilterSnapshot":
+        setState((prev) => ({
+          ...prev,
+          applySnapshotRequest: {
+            snapshot: message.snapshot,
+            seq: (prev.applySnapshotRequest?.seq ?? 0) + 1,
+          },
         }));
         break;
       case "refresh":
@@ -308,6 +323,8 @@ export function App(): React.ReactElement {
             favoriteIds={favoriteIds}
             tooltipHoverDelay={state.settings.tooltipHoverDelay}
             issuesFilterRequest={state.issuesFilterRequest}
+            applySnapshotRequest={state.applySnapshotRequest}
+            isEditorTab={state.settings.isEditorTab}
             graph={state.graph}
             onRequestGraph={() => vscode.postMessage({ type: "requestGraph" })}
             onSelectBead={(beadId) =>
@@ -331,6 +348,7 @@ export function App(): React.ReactElement {
             favoriteIds={favoriteIds}
             settings={state.settings}
             issuesFilterRequest={state.issuesFilterRequest}
+            applySnapshotRequest={state.applySnapshotRequest}
             showGraphRequest={state.showGraphRequest}
             focusIssuesSeq={state.focusIssuesSeq}
             focusKanbanSeq={state.focusKanbanSeq}

@@ -39,6 +39,7 @@ export type {
   DependencyGraph,
   CreateBeadFields,
   IssuesFilter,
+  FilterSnapshot,
   ExtensionToWebviewMessage,
   WebviewToExtensionMessage,
 } from "../shared/contract";

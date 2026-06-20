@@ -242,6 +242,21 @@ export interface IssuesFilter {
   types?: string[];
 }
 
+// A complete snapshot of the Issues filter — the five pieces that together
+// fully define what the Issues list shows (vs-tle). Used to seed an Issues
+// editor tab on open, and to broadcast one tab's filter to every open view
+// ("Apply to all", vs-dzm). Distinct from the narrow IssuesFilter above, which
+// only carries the status/label/type drill-in slice used by Dashboard cards.
+export interface FilterSnapshot {
+  // TanStack ColumnFiltersState shape ({id, opaque value}[]); kept structural so
+  // this leaf module needn't depend on @tanstack/react-table.
+  columnFilters: { id: string; value: unknown }[];
+  globalFilter: string;
+  activePreset: string;
+  readyOnly: boolean;
+  favoritesOnly: boolean;
+}
+
 // --- Message protocol -------------------------------------------------------
 
 // Messages sent from the extension host to the webview.
@@ -274,6 +289,11 @@ export type ExtensionToWebviewMessage =
   // panel's active filter instead of opening unfiltered (vs-nme). `null` = no
   // filter (show all).
   | { type: "seedFilter"; filteredBeadIds: string[] | null }
+  // Apply a full Issues-filter snapshot to an IssuesView (vs-tle/vs-dzm): seeds
+  // an editor tab on open, and lands an "Apply to all" broadcast on the panel +
+  // other Issues tabs. App assigns a monotonic seq so an identical snapshot
+  // still re-applies.
+  | { type: "applyIssuesFilterSnapshot"; snapshot: FilterSnapshot }
   | { type: "refresh" }
   | { type: "showToast"; text: string };
 
@@ -312,6 +332,9 @@ export type WebviewToExtensionMessage =
       // Snapshot of the currently-filtered bead ids, so the new editor tab can
       // inherit the panel's active filter (vs-nme). Omitted/null = no filter.
       filteredBeadIds?: string[] | null;
+      // Full Issues-filter snapshot, used to seed an Issues editor tab on open
+      // (vs-tle) — the Issues filter is a richer spec than a bead-id list.
+      issuesFilter?: FilterSnapshot | null;
     }
   | { type: "copyBeadId"; beadId: string; toast?: boolean }
   | { type: "copyBeadJson"; beadId: string; toast?: boolean }
@@ -321,6 +344,11 @@ export type WebviewToExtensionMessage =
   | { type: "openFile"; filePath: string; line?: number }
   | { type: "openExternal"; url: string }
   | { type: "openIssuesWithFilter"; filter: IssuesFilter }
+  // Broadcast this (editor-tab) Issues view's filter to every open surface
+  // (vs-dzm): the panel + other Issues tabs apply the snapshot; open
+  // Kanban/Tree/Graph tabs are reseeded with the already-computed ids — one
+  // discrete push, so the extension never re-runs filter logic.
+  | { type: "applyFilterGlobally"; snapshot: FilterSnapshot; filteredBeadIds: string[] }
   // Star/unstar a bead in the active project's favorites set (vs-sd5.1).
   | { type: "toggleFavorite"; beadId: string }
   | { type: "removeFavorite"; beadId: string };
