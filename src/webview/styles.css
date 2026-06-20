@@ -1150,6 +1150,7 @@ textarea {
 }
 
 .filter-toggle {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1157,6 +1158,26 @@ textarea {
   border-radius: var(--border-radius);
   flex-shrink: 0;
   opacity: 0.8;
+}
+
+/* Active-filter count badge on the filter toggle (vs-dd7). */
+.filter-toggle-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  background: var(--vscode-focusBorder);
+  color: var(--vscode-button-foreground, #fff);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .filter-toggle:hover {
@@ -1185,7 +1206,8 @@ textarea {
   min-width: 0;
 }
 
-/* Modern filter bar */
+/* Modern filter bar — a distinct zone so the filters read as their own row
+   rather than blending into the toolbar (vs-dd7). */
 .filter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -1193,6 +1215,20 @@ textarea {
   gap: 6px;
   padding: 6px 8px;
   min-height: 28px;
+  background: var(--vscode-editorWidget-background, rgba(127, 127, 127, 0.08));
+  border: 1px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.2));
+  border-radius: var(--border-radius);
+}
+
+/* "Filters" label leading the row (vs-dd7). */
+.filter-bar-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
+  margin-right: 2px;
+  flex-shrink: 0;
 }
 
 /* Preset dropdown - extends generic .dropdown */
