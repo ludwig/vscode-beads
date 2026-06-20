@@ -20,6 +20,8 @@ import {
 import { DashboardView } from "./views/DashboardView";
 import { IssuesView } from "./views/IssuesView";
 import { GraphView } from "./views/graph/GraphView";
+import { KanbanBoard } from "./views/KanbanBoard";
+import { TreeView } from "./views/tree/TreeView";
 import { DetailsView } from "./views/DetailsView";
 import { ProjectSwitcherView } from "./views/ProjectSwitcherView";
 import { PanelShell } from "./views/PanelShell";
@@ -50,6 +52,8 @@ interface AppState {
   showGraphRequest: { beadId: string; seq: number } | null;
   // Bumped to switch the panel to the Issues tab + pulse a confirmation ring.
   focusIssuesSeq: number;
+  // Bumped to switch the panel to the Kanban tab (vs-6xf).
+  focusKanbanSeq: number;
   // Bumped when this (editor-tab) webview is revealed/opened, to flash a
   // confirmation ring so the tab is easy to spot (vs-c59).
   pulseSeq: number;
@@ -88,6 +92,7 @@ const initialState: AppState = {
   issuesFilterRequest: null,
   showGraphRequest: null,
   focusIssuesSeq: 0,
+  focusKanbanSeq: 0,
   pulseSeq: 0,
   memoryBytes: 0,
   tabNav: { canBack: false, canForward: false },
@@ -158,6 +163,9 @@ export function App(): React.ReactElement {
         break;
       case "focusIssuesTab":
         setState((prev) => ({ ...prev, focusIssuesSeq: prev.focusIssuesSeq + 1 }));
+        break;
+      case "focusKanbanTab":
+        setState((prev) => ({ ...prev, focusKanbanSeq: prev.focusKanbanSeq + 1 }));
         break;
       case "pulse":
         setState((prev) => ({ ...prev, pulseSeq: prev.pulseSeq + 1 }));
@@ -274,6 +282,7 @@ export function App(): React.ReactElement {
             issuesFilterRequest={state.issuesFilterRequest}
             showGraphRequest={state.showGraphRequest}
             focusIssuesSeq={state.focusIssuesSeq}
+            focusKanbanSeq={state.focusKanbanSeq}
           />
         );
 
@@ -290,6 +299,37 @@ export function App(): React.ReactElement {
             onOpenBead={(beadId) =>
               vscode.postMessage({ type: "openBeadDetails", beadId })
             }
+            onRetry={() => vscode.postMessage({ type: "refresh" })}
+          />
+        );
+
+      case "beadsKanban":
+        return (
+          <KanbanBoard
+            beads={state.beads}
+            selectedBeadId={state.selectedBeadId}
+            favoriteIds={favoriteIds}
+            filteredBeadIds={null}
+            filterActive={false}
+            onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
+            onUpdateBead={(beadId, updates) =>
+              vscode.postMessage({ type: "updateBead", beadId, updates })
+            }
+          />
+        );
+
+      case "beadsTree":
+        return (
+          <TreeView
+            graph={state.graph}
+            loading={state.loading}
+            error={state.error}
+            selectedBeadId={state.selectedBeadId}
+            favoriteIds={favoriteIds}
+            filteredBeadIds={null}
+            filterActive={false}
+            onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
+            onRequestGraph={() => vscode.postMessage({ type: "requestGraph" })}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
           />
         );
@@ -347,14 +387,23 @@ export function App(): React.ReactElement {
                 Pick an issue from the <strong>Issues</strong> list in the panel
                 below to see its details here.
               </p>
-              <button
-                type="button"
-                className="empty-state-action"
-                onClick={() => vscode.postMessage({ type: "startCreate" })}
-              >
-                <span className="empty-state-action-icon">+</span>
-                New Issue
-              </button>
+              <div className="empty-state-actions">
+                <button
+                  type="button"
+                  className="empty-state-action"
+                  onClick={() => vscode.postMessage({ type: "startCreate" })}
+                >
+                  <span className="empty-state-action-icon">+</span>
+                  New Issue
+                </button>
+                <button
+                  type="button"
+                  className="empty-state-action secondary"
+                  onClick={() => vscode.postMessage({ type: "showKanban" })}
+                >
+                  Show Kanban
+                </button>
+              </div>
             </div>
           );
         }

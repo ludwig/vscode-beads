@@ -24,7 +24,7 @@ import {
   type Edge,
   type Connection,
 } from "@xyflow/react";
-import { GitBranch, Network, Crosshair, Wand2, Filter, ListTree, Radar } from "lucide-react";
+import { GitBranch, Network, Crosshair, Wand2, Filter, ListTree, Radar, Search, X } from "lucide-react";
 import { Bead, DependencyGraph, statusColor, vscode } from "../../types";
 import { Loading } from "../../common/Loading";
 import { ErrorMessage } from "../../common/ErrorMessage";
@@ -98,6 +98,19 @@ function GraphCanvas({
   useEffect(() => {
     setFilterEnabled(issuesFilterActive ?? false);
   }, [issuesFilterActive]);
+
+  // Ad-hoc quick-filter: narrows the rendered nodes by id/title ON TOP of the
+  // shared Issues filter slice — a per-view scratch narrowing, separate from the
+  // Issues filter (vs-v6h). Persisted across reload/tab-switch (the graph tab
+  // remounts) under its own state key so it doesn't collide with the Issues
+  // columnFilters/globalFilter.
+  const [query, setQuery] = useState<string>(
+    () => (vscode.getState() as { graphQuickFilter?: string } | undefined)?.graphQuickFilter ?? "",
+  );
+  useEffect(() => {
+    const prev = (vscode.getState() as Record<string, unknown>) ?? {};
+    vscode.setState({ ...prev, graphQuickFilter: query });
+  }, [query]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; bead: Bead } | null>(null);
   // Drawing a new edge (vs-caz): React Flow fires onConnect on a valid drop,
@@ -139,10 +152,13 @@ function GraphCanvas({
   const filterActive = filterEnabled && filteredBeadIds != null;
   const beads: Bead[] = useMemo(() => {
     const all = graph?.nodes ?? [];
-    if (!filterActive) return all;
-    const allowed = new Set(filteredBeadIds);
-    return all.filter((b) => allowed.has(b.id));
-  }, [graph, filterActive, filteredBeadIds]);
+    const scoped = !filterActive ? all : all.filter((b) => new Set(filteredBeadIds).has(b.id));
+    const q = query.trim().toLowerCase();
+    if (!q) return scoped;
+    return scoped.filter(
+      (b) => b.id.toLowerCase().includes(q) || b.title.toLowerCase().includes(q),
+    );
+  }, [graph, filterActive, filteredBeadIds, query]);
   const layoutEdges: LayoutEdge[] = useMemo(
     () => (graph?.edges ?? []).map((e) => ({ from: e.from, to: e.to })),
     [graph],
@@ -407,6 +423,30 @@ function GraphCanvas({
           <Wand2 size={14} strokeWidth={2} />
           <span>Auto Layout</span>
         </button>
+        <div className="graph-quickfilter">
+          <Search size={13} strokeWidth={2} className="graph-quickfilter-icon" />
+          <input
+            type="text"
+            className="graph-quickfilter-input"
+            placeholder="Filter nodes…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setQuery("");
+            }}
+          />
+          {query && (
+            <button
+              type="button"
+              className="graph-quickfilter-clear"
+              title="Clear filter (Esc)"
+              aria-label="Clear filter"
+              onClick={() => setQuery("")}
+            >
+              <X size={13} strokeWidth={2} />
+            </button>
+          )}
+        </div>
       </div>
 
       <ReactFlow

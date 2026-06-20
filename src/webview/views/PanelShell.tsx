@@ -34,6 +34,7 @@ interface PanelShellProps {
   issuesFilterRequest: { filter: IssuesFilter; seq: number } | null;
   showGraphRequest: { beadId: string; seq: number } | null;
   focusIssuesSeq: number;
+  focusKanbanSeq: number;
 }
 
 export function PanelShell({
@@ -48,6 +49,7 @@ export function PanelShell({
   issuesFilterRequest,
   showGraphRequest,
   focusIssuesSeq,
+  focusKanbanSeq,
 }: PanelShellProps): React.ReactElement {
   // Issues is the default view when the panel first opens.
   const [active, setActive] = useState<PanelTab>("issues");
@@ -90,6 +92,20 @@ export function PanelShell({
     return () => clearTimeout(t);
   }, [focusIssuesSeq]);
 
+  // "Show Kanban" (from the empty Details view): flip to the Kanban tab and
+  // pulse the same confirmation ring (vs-6xf).
+  const lastFocusKanbanSeq = useRef(0);
+  useEffect(() => {
+    if (focusKanbanSeq === 0 || lastFocusKanbanSeq.current === focusKanbanSeq) {
+      return;
+    }
+    lastFocusKanbanSeq.current = focusKanbanSeq;
+    setActive("kanban");
+    setPulsing(true);
+    const t = setTimeout(() => setPulsing(false), 1600);
+    return () => clearTimeout(t);
+  }, [focusKanbanSeq]);
+
   const flipToIssues = (filter: IssuesFilter) => {
     setLocalFilter((prev) => ({ filter, seq: (prev?.seq ?? 0) + 1 }));
     setActive("issues");
@@ -124,9 +140,6 @@ export function PanelShell({
   const filteredCount = filteredBeadIds?.length ?? totalCount;
   const filterActive = filteredBeadIds != null && filteredCount < totalCount;
 
-  // Tree and Kanban have no editor-tab route yet, so hide Open-in-Editor there.
-  const canOpenInEditor = active !== "tree" && active !== "kanban";
-
   return (
     <div className={`panel-shell${pulsing ? " pulsing" : ""}`}>
       <nav className="panel-shell-nav" role="tablist">
@@ -146,17 +159,15 @@ export function PanelShell({
           ))}
         </div>
         <div className="panel-shell-actions">
-          {canOpenInEditor && (
-            <button
-              type="button"
-              className="panel-shell-action"
-              title={`Open ${tabs.find((t) => t.id === active)?.label ?? "view"} in an editor tab`}
-              aria-label="Open in editor tab"
-              onClick={() => vscode.postMessage({ type: "openViewInTab", view: active })}
-            >
-              <ExternalLink size={14} strokeWidth={2} />
-            </button>
-          )}
+          <button
+            type="button"
+            className="panel-shell-action"
+            title={`Open ${tabs.find((t) => t.id === active)?.label ?? "view"} in an editor tab`}
+            aria-label="Open in editor tab"
+            onClick={() => vscode.postMessage({ type: "openViewInTab", view: active })}
+          >
+            <ExternalLink size={14} strokeWidth={2} />
+          </button>
           <button
             type="button"
             className="panel-shell-action"

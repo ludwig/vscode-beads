@@ -32,6 +32,7 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
   // so a freshly-focused panel still switches to the Graph tab and focuses it.
   private pendingShowGraph: string | undefined;
   private pendingFocusIssues = false;
+  private pendingFocusKanban = false;
   // Set once the Graph/Tree tab asks for the dependency graph, so a project
   // switch / refresh knows to re-push fresh graph data (not just the bead list).
   // A dedicated graph view (GraphViewProvider) opts in at construction so the
@@ -69,6 +70,15 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     this.flushFocusIssues();
   }
 
+  /**
+   * Switch the panel to the Kanban tab. Posts immediately when the webview is
+   * live; otherwise it's flushed once the webview signals ready (vs-6xf).
+   */
+  public focusKanbanTab(): void {
+    this.pendingFocusKanban = true;
+    this.flushFocusKanban();
+  }
+
   private flushFilter(): void {
     if (this.pendingFilter !== undefined && this._host?.visible) {
       this.postMessage({ type: "applyIssuesFilter", filter: this.pendingFilter });
@@ -90,11 +100,19 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     }
   }
 
+  private flushFocusKanban(): void {
+    if (this.pendingFocusKanban && this._host?.visible) {
+      this.postMessage({ type: "focusKanbanTab" });
+      this.pendingFocusKanban = false;
+    }
+  }
+
   protected async initializeView(): Promise<void> {
     await super.initializeView();
     this.flushFilter();
     this.flushShowGraph();
     this.flushFocusIssues();
+    this.flushFocusKanban();
   }
 
   constructor(

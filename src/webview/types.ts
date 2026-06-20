@@ -67,10 +67,10 @@ export const STATUS_LABELS: Record<BuiltInStatus, string> = {
 };
 
 export const PRIORITY_COLORS: Record<BeadPriority, string> = {
-  0: "#ff4444", // Critical - red
-  1: "#ff8800", // High - orange
-  2: "#ffcc00", // Medium - yellow
-  3: "#44aa44", // Low - green
+  0: "#c75d5d", // Critical - muted red
+  1: "#c2864e", // High - muted orange
+  2: "#bcac63", // Medium - muted gold (was vivid yellow)
+  3: "#6a9a6a", // Low - muted green
   4: "#888888", // None - gray
 };
 
@@ -87,12 +87,12 @@ export const UNKNOWN_PRIORITY_COLOR = "#6b7280"; // gray
 export const UNKNOWN_PRIORITY_TEXT_COLOR = "#ffffff"; // white
 
 export const STATUS_COLORS: Record<BuiltInStatus, string> = {
-  open: "#10b981",        // green - ready to work (active)
-  in_progress: "#3b82f6", // blue (wip)
-  blocked: "#ef4444",     // red (wip, stuck)
-  hooked: "#06b6d4",      // cyan - claimed by a worker (wip)
+  open: "#54a088",        // muted green - ready to work (active)
+  in_progress: "#5a82c2", // muted blue (wip)
+  blocked: "#c25c5c",     // muted red (wip, stuck)
+  hooked: "#56a0b0",      // muted cyan - claimed by a worker (wip)
   deferred: "#64748b",    // slate - on ice (frozen)
-  pinned: "#f59e0b",      // amber - persistent (frozen)
+  pinned: "#c2a05a",      // muted amber - persistent (frozen; stands out less)
   closed: "#6b7280",      // gray (done)
 };
 
@@ -127,14 +127,17 @@ export const TYPE_LABELS: Record<BeadType, string> = {
   molecule: "molecule",
 };
 
+// Desaturated/muted palette (vs-b4e) — calmer than the original vivid hues,
+// hue identity preserved, chroma reduced. Yellows pulled toward muted gold so
+// they stand out less. Text-contrast pairings (below) still hold.
 export const TYPE_COLORS: Record<BeadType, string> = {
-  bug: "#dc2626",           // red
-  feature: "#16a34a",       // green
-  task: "#eab308",          // yellow
-  epic: "#9333ea",          // purple
-  chore: "#2563eb",         // blue
-  "merge-request": "#0ea5e9", // sky blue
-  molecule: "#14b8a6",      // teal
+  bug: "#b5524e",           // muted red
+  feature: "#5b9772",       // muted green
+  task: "#bfa455",          // muted gold (was vivid yellow)
+  epic: "#8a6fb0",          // muted purple
+  chore: "#5a7cb0",         // muted blue
+  "merge-request": "#5a9bbf", // muted sky
+  molecule: "#56a298",      // muted teal
 };
 
 export const TYPE_TEXT_COLORS: Record<BeadType, string> = {

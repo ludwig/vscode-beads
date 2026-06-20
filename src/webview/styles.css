@@ -723,6 +723,25 @@ textarea {
   background: var(--beads-accent-hover);
 }
 
+/* Row holding the empty-state actions (New Issue + Show Kanban). */
+.empty-state-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Secondary empty-state action — quieter than the accent primary. */
+.empty-state-action.secondary {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+
+.empty-state-action.secondary:hover {
+  background: var(--vscode-button-secondaryHoverBackground, var(--vscode-button-secondaryBackground));
+}
+
 .empty-state-action-icon {
   font-size: 15px;
   line-height: 1;
@@ -3299,6 +3318,221 @@ textarea {
   resize: vertical;
 }
 
+/* ===========================================================================
+   New Issue form (vs-2tn.1) — a purpose-built, centered form layout. Scoped
+   entirely under .create-bead so it never leans on the read/edit .details-*
+   classes. Works at sidebar width and full editor-tab width alike.
+   =========================================================================== */
+.create-bead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-xl);
+}
+
+/* Header: accent mark + title on the left, balanced actions on the right,
+   anchored by a hairline rule. */
+.create-bead-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.create-bead-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-width: 0;
+}
+
+.create-bead-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  border-radius: var(--border-radius);
+  color: var(--vscode-button-foreground);
+  background: var(--vscode-button-background);
+}
+
+.create-bead-title-text {
+  margin: 0;
+  font-size: var(--text-title);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--vscode-foreground);
+}
+
+.create-bead-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex: 0 0 auto;
+}
+
+.create-bead-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+/* A field = a tracked-out caption stacked over its control. */
+.create-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.create-field-label {
+  font-size: var(--text-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--vscode-descriptionForeground);
+}
+
+.create-required {
+  color: var(--vscode-charts-red, var(--vscode-errorForeground));
+  font-weight: 700;
+}
+
+/* Shared input/textarea look: full-width, themed, consistent focus. */
+.create-input {
+  width: 100%;
+  padding: 7px var(--spacing-sm);
+  font-size: var(--text-body);
+  border: 1px solid var(--vscode-input-border, var(--vscode-panel-border));
+  border-radius: var(--border-radius);
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.create-input::placeholder {
+  color: var(--vscode-input-placeholderForeground, var(--vscode-descriptionForeground));
+  opacity: 0.8;
+}
+
+.create-input:focus {
+  border-color: var(--vscode-focusBorder);
+}
+
+.create-title-input {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  padding: 8px 10px;
+}
+
+.create-textarea {
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 64px;
+}
+
+/* Meta row: Type / Priority / Assignee. Inline fields hug their controls;
+   the assignee field grows to fill the row, wrapping cleanly when narrow. */
+.create-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--spacing-md) var(--spacing-lg);
+}
+
+.create-field-inline {
+  flex: 0 0 auto;
+}
+
+.create-field-assignee {
+  flex: 1 1 200px;
+  min-width: 180px;
+}
+
+/* The colored Type/Priority triggers get a control-sized frame so they read as
+   form controls, not floating badges, and line up with the assignee box. */
+.create-field-inline .colored-select-trigger {
+  height: 30px;
+  padding: 0 var(--spacing-sm);
+  border: 1px solid var(--vscode-input-border, var(--vscode-panel-border));
+  border-radius: var(--border-radius);
+  background: var(--vscode-input-background);
+}
+
+.create-field-inline .colored-select-trigger:hover {
+  border-color: var(--vscode-focusBorder);
+  background: var(--vscode-input-background);
+}
+
+/* A bordered control wrapper that hosts an icon + a borderless input, so the
+   icon sits inside the frame and the whole thing matches input height. */
+.create-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 var(--spacing-sm);
+  border: 1px solid var(--vscode-input-border, var(--vscode-panel-border));
+  border-radius: var(--border-radius);
+  background: var(--vscode-input-background);
+  transition: border-color var(--transition-fast);
+}
+
+.create-control:focus-within {
+  border-color: var(--vscode-focusBorder);
+}
+
+.create-field-icon {
+  flex: 0 0 auto;
+  opacity: 0.6;
+}
+
+.create-control input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  outline: none;
+  padding: 0;
+  background: transparent;
+  color: var(--vscode-input-foreground);
+  font-size: 12px;
+}
+
+.create-assignee-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.create-assignee-control {
+  flex: 1 1 auto;
+}
+
+.create-assign-me {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* Labels: the add-control then the badges, sharing one baseline. */
+.create-labels {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.create-label-add {
+  width: 180px;
+}
+
 .labels-row {
   display: flex;
   flex-wrap: wrap;
@@ -4298,6 +4532,21 @@ textarea {
   text-align: right;
 }
 
+/* Updated/Created timestamp cells (vs-3ie). */
+.beads-tree-time {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Column show/hide selector — positioned wrapper for the .col-menu popover. */
+.beads-tree-colmenu {
+  position: relative;
+  display: inline-flex;
+}
+
 .beads-tree-empty {
   padding: 16px;
   color: var(--vscode-descriptionForeground);
@@ -4312,6 +4561,56 @@ textarea {
   padding: 6px 10px;
   border-bottom: 1px solid var(--vscode-panel-border);
   flex: 0 0 auto;
+}
+
+/* Ad-hoc quick-filter (vs-v6h) — parked at the far right of the toolbar. */
+.graph-quickfilter {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 6px;
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border, transparent);
+  border-radius: 3px;
+}
+
+.graph-quickfilter:focus-within {
+  border-color: var(--vscode-focusBorder);
+}
+
+.graph-quickfilter-icon {
+  flex: 0 0 auto;
+  color: var(--vscode-descriptionForeground);
+}
+
+.graph-quickfilter-input {
+  flex: 1 1 auto;
+  min-width: 110px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--vscode-input-foreground);
+  font-size: 12px;
+  padding: 1px 0;
+}
+
+.graph-quickfilter-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.graph-quickfilter-clear:hover {
+  color: var(--vscode-foreground);
+  opacity: 1;
 }
 
 /* Layout-mode picker as an explicit segmented control (vs-xnw): one bordered

@@ -93,6 +93,14 @@ export function registerCommands(
       shellProvider.focusIssuesTab();
     }),
 
+    // Reveal the Beads panel with the Kanban tab focused. Used by the empty
+    // Details "Show Kanban" action, which prefers activating the in-panel
+    // Kanban over opening a standalone editor tab (vs-6xf).
+    vscode.commands.registerCommand("beads.openKanbanPanel", async () => {
+      await vscode.commands.executeCommand("beadsPanelShell.focus");
+      shellProvider.focusKanbanTab();
+    }),
+
     // Open the Issues panel pre-filtered to a slice (empty filter = all).
     // Used by the Dashboard summary cards and breakdown badges. Focus first so
     // a closed panel resolves its webview, then hand the filter to the provider
@@ -240,12 +248,31 @@ export function registerCommands(
       panelManager.openGraph();
     }),
 
+    // vs-xqu.1: open the Kanban board as an editor tab.
+    vscode.commands.registerCommand("beads.openKanbanInTab", () => {
+      panelManager.openKanban();
+    }),
+
+    // vs-xqu.2: open the dependency Tree as an editor tab.
+    vscode.commands.registerCommand("beads.openTreeInTab", () => {
+      panelManager.openTree();
+    }),
+
     vscode.commands.registerCommand("beads.createIssue", () => {
       if (!projectManager.getActiveProject()) {
         vscode.window.showWarningMessage("No active Beads project");
         return;
       }
       detailsProvider.startCreate();
+    }),
+
+    // vs-2tn.2: open a New Issue form as an independent editor tab.
+    vscode.commands.registerCommand("beads.openNewIssueInTab", () => {
+      if (!projectManager.getActiveProject()) {
+        vscode.window.showWarningMessage("No active Beads project");
+        return;
+      }
+      panelManager.openNewIssue();
     }),
 
     vscode.commands.registerCommand("beads.refresh", async () => {

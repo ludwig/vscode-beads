@@ -374,8 +374,15 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
           this.createMode = false;
           this.postMessage({ type: "setCreateMode", value: false });
           this.projectManager.notifyDataChanged();
-          // Select and show the freshly created bead in all views.
-          await vscode.commands.executeCommand("beads.openBeadDetails", created.id);
+          if (this._host?.isEditorTab) {
+            // A dedicated New Issue tab becomes the created bead's Details tab
+            // in place — opening a separate tab would leave this one stranded on
+            // the empty "No issue selected" state (vs-2tn.2).
+            await this.showBead(created.id);
+          } else {
+            // Select and show the freshly created bead in all views.
+            await vscode.commands.executeCommand("beads.openBeadDetails", created.id);
+          }
         } catch (err) {
           vscode.window.showErrorMessage(`Failed to create bead: ${err}`);
         }
@@ -383,6 +390,12 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
 
       case "cancelCreate":
         this.createMode = false;
+        if (this._host?.isEditorTab) {
+          // A dedicated New Issue tab has no prior bead to restore — just close
+          // it (vs-2tn.2).
+          this._host.close();
+          break;
+        }
         this.postMessage({ type: "setCreateMode", value: false });
         // Restore whatever bead was shown before entering create mode.
         await this.loadData();

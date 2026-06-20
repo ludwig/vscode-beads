@@ -20,6 +20,8 @@ import { BeadDetailsViewProvider } from "./BeadDetailsViewProvider";
 import { BeadsPanelViewProvider } from "./BeadsPanelViewProvider";
 import { DashboardViewProvider } from "./DashboardViewProvider";
 import { GraphViewProvider } from "./GraphViewProvider";
+import { KanbanViewProvider } from "./KanbanViewProvider";
+import { TreeViewProvider } from "./TreeViewProvider";
 import { hostFromPanel } from "./WebviewHost";
 
 interface PanelEntry {
@@ -30,6 +32,8 @@ interface PanelEntry {
 export class BeadPanelManager implements vscode.Disposable {
   private readonly entries = new Map<string, PanelEntry>();
   private readonly subscriptions: vscode.Disposable[] = [];
+  // Monotonic counter so each New Issue tab gets a unique (never-deduped) key.
+  private newIssueSeq = 0;
 
   constructor(
     private readonly extensionUri: vscode.Uri,
@@ -93,6 +97,45 @@ export class BeadPanelManager implements vscode.Disposable {
     const panel = this.createPanel("Graph");
     const provider = new GraphViewProvider(this.extensionUri, this.projectManager, this.log);
     provider.attach(hostFromPanel(panel));
+
+    this.track(key, panel, provider);
+  }
+
+  /** Open (or focus) the Kanban board as an editor tab (vs-xqu.1). */
+  public openKanban(): void {
+    const key = "beadsKanban";
+    if (this.reveal(key)) return;
+
+    const panel = this.createPanel("Kanban");
+    const provider = new KanbanViewProvider(this.extensionUri, this.projectManager, this.log, this.favorites);
+    provider.attach(hostFromPanel(panel));
+
+    this.track(key, panel, provider);
+  }
+
+  /** Open (or focus) the dependency Tree as an editor tab (vs-xqu.2). */
+  public openTree(): void {
+    const key = "beadsTree";
+    if (this.reveal(key)) return;
+
+    const panel = this.createPanel("Tree");
+    const provider = new TreeViewProvider(this.extensionUri, this.projectManager, this.log, this.favorites);
+    provider.attach(hostFromPanel(panel));
+
+    this.track(key, panel, provider);
+  }
+
+  /**
+   * Open a New Issue (create-bead) form as an editor tab (vs-2tn.2). Each call
+   * opens an INDEPENDENT tab (unique key, never deduped) so multiple drafts can
+   * coexist — unlike the single-instance view tabs above.
+   */
+  public openNewIssue(): void {
+    const key = `beadsNewIssue:${++this.newIssueSeq}`;
+    const panel = this.createPanel("New Issue");
+    const provider = new BeadDetailsViewProvider(this.extensionUri, this.projectManager, this.log, this.favorites);
+    provider.attach(hostFromPanel(panel));
+    provider.startCreate();
 
     this.track(key, panel, provider);
   }
