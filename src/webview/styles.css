@@ -110,6 +110,65 @@ body {
   padding: 0;
 }
 
+/* Editor-tab shell wrapping a seeded view with its snapshot ribbon (vs-zq2).
+   A flex column so the ribbon is a fixed row and the body keeps the view's own
+   height/scroll model (Graph/React Flow needs a sized body). */
+.editor-tab-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.editor-tab-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Snapshot ribbon (vs-zq2): makes an inherited filter on an editor tab
+   unmistakable, with a reversible Show all / Show filtered toggle. */
+.filter-snapshot-ribbon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.2));
+  background: color-mix(in srgb, var(--vscode-focusBorder) 14%, var(--vscode-editor-background));
+  color: var(--vscode-foreground);
+}
+
+.filter-snapshot-ribbon.cleared {
+  background: var(--vscode-editorWidget-background, rgba(127, 127, 127, 0.08));
+  opacity: 0.9;
+}
+
+.filter-snapshot-ribbon-icon {
+  flex-shrink: 0;
+  color: var(--vscode-focusBorder);
+}
+
+.filter-snapshot-ribbon-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.filter-snapshot-ribbon-btn {
+  flex-shrink: 0;
+  padding: 2px 10px;
+  font-size: 11px;
+  border: 1px solid var(--vscode-button-border, transparent);
+  border-radius: var(--border-radius);
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  cursor: pointer;
+}
+
+.filter-snapshot-ribbon-btn:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
 /* ==================== Common Components ==================== */
 
 /* Buttons */
@@ -1218,17 +1277,6 @@ textarea {
   background: var(--vscode-editorWidget-background, rgba(127, 127, 127, 0.08));
   border: 1px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.2));
   border-radius: var(--border-radius);
-}
-
-/* "Filters" label leading the row (vs-dd7). */
-.filter-bar-label {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  opacity: 0.7;
-  margin-right: 2px;
-  flex-shrink: 0;
 }
 
 /* Preset dropdown - extends generic .dropdown */
