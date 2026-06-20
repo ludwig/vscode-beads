@@ -13,8 +13,8 @@ import {
   BeadsSummary,
   BeadStatus,
   IssuesFilter,
-  STATUS_COLORS,
-  STATUS_LABELS,
+  statusColor,
+  statusLabel,
   TYPE_COLORS,
   getTypeSortOrder,
 } from "../types";
@@ -144,14 +144,14 @@ export function DashboardView({
                     type="button"
                     className="breakdown-bar compact"
                     onClick={() => onOpenIssues({ statuses: [status] })}
-                    title={`Open ${STATUS_LABELS[status]} issues`}
+                    title={`Open ${statusLabel(status)} issues`}
                   >
                     <div className="bar-label compact">
                       <StatusBadge status={status} size="small" />
                       <span className="bar-count">{count}</span>
                     </div>
                     <div className="bar-track">
-                      <div className="bar-fill" style={{ width: `${percentage}%`, backgroundColor: STATUS_COLORS[status] }} />
+                      <div className="bar-fill" style={{ width: `${percentage}%`, backgroundColor: statusColor(status) }} />
                     </div>
                   </button>
                 );

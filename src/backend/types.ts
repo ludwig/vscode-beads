@@ -24,6 +24,8 @@ import { LOG_PREFIX } from "../constants";
 // the extension keep working unchanged.
 export type {
   BeadStatus,
+  BuiltInStatus,
+  StatusCategory,
   BeadPriority,
   DependencyType,
   DoltMode,
@@ -41,7 +43,16 @@ export type {
   WebviewToExtensionMessage,
 } from "../shared/contract";
 
-import type { Bead, BeadStatus, BeadPriority, DependencyType } from "../shared/contract";
+export {
+  BUILTIN_STATUSES,
+  BUILTIN_STATUS_CATEGORY,
+  isBuiltInStatus,
+  statusCategory,
+  isClosedStatus,
+} from "../shared/contract";
+
+import type { Bead, BeadStatus, BuiltInStatus, BeadPriority, DependencyType } from "../shared/contract";
+import { isBuiltInStatus } from "../shared/contract";
 
 // Human-readable priority labels
 export const PRIORITY_LABELS: Record<BeadPriority, string> = {
@@ -52,13 +63,30 @@ export const PRIORITY_LABELS: Record<BeadPriority, string> = {
   4: "None",
 };
 
-// Status display labels for the UI
-export const STATUS_LABELS: Record<BeadStatus, string> = {
+// Status display labels for the UI (built-ins). Custom statuses fall back to a
+// humanized form via `statusLabel()`.
+export const STATUS_LABELS: Record<BuiltInStatus, string> = {
   open: "Open",
   in_progress: "In Progress",
   blocked: "Blocked",
+  deferred: "Deferred",
   closed: "Closed",
+  pinned: "Pinned",
+  hooked: "Hooked",
 };
+
+// Turn a raw custom status (e.g. "in_review") into a display label ("In Review").
+export function humanizeStatus(status: string): string {
+  return status
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim();
+}
+
+// Display label for any status (built-in or custom).
+export function statusLabel(status: BeadStatus): string {
+  return isBuiltInStatus(status) ? STATUS_LABELS[status] : humanizeStatus(status);
+}
 
 // Backend dependency format (before normalization)
 export interface BackendBeadDependency {
@@ -128,6 +156,7 @@ export function normalizeStatus(status: string | undefined): BeadStatus | null {
   }
   const normalized = status.toLowerCase().replace(/-/g, "_");
   switch (normalized) {
+    // bd's seven built-in statuses (canonical spellings).
     case "open":
       return "open";
     case "in_progress":
@@ -135,6 +164,12 @@ export function normalizeStatus(status: string | undefined): BeadStatus | null {
       return "in_progress";
     case "blocked":
       return "blocked";
+    case "deferred":
+      return "deferred";
+    case "pinned":
+      return "pinned";
+    case "hooked":
+      return "hooked";
     case "closed":
     case "done":
     case "completed":
@@ -142,11 +177,12 @@ export function normalizeStatus(status: string | undefined): BeadStatus | null {
     case "canceled":
       return "closed";
     default:
-      if (!warnedStatuses.has(status)) {
-        warnedStatuses.add(status);
-        console.warn(`${LOG_PREFIX} Unknown bead status "${status}" - skipping`);
-      }
-      return null;
+      // A custom (user-defined) status configured via `bd config set
+      // status.custom`. Pass it through as its normalized string rather than
+      // nulling it — nulling silently DROPS the bead from every view (vs-dz9).
+      // Its category is "unspecified" until learned from bd's status.custom
+      // config (vs-f4o/vs-x6b).
+      return normalized;
   }
 }
 

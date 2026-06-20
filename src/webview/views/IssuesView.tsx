@@ -33,7 +33,8 @@ import {
   DependencyGraph,
   IssuesFilter,
   STATUS_LABELS,
-  STATUS_COLORS,
+  statusLabel,
+  statusColor,
   PRIORITY_COLORS,
   TYPE_LABELS,
   TYPE_COLORS,
@@ -905,8 +906,8 @@ export function IssuesView({
           {statusFilter.map((status) => (
             <FilterChip
               key={`status-${status}`}
-              label={STATUS_LABELS[status]}
-              accentColor={STATUS_COLORS[status]}
+              label={statusLabel(status)}
+              accentColor={statusColor(status)}
               onRemove={() => removeStatusFilter(status)}
             />
           ))}

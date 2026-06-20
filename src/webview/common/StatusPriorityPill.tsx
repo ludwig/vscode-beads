@@ -9,8 +9,8 @@ import React from "react";
 import {
   BeadStatus,
   BeadPriority,
-  STATUS_LABELS,
-  STATUS_COLORS,
+  statusLabel,
+  statusColor,
   PRIORITY_COLORS,
   PRIORITY_TEXT_COLORS,
   UNKNOWN_PRIORITY_COLOR,
@@ -29,8 +29,8 @@ export function StatusPriorityPill({
   // Need at least one value to render
   if (!status && priority === undefined) return null;
 
-  const statusLabel = status ? STATUS_LABELS[status] : null;
-  const statusColor = status ? STATUS_COLORS[status] : null;
+  const statusText = status ? statusLabel(status) : null;
+  const statusBg = status ? statusColor(status) : null;
 
   const priorityLabel = priority !== undefined ? `P${priority}` : "P?";
   const priorityBgColor = priority !== undefined
@@ -45,9 +45,9 @@ export function StatusPriorityPill({
       {status && (
         <span
           className="pill-status"
-          style={{ backgroundColor: statusColor || undefined }}
+          style={{ backgroundColor: statusBg || undefined }}
         >
-          {statusLabel}
+          {statusText}
         </span>
       )}
       <span

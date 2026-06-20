@@ -13,7 +13,7 @@ import * as vscode from "vscode";
 import { BeadsPanelViewProvider } from "./BeadsPanelViewProvider";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
 import { FavoritesService } from "../backend/FavoritesService";
-import { Bead, BeadStatus, BeadPriority, BeadsSummary } from "../backend/types";
+import { Bead, BeadPriority, BeadsSummary, BUILTIN_STATUSES } from "../backend/types";
 import { Logger } from "../utils/logger";
 
 export class PanelShellViewProvider extends BeadsPanelViewProvider {
@@ -30,10 +30,12 @@ export class PanelShellViewProvider extends BeadsPanelViewProvider {
 
   /** Derive and push the Dashboard summary from the just-loaded bead list. */
   protected onBeadsLoaded(beads: Bead[]): void {
-    const byStatus: Record<BeadStatus, number> = { open: 0, in_progress: 0, blocked: 0, closed: 0 };
+    // Seed all built-ins to 0 so they render even at 0; custom statuses are
+    // added on demand as beads are counted.
+    const byStatus: Record<string, number> = Object.fromEntries(BUILTIN_STATUSES.map((s) => [s, 0]));
     const byPriority: Record<BeadPriority, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
     for (const bead of beads) {
-      byStatus[bead.status]++;
+      byStatus[bead.status] = (byStatus[bead.status] ?? 0) + 1;
       if (bead.priority !== undefined) byPriority[bead.priority]++;
     }
     const summary: BeadsSummary = {

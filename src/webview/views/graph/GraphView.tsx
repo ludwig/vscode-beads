@@ -25,7 +25,7 @@ import {
   type Connection,
 } from "@xyflow/react";
 import { GitBranch, Network, Crosshair, Wand2, Filter, ListTree, Radar } from "lucide-react";
-import { Bead, DependencyGraph, STATUS_COLORS, vscode } from "../../types";
+import { Bead, DependencyGraph, statusColor, vscode } from "../../types";
 import { Loading } from "../../common/Loading";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { BeadNode, type BeadNodeData } from "./BeadNode";
@@ -440,7 +440,7 @@ function GraphCanvas({
         <MiniMap
           pannable
           zoomable
-          nodeColor={(n) => STATUS_COLORS[(n.data as BeadNodeData).bead.status] || "#888888"}
+          nodeColor={(n) => statusColor((n.data as BeadNodeData).bead.status)}
           nodeStrokeColor="var(--vscode-contrastBorder, transparent)"
           nodeStrokeWidth={3}
           nodeBorderRadius={3}

@@ -11,6 +11,7 @@ import React, { useState, useCallback, useEffect } from "react";
 import {
   Bead,
   BeadStatus,
+  BuiltInStatus,
   BeadPriority,
   BeadDependency,
   DependencyType,
@@ -22,6 +23,7 @@ import {
   TYPE_LABELS,
   getTypeSortOrder,
   sortLabels,
+  isBuiltInStatus,
   vscode,
 } from "../types";
 import { Timestamp } from "../common/Timestamp";
@@ -110,19 +112,28 @@ function groupDependenciesByType(deps: BeadDependency[]): Record<DependencyType,
   return groups;
 }
 
-// Sort order for dependency status: blocked first, closed last
-const STATUS_SORT_ORDER: Record<BeadStatus, number> = {
+// Sort order for dependency status: blocked/active first, closed last.
+// Custom and missing statuses sort after all built-ins.
+const STATUS_SORT_ORDER: Record<BuiltInStatus, number> = {
   blocked: 0,
   in_progress: 1,
+  hooked: 1,
   open: 2,
-  closed: 3,
+  pinned: 3,
+  deferred: 4,
+  closed: 5,
 };
+const STATUS_SORT_FALLBACK = 99;
+
+function statusSortRank(status?: BeadStatus): number {
+  return status && isBuiltInStatus(status) ? STATUS_SORT_ORDER[status] : STATUS_SORT_FALLBACK;
+}
 
 function sortDependencies(deps: BeadDependency[]): BeadDependency[] {
   return [...deps].sort((a, b) => {
     // Primary: status (blocked first, closed last)
-    const aStatusOrder = a.status ? STATUS_SORT_ORDER[a.status] : 4;
-    const bStatusOrder = b.status ? STATUS_SORT_ORDER[b.status] : 4;
+    const aStatusOrder = statusSortRank(a.status);
+    const bStatusOrder = statusSortRank(b.status);
     if (aStatusOrder !== bStatusOrder) {
       return aStatusOrder - bStatusOrder;
     }
@@ -152,7 +163,7 @@ const TYPE_OPTIONS: ColoredSelectOption<BeadType>[] = (Object.keys(TYPE_LABELS) 
     color: TYPE_COLORS[t],
   }));
 
-const STATUS_OPTIONS: ColoredSelectOption<BeadStatus>[] = (Object.keys(STATUS_LABELS) as BeadStatus[]).map((s) => ({
+const STATUS_OPTIONS: ColoredSelectOption<BeadStatus>[] = (Object.keys(STATUS_LABELS) as BuiltInStatus[]).map((s) => ({
   value: s,
   label: STATUS_LABELS[s],
   color: STATUS_COLORS[s],

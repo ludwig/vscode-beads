@@ -10,7 +10,7 @@ import React from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import {
   Bead,
-  STATUS_COLORS,
+  statusColor,
   PRIORITY_COLORS,
   PRIORITY_LABELS,
   UNKNOWN_PRIORITY_COLOR,
@@ -27,7 +27,7 @@ export interface BeadNodeData {
 
 export function BeadNode({ data, selected }: NodeProps): React.ReactElement {
   const { bead, dimmed } = data as BeadNodeData;
-  const statusColor = STATUS_COLORS[bead.status] || "#888888";
+  const nodeStatusColor = statusColor(bead.status);
   const priority = bead.priority;
   const priorityColor =
     priority === undefined ? UNKNOWN_PRIORITY_COLOR : PRIORITY_COLORS[priority as BeadPriority];
@@ -40,7 +40,7 @@ export function BeadNode({ data, selected }: NodeProps): React.ReactElement {
       className={`graph-node${isEpic ? " epic" : ""}${selected ? " selected" : ""}${dimmed ? " dimmed" : ""}`}
       // Epics get a purple frame (status stays on the left rail) so structural
       // container beads stand out in the graph.
-      style={{ borderColor: isEpic ? TYPE_COLORS.epic : undefined, borderLeftColor: statusColor }}
+      style={{ borderColor: isEpic ? TYPE_COLORS.epic : undefined, borderLeftColor: nodeStatusColor }}
       title={`${bead.id} · ${bead.title}`}
     >
       <Handle type="target" position={Position.Top} className="graph-node-handle" />

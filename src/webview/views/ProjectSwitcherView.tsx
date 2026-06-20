@@ -9,7 +9,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, X, Rocket, ListTodo } from "lucide-react";
-import { Bead, BeadsProject, FavoriteBead, STATUS_COLORS } from "../types";
+import { Bead, BeadsProject, FavoriteBead, statusColor } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
 import { TypeIcon } from "../common/TypeIcon";
@@ -315,7 +315,7 @@ export function ProjectSwitcherView({
                   <span className="active-bead-id">{activeBead.id}</span>
                   <span
                     className="active-bead-status"
-                    style={{ backgroundColor: STATUS_COLORS[activeBead.status] || "#888888" }}
+                    style={{ backgroundColor: statusColor(activeBead.status) }}
                     title={activeBead.status}
                   />
                 </div>
@@ -376,7 +376,7 @@ export function ProjectSwitcherView({
                       {fav.status && (
                         <span
                           className="active-bead-status"
-                          style={{ backgroundColor: STATUS_COLORS[fav.status] || "#888888" }}
+                          style={{ backgroundColor: statusColor(fav.status) }}
                           title={fav.status}
                         />
                       )}
