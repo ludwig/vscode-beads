@@ -9,12 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **"LLM" context toggle on the bead Details view** — a stylish sparkle pill in the Details header opens this bead's contents as a companion `bead:` document beside the view, so an LLM session (e.g. Claude Code) picks it up as context; a second click tucks it away. The pill lights up while the companion is open and stays in sync if you close the doc by hand. A webview can't be a text editor, so this on-demand companion is how a rich bead gets into an LLM's context — you choose when, with one click (vs-nr3d)
+- **"LLM" context toggle on a bead editor tab** — a stylish sparkle pill in the Details header (editor tabs only) opens this bead's contents as a companion `bead:` document beside the view, so an LLM session (e.g. Claude Code) picks it up as context; a second click tucks it away. The pill lights up while the companion is open and stays in sync if you close the doc by hand. A webview can't be a text editor, so this on-demand companion is how a rich bead gets into an LLM's context — you choose when, with one click. (Hidden in the narrow sidebar Details, where the companion would open far away in the editor area.) (vs-nr3d)
 - **Auto-seed on focus (experimental, off by default)** — `beads.autoSeedActiveBead` makes a bead opened as an editor tab open its companion document automatically on focus (swapping as you switch beads, closing when the tab closes). Off by default since it adds a second tab passively; the Details toggle above is the recommended, on-demand path (vs-nr3d)
 
 ### Changed
 
-- **Bead Details toolbar regrouped** — header actions now read left-to-right as quick state (favorite · LLM · refresh) → primary (Edit) → navigation/context (Back/Forward in an editor tab; New + Open-in-tab in the sidebar), so navigation stays visually anchored at the end away from the other actions (vs-nr3d)
+- **Bead Details toolbar regrouped** — header actions now read left-to-right as quick state (favorite · LLM · refresh) → create/primary (New + Edit) → navigation/context (Back/Forward in an editor tab; Open-in-tab in the sidebar), so navigation stays visually anchored at the end away from the other actions (vs-nr3d)
 
 ## [0.21.2] - 2026-06-20
 

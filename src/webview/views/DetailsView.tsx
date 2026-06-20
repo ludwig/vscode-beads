@@ -396,7 +396,11 @@ export function DetailsView({
           {bead.id}
         </span>
         <div className="header-actions">
-          {/* Group 1 — bead quick-state: favorite, seed-to-Claude, refresh. */}
+          {/* Group 1 — bead quick-state: favorite, refresh, and (editor tabs
+              only) the LLM-context toggle. The toggle opens the companion doc
+              BESIDE this view, which only reads sensibly in an editor tab; in
+              the narrow sidebar that doc would pop open far away in the editor
+              area, so it's hidden there. */}
           <button
             className={`icon-btn header-icon-btn${isFavorite ? " is-favorite" : ""}`}
             title={isFavorite ? "Unstar (remove from Favorites)" : "Star (add to Favorites)"}
@@ -406,7 +410,7 @@ export function DetailsView({
           >
             <Icon name={isFavorite ? "star" : "star-outline"} size={13} />
           </button>
-          {onToggleCompanion && (
+          {isEditorTab && onToggleCompanion && (
             <button
               className={`companion-toggle${companionOpen ? " is-on" : ""}`}
               title={
@@ -433,7 +437,17 @@ export function DetailsView({
 
           <span className="header-actions-sep" />
 
-          {/* Group 2 — primary action: enter edit mode (or Save / Cancel). */}
+          {/* Group 2 — create + primary: New (sidebar) sits right before Edit. */}
+          {!isEditorTab && (
+            <button
+              className="icon-btn header-icon-btn"
+              title="New issue"
+              aria-label="New issue"
+              onClick={() => vscode.postMessage({ type: "startCreate" })}
+            >
+              <Icon name="plus" size={13} />
+            </button>
+          )}
           {editMode ? (
             <>
               <button
@@ -455,8 +469,8 @@ export function DetailsView({
 
           <span className="header-actions-sep" />
 
-          {/* Group 3 — navigation / context: Back/Forward in an editor tab;
-              New + Open-in-tab in the sidebar. */}
+          {/* Group 3 — navigation / context, anchored at the end: Back/Forward
+              in an editor tab; Open-in-tab in the sidebar. */}
           {isEditorTab ? (
             <>
               <button
@@ -483,24 +497,14 @@ export function DetailsView({
               </button>
             </>
           ) : (
-            <>
-              <button
-                className="icon-btn header-icon-btn"
-                title="New issue"
-                aria-label="New issue"
-                onClick={() => vscode.postMessage({ type: "startCreate" })}
-              >
-                <Icon name="plus" size={13} />
-              </button>
-              <button
-                className="icon-btn header-icon-btn"
-                title="Open in editor tab"
-                aria-label="Open in editor tab"
-                onClick={() => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id })}
-              >
-                <Icon name="external-link" size={13} />
-              </button>
-            </>
+            <button
+              className="icon-btn header-icon-btn"
+              title="Open in editor tab"
+              aria-label="Open in editor tab"
+              onClick={() => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id })}
+            >
+              <Icon name="external-link" size={13} />
+            </button>
           )}
         </div>
       </div>
