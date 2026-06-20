@@ -65,8 +65,8 @@ export function registerCommands(
   // Drive every selection surface from one place: the sidebar Details view, the
   // Issues table highlight, and the Active Bead pin — so traversal keeps them in
   // sync (the Active Bead follows where the user actually is).
-  const selectBead = (beadId: string): void => {
-    detailsProvider.showBead(beadId);
+  const selectBead = (beadId: string, opts?: { pulse?: boolean }): void => {
+    detailsProvider.showBead(beadId, opts);
     shellProvider.setSelectedBead(beadId);
     switcherProvider.setActiveBead(beadId);
   };
@@ -155,9 +155,10 @@ export function registerCommands(
 
       if (beadId) {
         // A user navigation: record it (truncating any forward branch) and
-        // drive all selection surfaces.
+        // drive all selection surfaces. Pulse the Details view so "Show Details"
+        // gives visible feedback even when it's already showing (vs-1vxq).
         navHistory.record(beadId);
-        selectBead(beadId);
+        selectBead(beadId, { pulse: true });
         updateNavContext();
       }
     }),
