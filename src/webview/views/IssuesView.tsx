@@ -32,6 +32,7 @@ import {
   BeadType,
   DependencyGraph,
   IssuesFilter,
+  FilterSnapshot,
   STATUS_LABELS,
   isClosedStatus,
   statusLabel,
@@ -53,13 +54,14 @@ import { TypeIcon } from "../common/TypeIcon";
 import { LabelBadge } from "../common/LabelBadge";
 import { FilterChip } from "../common/FilterChip";
 import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
-import { Rows3, Rows2, Rocket, Star } from "lucide-react";
+import { Rows3, Rows2, Rocket, Star, Share2 } from "lucide-react";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { Loading } from "../common/Loading";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
 import { Timestamp, timestampSortingFn } from "../common/Timestamp";
 import { AutocompleteInput, AutocompleteOption } from "../common/AutocompleteInput";
 import { Markdown } from "../common/Markdown";
+import { triggerToast } from "../common/Toast";
 import { getLabelColorStyle } from "../utils/label-colors";
 import { useClickOutside } from "../hooks/useClickOutside";
 import { useColumnState } from "../hooks/useColumnState";
@@ -74,6 +76,14 @@ interface IssuesViewProps {
   tooltipHoverDelay: number; // 0 = disabled
   /** Drill-in filter pushed from another view (e.g. a Dashboard card/badge). */
   issuesFilterRequest?: { filter: IssuesFilter; seq: number } | null;
+  /**
+   * Full Issues-filter snapshot to apply wholesale — seeds an editor tab on
+   * open (vs-tle) and lands an "Apply to all" broadcast (vs-dzm). `seq` re-fires
+   * an identical snapshot.
+   */
+  applySnapshotRequest?: { snapshot: FilterSnapshot; seq: number } | null;
+  /** True in an editor-tab Issues view — gates the "Apply to all" action (vs-dzm). */
+  isEditorTab?: boolean;
   /**
    * Dependency graph (nodes + edges), used by the "Ready" toggle to compute
    * open-with-no-open-blocker beads. Lazily fetched via onRequestGraph.
@@ -143,6 +153,8 @@ export function IssuesView({
   favoriteIds = [],
   tooltipHoverDelay,
   issuesFilterRequest,
+  applySnapshotRequest,
+  isEditorTab = false,
   graph,
   onRequestGraph,
   onSelectBead,
@@ -380,6 +392,24 @@ export function IssuesView({
         : undefined;
     setActivePreset(matched ? matched.id : "");
   }, [issuesFilterRequest]);
+
+  // Apply a full filter snapshot wholesale (vs-tle seed-on-open / vs-dzm "Apply
+  // to all"). Sets all five filter dimensions at once; keyed by seq so an
+  // identical snapshot still re-applies. Distinct from issuesFilterRequest
+  // above, which only carries the narrow status/label/type drill-in slice.
+  const lastSnapshotSeq = useRef<number | null>(null);
+  useEffect(() => {
+    if (!applySnapshotRequest || lastSnapshotSeq.current === applySnapshotRequest.seq) {
+      return;
+    }
+    lastSnapshotSeq.current = applySnapshotRequest.seq;
+    const s = applySnapshotRequest.snapshot;
+    setColumnFilters(s.columnFilters as ColumnFiltersState);
+    setGlobalFilter(s.globalFilter);
+    setActivePreset(s.activePreset);
+    setReadyOnly(s.readyOnly);
+    setFavoritesOnly(s.favoritesOnly);
+  }, [applySnapshotRequest]);
 
   // Column definitions
   const columns = useMemo(
@@ -822,6 +852,22 @@ export function IssuesView({
     onFilteredBeadsChange?.(filteredBeadIds);
   }, [filteredBeadIds, onFilteredBeadsChange]);
 
+  // "Apply to all" (vs-dzm): broadcast this editor tab's filter to every open
+  // surface. Ships both the full spec (for Issues views) and the computed ids
+  // (for Kanban/Tree/Graph), so the extension never re-runs filter logic. A
+  // discrete user action — no continuous sync, no cross-webview race.
+  const handleApplyToAll = useCallback(() => {
+    const snapshot: FilterSnapshot = {
+      columnFilters,
+      globalFilter,
+      activePreset,
+      readyOnly,
+      favoritesOnly,
+    };
+    vscode.postMessage({ type: "applyFilterGlobally", snapshot, filteredBeadIds });
+    triggerToast("Applied this filter to all open views", "top-right");
+  }, [columnFilters, globalFilter, activePreset, readyOnly, favoritesOnly, filteredBeadIds]);
+
   // Build label autocomplete options
   const labelOptions = useMemo((): AutocompleteOption[] => {
     const options: AutocompleteOption[] = [];
@@ -895,6 +941,16 @@ export function IssuesView({
         >
           {compact ? <Rows2 size={14} /> : <Rows3 size={14} />}
         </button>
+        {isEditorTab && (
+          <button
+            className="apply-all-btn"
+            onClick={handleApplyToAll}
+            title="Apply this tab's filter to the panel and every open view"
+          >
+            <Share2 size={13} strokeWidth={2} />
+            <span>Apply to all</span>
+          </button>
+        )}
       </div>
 
       {/* Row 2: Filter bar */}

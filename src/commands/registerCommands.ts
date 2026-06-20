@@ -8,7 +8,7 @@
  */
 
 import * as vscode from "vscode";
-import { IssuesFilter, Bead, issueToWebviewBead } from "../backend/types";
+import { IssuesFilter, FilterSnapshot, Bead, issueToWebviewBead } from "../backend/types";
 import { nextReadyBead } from "../backend/readyBeads";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
 import { PanelShellViewProvider } from "../providers/PanelShellViewProvider";
@@ -233,9 +233,10 @@ export function registerCommands(
       panelManager.openBeadDetails(targetId);
     }),
 
-    // vs-fx4: open the Issues list as an editor tab.
-    vscode.commands.registerCommand("beads.openIssuesInTab", () => {
-      panelManager.openIssues();
+    // vs-fx4: open the Issues list as an editor tab. The optional arg is a full
+    // filter snapshot (vs-tle) seeding the tab with the panel's filter spec.
+    vscode.commands.registerCommand("beads.openIssuesInTab", (seed?: FilterSnapshot | null) => {
+      panelManager.openIssues(seed ?? null);
     }),
 
     // vs-s56: open the Dashboard as an editor tab.
@@ -258,6 +259,18 @@ export function registerCommands(
     vscode.commands.registerCommand("beads.openTreeInTab", (seed?: string[] | null) => {
       panelManager.openTree(seed ?? null);
     }),
+
+    // vs-dzm: "Apply to all" — an Issues editor tab broadcasts its filter to
+    // every open surface. The panel applies the full spec (its embedded
+    // Kanban/Tree/Graph follow); open editor tabs are reseeded with the
+    // already-computed ids. One discrete push — no reactive sync loop.
+    vscode.commands.registerCommand(
+      "beads.applyFilterGlobally",
+      (snapshot: FilterSnapshot, filteredBeadIds: string[]) => {
+        shellProvider.pushFilter({ snapshot });
+        panelManager.applyFilterToOpenTabs(snapshot, filteredBeadIds);
+      }
+    ),
 
     vscode.commands.registerCommand("beads.createIssue", () => {
       if (!projectManager.getActiveProject()) {
