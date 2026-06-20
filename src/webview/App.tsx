@@ -25,6 +25,7 @@ import { TreeView } from "./views/tree/TreeView";
 import { DetailsView } from "./views/DetailsView";
 import { ProjectSwitcherView } from "./views/ProjectSwitcherView";
 import { PanelShell } from "./views/PanelShell";
+import { FilterSnapshotRibbon } from "./common/FilterSnapshotRibbon";
 import { CreateBeadForm } from "./views/CreateBeadForm";
 import { Loading } from "./common/Loading";
 import { ToastProvider, triggerToast } from "./common/Toast";
@@ -69,6 +70,10 @@ interface AppState {
   // pushed by the provider on open so the tab inherits the panel's active
   // filter instead of opening unfiltered (vs-nme). `null` = no filter.
   seedFilteredBeadIds: string[] | null;
+  // True when the user has temporarily dropped the inherited snapshot via the
+  // ribbon's "Show all" (vs-zq2). The snapshot itself is retained so they can
+  // flip back to "Show filtered". Reset whenever a fresh seed arrives.
+  seedFilterCleared: boolean;
 }
 
 const initialState: AppState = {
@@ -102,6 +107,7 @@ const initialState: AppState = {
   tabNav: { canBack: false, canForward: false },
   favorites: [],
   seedFilteredBeadIds: null,
+  seedFilterCleared: false,
 };
 
 export function App(): React.ReactElement {
@@ -189,7 +195,11 @@ export function App(): React.ReactElement {
         setState((prev) => ({ ...prev, favorites: message.favorites }));
         break;
       case "seedFilter":
-        setState((prev) => ({ ...prev, seedFilteredBeadIds: message.filteredBeadIds }));
+        setState((prev) => ({
+          ...prev,
+          seedFilteredBeadIds: message.filteredBeadIds,
+          seedFilterCleared: false,
+        }));
         break;
       case "refresh":
         vscode.postMessage({ type: "refresh" });
@@ -227,12 +237,37 @@ export function App(): React.ReactElement {
   const favoriteIds = state.favorites.map((f) => f.id);
 
   // Editor-tab filter seed (vs-nme): when a Kanban/Tree/Graph tab was opened
-  // from a filtered panel, scope it to the inherited snapshot. `filterActive`
-  // mirrors PanelShell's rule (a strict subset of the board).
-  const seedFilteredBeadIds = state.seedFilteredBeadIds;
+  // from a filtered panel, scope it to the inherited snapshot. The ribbon
+  // (vs-zq2) can temporarily drop the scope ("Show all"), which only zeroes the
+  // ids handed to the view — the snapshot is retained so "Show filtered"
+  // restores it.
+  const seedSnapshot = state.seedFilteredBeadIds;
+  // A real snapshot narrows to a strict subset; equal length = no-op filter.
+  const hasSeedSnapshot = seedSnapshot != null && seedSnapshot.length < state.beads.length;
+  const effectiveSeed = state.seedFilterCleared ? null : seedSnapshot;
   const seedFilterActive =
-    seedFilteredBeadIds != null && seedFilteredBeadIds.length < state.beads.length;
-  const seedFilteredCount = seedFilteredBeadIds?.length ?? state.beads.length;
+    effectiveSeed != null && effectiveSeed.length < state.beads.length;
+  const seedFilteredCount = effectiveSeed?.length ?? state.beads.length;
+  const toggleSeedFilter = () =>
+    setState((prev) => ({ ...prev, seedFilterCleared: !prev.seedFilterCleared }));
+
+  // Wrap an editor-tab view with the snapshot ribbon when a real filter was
+  // inherited (vs-zq2). The flex-column shell keeps the view's own height/scroll
+  // model intact (Graph/React Flow needs a sized body).
+  const withSnapshotRibbon = (view: React.ReactElement): React.ReactElement =>
+    hasSeedSnapshot ? (
+      <div className="editor-tab-shell">
+        <FilterSnapshotRibbon
+          filteredCount={seedSnapshot?.length ?? 0}
+          totalCount={state.beads.length}
+          cleared={state.seedFilterCleared}
+          onToggle={toggleSeedFilter}
+        />
+        <div className="editor-tab-body">{view}</div>
+      </div>
+    ) : (
+      view
+    );
 
   // Render the appropriate view
   const renderView = () => {
@@ -303,7 +338,7 @@ export function App(): React.ReactElement {
         );
 
       case "beadsGraph":
-        return (
+        return withSnapshotRibbon(
           <GraphView
             graph={state.graph}
             loading={state.loading}
@@ -311,7 +346,7 @@ export function App(): React.ReactElement {
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
             focusBeadId={null}
-            filteredBeadIds={seedFilteredBeadIds}
+            filteredBeadIds={effectiveSeed}
             issuesFilterActive={seedFilterActive}
             onOpenBead={(beadId) =>
               vscode.postMessage({ type: "openBeadDetails", beadId })
@@ -321,12 +356,12 @@ export function App(): React.ReactElement {
         );
 
       case "beadsKanban":
-        return (
+        return withSnapshotRibbon(
           <KanbanBoard
             beads={state.beads}
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
-            filteredBeadIds={seedFilteredBeadIds}
+            filteredBeadIds={effectiveSeed}
             filterActive={seedFilterActive}
             filteredCount={seedFilteredCount}
             totalCount={state.beads.length}
@@ -338,14 +373,14 @@ export function App(): React.ReactElement {
         );
 
       case "beadsTree":
-        return (
+        return withSnapshotRibbon(
           <TreeView
             graph={state.graph}
             loading={state.loading}
             error={state.error}
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
-            filteredBeadIds={seedFilteredBeadIds}
+            filteredBeadIds={effectiveSeed}
             filterActive={seedFilterActive}
             filteredCount={seedFilteredCount}
             totalCount={state.beads.length}
