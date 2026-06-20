@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Deferred / Pinned / Hooked now have their own labels, colors, Kanban lanes (quiet lanes collapsed by default), and Issues filter chips
 
+### Changed
+
+- The Details view now ends with a crisp **rule & bead** tailpiece below the metadata footer (with a little breathing room) — twin hairlines flanking a center diamond, distinct from the Band used on list-style views. `EndFlourish` now takes a `variant` prop so views can pick their ornament
+
 ## [0.17.1] - 2026-06-19
 
 ### Fixed
