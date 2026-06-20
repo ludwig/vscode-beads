@@ -7,8 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-06-20
+
 ### Added
 
+- **Issues editor tab inherits the filter** — opening Issues in an editor tab now seeds it with the panel's full filter (preset, chips, search, Ready/Favorites) instead of opening unfiltered; it then works as an independent list (vs-tle)
+- **Apply to all views** — an Issues editor tab can broadcast its filter to the panel and every open view tab in one click (the panel's Kanban/Tree/Graph follow, open editor tabs re-scope); a discrete push, not a live sync (vs-dzm)
 - **Copy favorites as CSV** — a copy button on the sidebar Favorites section header writes the favorited bead IDs as a single comma-separated line to the clipboard (for pasting into a `bd` command, an agent prompt, or a spreadsheet); hidden when there are no favorites (vs-sd5.2)
 
 ## [0.20.1] - 2026-06-20
