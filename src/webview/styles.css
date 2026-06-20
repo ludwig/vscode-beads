@@ -2892,6 +2892,88 @@ textarea {
   color: var(--vscode-charts-yellow, #d7ba7d);
 }
 
+/* "Seed to Claude" companion toggle (vs-nr3d). A small pill in the Details
+   header: quiet when off, lit with an accent glow when this bead's companion
+   `bead:` document is open (so its content is in Claude Code's session). Set
+   apart from the quiet utility icon-buttons so the in-context state reads at a
+   glance. */
+.companion-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 9px 0 7px;
+  border-radius: var(--badge-radius-pill, 999px);
+  border: 1px solid var(--vscode-panel-border);
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--transition-fast), background var(--transition-fast),
+    border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.companion-toggle:hover:not(.is-on) {
+  color: var(--vscode-foreground);
+  border-color: var(--vscode-focusBorder);
+  background: color-mix(in srgb, var(--vscode-focusBorder) 10%, transparent);
+}
+
+.companion-toggle:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
+}
+
+.companion-toggle .companion-toggle-icon {
+  display: inline-flex;
+  opacity: 0.8;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.companion-toggle:hover .companion-toggle-icon {
+  opacity: 1;
+}
+
+/* Lit: the companion is open and this bead is in Claude's context. */
+.companion-toggle.is-on {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(
+    135deg,
+    var(--vscode-charts-purple, #b180d7) 0%,
+    var(--vscode-charts-blue, #4ea3e0) 100%
+  );
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--vscode-charts-purple, #b180d7) 50%, transparent),
+    0 1px 7px color-mix(in srgb, var(--vscode-charts-blue, #4ea3e0) 48%, transparent);
+}
+
+.companion-toggle.is-on .companion-toggle-icon {
+  opacity: 1;
+  animation: companion-sparkle 2.4s ease-in-out infinite;
+}
+
+@keyframes companion-sparkle {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.18) rotate(8deg);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .companion-toggle.is-on .companion-toggle-icon {
+    animation: none;
+  }
+}
+
 /* Hairline between the utility icons and the primary action. */
 .header-actions-sep {
   width: 1px;

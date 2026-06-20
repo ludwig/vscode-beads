@@ -295,6 +295,9 @@ export type ExtensionToWebviewMessage =
   // still re-applies.
   | { type: "applyIssuesFilterSnapshot"; snapshot: FilterSnapshot }
   | { type: "refresh" }
+  // Whether `beadId`'s companion `bead:` document is currently open, so the
+  // Details view's "seed to Claude" toggle reflects reality (vs-nr3d).
+  | { type: "setBeadCompanionOpen"; beadId: string; open: boolean }
   | { type: "showToast"; text: string };
 
 // Messages sent from the webview to the extension host.
@@ -351,4 +354,7 @@ export type WebviewToExtensionMessage =
   | { type: "applyFilterGlobally"; snapshot: FilterSnapshot; filteredBeadIds: string[] }
   // Star/unstar a bead in the active project's favorites set (vs-sd5.1).
   | { type: "toggleFavorite"; beadId: string }
-  | { type: "removeFavorite"; beadId: string };
+  | { type: "removeFavorite"; beadId: string }
+  // Toggle the companion `bead:` document for `beadId`: open it beside the view
+  // (so Claude Code seeds it) if closed, close it if open (vs-nr3d).
+  | { type: "toggleBeadCompanion"; beadId: string };

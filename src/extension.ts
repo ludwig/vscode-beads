@@ -15,6 +15,7 @@ import { PanelShellViewProvider } from "./providers/PanelShellViewProvider";
 import { BeadDetailsViewProvider } from "./providers/BeadDetailsViewProvider";
 import { BeadsProjectSwitcherViewProvider } from "./providers/BeadsProjectSwitcherViewProvider";
 import { BeadPanelManager } from "./providers/BeadPanelManager";
+import { BeadCompanionController } from "./providers/BeadCompanionController";
 import { BeadDocumentProvider, BEAD_SCHEME } from "./providers/BeadDocumentProvider";
 import { registerCommands } from "./commands/registerCommands";
 import { createLogger, Logger } from "./utils/logger";
@@ -107,17 +108,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     favorites
   );
 
-  detailsProvider = new BeadDetailsViewProvider(
-    context.extensionUri,
-    projectManager,
-    log,
-    favorites
-  );
-
-  // Manages bead webviews opened as editor tabs (vs-ask, vs-fx4).
-  panelManager = new BeadPanelManager(context.extensionUri, projectManager, log, favorites);
-  context.subscriptions.push(panelManager);
-
   // Virtual `bead:` documents so a bead can be opened as a real TextEditor that
   // Claude Code's IDE integration can seed on focus (spike vs-ab3 / epic vs-fkb).
   const beadDocumentProvider = new BeadDocumentProvider(projectManager, log);
@@ -125,6 +115,24 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.workspace.registerTextDocumentContentProvider(BEAD_SCHEME, beadDocumentProvider),
     beadDocumentProvider
   );
+
+  // Owns opening/closing/tracking the companion `bead:` document — used by the
+  // Details "seed to Claude" toggle, the focus-follow option, and the
+  // beads.toggleBeadCompanion command (vs-nr3d).
+  const companionController = new BeadCompanionController(log);
+  context.subscriptions.push(companionController);
+
+  detailsProvider = new BeadDetailsViewProvider(
+    context.extensionUri,
+    projectManager,
+    log,
+    companionController,
+    favorites
+  );
+
+  // Manages bead webviews opened as editor tabs (vs-ask, vs-fx4).
+  panelManager = new BeadPanelManager(context.extensionUri, projectManager, log, companionController, favorites);
+  context.subscriptions.push(panelManager);
 
   // Register webview providers
   context.subscriptions.push(

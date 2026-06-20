@@ -200,6 +200,9 @@ interface DetailsViewProps {
   canNavigateForward?: boolean;
   onNavigateBack?: () => void;
   onNavigateForward?: () => void;
+  /** Whether this bead's companion `bead:` doc is open, + toggle (vs-nr3d). */
+  companionOpen?: boolean;
+  onToggleCompanion?: (beadId: string) => void;
 }
 
 // Helper to render text content - markdown or plain
@@ -230,6 +233,8 @@ export function DetailsView({
   canNavigateForward = false,
   onNavigateBack,
   onNavigateForward,
+  companionOpen = false,
+  onToggleCompanion,
 }: DetailsViewProps): React.ReactElement {
   // Toast and onViewInGraph kept for potential future use
   const { showToast: _showToast } = useToast();
@@ -391,7 +396,82 @@ export function DetailsView({
           {bead.id}
         </span>
         <div className="header-actions">
-          {isEditorTab && (
+          {/* Group 1 — bead quick-state: favorite, refresh, and (editor tabs
+              only) the LLM-context toggle. The toggle opens the companion doc
+              BESIDE this view, which only reads sensibly in an editor tab; in
+              the narrow sidebar that doc would pop open far away in the editor
+              area, so it's hidden there. */}
+          <button
+            className={`icon-btn header-icon-btn${isFavorite ? " is-favorite" : ""}`}
+            title={isFavorite ? "Unstar (remove from Favorites)" : "Star (add to Favorites)"}
+            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+            aria-pressed={isFavorite}
+            onClick={() => onToggleFavorite?.(bead.id)}
+          >
+            <Icon name={isFavorite ? "star" : "star-outline"} size={13} />
+          </button>
+          {isEditorTab && onToggleCompanion && (
+            <button
+              className={`companion-toggle${companionOpen ? " is-on" : ""}`}
+              title={
+                companionOpen
+                  ? "Remove this bead from LLM context (closes the companion document)"
+                  : "Add this bead to your LLM context — opens its contents as a document beside this view so an LLM session (e.g. Claude Code) reads it"
+              }
+              aria-label="Toggle LLM context for this bead"
+              aria-pressed={companionOpen}
+              onClick={() => onToggleCompanion(bead.id)}
+            >
+              <Icon name="sparkles" size={12} className="companion-toggle-icon" />
+              <span className="companion-toggle-label">LLM</span>
+            </button>
+          )}
+          <button
+            className="icon-btn header-icon-btn"
+            title="Refresh"
+            aria-label="Refresh"
+            onClick={handleRefresh}
+          >
+            <Icon name="refresh" size={13} className={refreshing ? "spinning" : ""} />
+          </button>
+
+          <span className="header-actions-sep" />
+
+          {/* Group 2 — create + primary: New (sidebar) sits right before Edit. */}
+          {!isEditorTab && (
+            <button
+              className="icon-btn header-icon-btn"
+              title="New issue"
+              aria-label="New issue"
+              onClick={() => vscode.postMessage({ type: "startCreate" })}
+            >
+              <Icon name="plus" size={13} />
+            </button>
+          )}
+          {editMode ? (
+            <>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={handleSave}
+                disabled={Object.keys(editedBead).length === 0}
+              >
+                Save
+              </button>
+              <button className="btn btn-sm" onClick={handleCancel}>
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button className="btn btn-sm" onClick={() => setEditMode(true)}>
+              Edit
+            </button>
+          )}
+
+          <span className="header-actions-sep" />
+
+          {/* Group 3 — navigation / context, anchored at the end: Back/Forward
+              in an editor tab; Open-in-tab in the sidebar. */}
+          {isEditorTab ? (
             <>
               <button
                 className="icon-btn header-icon-btn"
@@ -415,20 +495,8 @@ export function DetailsView({
                   <path fill="currentColor" d="M5.5 3l5 5-5 5L7 14.5 13.5 8 7 1.5z" />
                 </svg>
               </button>
-              <span className="header-actions-sep" />
             </>
-          )}
-          {!isEditorTab && (
-            <button
-              className="icon-btn header-icon-btn"
-              title="New issue"
-              aria-label="New issue"
-              onClick={() => vscode.postMessage({ type: "startCreate" })}
-            >
-              <Icon name="plus" size={13} />
-            </button>
-          )}
-          {!isEditorTab && (
+          ) : (
             <button
               className="icon-btn header-icon-btn"
               title="Open in editor tab"
@@ -436,42 +504,6 @@ export function DetailsView({
               onClick={() => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id })}
             >
               <Icon name="external-link" size={13} />
-            </button>
-          )}
-          <button
-            className={`icon-btn header-icon-btn${isFavorite ? " is-favorite" : ""}`}
-            title={isFavorite ? "Unstar (remove from Favorites)" : "Star (add to Favorites)"}
-            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-            aria-pressed={isFavorite}
-            onClick={() => onToggleFavorite?.(bead.id)}
-          >
-            <Icon name={isFavorite ? "star" : "star-outline"} size={13} />
-          </button>
-          <button
-            className="icon-btn header-icon-btn"
-            title="Refresh"
-            aria-label="Refresh"
-            onClick={handleRefresh}
-          >
-            <Icon name="refresh" size={13} className={refreshing ? "spinning" : ""} />
-          </button>
-          <span className="header-actions-sep" />
-          {editMode ? (
-            <>
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={handleSave}
-                disabled={Object.keys(editedBead).length === 0}
-              >
-                Save
-              </button>
-              <button className="btn btn-sm" onClick={handleCancel}>
-                Cancel
-              </button>
-            </>
-          ) : (
-            <button className="btn btn-sm" onClick={() => setEditMode(true)}>
-              Edit
             </button>
           )}
         </div>
