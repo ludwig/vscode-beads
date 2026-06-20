@@ -2,8 +2,11 @@
  * CreateBeadForm
  *
  * Create-a-new-bead form shown in the Details view when create mode is active
- * (vs-69z). Mirrors the Details edit-form fields and reuses the themed
- * ColoredSelect / LabelBadge components for VS Code-consistent styling.
+ * (vs-69z), and as a standalone editor tab (vs-2tn.2). Purpose-built form
+ * layout — a centered, max-width column with captioned fields and a tidy
+ * Type/Priority/Assignee meta row — styled under the `.create-bead` namespace
+ * so it doesn't lean on the read/edit Details classes (vs-2tn.1). Reuses the
+ * themed ColoredSelect / LabelBadge / TypeBadge / PriorityBadge components.
  */
 
 import React, { useCallback, useState } from "react";
@@ -77,123 +80,157 @@ export function CreateBeadForm({ userId = "", onCreate, onCancel }: CreateBeadFo
   }, [canSubmit, title, type, priority, description, design, acceptanceCriteria, assignee, labels, onCreate]);
 
   return (
-    <div className="bead-details create-bead">
-      <div className="details-header">
-        <Icon name="plus" size={16} />
-        <span className="bead-id-badge muted">New Issue</span>
-        <div className="header-actions">
-          <button className="btn btn-primary btn-sm" onClick={handleSubmit} disabled={!canSubmit}>
-            Create
-          </button>
-          <button className="btn btn-sm" onClick={onCancel}>
+    <div className="create-bead">
+      <header className="create-bead-header">
+        <div className="create-bead-heading">
+          <span className="create-bead-mark" aria-hidden="true">
+            <Icon name="plus" size={14} />
+          </span>
+          <h2 className="create-bead-title-text">New Issue</h2>
+        </div>
+        <div className="create-bead-actions">
+          <button type="button" className="btn btn-sm" onClick={onCancel}>
             Cancel
           </button>
-        </div>
-      </div>
-
-      {/* Title */}
-      <div className="details-title">
-        <input
-          type="text"
-          value={title}
-          autoFocus
-          onChange={(e) => setTitle(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit();
-          }}
-          className="title-input"
-          placeholder="Issue title (required)"
-        />
-      </div>
-
-      {/* Type / Priority / Assignee */}
-      <div className="details-badges">
-        <ColoredSelect
-          value={type}
-          options={TYPE_OPTIONS}
-          onChange={(v) => setType(v as BeadType)}
-          renderTrigger={() => <TypeBadge type={type} size="small" />}
-          renderOption={(opt) => <TypeBadge type={opt.value as BeadType} size="small" />}
-        />
-        <ColoredSelect
-          value={priority}
-          options={PRIORITY_OPTIONS}
-          onChange={(v) => setPriority(v as BeadPriority)}
-          renderTrigger={() => <PriorityBadge priority={priority} size="small" />}
-          renderOption={(opt) => <PriorityBadge priority={opt.value as BeadPriority} size="small" />}
-        />
-        <span className="assignee-trigger">
-          <Icon name="user" size={10} className="person-icon" />
-          <input
-            type="text"
-            value={assignee}
-            onChange={(e) => setAssignee(e.target.value)}
-            className="text-input assignee-input"
-            placeholder="Unassigned"
-          />
-        </span>
-        {userId && assignee !== userId && (
-          <button className="btn btn-sm" onClick={() => setAssignee(userId)}>
-            Assign to me
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={handleSubmit}
+            disabled={!canSubmit}
+            title={canSubmit ? "Create issue (⌘↵)" : "Enter a title to create"}
+          >
+            Create
           </button>
-        )}
-      </div>
+        </div>
+      </header>
 
-      {/* Labels */}
-      <div className="details-badges">
-        <Icon name="tag" size={10} className="labels-icon" title="Labels" />
-        <div className="add-label-inline">
+      <div className="create-bead-body">
+        {/* Title */}
+        <div className="create-field">
+          <label className="create-field-label" htmlFor="cb-title">
+            Title <span className="create-required" title="Required">*</span>
+          </label>
           <input
+            id="cb-title"
             type="text"
-            value={newLabel}
-            onChange={(e) => setNewLabel(e.target.value)}
-            placeholder="+ label"
-            onKeyDown={(e) => e.key === "Enter" && handleAddLabel()}
+            value={title}
+            autoFocus
+            onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit();
+            }}
+            className="create-input create-title-input"
+            placeholder="What needs to be done?"
           />
         </div>
-        {sortLabels(labels).map((label) => (
-          <LabelBadge
-            key={label}
-            label={label}
-            onRemove={() => setLabels((prev) => prev.filter((l) => l !== label))}
+
+        {/* Type / Priority / Assignee */}
+        <div className="create-meta">
+          <div className="create-field create-field-inline">
+            <span className="create-field-label">Type</span>
+            <ColoredSelect
+              value={type}
+              options={TYPE_OPTIONS}
+              onChange={(v) => setType(v as BeadType)}
+              renderTrigger={() => <TypeBadge type={type} size="small" />}
+              renderOption={(opt) => <TypeBadge type={opt.value as BeadType} size="small" />}
+            />
+          </div>
+          <div className="create-field create-field-inline">
+            <span className="create-field-label">Priority</span>
+            <ColoredSelect
+              value={priority}
+              options={PRIORITY_OPTIONS}
+              onChange={(v) => setPriority(v as BeadPriority)}
+              renderTrigger={() => <PriorityBadge priority={priority} size="small" />}
+              renderOption={(opt) => <PriorityBadge priority={opt.value as BeadPriority} size="small" />}
+            />
+          </div>
+          <div className="create-field create-field-assignee">
+            <span className="create-field-label">Assignee</span>
+            <div className="create-assignee-row">
+              <span className="create-control create-assignee-control">
+                <Icon name="user" size={11} className="create-field-icon" />
+                <input
+                  type="text"
+                  value={assignee}
+                  onChange={(e) => setAssignee(e.target.value)}
+                  className="create-assignee-input"
+                  placeholder="Unassigned"
+                />
+              </span>
+              {userId && assignee !== userId && (
+                <button type="button" className="btn btn-sm create-assign-me" onClick={() => setAssignee(userId)}>
+                  Assign to me
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Labels */}
+        <div className="create-field">
+          <span className="create-field-label">Labels</span>
+          <div className="create-labels">
+            <span className="create-control create-label-add">
+              <Icon name="tag" size={11} className="create-field-icon" />
+              <input
+                type="text"
+                value={newLabel}
+                onChange={(e) => setNewLabel(e.target.value)}
+                placeholder="Add a label…"
+                onKeyDown={(e) => e.key === "Enter" && handleAddLabel()}
+                className="create-label-input"
+              />
+            </span>
+            {sortLabels(labels).map((label) => (
+              <LabelBadge
+                key={label}
+                label={label}
+                onRemove={() => setLabels((prev) => prev.filter((l) => l !== label))}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Description */}
+        <div className="create-field">
+          <label className="create-field-label" htmlFor="cb-description">Description</label>
+          <textarea
+            id="cb-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="create-input create-textarea"
+            rows={5}
+            placeholder="Add more detail…"
           />
-        ))}
-      </div>
+        </div>
 
-      {/* Description */}
-      <div className="details-section">
-        <h4>Description</h4>
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="description-input"
-          rows={4}
-          placeholder="Description"
-        />
-      </div>
+        {/* Design */}
+        <div className="create-field">
+          <label className="create-field-label" htmlFor="cb-design">Design Notes</label>
+          <textarea
+            id="cb-design"
+            value={design}
+            onChange={(e) => setDesign(e.target.value)}
+            className="create-input create-textarea"
+            rows={3}
+            placeholder="Design considerations, architecture notes…"
+          />
+        </div>
 
-      {/* Design */}
-      <div className="details-section">
-        <h4>Design Notes</h4>
-        <textarea
-          value={design}
-          onChange={(e) => setDesign(e.target.value)}
-          className="description-input"
-          rows={3}
-          placeholder="Design considerations, architecture notes..."
-        />
-      </div>
-
-      {/* Acceptance Criteria */}
-      <div className="details-section">
-        <h4>Acceptance Criteria</h4>
-        <textarea
-          value={acceptanceCriteria}
-          onChange={(e) => setAcceptanceCriteria(e.target.value)}
-          className="description-input"
-          rows={3}
-          placeholder="Definition of done..."
-        />
+        {/* Acceptance Criteria */}
+        <div className="create-field">
+          <label className="create-field-label" htmlFor="cb-acceptance">Acceptance Criteria</label>
+          <textarea
+            id="cb-acceptance"
+            value={acceptanceCriteria}
+            onChange={(e) => setAcceptanceCriteria(e.target.value)}
+            className="create-input create-textarea"
+            rows={3}
+            placeholder="Definition of done…"
+          />
+        </div>
       </div>
     </div>
   );
