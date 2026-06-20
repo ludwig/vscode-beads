@@ -39,17 +39,19 @@ interface KanbanBoardProps {
   totalCount?: number;
 }
 
-// bd's seven built-in statuses, left-to-right by activity. Full dynamic lane
-// derivation (incl. custom statuses) + persisted collapse is vs-9ph; for now we
-// surface all built-ins so deferred/pinned/hooked beads are no longer dropped.
+// bd's seven built-in statuses in lifecycle order: backlog → ready → doing →
+// done, with the persistent "pinned" lane parked at the far end (it lives
+// outside the normal flow). Full dynamic lane derivation (incl. custom statuses)
+// + persisted collapse is vs-9ph; for now we surface all built-ins so
+// deferred/pinned/hooked beads are no longer dropped.
 const COLUMNS: BuiltInStatus[] = [
-  "open",
-  "in_progress",
-  "blocked",
-  "hooked",
-  "deferred",
-  "pinned",
-  "closed",
+  "deferred", // backlog — parked for later (frozen)
+  "open", // ready (active)
+  "in_progress", // doing (wip)
+  "hooked", // claimed by a worker (wip)
+  "blocked", // started but stuck (wip)
+  "closed", // done
+  "pinned", // standing / persistent (frozen) — outside the flow
 ];
 
 export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], onSelectBead, onUpdateBead, hasActiveFilters, unfilteredCounts, filteredBeadIds, filterActive, filteredCount, totalCount }: KanbanBoardProps): React.ReactElement {
