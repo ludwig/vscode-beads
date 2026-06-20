@@ -1220,17 +1220,6 @@ textarea {
   border-radius: var(--border-radius);
 }
 
-/* "Filters" label leading the row (vs-dd7). */
-.filter-bar-label {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  opacity: 0.7;
-  margin-right: 2px;
-  flex-shrink: 0;
-}
-
 /* Preset dropdown - extends generic .dropdown */
 .preset-dropdown-btn {
   gap: 4px;

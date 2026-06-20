@@ -900,7 +900,6 @@ export function IssuesView({
       {/* Row 2: Filter bar */}
       {(filterBarOpen || hasActiveFilters) && (
         <div className="filter-bar">
-          <span className="filter-bar-label">Filters</span>
           <Dropdown
             trigger={FILTER_PRESETS.find((p) => p.id === activePreset)?.label || "Custom"}
             className="preset-dropdown"
