@@ -54,11 +54,19 @@ jobs:
       - name: Package VSIX
         run: npx @vscode/vsce package --no-dependencies
 
-      - name: Publish to VS Code Marketplace
-        run: npx @vscode/vsce publish -p ${{ secrets.VSCE_PAT }} --no-dependencies
-
-      - name: Publish to Open VSX
-        run: npx ovsx publish *.vsix -p ${{ secrets.OVSX_PAT }}
+      # Registry publishing is intentionally DISABLED for this private fork.
+      # We are an unannounced fork with no VS Code Marketplace / Open VSX
+      # presence and no VSCE_PAT/OVSX_PAT secrets — these steps fail by design
+      # (TF400813: not authorized) and previously killed the job before the
+      # GitHub Release step ran, producing no artifact. They are left here
+      # (commented) as the template to re-enable IF this fork ever gets its own
+      # publisher identity + PATs. Until then the release is the attached .vsix.
+      #
+      # - name: Publish to VS Code Marketplace
+      #   run: npx @vscode/vsce publish -p ${{ secrets.VSCE_PAT }} --no-dependencies
+      #
+      # - name: Publish to Open VSX
+      #   run: npx ovsx publish *.vsix -p ${{ secrets.OVSX_PAT }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -67,5 +75,5 @@ jobs:
           files: "*.vsix"
           generate_release_notes: false
           body: |
-            See [CHANGELOG.md](https://github.com/jdillon/vscode-beads/blob/main/CHANGELOG.md) for release notes.
+            See [CHANGELOG.md](https://github.com/ludwig/vscode-beads-pm/blob/develop/CHANGELOG.md) for release notes.
           draft: false
