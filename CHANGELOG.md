@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.1] - 2026-06-20
+
 ### Fixed
 
 - **"Show Details" pulses the view** — selecting the "Show Details" context-menu item now flashes the Details view's confirmation ring on reveal, like the editor-tab reveal pulse and the "Show Issues" panel ring, so the action is visible even when the Details view is already showing (vs-1vxq)
