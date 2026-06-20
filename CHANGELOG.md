@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.1] - 2026-06-20
+
+### Fixed
+
+- **Graph quick-filter** moved to its own full-width top row (mirroring the Kanban/Tree filter bars) — it was squished at the far right of the button toolbar, and the search glyph jumped position when switching between the Kanban/Tree/Graph tabs (vs-v6h)
+
 ## [0.19.0] - 2026-06-20
 
 ### Added
