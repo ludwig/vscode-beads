@@ -19,3 +19,18 @@ export function favoritesWithRelatives(
   }
   return scope;
 }
+
+/**
+ * Row-modifier class for the Issues table favorites highlight (vs-lu8f). Returns
+ * "favorite" when the bead is starred AND the highlight is enabled, else "".
+ * Pure/DOM-free so it's unit-testable. In the Favorites filter the tag-along
+ * relatives are NOT starred, so they get "" — the subtle dark/light contrast
+ * the user described falls out for free.
+ */
+export function favoriteRowClass(
+  beadId: string,
+  favoriteIds: Set<string>,
+  highlightFavorites: boolean,
+): string {
+  return highlightFavorites && favoriteIds.has(beadId) ? "favorite" : "";
+}

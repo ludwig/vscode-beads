@@ -203,6 +203,7 @@ export interface BeadsSummary {
 // Settings passed to the webview.
 export interface WebviewSettings {
   renderMarkdown: boolean;
+  highlightFavorites: boolean; // subtle accent on favorited (starred) rows in tables
   userId: string;
   tooltipHoverDelay: number; // 0 = disabled
   extensionVersion: string; // e.g. "0.14.0"
@@ -341,6 +342,7 @@ export type WebviewToExtensionMessage =
     }
   | { type: "copyBeadId"; beadId: string; toast?: boolean }
   | { type: "copyBeadJson"; beadId: string; toast?: boolean }
+  | { type: "copyBeadMarkdown"; beadId: string; toast?: boolean }
   | { type: "createBead"; fields: CreateBeadFields }
   | { type: "startCreate" }
   | { type: "cancelCreate" }

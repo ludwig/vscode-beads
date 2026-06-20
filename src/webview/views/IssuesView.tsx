@@ -46,7 +46,7 @@ import {
   vscode,
 } from "../types";
 import { readyBeadIds } from "../../backend/readyBeads";
-import { favoritesWithRelatives } from "../../backend/favoritesScope";
+import { favoritesWithRelatives, favoriteRowClass } from "../../backend/favoritesScope";
 import { needsDependencyGraph } from "../../backend/dependencyGraphGate";
 import { StatusBadge } from "../common/StatusBadge";
 import { PriorityBadge } from "../common/PriorityBadge";
@@ -74,6 +74,8 @@ interface IssuesViewProps {
   selectedBeadId: string | null;
   /** Favorite bead ids — drives the right-click Add/Remove Favorites item (vs-sd5.5). */
   favoriteIds?: string[];
+  /** When true, favorited rows get a subtle accent (beads.highlightFavorites, vs-lu8f). */
+  highlightFavorites?: boolean;
   tooltipHoverDelay: number; // 0 = disabled
   /** Drill-in filter pushed from another view (e.g. a Dashboard card/badge). */
   issuesFilterRequest?: { filter: IssuesFilter; seq: number } | null;
@@ -152,6 +154,7 @@ export function IssuesView({
   error,
   selectedBeadId,
   favoriteIds = [],
+  highlightFavorites = true,
   tooltipHoverDelay,
   issuesFilterRequest,
   applySnapshotRequest,
@@ -267,6 +270,8 @@ export function IssuesView({
     () => (favoritesOnly ? favoritesWithRelatives(favoriteIds, graph?.edges ?? []) : null),
     [favoritesOnly, favoriteIds, graph],
   );
+  // Set for O(1) per-row favorite lookups when applying the row highlight (vs-lu8f).
+  const favoriteIdSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
   const tableData = useMemo(() => {
     let rows = beads;
     if (readyOnly && readySet) rows = rows.filter((b) => readySet.has(b.id));
@@ -643,6 +648,10 @@ export function IssuesView({
         label: "Copy JSON",
         onSelect: () => vscode.postMessage({ type: "copyBeadJson", beadId: bead.id }),
       },
+      {
+        label: "Copy Markdown",
+        onSelect: () => vscode.postMessage({ type: "copyBeadMarkdown", beadId: bead.id }),
+      },
     ],
     [handleCopyId, favoriteIds],
   );
@@ -1001,7 +1010,7 @@ export function IssuesView({
           {/* Favorites toggle (vs-sd5.6/.7) — favorites + their relatives. */}
           <button
             type="button"
-            className={`ready-toggle ${favoritesOnly ? "active" : ""}`}
+            className={`ready-toggle favorites-toggle ${favoritesOnly ? "active" : ""}`}
             aria-pressed={favoritesOnly}
             onClick={toggleFavoritesOnly}
             title="Show favorited (starred) beads and their relatives (direct dependency neighbors). Composes with the other filters."
@@ -1379,7 +1388,7 @@ export function IssuesView({
                         e.preventDefault();
                         setRowMenu({ x: e.clientX, y: e.clientY, bead: row.original });
                       }}
-                      className={`bead-row ${row.original.id === activeSelectedId ? "selected" : ""}`}
+                      className={`bead-row ${row.original.id === activeSelectedId ? "selected" : ""} ${favoriteRowClass(row.original.id, favoriteIdSet, highlightFavorites)}`}
                     >
                       {row.getVisibleCells().map((cell) => {
                         const isIcon = cell.column.id === "icon";
