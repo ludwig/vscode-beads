@@ -76,17 +76,42 @@ do that. Rules:
   pre-`ready` post — always (re)flush on `initializeView` and dedupe on the
   webview side with a monotonic `seq`.
 
-## Distribution: private fork, no public publishing
+## Distribution & "publish": private fork, `.vsix` only
 
-- This is a **private fork developed in the open on GitHub but unannounced** —
-  we are **not** publishing a public extension.
+**What "publish" / "release" means here — read this before touching the release
+flow, so we stop relearning it:**
+
+- This is a **private fork developed in the open on GitHub but unannounced**. We
+  are **NOT** a public extension. For us, **"publish" NEVER means a registry** —
+  there is **no VS Code Marketplace and no Open VSX publish, ever**
+  (`vsce publish` / `ovsx publish` are forbidden; we have no `VSCE_PAT`/`OVSX_PAT`
+  and `publisher: planet57` is jdillon's identity, not ours).
+- **The deliverable is the `.vsix`.** "Do a release build" = produce
+  `vscode-beads-pm-<version>.vsix` and install/distribute it privately
+  (`code --install-extension <file>.vsix`, or drag into the editor).
+- **Canonical commands (use the Justfile — see below):**
+  - `just package` → build + package → `vscode-beads-pm-<version>.vsix`
+    (equivalent to `bun run package`; note the artifact is `vscode-beads-pm-*`,
+    NOT `vscode-beads-*`).
+  - `just install` (alias `just update`) → package + (re)install into local VS
+    Code + prompt reload. This is the everyday "ship it to my editor" path.
+- **A "release"** (when we want a tagged version) = bump `package.json` version
+  + finalize the `CHANGELOG.md` `[Unreleased]` section into `## [x.y.z] - date`
+  + commit `chore: release vX.Y.Z` + tag `vX.Y.Z`. We release from **`develop`**
+  (our integration branch), minor-bumping — NOT from `main` (the upstream
+  `project-release` skill assumes `main`; ignore that part).
+- **⚠️ `/.github/workflows/release.yml` is broken-by-inheritance for us.** On a
+  `v*` tag it runs `Package VSIX → publish to Marketplace → publish to Open VSX
+  → Create GitHub Release`. The two publish steps **fail by design**
+  (`TF400813: not authorized`) and kill the run **before** the GitHub Release
+  step, so CI produces **no artifact** (this is why v0.17.1's release "failed").
+  Until that workflow is fixed (drop both publish steps; keep package +
+  `softprops/action-gh-release`; fix the body URL from `jdillon` → `ludwig`),
+  **don't rely on CI for the artifact** — build it locally with `just package`
+  and, if you want a GitHub Release, attach the `.vsix` yourself
+  (`gh release create vX.Y.Z <file>.vsix`).
 - Ignore the upstream publishing docs (`docs/publishing/vscode-marketplace.md`,
-  `docs/publishing/open-vsx.md`) and the `publisher: planet57` field in
-  `package.json` — those are upstream (jdillon's) identity/channels, not ours.
-- The installable artifact is just a **`.vsix`**: `bun run package` →
-  `vscode-beads-<version>.vsix`, distributed/installed privately
-  (`code --install-extension <file>.vsix` or drag into the editor).
-  **No `vsce publish` / `ovsx publish`.**
+  `docs/publishing/open-vsx.md`) — upstream channels, not ours.
 
 ## The `bd` binary we run
 
