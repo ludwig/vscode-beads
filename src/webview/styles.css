@@ -4544,6 +4544,56 @@ textarea {
   flex: 0 0 auto;
 }
 
+/* Ad-hoc quick-filter (vs-v6h) — parked at the far right of the toolbar. */
+.graph-quickfilter {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 6px;
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border, transparent);
+  border-radius: 3px;
+}
+
+.graph-quickfilter:focus-within {
+  border-color: var(--vscode-focusBorder);
+}
+
+.graph-quickfilter-icon {
+  flex: 0 0 auto;
+  color: var(--vscode-descriptionForeground);
+}
+
+.graph-quickfilter-input {
+  flex: 1 1 auto;
+  min-width: 110px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--vscode-input-foreground);
+  font-size: 12px;
+  padding: 1px 0;
+}
+
+.graph-quickfilter-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.graph-quickfilter-clear:hover {
+  color: var(--vscode-foreground);
+  opacity: 1;
+}
+
 /* Layout-mode picker as an explicit segmented control (vs-xnw): one bordered
  * pill of connected segments, so it reads as "pick one layout" rather than four
  * loose buttons sitting next to the standalone Focus/Filtered/Auto-Layout ones. */
