@@ -164,7 +164,11 @@ export function PanelShell({
             className="panel-shell-action"
             title={`Open ${tabs.find((t) => t.id === active)?.label ?? "view"} in an editor tab`}
             aria-label="Open in editor tab"
-            onClick={() => vscode.postMessage({ type: "openViewInTab", view: active })}
+            onClick={() =>
+              // Seed the new tab with the current filter snapshot (vs-nme) so
+              // Kanban/Tree/Graph open scoped to the panel's active filter.
+              vscode.postMessage({ type: "openViewInTab", view: active, filteredBeadIds })
+            }
           >
             <ExternalLink size={14} strokeWidth={2} />
           </button>

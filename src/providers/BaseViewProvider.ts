@@ -37,6 +37,11 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
   // tabs opened via BeadPanelManager so a freshly-created tab flashes a
   // confirmation ring after it mounts (vs-c59).
   private pulseOnReady = false;
+  // One-time Issues-filter snapshot for editor tabs opened via BeadPanelManager
+  // (vs-nme). `undefined` = never seeded (sidebar views) → no message sent;
+  // `null` or an array = seeded, pushed to the webview on (re)init so a fresh
+  // Kanban/Tree/Graph tab inherits the panel's active filter.
+  private seedFilteredBeadIds: string[] | null | undefined = undefined;
 
   constructor(
     extensionUri: vscode.Uri,
@@ -151,6 +156,13 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
       },
     });
 
+    // Seed the Issues-filter snapshot for editor tabs (vs-nme). Sent after
+    // settings so the view has its render mode before scoping. Sidebar views
+    // never set this (stays undefined) and get no message.
+    if (this.seedFilteredBeadIds !== undefined) {
+      this.postMessage({ type: "seedFilter", filteredBeadIds: this.seedFilteredBeadIds });
+    }
+
     // Publish the current favorites set so the view can render it immediately
     // on (re)mount (vs-sd5.1).
     if (this.favorites) {
@@ -226,7 +238,9 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
           kanban: "beads.openKanbanInTab",
           tree: "beads.openTreeInTab",
         }[message.view];
-        vscode.commands.executeCommand(command);
+        // Pass the current filter snapshot so the new tab opens scoped to the
+        // panel's active filter rather than unfiltered (vs-nme).
+        vscode.commands.executeCommand(command, message.filteredBeadIds ?? null);
         break;
       }
 
@@ -475,6 +489,16 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
   /** Pulse once the webview signals "ready" (for freshly-created tabs). */
   public pulseWhenReady(): void {
     this.pulseOnReady = true;
+  }
+
+  /**
+   * Seed this view with a one-time snapshot of the Issues filter (vs-nme), so a
+   * freshly-opened editor-tab Kanban/Tree/Graph inherits the panel's active
+   * filter. Set synchronously before the webview's "ready" handshake (like
+   * showBead). `null` seeds "no filter".
+   */
+  public seedFilter(filteredBeadIds: string[] | null): void {
+    this.seedFilteredBeadIds = filteredBeadIds;
   }
 
   /**

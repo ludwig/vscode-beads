@@ -269,6 +269,11 @@ export type ExtensionToWebviewMessage =
   | { type: "setFavorites"; favorites: FavoriteBead[] }
   // Per-tab Back/Forward enablement for an editor-tab Details view (vs-9u8).
   | { type: "setTabNavState"; canBack: boolean; canForward: boolean }
+  // A one-time snapshot of the Issues filter (the matching bead ids), pushed to
+  // a freshly-opened editor-tab Kanban/Tree/Graph view so it inherits the
+  // panel's active filter instead of opening unfiltered (vs-nme). `null` = no
+  // filter (show all).
+  | { type: "seedFilter"; filteredBeadIds: string[] | null }
   | { type: "refresh" }
   | { type: "showToast"; text: string };
 
@@ -301,7 +306,13 @@ export type WebviewToExtensionMessage =
   // Reveal the Beads panel shell with the Kanban tab focused (vs-6xf).
   | { type: "showKanban" }
   | { type: "requestGraph" }
-  | { type: "openViewInTab"; view: "issues" | "dashboard" | "graph" | "kanban" | "tree" }
+  | {
+      type: "openViewInTab";
+      view: "issues" | "dashboard" | "graph" | "kanban" | "tree";
+      // Snapshot of the currently-filtered bead ids, so the new editor tab can
+      // inherit the panel's active filter (vs-nme). Omitted/null = no filter.
+      filteredBeadIds?: string[] | null;
+    }
   | { type: "copyBeadId"; beadId: string; toast?: boolean }
   | { type: "copyBeadJson"; beadId: string; toast?: boolean }
   | { type: "createBead"; fields: CreateBeadFields }

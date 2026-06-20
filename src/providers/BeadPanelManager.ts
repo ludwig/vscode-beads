@@ -89,38 +89,46 @@ export class BeadPanelManager implements vscode.Disposable {
     this.track(key, panel, provider);
   }
 
-  /** Open (or focus) the dependency Graph as an editor tab. */
-  public openGraph(): void {
+  /**
+   * Open (or focus) the dependency Graph as an editor tab. `seed` is a one-time
+   * Issues-filter snapshot (matching bead ids) so the new tab inherits the
+   * panel's active filter (vs-nme); re-opening an existing tab keeps its own
+   * (possibly user-adjusted) state and is not re-seeded.
+   */
+  public openGraph(seed: string[] | null = null): void {
     const key = "beadsGraph";
     if (this.reveal(key)) return;
 
     const panel = this.createPanel("Graph");
     const provider = new GraphViewProvider(this.extensionUri, this.projectManager, this.log);
     provider.attach(hostFromPanel(panel));
+    provider.seedFilter(seed);
 
     this.track(key, panel, provider);
   }
 
-  /** Open (or focus) the Kanban board as an editor tab (vs-xqu.1). */
-  public openKanban(): void {
+  /** Open (or focus) the Kanban board as an editor tab (vs-xqu.1). `seed`: vs-nme. */
+  public openKanban(seed: string[] | null = null): void {
     const key = "beadsKanban";
     if (this.reveal(key)) return;
 
     const panel = this.createPanel("Kanban");
     const provider = new KanbanViewProvider(this.extensionUri, this.projectManager, this.log, this.favorites);
     provider.attach(hostFromPanel(panel));
+    provider.seedFilter(seed);
 
     this.track(key, panel, provider);
   }
 
-  /** Open (or focus) the dependency Tree as an editor tab (vs-xqu.2). */
-  public openTree(): void {
+  /** Open (or focus) the dependency Tree as an editor tab (vs-xqu.2). `seed`: vs-nme. */
+  public openTree(seed: string[] | null = null): void {
     const key = "beadsTree";
     if (this.reveal(key)) return;
 
     const panel = this.createPanel("Tree");
     const provider = new TreeViewProvider(this.extensionUri, this.projectManager, this.log, this.favorites);
     provider.attach(hostFromPanel(panel));
+    provider.seedFilter(seed);
 
     this.track(key, panel, provider);
   }
