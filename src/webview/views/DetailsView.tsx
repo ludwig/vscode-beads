@@ -26,6 +26,7 @@ import {
 } from "../types";
 import { Timestamp } from "../common/Timestamp";
 import { StatusPriorityPill } from "../common/StatusPriorityPill";
+import { EndFlourish } from "../common/EndFlourish";
 
 /**
  * Detects if a string looks like a URL
@@ -909,6 +910,12 @@ export function DetailsView({
             Closed <Timestamp value={displayBead.closedAt} format="relative" />
           </span>
         )}
+      </div>
+
+      {/* End-of-document mark below the footer — the crisp "rule & bead"
+          tailpiece, distinct from the generic Band used on list-style views. */}
+      <div className="view-end" aria-hidden="true">
+        <EndFlourish variant="rulebead" />
       </div>
     </div>
   );

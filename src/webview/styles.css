@@ -2137,6 +2137,20 @@ textarea {
   height: auto;
 }
 
+/* Variant: Cul-de-lampe — a tapering printer's tailpiece (end-of-chapter). */
+.view-end-culdelampe {
+  width: 120px;
+  max-width: 60%;
+  height: auto;
+}
+
+/* Variant: Rule & bead — twin hairlines flanking a center diamond. */
+.view-end-rulebead {
+  width: 220px;
+  max-width: 80%;
+  height: auto;
+}
+
 /* Variant: Ivy — full-width hairline with climbing tendril caps. */
 .view-end-rule {
   display: flex;
