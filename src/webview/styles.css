@@ -4513,6 +4513,21 @@ textarea {
   text-align: right;
 }
 
+/* Updated/Created timestamp cells (vs-3ie). */
+.beads-tree-time {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Column show/hide selector — positioned wrapper for the .col-menu popover. */
+.beads-tree-colmenu {
+  position: relative;
+  display: inline-flex;
+}
+
 .beads-tree-empty {
   padding: 16px;
   color: var(--vscode-descriptionForeground);

@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight, ChevronDown, Search, ArrowUp, ArrowDown, CornerLeftUp, UnfoldVertical, FoldVertical } from "lucide-react";
+import { ChevronRight, ChevronDown, Search, ArrowUp, ArrowDown, CornerLeftUp, UnfoldVertical, FoldVertical, Columns3 } from "lucide-react";
 import {
   Bead,
   BeadType,
@@ -27,6 +27,8 @@ import { FilterIndicator } from "../../common/FilterIndicator";
 import { Loading } from "../../common/Loading";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { ContextMenu, type ContextMenuItem } from "../../common/ContextMenu";
+import { Timestamp } from "../../common/Timestamp";
+import { useClickOutside } from "../../hooks/useClickOutside";
 import { buildForest, filterForest, filterForestByIds, subtreeIds, compareById, type BeadComparator, type TreeNode } from "./treeModel";
 
 interface DragApi {
@@ -38,19 +40,35 @@ interface DragApi {
   onEnd: () => void;
 }
 
-type SortKey = "id" | "type" | "title" | "priority" | "status";
+type SortKey = "id" | "type" | "title" | "priority" | "status" | "updated" | "created";
 
-// Sortable tree-table columns. Clicking a header cycles asc → desc → off; the
-// "off" state is the natural id order (so id sort needs no dedicated column).
-// The Title header occupies the indented tree column; Status/Type/Priority align
-// in fixed columns across all depths. (The Status column replaces the old
-// per-row colored rail.)
-const COLUMNS: { key: SortKey; label: string }[] = [
-  { key: "title", label: "Title" },
-  { key: "status", label: "Status" },
-  { key: "type", label: "Type" },
-  { key: "priority", label: "Priority" },
+// Toggleable, fixed-width columns shown to the RIGHT of the always-on Title
+// (tree) column. `width` feeds the grid template; `sortKey` ties the header to
+// the sort machinery. Title stays a separate, always-on flexible column that
+// occupies the indented tree area across all depths (vs-3ie).
+type ColKey = "status" | "type" | "priority" | "updated" | "created";
+interface TreeColumn {
+  key: ColKey;
+  label: string;
+  width: string;
+  sortKey: SortKey;
+}
+const TREE_COLUMNS: TreeColumn[] = [
+  { key: "status", label: "Status", width: "92px", sortKey: "status" },
+  { key: "type", label: "Type", width: "64px", sortKey: "type" },
+  { key: "priority", label: "Priority", width: "44px", sortKey: "priority" },
+  { key: "updated", label: "Updated", width: "96px", sortKey: "updated" },
+  { key: "created", label: "Created", width: "96px", sortKey: "created" },
 ];
+// Default visibility: Updated shown, Created hidden, to keep the tree narrow by
+// default (mirrors the Issues table hiding some columns).
+const DEFAULT_TREE_COLS: Record<ColKey, boolean> = {
+  status: true,
+  type: true,
+  priority: true,
+  updated: true,
+  created: false,
+};
 
 type SortDir = "asc" | "desc";
 interface SortSpec {
@@ -83,6 +101,13 @@ const cmpPriority = (a: Bead, b: Bead) => (a.priority ?? 99) - (b.priority ?? 99
 // Workflow order: open → in_progress → blocked → closed.
 const STATUS_ORDER: Record<string, number> = { open: 0, in_progress: 1, blocked: 2, closed: 3 };
 const cmpStatus = (a: Bead, b: Bead) => (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99);
+// Parse an ISO timestamp to epoch ms; missing/invalid sorts oldest (0).
+const tparse = (s?: string) => {
+  const t = s ? Date.parse(s) : NaN;
+  return Number.isNaN(t) ? 0 : t;
+};
+const cmpUpdated = (a: Bead, b: Bead) => tparse(a.updatedAt) - tparse(b.updatedAt);
+const cmpCreated = (a: Bead, b: Bead) => tparse(a.createdAt) - tparse(b.createdAt);
 
 function baseComparator(key: SortKey): BeadComparator {
   switch (key) {
@@ -94,6 +119,10 @@ function baseComparator(key: SortKey): BeadComparator {
       return cmpPriority;
     case "status":
       return cmpStatus;
+    case "updated":
+      return cmpUpdated;
+    case "created":
+      return cmpCreated;
     default:
       return compareById;
   }
@@ -179,6 +208,27 @@ export function TreeView({
     const prev = (vscode.getState() as Record<string, unknown>) ?? {};
     vscode.setState({ ...prev, treeSort: sorts });
   }, [sorts]);
+  // Column visibility (vs-3ie) — persisted across reload/tab-switch like the
+  // sort. Merge over defaults so a newly-added column gets its default.
+  const [visibleCols, setVisibleCols] = useState<Record<ColKey, boolean>>(() => {
+    const saved = (vscode.getState() as { treeColumns?: Partial<Record<ColKey, boolean>> } | undefined)?.treeColumns;
+    return saved && typeof saved === "object" ? { ...DEFAULT_TREE_COLS, ...saved } : DEFAULT_TREE_COLS;
+  });
+  useEffect(() => {
+    const prev = (vscode.getState() as Record<string, unknown>) ?? {};
+    vscode.setState({ ...prev, treeColumns: visibleCols });
+  }, [visibleCols]);
+  const shownColumns = useMemo(() => TREE_COLUMNS.filter((c) => visibleCols[c.key]), [visibleCols]);
+  // The Title (tree) column is the only flexible one; the shown fixed columns
+  // follow at their declared widths. Set inline so header + every row share the
+  // exact same template as columns toggle on/off.
+  const gridTemplate = useMemo(
+    () => `minmax(0, 1fr) ${shownColumns.map((c) => c.width).join(" ")}`,
+    [shownColumns],
+  );
+  const [colMenuOpen, setColMenuOpen] = useState(false);
+  const colMenuRef = useRef<HTMLDivElement>(null);
+  useClickOutside(colMenuRef, () => setColMenuOpen(false), colMenuOpen);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [menu, setMenu] = useState<{ x: number; y: number; bead: Bead } | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -416,20 +466,49 @@ export function TreeView({
             </button>
           </div>
         )}
+        <div className="beads-tree-colmenu" ref={colMenuRef}>
+          <button
+            type="button"
+            className="beads-tree-foldbtn"
+            title="Show or hide columns"
+            aria-label="Show or hide columns"
+            aria-expanded={colMenuOpen}
+            onClick={() => setColMenuOpen((v) => !v)}
+          >
+            <Columns3 size={14} strokeWidth={2} />
+          </button>
+          {colMenuOpen && (
+            <div className="col-menu beads-tree-col-menu">
+              {TREE_COLUMNS.map((c) => (
+                <label key={c.key}>
+                  <input
+                    type="checkbox"
+                    checked={visibleCols[c.key]}
+                    onChange={() => setVisibleCols((prev) => ({ ...prev, [c.key]: !prev[c.key] }))}
+                  />
+                  {c.label}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-      <div className="beads-tree-colheader" role="row">
-        {COLUMNS.map(({ key, label }) => {
-          const idx = sorts.findIndex((s) => s.key === key);
+      <div className="beads-tree-colheader" role="row" style={{ gridTemplateColumns: gridTemplate }}>
+        {[
+          { sortKey: "title" as SortKey, label: "Title", colKey: "title" },
+          ...shownColumns.map((c) => ({ sortKey: c.sortKey, label: c.label, colKey: c.key })),
+        ].map(({ sortKey, label, colKey }) => {
+          const idx = sorts.findIndex((s) => s.key === sortKey);
           const spec = idx >= 0 ? sorts[idx] : null;
           const active = spec != null;
           return (
             <button
-              key={key}
+              key={sortKey}
               type="button"
               role="columnheader"
               aria-sort={active ? (spec!.dir === "asc" ? "ascending" : "descending") : "none"}
-              className={`beads-tree-col beads-tree-col-${key} ${active ? "active" : ""}`}
-              onClick={(e) => setSorts((prev) => applySort(prev, key, e.shiftKey))}
+              className={`beads-tree-col beads-tree-col-${colKey} ${active ? "active" : ""}`}
+              onClick={(e) => setSorts((prev) => applySort(prev, sortKey, e.shiftKey))}
               title={`Sort by ${label.toLowerCase()} — click to sort, Shift+click to add as a secondary sort`}
             >
               <span>{label}</span>
@@ -480,6 +559,8 @@ export function TreeView({
               key={node.bead.id}
               node={node}
               depth={0}
+              columns={shownColumns}
+              gridTemplate={gridTemplate}
               selectedBeadId={activeSelectedId}
               collapsed={collapsed}
               forceExpand={filtering}
@@ -557,6 +638,10 @@ function rowMenuItems(
 interface TreeRowProps {
   node: TreeNode;
   depth: number;
+  /** Visible fixed columns (after the always-on Title), in display order. */
+  columns: TreeColumn[];
+  /** Grid template shared with the header so cells stay aligned across depths. */
+  gridTemplate: string;
   selectedBeadId: string | null;
   collapsed: Set<string>;
   forceExpand: boolean;
@@ -569,6 +654,8 @@ interface TreeRowProps {
 function TreeRow({
   node,
   depth,
+  columns,
+  gridTemplate,
   selectedBeadId,
   collapsed,
   forceExpand,
@@ -590,6 +677,7 @@ function TreeRow({
     <>
       <div
         className={`beads-tree-row${isSelected ? " selected" : ""}${isDragging ? " dragging" : ""}${isDropTarget ? " drop-target" : ""}`}
+        style={{ gridTemplateColumns: gridTemplate }}
         role="treeitem"
         aria-expanded={hasChildren ? !isCollapsed : undefined}
         aria-selected={isSelected}
@@ -637,13 +725,42 @@ function TreeRow({
           <span className="beads-tree-id">{bead.id}</span>
           <span className="beads-tree-title">{bead.title}</span>
         </span>
-        <span className="beads-tree-status" style={{ color: statusColor(bead.status) }}>
-          {statusLabel(bead.status)}
-        </span>
-        <span className="beads-tree-type">{bead.type ? typeLabel(bead.type) : ""}</span>
-        <span className="beads-tree-prio" style={{ color: priorityColor }}>
-          {bead.priority === undefined ? "—" : `P${bead.priority}`}
-        </span>
+        {columns.map((col) => {
+          switch (col.key) {
+            case "status":
+              return (
+                <span key="status" className="beads-tree-status" style={{ color: statusColor(bead.status) }}>
+                  {statusLabel(bead.status)}
+                </span>
+              );
+            case "type":
+              return (
+                <span key="type" className="beads-tree-type">
+                  {bead.type ? typeLabel(bead.type) : ""}
+                </span>
+              );
+            case "priority":
+              return (
+                <span key="priority" className="beads-tree-prio" style={{ color: priorityColor }}>
+                  {bead.priority === undefined ? "—" : `P${bead.priority}`}
+                </span>
+              );
+            case "updated":
+              return (
+                <span key="updated" className="beads-tree-time">
+                  <Timestamp value={bead.updatedAt} format="auto" />
+                </span>
+              );
+            case "created":
+              return (
+                <span key="created" className="beads-tree-time">
+                  <Timestamp value={bead.createdAt} format="auto" />
+                </span>
+              );
+            default:
+              return null;
+          }
+        })}
       </div>
       {hasChildren && !isCollapsed
         ? children.map((child) => (
@@ -651,6 +768,8 @@ function TreeRow({
               key={child.bead.id}
               node={child}
               depth={depth + 1}
+              columns={columns}
+              gridTemplate={gridTemplate}
               selectedBeadId={selectedBeadId}
               collapsed={collapsed}
               forceExpand={forceExpand}
