@@ -200,6 +200,9 @@ interface DetailsViewProps {
   canNavigateForward?: boolean;
   onNavigateBack?: () => void;
   onNavigateForward?: () => void;
+  /** Whether this bead's companion `bead:` doc is open, + toggle (vs-nr3d). */
+  companionOpen?: boolean;
+  onToggleCompanion?: (beadId: string) => void;
 }
 
 // Helper to render text content - markdown or plain
@@ -230,6 +233,8 @@ export function DetailsView({
   canNavigateForward = false,
   onNavigateBack,
   onNavigateForward,
+  companionOpen = false,
+  onToggleCompanion,
 }: DetailsViewProps): React.ReactElement {
   // Toast and onViewInGraph kept for potential future use
   const { showToast: _showToast } = useToast();
@@ -391,6 +396,22 @@ export function DetailsView({
           {bead.id}
         </span>
         <div className="header-actions">
+          {onToggleCompanion && (
+            <button
+              className={`companion-toggle${companionOpen ? " is-on" : ""}`}
+              title={
+                companionOpen
+                  ? "Stop seeding this bead to Claude Code (closes the companion document)"
+                  : "Seed this bead into Claude Code — opens its content as a document beside this view so it's part of your session context"
+              }
+              aria-label="Toggle Claude Code context for this bead"
+              aria-pressed={companionOpen}
+              onClick={() => onToggleCompanion(bead.id)}
+            >
+              <Icon name="sparkles" size={12} className="companion-toggle-icon" />
+              <span className="companion-toggle-label">Claude</span>
+            </button>
+          )}
           {isEditorTab && (
             <>
               <button

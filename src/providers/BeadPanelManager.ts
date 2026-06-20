@@ -17,15 +17,14 @@ import { FavoritesService } from "../backend/FavoritesService";
 import { FilterSnapshot } from "../backend/types";
 import { Logger } from "../utils/logger";
 import { BaseViewProvider } from "./BaseViewProvider";
+import { BeadCompanionController } from "./BeadCompanionController";
 import { BeadDetailsViewProvider } from "./BeadDetailsViewProvider";
-import { BeadDocumentProvider, BEAD_SCHEME } from "./BeadDocumentProvider";
 import {
   BeadDocSyncAction,
   BeadDocSyncState,
   decideOnPanelDisposed,
   decideOnViewState,
 } from "./beadDocSync";
-import { beadDocPath } from "./beadMarkdown";
 import { BeadsPanelViewProvider } from "./BeadsPanelViewProvider";
 import { DashboardViewProvider } from "./DashboardViewProvider";
 import { GraphViewProvider } from "./GraphViewProvider";
@@ -56,6 +55,7 @@ export class BeadPanelManager implements vscode.Disposable {
     private readonly extensionUri: vscode.Uri,
     private readonly projectManager: BeadsProjectManager,
     private readonly log: Logger,
+    private readonly companion: BeadCompanionController,
     private readonly favorites?: FavoritesService
   ) {
     // Keep open tabs in sync with the rest of the extension.
@@ -77,7 +77,7 @@ export class BeadPanelManager implements vscode.Disposable {
     }
 
     const panel = this.createPanel(beadId);
-    const provider = new BeadDetailsViewProvider(this.extensionUri, this.projectManager, this.log, this.favorites);
+    const provider = new BeadDetailsViewProvider(this.extensionUri, this.projectManager, this.log, this.companion, this.favorites);
     provider.attach(hostFromPanel(panel));
     // currentBeadId is set synchronously, so the webview's "ready" handshake
     // (which triggers initializeView → loadData) renders this bead.
@@ -170,7 +170,7 @@ export class BeadPanelManager implements vscode.Disposable {
   public openNewIssue(): void {
     const key = `beadsNewIssue:${++this.newIssueSeq}`;
     const panel = this.createPanel("New Issue");
-    const provider = new BeadDetailsViewProvider(this.extensionUri, this.projectManager, this.log, this.favorites);
+    const provider = new BeadDetailsViewProvider(this.extensionUri, this.projectManager, this.log, this.companion, this.favorites);
     provider.attach(hostFromPanel(panel));
     provider.startCreate();
 
@@ -281,51 +281,14 @@ export class BeadPanelManager implements vscode.Disposable {
       case "noop":
         return;
       case "open":
-        if (action.closePrev) void this.closeBeadDoc(action.closePrev);
+        if (action.closePrev) void this.companion.close(action.closePrev);
         this.docSync.activeBeadId = action.beadId;
-        void this.openBeadDoc(action.beadId);
+        void this.companion.open(action.beadId);
         return;
       case "close":
         this.docSync.activeBeadId = null;
-        void this.closeBeadDoc(action.beadId);
+        void this.companion.close(action.beadId);
         return;
-    }
-  }
-
-  private async openBeadDoc(beadId: string): Promise<void> {
-    try {
-      const doc = await vscode.workspace.openTextDocument(BeadDocumentProvider.uriFor(beadId));
-      await vscode.languages.setTextDocumentLanguage(doc, "markdown");
-      await vscode.window.showTextDocument(doc, {
-        viewColumn: vscode.ViewColumn.Beside,
-        preserveFocus: true,
-        preview: false,
-      });
-    } catch (err) {
-      this.log.error(
-        `BeadPanelManager: failed to seed bead doc ${beadId}: ${err instanceof Error ? err.message : String(err)}`
-      );
-    }
-  }
-
-  /** Close any open editor tab showing `beadId`'s virtual `bead:` doc. */
-  private async closeBeadDoc(beadId: string): Promise<void> {
-    const targetPath = beadDocPath(beadId);
-    const matches: vscode.Tab[] = [];
-    for (const group of vscode.window.tabGroups.all) {
-      for (const tab of group.tabs) {
-        const input = tab.input;
-        if (
-          input instanceof vscode.TabInputText &&
-          input.uri.scheme === BEAD_SCHEME &&
-          input.uri.path === targetPath
-        ) {
-          matches.push(tab);
-        }
-      }
-    }
-    if (matches.length) {
-      await vscode.window.tabGroups.close(matches);
     }
   }
 

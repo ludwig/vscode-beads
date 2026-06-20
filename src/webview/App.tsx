@@ -67,6 +67,10 @@ interface AppState {
   // The active project's favorites, in curated order, resolved to summaries
   // for display (vs-sd5.1). Shared by the Favorites section + Details star.
   favorites: FavoriteBead[];
+  // Latest companion-doc state from the host, keyed by bead id, so the Details
+  // "seed to Claude" toggle reflects whether that bead's companion is open
+  // (vs-nr3d). The view only trusts the entry matching the shown bead.
+  companion: { beadId: string; open: boolean } | null;
   // One-time Issues-filter snapshot for an editor-tab Kanban/Tree/Graph view,
   // pushed by the provider on open so the tab inherits the panel's active
   // filter instead of opening unfiltered (vs-nme). `null` = no filter.
@@ -111,6 +115,7 @@ const initialState: AppState = {
   memoryBytes: 0,
   tabNav: { canBack: false, canForward: false },
   favorites: [],
+  companion: null,
   seedFilteredBeadIds: null,
   seedFilterCleared: false,
   applySnapshotRequest: null,
@@ -199,6 +204,12 @@ export function App(): React.ReactElement {
         break;
       case "setFavorites":
         setState((prev) => ({ ...prev, favorites: message.favorites }));
+        break;
+      case "setBeadCompanionOpen":
+        setState((prev) => ({
+          ...prev,
+          companion: { beadId: message.beadId, open: message.open },
+        }));
         break;
       case "seedFilter":
         setState((prev) => ({
@@ -533,6 +544,12 @@ export function App(): React.ReactElement {
             canNavigateForward={state.tabNav.canForward}
             onNavigateBack={() => vscode.postMessage({ type: "navigateBack" })}
             onNavigateForward={() => vscode.postMessage({ type: "navigateForward" })}
+            companionOpen={
+              state.companion?.beadId === state.selectedBead.id && state.companion.open
+            }
+            onToggleCompanion={(beadId) =>
+              vscode.postMessage({ type: "toggleBeadCompanion", beadId })
+            }
           />
         );
       }

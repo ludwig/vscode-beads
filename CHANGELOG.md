@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Auto-seed the active bead into Claude Code (experimental, off by default)** — when enabled via `beads.autoSeedActiveBead`, focusing a bead opened as an editor tab opens its content as a companion virtual `bead:` document beside the tab (keeping focus on the bead), so Claude Code's IDE integration seeds the active bead into your session with no manual command. Switching beads swaps the doc; closing the bead tab closes it. Off by default because it adds a second companion tab — a webview can't be a text editor, so native single-tab seeding isn't possible; the manual `beads.openBeadAsDocument` command remains for one-off seeding (vs-nr3d)
+- **"Claude" toggle on the bead Details view** — a stylish sparkle pill in the Details header opens this bead's content as a companion `bead:` document beside the view (so Claude Code seeds it into your session), and tucks it away again on a second click. The pill lights up while the companion is open and stays in sync if you close the doc by hand. A webview can't be a text editor, so this on-demand companion is how a rich bead gets into Claude's context — you choose when, with one click (vs-nr3d)
+- **Auto-seed on focus (experimental, off by default)** — `beads.autoSeedActiveBead` makes a bead opened as an editor tab open its companion document automatically on focus (swapping as you switch beads, closing when the tab closes). Off by default since it adds a second tab passively; the Details toggle above is the recommended, on-demand path (vs-nr3d)
 
 ## [0.21.2] - 2026-06-20
 

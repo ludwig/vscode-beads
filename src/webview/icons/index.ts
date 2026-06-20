@@ -22,6 +22,7 @@ import plusSvg from "./plus.svg";
 import arrowsRotateSvg from "./arrows-rotate.svg";
 import starSvg from "./star.svg";
 import starOutlineSvg from "./star-outline.svg";
+import sparklesSvg from "./sparkles.svg";
 import notdefSvg from "./notdef.svg";
 
 export const icons = {
@@ -41,6 +42,7 @@ export const icons = {
   refresh: arrowsRotateSvg,
   star: starSvg,
   "star-outline": starOutlineSvg,
+  sparkles: sparklesSvg,
   notdef: notdefSvg,
 } as const;
 

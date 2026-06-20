@@ -10,8 +10,10 @@
 
 import * as vscode from "vscode";
 import { BaseViewProvider } from "./BaseViewProvider";
+import { BeadCompanionController } from "./BeadCompanionController";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
 import { FavoritesService } from "../backend/FavoritesService";
+import { WebviewHost } from "./WebviewHost";
 import { WebviewToExtensionMessage, issueToWebviewBead } from "../backend/types";
 import { Logger } from "../utils/logger";
 import { NavigationHistory } from "./NavigationHistory";
@@ -29,14 +31,44 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
   // Unused by the sidebar instance (isEditorTab === false), which records into
   // the global history via the beads.navigateBack/Forward commands instead.
   private readonly history = new NavigationHistory();
+  // Subscription to the companion controller's change feed, so the "seed to
+  // Claude" toggle reflects reality (incl. manual companion-tab closes, vs-nr3d).
+  private companionSub?: vscode.Disposable;
 
   constructor(
     extensionUri: vscode.Uri,
     projectManager: BeadsProjectManager,
     logger: Logger,
+    private readonly companion: BeadCompanionController,
     favorites?: FavoritesService
   ) {
     super(extensionUri, projectManager, logger.child("Details"), favorites);
+  }
+
+  /**
+   * Bind to a host and (re)subscribe to the companion feed so the toggle's lit
+   * state stays in sync. Re-attach (sidebar re-resolve) replaces the prior sub.
+   */
+  public attach(host: WebviewHost): void {
+    super.attach(host);
+    this.companionSub?.dispose();
+    this.companionSub = this.companion.onDidChange(() => this.postCompanionState());
+  }
+
+  public dispose(): void {
+    this.companionSub?.dispose();
+    this.companionSub = undefined;
+    super.dispose();
+  }
+
+  /** Tell the webview whether the current bead's companion doc is open. */
+  private postCompanionState(): void {
+    if (!this.currentBeadId) return;
+    this.postMessage({
+      type: "setBeadCompanionOpen",
+      beadId: this.currentBeadId,
+      open: this.companion.isOpen(this.currentBeadId),
+    });
   }
 
   /**
@@ -116,6 +148,9 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
       this.setLoading(true);
     }
 
+    // Reflect whether THIS bead's companion doc is already open (vs-nr3d).
+    this.postCompanionState();
+
     await this.loadData();
   }
 
@@ -144,6 +179,8 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
     // Re-assert per-tab Back/Forward enablement after a (re)resolve so the
     // editor-tab header buttons aren't stuck disabled on mount/reveal (vs-9u8).
     this.postNavState();
+    // Re-assert the companion toggle state on mount/reveal (vs-nr3d).
+    this.postCompanionState();
   }
 
   /**
@@ -252,6 +289,13 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
    * through to the shared handler.
    */
   protected async handleMessage(message: WebviewToExtensionMessage): Promise<void> {
+    // The companion toggle needs no backend client, so handle it here rather
+    // than in handleCustomMessage (which early-returns when there's no client).
+    if (message.type === "toggleBeadCompanion") {
+      await this.companion.toggle(message.beadId);
+      this.postCompanionState();
+      return;
+    }
     if (this._host?.isEditorTab && message.type === "openBeadDetails") {
       await this.showBead(message.beadId);
       return;
