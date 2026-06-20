@@ -65,6 +65,10 @@ interface AppState {
   // The active project's favorites, in curated order, resolved to summaries
   // for display (vs-sd5.1). Shared by the Favorites section + Details star.
   favorites: FavoriteBead[];
+  // One-time Issues-filter snapshot for an editor-tab Kanban/Tree/Graph view,
+  // pushed by the provider on open so the tab inherits the panel's active
+  // filter instead of opening unfiltered (vs-nme). `null` = no filter.
+  seedFilteredBeadIds: string[] | null;
 }
 
 const initialState: AppState = {
@@ -97,6 +101,7 @@ const initialState: AppState = {
   memoryBytes: 0,
   tabNav: { canBack: false, canForward: false },
   favorites: [],
+  seedFilteredBeadIds: null,
 };
 
 export function App(): React.ReactElement {
@@ -183,6 +188,9 @@ export function App(): React.ReactElement {
       case "setFavorites":
         setState((prev) => ({ ...prev, favorites: message.favorites }));
         break;
+      case "seedFilter":
+        setState((prev) => ({ ...prev, seedFilteredBeadIds: message.filteredBeadIds }));
+        break;
       case "refresh":
         vscode.postMessage({ type: "refresh" });
         break;
@@ -217,6 +225,14 @@ export function App(): React.ReactElement {
   // Favorite bead ids (vs-sd5.1) — passed to the bead-context-menu views so a
   // right-click can star/unstar, and labelled Add/Remove based on membership.
   const favoriteIds = state.favorites.map((f) => f.id);
+
+  // Editor-tab filter seed (vs-nme): when a Kanban/Tree/Graph tab was opened
+  // from a filtered panel, scope it to the inherited snapshot. `filterActive`
+  // mirrors PanelShell's rule (a strict subset of the board).
+  const seedFilteredBeadIds = state.seedFilteredBeadIds;
+  const seedFilterActive =
+    seedFilteredBeadIds != null && seedFilteredBeadIds.length < state.beads.length;
+  const seedFilteredCount = seedFilteredBeadIds?.length ?? state.beads.length;
 
   // Render the appropriate view
   const renderView = () => {
@@ -295,7 +311,8 @@ export function App(): React.ReactElement {
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
             focusBeadId={null}
-            filteredBeadIds={null}
+            filteredBeadIds={seedFilteredBeadIds}
+            issuesFilterActive={seedFilterActive}
             onOpenBead={(beadId) =>
               vscode.postMessage({ type: "openBeadDetails", beadId })
             }
@@ -309,8 +326,10 @@ export function App(): React.ReactElement {
             beads={state.beads}
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
-            filteredBeadIds={null}
-            filterActive={false}
+            filteredBeadIds={seedFilteredBeadIds}
+            filterActive={seedFilterActive}
+            filteredCount={seedFilteredCount}
+            totalCount={state.beads.length}
             onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onUpdateBead={(beadId, updates) =>
               vscode.postMessage({ type: "updateBead", beadId, updates })
@@ -326,8 +345,10 @@ export function App(): React.ReactElement {
             error={state.error}
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
-            filteredBeadIds={null}
-            filterActive={false}
+            filteredBeadIds={seedFilteredBeadIds}
+            filterActive={seedFilterActive}
+            filteredCount={seedFilteredCount}
+            totalCount={state.beads.length}
             onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onRequestGraph={() => vscode.postMessage({ type: "requestGraph" })}
             onRetry={() => vscode.postMessage({ type: "refresh" })}

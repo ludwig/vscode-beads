@@ -243,19 +243,20 @@ export function registerCommands(
       panelManager.openDashboard();
     }),
 
-    // vs-3bp: open the dependency Graph as an editor tab.
-    vscode.commands.registerCommand("beads.openGraphInTab", () => {
-      panelManager.openGraph();
+    // vs-3bp: open the dependency Graph as an editor tab. The optional arg is a
+    // filter snapshot (vs-nme) seeding the new tab with the panel's filter.
+    vscode.commands.registerCommand("beads.openGraphInTab", (seed?: string[] | null) => {
+      panelManager.openGraph(seed ?? null);
     }),
 
     // vs-xqu.1: open the Kanban board as an editor tab.
-    vscode.commands.registerCommand("beads.openKanbanInTab", () => {
-      panelManager.openKanban();
+    vscode.commands.registerCommand("beads.openKanbanInTab", (seed?: string[] | null) => {
+      panelManager.openKanban(seed ?? null);
     }),
 
     // vs-xqu.2: open the dependency Tree as an editor tab.
-    vscode.commands.registerCommand("beads.openTreeInTab", () => {
-      panelManager.openTree();
+    vscode.commands.registerCommand("beads.openTreeInTab", (seed?: string[] | null) => {
+      panelManager.openTree(seed ?? null);
     }),
 
     vscode.commands.registerCommand("beads.createIssue", () => {
