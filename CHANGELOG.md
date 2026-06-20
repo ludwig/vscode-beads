@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Favorites filter shows relatives on first load** — when the Issues "Favorites" filter is restored as active from a previous session, the dependency graph is now fetched on mount, so each favorite appears with its 1-hop relatives instead of stripped bare; previously you had to toggle the filter off and on to populate them (same fix restores a restored-active "Ready" filter) (vs-mbqc)
+
 ## [0.21.1] - 2026-06-20
 
 ### Fixed

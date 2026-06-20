@@ -47,6 +47,7 @@ import {
 } from "../types";
 import { readyBeadIds } from "../../backend/readyBeads";
 import { favoritesWithRelatives } from "../../backend/favoritesScope";
+import { needsDependencyGraph } from "../../backend/dependencyGraphGate";
 import { StatusBadge } from "../common/StatusBadge";
 import { PriorityBadge } from "../common/PriorityBadge";
 import { TypeBadge } from "../common/TypeBadge";
@@ -241,10 +242,20 @@ export function IssuesView({
   }, [favoritesOnly]);
   const toggleFavoritesOnly = useCallback(() => {
     setFavoritesOnly((on) => {
-      if (!on && !graph) onRequestGraph?.(); // fetch the graph to resolve relatives
+      // `!on` is the post-toggle state: enabling needs the graph to resolve relatives.
+      if (needsDependencyGraph(!on, !!graph)) onRequestGraph?.();
       return !on;
     });
   }, [graph, onRequestGraph]);
+  // A Ready/Favorites filter restored as active from persisted state needs the
+  // dependency graph just like a freshly-toggled one, but the lazy fetch lives in
+  // the toggle handlers — which never run on mount. Without this, a restored
+  // Favorites filter renders each favorite stripped of its 1-hop relatives (and
+  // Ready can't filter at all) until the user toggles the filter off and on
+  // (vs-mbqc). Mount-only: later enables are handled by the toggle callbacks.
+  useEffect(() => {
+    if (needsDependencyGraph(readyOnly || favoritesOnly, !!graph)) onRequestGraph?.();
+  }, []); // mount-only by design — see comment above
   const readySet = useMemo(() => {
     if (!graph) return null;
     const blocks = graph.edges.filter((e) => e.type === "blocks");
@@ -264,7 +275,8 @@ export function IssuesView({
   }, [readyOnly, readySet, favoritesScope, beads]);
   const toggleReady = useCallback(() => {
     setReadyOnly((on) => {
-      if (!on && !graph) onRequestGraph?.(); // fetch the graph the first time it's needed
+      // `!on` is the post-toggle state: enabling needs the graph the first time.
+      if (needsDependencyGraph(!on, !!graph)) onRequestGraph?.();
       return !on;
     });
   }, [graph, onRequestGraph]);
