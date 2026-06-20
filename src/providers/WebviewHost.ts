@@ -18,6 +18,12 @@ export interface WebviewHost {
   readonly isEditorTab: boolean;
   /** Bring the host to the foreground (focus the view / reveal the tab). */
   reveal(preserveFocus?: boolean): void;
+  /**
+   * Close the host. Disposes an editor-tab panel; a no-op for a sidebar view
+   * (views aren't closeable). Used to dismiss a dedicated New Issue tab on
+   * cancel (vs-2tn.2).
+   */
+  close(): void;
   /** Fires whenever the host's visibility changes. */
   onDidChangeVisibility(listener: () => void): vscode.Disposable;
   /** Fires when the host goes away (panel closed). Views never dispose. */
@@ -34,6 +40,9 @@ export function hostFromView(view: vscode.WebviewView): WebviewHost {
     },
     reveal(preserveFocus?: boolean) {
       view.show(preserveFocus);
+    },
+    close() {
+      // Sidebar views can't be closed programmatically — no-op.
     },
     onDidChangeVisibility(listener) {
       return view.onDidChangeVisibility(listener);
@@ -54,6 +63,9 @@ export function hostFromPanel(panel: vscode.WebviewPanel): WebviewHost {
     },
     reveal(preserveFocus?: boolean) {
       panel.reveal(undefined, preserveFocus);
+    },
+    close() {
+      panel.dispose();
     },
     onDidChangeVisibility(listener) {
       // Panels report visibility via view-state changes.

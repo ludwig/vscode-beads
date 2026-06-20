@@ -240,12 +240,31 @@ export function registerCommands(
       panelManager.openGraph();
     }),
 
+    // vs-xqu.1: open the Kanban board as an editor tab.
+    vscode.commands.registerCommand("beads.openKanbanInTab", () => {
+      panelManager.openKanban();
+    }),
+
+    // vs-xqu.2: open the dependency Tree as an editor tab.
+    vscode.commands.registerCommand("beads.openTreeInTab", () => {
+      panelManager.openTree();
+    }),
+
     vscode.commands.registerCommand("beads.createIssue", () => {
       if (!projectManager.getActiveProject()) {
         vscode.window.showWarningMessage("No active Beads project");
         return;
       }
       detailsProvider.startCreate();
+    }),
+
+    // vs-2tn.2: open a New Issue form as an independent editor tab.
+    vscode.commands.registerCommand("beads.openNewIssueInTab", () => {
+      if (!projectManager.getActiveProject()) {
+        vscode.window.showWarningMessage("No active Beads project");
+        return;
+      }
+      panelManager.openNewIssue();
     }),
 
     vscode.commands.registerCommand("beads.refresh", async () => {

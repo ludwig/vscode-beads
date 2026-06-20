@@ -223,6 +223,8 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
           issues: "beads.openIssuesInTab",
           dashboard: "beads.openDashboardInTab",
           graph: "beads.openGraphInTab",
+          kanban: "beads.openKanbanInTab",
+          tree: "beads.openTreeInTab",
         }[message.view];
         vscode.commands.executeCommand(command);
         break;

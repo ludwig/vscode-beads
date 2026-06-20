@@ -143,6 +143,21 @@
         "command": "beads.openGraphInTab",
         "title": "Beads: Open Graph in Editor Tab",
         "icon": "$(link-external)"
+      },
+      {
+        "command": "beads.openKanbanInTab",
+        "title": "Beads: Open Kanban in Editor Tab",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "beads.openTreeInTab",
+        "title": "Beads: Open Tree in Editor Tab",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "beads.openNewIssueInTab",
+        "title": "Beads: New Issue (Editor Tab)",
+        "icon": "$(empty-window)"
       }
     ],
     "menus": {
@@ -153,9 +168,14 @@
           "group": "navigation@0"
         },
         {
-          "command": "beads.refresh",
+          "command": "beads.openNewIssueInTab",
           "when": "view == beadsProjectSwitcher",
           "group": "navigation@1"
+        },
+        {
+          "command": "beads.refresh",
+          "when": "view == beadsProjectSwitcher",
+          "group": "navigation@2"
         },
         {
           "command": "beads.navigateBack",

@@ -20,6 +20,8 @@ import {
 import { DashboardView } from "./views/DashboardView";
 import { IssuesView } from "./views/IssuesView";
 import { GraphView } from "./views/graph/GraphView";
+import { KanbanBoard } from "./views/KanbanBoard";
+import { TreeView } from "./views/tree/TreeView";
 import { DetailsView } from "./views/DetailsView";
 import { ProjectSwitcherView } from "./views/ProjectSwitcherView";
 import { PanelShell } from "./views/PanelShell";
@@ -290,6 +292,37 @@ export function App(): React.ReactElement {
             onOpenBead={(beadId) =>
               vscode.postMessage({ type: "openBeadDetails", beadId })
             }
+            onRetry={() => vscode.postMessage({ type: "refresh" })}
+          />
+        );
+
+      case "beadsKanban":
+        return (
+          <KanbanBoard
+            beads={state.beads}
+            selectedBeadId={state.selectedBeadId}
+            favoriteIds={favoriteIds}
+            filteredBeadIds={null}
+            filterActive={false}
+            onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
+            onUpdateBead={(beadId, updates) =>
+              vscode.postMessage({ type: "updateBead", beadId, updates })
+            }
+          />
+        );
+
+      case "beadsTree":
+        return (
+          <TreeView
+            graph={state.graph}
+            loading={state.loading}
+            error={state.error}
+            selectedBeadId={state.selectedBeadId}
+            favoriteIds={favoriteIds}
+            filteredBeadIds={null}
+            filterActive={false}
+            onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
+            onRequestGraph={() => vscode.postMessage({ type: "requestGraph" })}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
           />
         );

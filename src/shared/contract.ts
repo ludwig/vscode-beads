@@ -298,7 +298,7 @@ export type WebviewToExtensionMessage =
   | { type: "pickReadyBead" }
   | { type: "showIssues" }
   | { type: "requestGraph" }
-  | { type: "openViewInTab"; view: "issues" | "dashboard" | "graph" }
+  | { type: "openViewInTab"; view: "issues" | "dashboard" | "graph" | "kanban" | "tree" }
   | { type: "copyBeadId"; beadId: string; toast?: boolean }
   | { type: "copyBeadJson"; beadId: string; toast?: boolean }
   | { type: "createBead"; fields: CreateBeadFields }

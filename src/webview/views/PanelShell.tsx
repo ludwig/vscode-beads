@@ -124,9 +124,6 @@ export function PanelShell({
   const filteredCount = filteredBeadIds?.length ?? totalCount;
   const filterActive = filteredBeadIds != null && filteredCount < totalCount;
 
-  // Tree and Kanban have no editor-tab route yet, so hide Open-in-Editor there.
-  const canOpenInEditor = active !== "tree" && active !== "kanban";
-
   return (
     <div className={`panel-shell${pulsing ? " pulsing" : ""}`}>
       <nav className="panel-shell-nav" role="tablist">
@@ -146,17 +143,15 @@ export function PanelShell({
           ))}
         </div>
         <div className="panel-shell-actions">
-          {canOpenInEditor && (
-            <button
-              type="button"
-              className="panel-shell-action"
-              title={`Open ${tabs.find((t) => t.id === active)?.label ?? "view"} in an editor tab`}
-              aria-label="Open in editor tab"
-              onClick={() => vscode.postMessage({ type: "openViewInTab", view: active })}
-            >
-              <ExternalLink size={14} strokeWidth={2} />
-            </button>
-          )}
+          <button
+            type="button"
+            className="panel-shell-action"
+            title={`Open ${tabs.find((t) => t.id === active)?.label ?? "view"} in an editor tab`}
+            aria-label="Open in editor tab"
+            onClick={() => vscode.postMessage({ type: "openViewInTab", view: active })}
+          >
+            <ExternalLink size={14} strokeWidth={2} />
+          </button>
           <button
             type="button"
             className="panel-shell-action"
