@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.1] - 2026-06-20
+
+### Fixed
+
+- **Filters row** — dropped the inline "Filters" label that pushed the preset/toggles/chips to the right; the bordered background and the toggle's count badge already raise the row's profile, and the controls are left-aligned again (vs-7ob)
+
+### Added
+
+- **Editor-tab filter ribbon** — a seeded Kanban/Tree/Graph editor tab now shows a prominent ribbon ("Filtered — showing N of M from the Issues filter") with a reversible **Show all / Show filtered** toggle, so the inherited filter is unmistakable and escapable (vs-zq2)
+
 ## [0.20.0] - 2026-06-20
 
 ### Added
