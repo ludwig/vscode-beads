@@ -432,6 +432,14 @@ export function App(): React.ReactElement {
             onOpenBeadInTab={(beadId) => vscode.postMessage({ type: "openBeadInTab", beadId })}
             onClearBead={() => vscode.postMessage({ type: "clearActiveBead" })}
             onUnfavorite={(beadId) => vscode.postMessage({ type: "removeFavorite", beadId })}
+            onCopyFavorites={() =>
+              vscode.postMessage({
+                type: "copyText",
+                text: state.favorites.map((f) => f.id).join(","),
+                label: "favorite ids",
+                toast: true,
+              })
+            }
             onToggleFavorite={(beadId) => vscode.postMessage({ type: "toggleFavorite", beadId })}
             onPickReady={() => vscode.postMessage({ type: "pickReadyBead" })}
             onShowIssues={() => vscode.postMessage({ type: "showIssues" })}

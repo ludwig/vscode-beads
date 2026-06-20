@@ -2039,6 +2039,26 @@ textarea {
   flex: 0 0 auto;
 }
 
+/* Small icon action in a section head (e.g. Favorites copy-as-CSV, vs-sd5.2). */
+.context-heading-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 2px 4px;
+  border: none;
+  border-radius: var(--border-radius);
+  background: transparent;
+  color: var(--vscode-icon-foreground, var(--vscode-foreground));
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.context-heading-action:hover {
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+  opacity: 1;
+}
+
 .context-menu-btn {
   display: inline-flex;
   align-items: center;
