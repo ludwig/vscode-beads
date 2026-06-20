@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Auto-seed the active bead into Claude Code** — focusing a bead opened as an editor tab now opens its content as a virtual `bead:` document beside the tab (keeping focus on the bead), so Claude Code's IDE integration seeds the active bead into your session with no manual command. Switching beads swaps the doc; closing the bead tab closes it. Toggle with the new `beads.autoSeedActiveBead` setting (vs-nr3d)
+
 ## [0.21.2] - 2026-06-20
 
 ### Fixed

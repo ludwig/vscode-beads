@@ -236,6 +236,11 @@
           "default": 1000,
           "minimum": 0,
           "description": "Delay in milliseconds before showing bead description tooltip on hover. Set to 0 to disable tooltips."
+        },
+        "beads.autoSeedActiveBead": {
+          "type": "boolean",
+          "default": true,
+          "description": "When a bead opened as an editor tab gains focus, open its content as a virtual 'bead:' document beside it (keeping focus on the bead tab) so Claude Code's IDE integration seeds the active bead into your session automatically. Disable to keep bead tabs from opening a companion document."
         }
       }
     }

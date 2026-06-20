@@ -18,6 +18,14 @@ import { FilterSnapshot } from "../backend/types";
 import { Logger } from "../utils/logger";
 import { BaseViewProvider } from "./BaseViewProvider";
 import { BeadDetailsViewProvider } from "./BeadDetailsViewProvider";
+import { BeadDocumentProvider, BEAD_SCHEME } from "./BeadDocumentProvider";
+import {
+  BeadDocSyncAction,
+  BeadDocSyncState,
+  decideOnPanelDisposed,
+  decideOnViewState,
+} from "./beadDocSync";
+import { beadDocPath } from "./beadMarkdown";
 import { BeadsPanelViewProvider } from "./BeadsPanelViewProvider";
 import { DashboardViewProvider } from "./DashboardViewProvider";
 import { GraphViewProvider } from "./GraphViewProvider";
@@ -28,6 +36,11 @@ import { hostFromPanel } from "./WebviewHost";
 interface PanelEntry {
   panel: vscode.WebviewPanel;
   provider: BaseViewProvider;
+  /** For single-bead Details tabs: the bead id, used to auto-seed Claude's
+   *  context with the bead's virtual doc on focus (vs-nr3d). */
+  beadId?: string;
+  /** Disposes the per-panel onDidChangeViewState listener (bead tabs only). */
+  viewStateSub?: vscode.Disposable;
 }
 
 export class BeadPanelManager implements vscode.Disposable {
@@ -35,6 +48,9 @@ export class BeadPanelManager implements vscode.Disposable {
   private readonly subscriptions: vscode.Disposable[] = [];
   // Monotonic counter so each New Issue tab gets a unique (never-deduped) key.
   private newIssueSeq = 0;
+  // The bead whose virtual `bead:` doc we last auto-opened to seed Claude's
+  // context (vs-nr3d). One doc at a time; switching beads closes the previous.
+  private readonly docSync: BeadDocSyncState = { activeBeadId: null };
 
   constructor(
     private readonly extensionUri: vscode.Uri,
@@ -54,7 +70,11 @@ export class BeadPanelManager implements vscode.Disposable {
   /** Open (or focus) a single bead's Details as an editor tab. */
   public openBeadDetails(beadId: string): void {
     const key = `beadsDetails:${beadId}`;
-    if (this.reveal(key)) return;
+    if (this.reveal(key)) {
+      // Revealing an existing bead tab makes it active → seed its doc (vs-nr3d).
+      this.syncActiveBeadDoc(beadId);
+      return;
+    }
 
     const panel = this.createPanel(beadId);
     const provider = new BeadDetailsViewProvider(this.extensionUri, this.projectManager, this.log, this.favorites);
@@ -63,7 +83,10 @@ export class BeadPanelManager implements vscode.Disposable {
     // (which triggers initializeView → loadData) renders this bead.
     provider.showBead(beadId);
 
-    this.track(key, panel, provider);
+    this.track(key, panel, provider, beadId);
+    // Newly-created tab is focused → seed its doc immediately (the initial
+    // activation may not fire onDidChangeViewState).
+    this.syncActiveBeadDoc(beadId);
   }
 
   /**
@@ -172,13 +195,31 @@ export class BeadPanelManager implements vscode.Disposable {
     return panel;
   }
 
-  private track(key: string, panel: vscode.WebviewPanel, provider: BaseViewProvider): void {
+  private track(
+    key: string,
+    panel: vscode.WebviewPanel,
+    provider: BaseViewProvider,
+    beadId?: string
+  ): void {
     // Freshly-created tab: pulse it once the webview mounts (vs-c59).
     provider.pulseWhenReady();
-    this.entries.set(key, { panel, provider });
+    const entry: PanelEntry = { panel, provider, beadId };
+    // Single-bead tabs follow focus: when this panel becomes active, seed its
+    // bead doc into Claude's context (vs-nr3d). Deactivation/visibility changes
+    // are ignored downstream, which is what prevents focus ping-pong.
+    if (beadId) {
+      entry.viewStateSub = panel.onDidChangeViewState((e) => {
+        if (e.webviewPanel.active) this.syncActiveBeadDoc(beadId);
+      });
+    }
+    this.entries.set(key, entry);
     panel.onDidDispose(() => {
       this.entries.delete(key);
+      entry.viewStateSub?.dispose();
       provider.dispose();
+      // Closing a bead tab closes its auto-opened doc so no orphan `bead:`
+      // editors leak (vs-nr3d).
+      if (beadId) this.applyDocSync(decideOnPanelDisposed(this.docSync, beadId));
     });
   }
 
@@ -219,9 +260,81 @@ export class BeadPanelManager implements vscode.Disposable {
     }
   }
 
+  // ---- Auto-seed the active bead into Claude Code's context (vs-nr3d) ----
+  //
+  // Claude Code seeds `vscode.window.activeTextEditor`; a WebviewPanel is not a
+  // TextEditor, so we open the focused bead's virtual `bead:` doc *beside* the
+  // webview with focus preserved. The webview keeps keyboard focus, but with no
+  // text editor focused VS Code reports the freshly-shown doc as the active text
+  // editor, so Claude seeds it — without a manual command and without thrash.
+
+  /** Run the view-state decision for a bead panel that just became active. */
+  private syncActiveBeadDoc(beadId: string): void {
+    const enabled = vscode.workspace
+      .getConfiguration("beads")
+      .get<boolean>("autoSeedActiveBead", true);
+    this.applyDocSync(decideOnViewState(this.docSync, { beadId, active: true, enabled }));
+  }
+
+  private applyDocSync(action: BeadDocSyncAction): void {
+    switch (action.kind) {
+      case "noop":
+        return;
+      case "open":
+        if (action.closePrev) void this.closeBeadDoc(action.closePrev);
+        this.docSync.activeBeadId = action.beadId;
+        void this.openBeadDoc(action.beadId);
+        return;
+      case "close":
+        this.docSync.activeBeadId = null;
+        void this.closeBeadDoc(action.beadId);
+        return;
+    }
+  }
+
+  private async openBeadDoc(beadId: string): Promise<void> {
+    try {
+      const doc = await vscode.workspace.openTextDocument(BeadDocumentProvider.uriFor(beadId));
+      await vscode.languages.setTextDocumentLanguage(doc, "markdown");
+      await vscode.window.showTextDocument(doc, {
+        viewColumn: vscode.ViewColumn.Beside,
+        preserveFocus: true,
+        preview: false,
+      });
+    } catch (err) {
+      this.log.error(
+        `BeadPanelManager: failed to seed bead doc ${beadId}: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+  }
+
+  /** Close any open editor tab showing `beadId`'s virtual `bead:` doc. */
+  private async closeBeadDoc(beadId: string): Promise<void> {
+    const targetPath = beadDocPath(beadId);
+    const matches: vscode.Tab[] = [];
+    for (const group of vscode.window.tabGroups.all) {
+      for (const tab of group.tabs) {
+        const input = tab.input;
+        if (
+          input instanceof vscode.TabInputText &&
+          input.uri.scheme === BEAD_SCHEME &&
+          input.uri.path === targetPath
+        ) {
+          matches.push(tab);
+        }
+      }
+    }
+    if (matches.length) {
+      await vscode.window.tabGroups.close(matches);
+    }
+  }
+
   public dispose(): void {
     for (const d of this.subscriptions.splice(0)) d.dispose();
-    for (const { panel } of this.entries.values()) panel.dispose();
+    for (const { panel, viewStateSub } of this.entries.values()) {
+      viewStateSub?.dispose();
+      panel.dispose();
+    }
     this.entries.clear();
   }
 }
