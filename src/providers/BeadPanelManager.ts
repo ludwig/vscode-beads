@@ -272,7 +272,7 @@ export class BeadPanelManager implements vscode.Disposable {
   private syncActiveBeadDoc(beadId: string): void {
     const enabled = vscode.workspace
       .getConfiguration("beads")
-      .get<boolean>("autoSeedActiveBead", true);
+      .get<boolean>("autoSeedActiveBead", false);
     this.applyDocSync(decideOnViewState(this.docSync, { beadId, active: true, enabled }));
   }
 

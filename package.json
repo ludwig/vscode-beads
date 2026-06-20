@@ -239,8 +239,8 @@
         },
         "beads.autoSeedActiveBead": {
           "type": "boolean",
-          "default": true,
-          "description": "When a bead opened as an editor tab gains focus, open its content as a virtual 'bead:' document beside it (keeping focus on the bead tab) so Claude Code's IDE integration seeds the active bead into your session automatically. Disable to keep bead tabs from opening a companion document."
+          "default": false,
+          "description": "Experimental. When a bead opened as an editor tab gains focus, open its content as a companion virtual 'bead:' document beside it (keeping focus on the bead tab) so Claude Code's IDE integration seeds the active bead into your session automatically. Off by default: it adds a second, companion tab. Enable only if you want auto-seeding via the companion document."
         }
       }
     }
