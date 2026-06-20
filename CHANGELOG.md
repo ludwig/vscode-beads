@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-06-20
+
 ### Added
 
 - **"LLM" context toggle on a bead editor tab** — a stylish sparkle pill in the Details header (editor tabs only) opens this bead's contents as a companion `bead:` document beside the view, so an LLM session (e.g. Claude Code) picks it up as context; a second click tucks it away. The pill lights up while the companion is open and stays in sync if you close the doc by hand. A webview can't be a text editor, so this on-demand companion is how a rich bead gets into an LLM's context — you choose when, with one click. (Hidden in the narrow sidebar Details, where the companion would open far away in the editor area.) (vs-nr3d)
