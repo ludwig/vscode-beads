@@ -335,6 +335,34 @@ function GraphCanvas({
 
   return (
     <div className="graph-view">
+      {/* Ad-hoc quick-filter on its own top row, mirroring the Kanban/Tree
+          filter bars (search glyph on the left) so it doesn't shift position
+          when switching tabs and doesn't get squished in the button toolbar
+          (vs-v6h). */}
+      <div className="graph-filterbar">
+        <Search size={13} strokeWidth={2} className="graph-filter-icon" />
+        <input
+          type="text"
+          className="graph-filter-input"
+          placeholder="Filter nodes…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setQuery("");
+          }}
+        />
+        {query && (
+          <button
+            type="button"
+            className="graph-filter-clear"
+            title="Clear filter (Esc)"
+            aria-label="Clear filter"
+            onClick={() => setQuery("")}
+          >
+            <X size={13} strokeWidth={2} />
+          </button>
+        )}
+      </div>
       <div className="graph-toolbar">
         <div className="graph-layout-toggle" role="radiogroup" aria-label="Graph layout">
           <button
@@ -423,30 +451,6 @@ function GraphCanvas({
           <Wand2 size={14} strokeWidth={2} />
           <span>Auto Layout</span>
         </button>
-        <div className="graph-quickfilter">
-          <Search size={13} strokeWidth={2} className="graph-quickfilter-icon" />
-          <input
-            type="text"
-            className="graph-quickfilter-input"
-            placeholder="Filter nodes…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") setQuery("");
-            }}
-          />
-          {query && (
-            <button
-              type="button"
-              className="graph-quickfilter-clear"
-              title="Clear filter (Esc)"
-              aria-label="Clear filter"
-              onClick={() => setQuery("")}
-            >
-              <X size={13} strokeWidth={2} />
-            </button>
-          )}
-        </div>
       </div>
 
       <ReactFlow

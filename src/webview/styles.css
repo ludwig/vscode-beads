@@ -4563,39 +4563,41 @@ textarea {
   flex: 0 0 auto;
 }
 
-/* Ad-hoc quick-filter (vs-v6h) — parked at the far right of the toolbar. */
-.graph-quickfilter {
-  margin-left: auto;
+/* Ad-hoc quick-filter row (vs-v6h) — its own top row above the button toolbar,
+   mirroring the Kanban (.kanban-filterbar) and Tree (.beads-tree-filter) bars so
+   the search glyph stays in the same place across tabs (and the input isn't
+   squished competing with the layout buttons). */
+.graph-filterbar {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 2px 6px;
-  background: var(--vscode-input-background);
-  border: 1px solid var(--vscode-input-border, transparent);
-  border-radius: 3px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  flex: 0 0 auto;
 }
 
-.graph-quickfilter:focus-within {
-  border-color: var(--vscode-focusBorder);
-}
-
-.graph-quickfilter-icon {
+.graph-filter-icon {
   flex: 0 0 auto;
   color: var(--vscode-descriptionForeground);
 }
 
-.graph-quickfilter-input {
+.graph-filter-input {
   flex: 1 1 auto;
-  min-width: 110px;
-  background: transparent;
-  border: none;
-  outline: none;
+  min-width: 0;
+  background: var(--vscode-input-background);
   color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, transparent);
+  border-radius: 3px;
+  padding: 3px 6px;
   font-size: 12px;
-  padding: 1px 0;
+  outline: none;
 }
 
-.graph-quickfilter-clear {
+.graph-filter-input:focus {
+  border-color: var(--vscode-focusBorder);
+}
+
+.graph-filter-clear {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -4608,7 +4610,7 @@ textarea {
   opacity: 0.8;
 }
 
-.graph-quickfilter-clear:hover {
+.graph-filter-clear:hover {
   color: var(--vscode-foreground);
   opacity: 1;
 }
