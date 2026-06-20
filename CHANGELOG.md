@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-06-20
+
+### Added
+
+- **Editor tabs** — Kanban, Tree, and New Issue can each open in an independent editor tab, and every panel sub-view now offers an **Open in Editor** action (vs-2tn.2, vs-xqu.1, vs-xqu.2)
+- **Tree view columns** — added **Updated** / **Created** columns plus a column show/hide selector, persisted across reloads (vs-3ie)
+- **Graph quick-filter** — an ad-hoc filter on the Graph view, persisted and clearable (vs-v6h)
+- **Show Kanban** — the empty Details ("No issue selected") view now offers a secondary action that activates the Beads panel with the Kanban tab focused (vs-6xf)
+
+### Changed
+
+- **New Issue form** — designer pass: aligned fields and scoped styling so it no longer bleeds into other forms (vs-2tn.1)
+- **Badge palette** — desaturated the type / priority / status badges for a quieter look (vs-b4e)
+- **Issues "Not Closed" filter** — replaced the multi-status approach with a single symbolic **¬closed** negation chip (vs-x6b)
+
 ## [0.18.0] - 2026-06-19
 
 ### Fixed
