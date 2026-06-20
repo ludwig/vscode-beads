@@ -612,6 +612,19 @@ export function IssuesView({
   const assigneeFilter = (columnFilters.find((f) => f.id === "assignee")?.value || []) as string[];
   const labelFilter = (columnFilters.find((f) => f.id === "labels")?.value || []) as string[];
   const hasActiveFilters = statusFilter.length > 0 || priorityFilter.length > 0 || typeFilter.length > 0 || assigneeFilter.length > 0 || labelFilter.length > 0;
+  // Count of active filters surfaced on the toggle badge (vs-dd7): every filter
+  // chip (one per value), plus the Ready/Favorites toggles and an active text
+  // search. The preset isn't counted separately — its status values already
+  // show up as chips.
+  const activeFilterCount =
+    statusFilter.length +
+    priorityFilter.length +
+    typeFilter.length +
+    assigneeFilter.length +
+    labelFilter.length +
+    (readyOnly ? 1 : 0) +
+    (favoritesOnly ? 1 : 0) +
+    (globalFilter.trim() ? 1 : 0);
 
   const applyPreset = (presetId: string) => {
     const preset = FILTER_PRESETS.find((p) => p.id === presetId);
@@ -864,11 +877,15 @@ export function IssuesView({
         <button
           className={`filter-toggle ${filterBarOpen || hasActiveFilters ? "active" : ""}`}
           onClick={() => setFilterBarOpen(!filterBarOpen)}
-          title="Filter"
+          title={activeFilterCount > 0 ? `Filters (${activeFilterCount} active)` : "Filters"}
+          aria-label={activeFilterCount > 0 ? `Filters, ${activeFilterCount} active` : "Filters"}
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
             <path d="M6 10.5v-1h4v1H6zm-2-3v-1h8v1H4zm-2-3v-1h12v1H2z" />
           </svg>
+          {activeFilterCount > 0 && (
+            <span className="filter-toggle-badge">{activeFilterCount}</span>
+          )}
         </button>
         <button
           className={`compact-toggle ${compact ? "active" : ""}`}
@@ -883,6 +900,7 @@ export function IssuesView({
       {/* Row 2: Filter bar */}
       {(filterBarOpen || hasActiveFilters) && (
         <div className="filter-bar">
+          <span className="filter-bar-label">Filters</span>
           <Dropdown
             trigger={FILTER_PRESETS.find((p) => p.id === activePreset)?.label || "Custom"}
             className="preset-dropdown"
