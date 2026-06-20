@@ -15,6 +15,7 @@ import { PanelShellViewProvider } from "../providers/PanelShellViewProvider";
 import { BeadDetailsViewProvider } from "../providers/BeadDetailsViewProvider";
 import { BeadsProjectSwitcherViewProvider } from "../providers/BeadsProjectSwitcherViewProvider";
 import { BeadPanelManager } from "../providers/BeadPanelManager";
+import { BeadDocumentProvider } from "../providers/BeadDocumentProvider";
 import { NavigationHistory } from "../providers/NavigationHistory";
 import { Logger } from "../utils/logger";
 
@@ -388,6 +389,27 @@ export function registerCommands(
         vscode.window.setStatusBarMessage(`$(check) Copied: ${beadId}`, 2000);
       } else {
         vscode.window.showWarningMessage("No bead selected");
+      }
+    }),
+
+    // Open the active (or given) bead as a virtual `bead:` TextDocument so it
+    // becomes the real activeTextEditor and Claude Code's IDE integration can
+    // seed its content on focus (spike vs-ab3 / epic vs-fkb). Standalone path:
+    // proves the seeding mechanism in isolation, independent of the webview tab.
+    vscode.commands.registerCommand("beads.openBeadAsDocument", async (beadId?: string) => {
+      const id = beadId ?? detailsProvider.getCurrentBeadId();
+      if (!id) {
+        vscode.window.showWarningMessage("No bead selected");
+        return;
+      }
+      try {
+        const doc = await vscode.workspace.openTextDocument(BeadDocumentProvider.uriFor(id));
+        await vscode.languages.setTextDocumentLanguage(doc, "markdown");
+        await vscode.window.showTextDocument(doc, { preview: false });
+      } catch (err) {
+        await log.errorNotify(
+          `Failed to open bead ${id} as document: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
     })
   );
