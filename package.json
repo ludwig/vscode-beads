@@ -120,6 +120,12 @@
         "enablement": "beads.hasSelectedBead"
       },
       {
+        "command": "beads.openBeadAsDocument",
+        "title": "Beads: Open Issue as Document (Claude Code context)",
+        "icon": "$(file)",
+        "enablement": "beads.hasSelectedBead"
+      },
+      {
         "command": "beads.createIssue",
         "title": "Beads: New Issue",
         "icon": "$(add)"

@@ -15,6 +15,7 @@ import { PanelShellViewProvider } from "./providers/PanelShellViewProvider";
 import { BeadDetailsViewProvider } from "./providers/BeadDetailsViewProvider";
 import { BeadsProjectSwitcherViewProvider } from "./providers/BeadsProjectSwitcherViewProvider";
 import { BeadPanelManager } from "./providers/BeadPanelManager";
+import { BeadDocumentProvider, BEAD_SCHEME } from "./providers/BeadDocumentProvider";
 import { registerCommands } from "./commands/registerCommands";
 import { createLogger, Logger } from "./utils/logger";
 import { CONFIG_NAMESPACE } from "./constants";
@@ -116,6 +117,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Manages bead webviews opened as editor tabs (vs-ask, vs-fx4).
   panelManager = new BeadPanelManager(context.extensionUri, projectManager, log, favorites);
   context.subscriptions.push(panelManager);
+
+  // Virtual `bead:` documents so a bead can be opened as a real TextEditor that
+  // Claude Code's IDE integration can seed on focus (spike vs-ab3 / epic vs-fkb).
+  const beadDocumentProvider = new BeadDocumentProvider(projectManager, log);
+  context.subscriptions.push(
+    vscode.workspace.registerTextDocumentContentProvider(BEAD_SCHEME, beadDocumentProvider),
+    beadDocumentProvider
+  );
 
   // Register webview providers
   context.subscriptions.push(
