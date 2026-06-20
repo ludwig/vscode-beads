@@ -238,6 +238,10 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         vscode.commands.executeCommand("beads.openBeadsPanel");
         break;
 
+      case "showKanban":
+        vscode.commands.executeCommand("beads.openKanbanPanel");
+        break;
+
       case "showDoltStatus":
         vscode.commands.executeCommand("beads.showDoltStatus");
         break;

@@ -723,6 +723,25 @@ textarea {
   background: var(--beads-accent-hover);
 }
 
+/* Row holding the empty-state actions (New Issue + Show Kanban). */
+.empty-state-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Secondary empty-state action — quieter than the accent primary. */
+.empty-state-action.secondary {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+
+.empty-state-action.secondary:hover {
+  background: var(--vscode-button-secondaryHoverBackground, var(--vscode-button-secondaryBackground));
+}
+
 .empty-state-action-icon {
   font-size: 15px;
   line-height: 1;

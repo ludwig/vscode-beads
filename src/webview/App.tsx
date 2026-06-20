@@ -52,6 +52,8 @@ interface AppState {
   showGraphRequest: { beadId: string; seq: number } | null;
   // Bumped to switch the panel to the Issues tab + pulse a confirmation ring.
   focusIssuesSeq: number;
+  // Bumped to switch the panel to the Kanban tab (vs-6xf).
+  focusKanbanSeq: number;
   // Bumped when this (editor-tab) webview is revealed/opened, to flash a
   // confirmation ring so the tab is easy to spot (vs-c59).
   pulseSeq: number;
@@ -90,6 +92,7 @@ const initialState: AppState = {
   issuesFilterRequest: null,
   showGraphRequest: null,
   focusIssuesSeq: 0,
+  focusKanbanSeq: 0,
   pulseSeq: 0,
   memoryBytes: 0,
   tabNav: { canBack: false, canForward: false },
@@ -160,6 +163,9 @@ export function App(): React.ReactElement {
         break;
       case "focusIssuesTab":
         setState((prev) => ({ ...prev, focusIssuesSeq: prev.focusIssuesSeq + 1 }));
+        break;
+      case "focusKanbanTab":
+        setState((prev) => ({ ...prev, focusKanbanSeq: prev.focusKanbanSeq + 1 }));
         break;
       case "pulse":
         setState((prev) => ({ ...prev, pulseSeq: prev.pulseSeq + 1 }));
@@ -276,6 +282,7 @@ export function App(): React.ReactElement {
             issuesFilterRequest={state.issuesFilterRequest}
             showGraphRequest={state.showGraphRequest}
             focusIssuesSeq={state.focusIssuesSeq}
+            focusKanbanSeq={state.focusKanbanSeq}
           />
         );
 
@@ -380,14 +387,23 @@ export function App(): React.ReactElement {
                 Pick an issue from the <strong>Issues</strong> list in the panel
                 below to see its details here.
               </p>
-              <button
-                type="button"
-                className="empty-state-action"
-                onClick={() => vscode.postMessage({ type: "startCreate" })}
-              >
-                <span className="empty-state-action-icon">+</span>
-                New Issue
-              </button>
+              <div className="empty-state-actions">
+                <button
+                  type="button"
+                  className="empty-state-action"
+                  onClick={() => vscode.postMessage({ type: "startCreate" })}
+                >
+                  <span className="empty-state-action-icon">+</span>
+                  New Issue
+                </button>
+                <button
+                  type="button"
+                  className="empty-state-action secondary"
+                  onClick={() => vscode.postMessage({ type: "showKanban" })}
+                >
+                  Show Kanban
+                </button>
+              </div>
             </div>
           );
         }

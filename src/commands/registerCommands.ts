@@ -93,6 +93,14 @@ export function registerCommands(
       shellProvider.focusIssuesTab();
     }),
 
+    // Reveal the Beads panel with the Kanban tab focused. Used by the empty
+    // Details "Show Kanban" action, which prefers activating the in-panel
+    // Kanban over opening a standalone editor tab (vs-6xf).
+    vscode.commands.registerCommand("beads.openKanbanPanel", async () => {
+      await vscode.commands.executeCommand("beadsPanelShell.focus");
+      shellProvider.focusKanbanTab();
+    }),
+
     // Open the Issues panel pre-filtered to a slice (empty filter = all).
     // Used by the Dashboard summary cards and breakdown badges. Focus first so
     // a closed panel resolves its webview, then hand the filter to the provider
