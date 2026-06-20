@@ -33,6 +33,7 @@ import {
   DependencyGraph,
   IssuesFilter,
   STATUS_LABELS,
+  isClosedStatus,
   statusLabel,
   statusColor,
   PRIORITY_COLORS,
@@ -110,6 +111,13 @@ interface PersistedIssuesState {
   issuesActivePreset?: string;
 }
 
+// Sentinel status-filter value for the symbolic ¬closed preset (vs-x6b option B).
+// When the status column filter holds this token it means a TRUE exclusion —
+// "status is not in the closed (done) category" — evaluated per-row via
+// isClosedStatus, NOT an OR of enumerated statuses. So it renders as a single
+// ¬closed chip and never drifts as the status set grows.
+const NOT_CLOSED = "__not-closed__";
+
 // Filter presets
 interface FilterPreset {
   id: string;
@@ -119,7 +127,7 @@ interface FilterPreset {
 
 const FILTER_PRESETS: FilterPreset[] = [
   { id: "all", label: "All", statuses: [] },
-  { id: "not-closed", label: "Not Closed", statuses: ["open", "in_progress", "blocked"] },
+  { id: "not-closed", label: "Not Closed", statuses: [NOT_CLOSED] },
   { id: "active", label: "Active", statuses: ["in_progress", "blocked"] },
   { id: "blocked", label: "Blocked", statuses: ["blocked"] },
   { id: "closed", label: "Closed", statuses: ["closed"] },
@@ -171,7 +179,7 @@ export function IssuesView({
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
     () =>
       persisted.issuesColumnFilters ?? [
-        { id: "status", value: ["open", "in_progress", "blocked"] }, // Default: Not Closed
+        { id: "status", value: [NOT_CLOSED] }, // Default: ¬closed (symbolic)
       ],
   );
   const [globalFilter, setGlobalFilter] = useState(() => persisted.issuesGlobalFilter ?? "");
@@ -434,6 +442,11 @@ export function IssuesView({
         cell: (info) => <StatusBadge status={info.getValue()} size="small" />,
         filterFn: (row, columnId, filterValue: BeadStatus[]) => {
           if (!filterValue || filterValue.length === 0) return true;
+          // Symbolic ¬closed: exclude the closed (done) category, expansion-proof
+          // for any built-in/custom status (vs-x6b option B).
+          if (filterValue.includes(NOT_CLOSED)) {
+            return !isClosedStatus(row.getValue(columnId) as BeadStatus);
+          }
           return filterValue.includes(row.getValue(columnId));
         },
       }),
@@ -613,10 +626,13 @@ export function IssuesView({
   };
 
   const addStatusFilter = (status: BeadStatus) => {
-    if (!statusFilter.includes(status)) {
+    // Picking an explicit status leaves the symbolic ¬closed preset: drop the
+    // sentinel and start a concrete status list.
+    const base = statusFilter.filter((s) => s !== NOT_CLOSED);
+    if (!base.includes(status)) {
       setColumnFilters((prev) => {
         const others = prev.filter((f) => f.id !== "status");
-        return [...others, { id: "status", value: [...statusFilter, status] }];
+        return [...others, { id: "status", value: [...base, status] }];
       });
       setActivePreset("");
     }
@@ -632,6 +648,13 @@ export function IssuesView({
         : others;
     });
     setActivePreset("");
+  };
+
+  // Clear the status filter entirely (used by the single ¬closed chip's remove);
+  // semantically equivalent to the "All" preset.
+  const clearStatusFilter = () => {
+    setColumnFilters((prev) => prev.filter((f) => f.id !== "status"));
+    setActivePreset("all");
   };
 
   const addPriorityFilter = (priority: BeadPriority) => {
@@ -903,14 +926,23 @@ export function IssuesView({
           </button>
 
           {/* Active filter chips */}
-          {statusFilter.map((status) => (
+          {statusFilter.includes(NOT_CLOSED) ? (
             <FilterChip
-              key={`status-${status}`}
-              label={statusLabel(status)}
-              accentColor={statusColor(status)}
-              onRemove={() => removeStatusFilter(status)}
+              key="status-not-closed"
+              label="¬closed"
+              accentColor={statusColor("closed")}
+              onRemove={clearStatusFilter}
             />
-          ))}
+          ) : (
+            statusFilter.map((status) => (
+              <FilterChip
+                key={`status-${status}`}
+                label={statusLabel(status)}
+                accentColor={statusColor(status)}
+                onRemove={() => removeStatusFilter(status)}
+              />
+            ))
+          )}
           {priorityFilter.map((priority) => (
             <FilterChip
               key={`priority-${priority}`}
