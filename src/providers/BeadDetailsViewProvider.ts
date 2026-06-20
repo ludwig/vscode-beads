@@ -15,6 +15,7 @@ import { FavoritesService } from "../backend/FavoritesService";
 import { WebviewToExtensionMessage, issueToWebviewBead } from "../backend/types";
 import { Logger } from "../utils/logger";
 import { NavigationHistory } from "./NavigationHistory";
+import { pulseOnReveal } from "./pulseOnReveal";
 
 export class BeadDetailsViewProvider extends BaseViewProvider {
   protected readonly viewType = "beadsDetails";
@@ -43,11 +44,25 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
    * (initial open, or clicking a related bead/dependency). In an editor tab
    * this records a step in the per-tab Back/Forward trail (vs-9u8); history-
    * driven moves use {@link navigate} instead, which renders without recording.
+   *
+   * Pass `{ pulse: true }` to flash a confirmation ring on reveal — used by the
+   * "Show Details" menu so the action is visible even when the Details view is
+   * already showing, mirroring the editor-tab reveal pulse (vs-c59) and the
+   * "Show Issues" panel ring (vs-1vxq). The pulse intent is armed *before*
+   * {@link renderBead} reveals the view so a freshly-resolved webview's "ready"
+   * signal consumes it without racing the bead load.
    */
-  public async showBead(beadId: string): Promise<void> {
+  public async showBead(beadId: string, opts?: { pulse?: boolean }): Promise<void> {
     if (this._host?.isEditorTab) {
       this.history.record(beadId);
       this.postNavState();
+    }
+    if (opts?.pulse) {
+      pulseOnReveal({
+        visible: this._host?.visible ?? false,
+        pulse: () => this.pulse(),
+        pulseWhenReady: () => this.pulseWhenReady(),
+      });
     }
     await this.renderBead(beadId);
   }
