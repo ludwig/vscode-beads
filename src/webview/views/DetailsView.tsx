@@ -396,23 +396,68 @@ export function DetailsView({
           {bead.id}
         </span>
         <div className="header-actions">
+          {/* Group 1 — bead quick-state: favorite, seed-to-Claude, refresh. */}
+          <button
+            className={`icon-btn header-icon-btn${isFavorite ? " is-favorite" : ""}`}
+            title={isFavorite ? "Unstar (remove from Favorites)" : "Star (add to Favorites)"}
+            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+            aria-pressed={isFavorite}
+            onClick={() => onToggleFavorite?.(bead.id)}
+          >
+            <Icon name={isFavorite ? "star" : "star-outline"} size={13} />
+          </button>
           {onToggleCompanion && (
             <button
               className={`companion-toggle${companionOpen ? " is-on" : ""}`}
               title={
                 companionOpen
-                  ? "Stop seeding this bead to Claude Code (closes the companion document)"
-                  : "Seed this bead into Claude Code — opens its content as a document beside this view so it's part of your session context"
+                  ? "Remove this bead from LLM context (closes the companion document)"
+                  : "Add this bead to your LLM context — opens its contents as a document beside this view so an LLM session (e.g. Claude Code) reads it"
               }
-              aria-label="Toggle Claude Code context for this bead"
+              aria-label="Toggle LLM context for this bead"
               aria-pressed={companionOpen}
               onClick={() => onToggleCompanion(bead.id)}
             >
               <Icon name="sparkles" size={12} className="companion-toggle-icon" />
-              <span className="companion-toggle-label">Claude</span>
+              <span className="companion-toggle-label">LLM</span>
             </button>
           )}
-          {isEditorTab && (
+          <button
+            className="icon-btn header-icon-btn"
+            title="Refresh"
+            aria-label="Refresh"
+            onClick={handleRefresh}
+          >
+            <Icon name="refresh" size={13} className={refreshing ? "spinning" : ""} />
+          </button>
+
+          <span className="header-actions-sep" />
+
+          {/* Group 2 — primary action: enter edit mode (or Save / Cancel). */}
+          {editMode ? (
+            <>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={handleSave}
+                disabled={Object.keys(editedBead).length === 0}
+              >
+                Save
+              </button>
+              <button className="btn btn-sm" onClick={handleCancel}>
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button className="btn btn-sm" onClick={() => setEditMode(true)}>
+              Edit
+            </button>
+          )}
+
+          <span className="header-actions-sep" />
+
+          {/* Group 3 — navigation / context: Back/Forward in an editor tab;
+              New + Open-in-tab in the sidebar. */}
+          {isEditorTab ? (
             <>
               <button
                 className="icon-btn header-icon-btn"
@@ -436,64 +481,26 @@ export function DetailsView({
                   <path fill="currentColor" d="M5.5 3l5 5-5 5L7 14.5 13.5 8 7 1.5z" />
                 </svg>
               </button>
-              <span className="header-actions-sep" />
-            </>
-          )}
-          {!isEditorTab && (
-            <button
-              className="icon-btn header-icon-btn"
-              title="New issue"
-              aria-label="New issue"
-              onClick={() => vscode.postMessage({ type: "startCreate" })}
-            >
-              <Icon name="plus" size={13} />
-            </button>
-          )}
-          {!isEditorTab && (
-            <button
-              className="icon-btn header-icon-btn"
-              title="Open in editor tab"
-              aria-label="Open in editor tab"
-              onClick={() => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id })}
-            >
-              <Icon name="external-link" size={13} />
-            </button>
-          )}
-          <button
-            className={`icon-btn header-icon-btn${isFavorite ? " is-favorite" : ""}`}
-            title={isFavorite ? "Unstar (remove from Favorites)" : "Star (add to Favorites)"}
-            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-            aria-pressed={isFavorite}
-            onClick={() => onToggleFavorite?.(bead.id)}
-          >
-            <Icon name={isFavorite ? "star" : "star-outline"} size={13} />
-          </button>
-          <button
-            className="icon-btn header-icon-btn"
-            title="Refresh"
-            aria-label="Refresh"
-            onClick={handleRefresh}
-          >
-            <Icon name="refresh" size={13} className={refreshing ? "spinning" : ""} />
-          </button>
-          <span className="header-actions-sep" />
-          {editMode ? (
-            <>
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={handleSave}
-                disabled={Object.keys(editedBead).length === 0}
-              >
-                Save
-              </button>
-              <button className="btn btn-sm" onClick={handleCancel}>
-                Cancel
-              </button>
             </>
           ) : (
-            <button className="btn btn-sm" onClick={() => setEditMode(true)}>
-              Edit
-            </button>
+            <>
+              <button
+                className="icon-btn header-icon-btn"
+                title="New issue"
+                aria-label="New issue"
+                onClick={() => vscode.postMessage({ type: "startCreate" })}
+              >
+                <Icon name="plus" size={13} />
+              </button>
+              <button
+                className="icon-btn header-icon-btn"
+                title="Open in editor tab"
+                aria-label="Open in editor tab"
+                onClick={() => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id })}
+              >
+                <Icon name="external-link" size={13} />
+              </button>
+            </>
           )}
         </div>
       </div>
