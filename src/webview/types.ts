@@ -11,12 +11,16 @@
 
 import type {
   BeadStatus,
+  BuiltInStatus,
   BeadPriority,
   WebviewToExtensionMessage,
 } from "../shared/contract";
+import { isBuiltInStatus } from "../shared/contract";
 
 export type {
   BeadStatus,
+  BuiltInStatus,
+  StatusCategory,
   BeadPriority,
   DependencyType,
   DependencyGraph,
@@ -35,6 +39,14 @@ export type {
   WebviewToExtensionMessage as WebviewMessage,
 } from "../shared/contract";
 
+export {
+  BUILTIN_STATUSES,
+  BUILTIN_STATUS_CATEGORY,
+  isBuiltInStatus,
+  statusCategory,
+  isClosedStatus,
+} from "../shared/contract";
+
 // Human-readable labels
 export const PRIORITY_LABELS: Record<BeadPriority, string> = {
   0: "critical",
@@ -44,11 +56,14 @@ export const PRIORITY_LABELS: Record<BeadPriority, string> = {
   4: "none",
 };
 
-export const STATUS_LABELS: Record<BeadStatus, string> = {
+export const STATUS_LABELS: Record<BuiltInStatus, string> = {
   open: "open",
   in_progress: "in progress",
   blocked: "blocked",
+  deferred: "deferred",
   closed: "closed",
+  pinned: "pinned",
+  hooked: "hooked",
 };
 
 export const PRIORITY_COLORS: Record<BeadPriority, string> = {
@@ -71,12 +86,34 @@ export const PRIORITY_TEXT_COLORS: Record<BeadPriority, string> = {
 export const UNKNOWN_PRIORITY_COLOR = "#6b7280"; // gray
 export const UNKNOWN_PRIORITY_TEXT_COLOR = "#ffffff"; // white
 
-export const STATUS_COLORS: Record<BeadStatus, string> = {
-  open: "#10b981",      // green - ready to work
-  in_progress: "#3b82f6", // blue
-  blocked: "#ef4444",   // red
-  closed: "#6b7280",    // gray
+export const STATUS_COLORS: Record<BuiltInStatus, string> = {
+  open: "#10b981",        // green - ready to work (active)
+  in_progress: "#3b82f6", // blue (wip)
+  blocked: "#ef4444",     // red (wip, stuck)
+  hooked: "#06b6d4",      // cyan - claimed by a worker (wip)
+  deferred: "#64748b",    // slate - on ice (frozen)
+  pinned: "#f59e0b",      // amber - persistent (frozen)
+  closed: "#6b7280",      // gray (done)
 };
+
+// Color for an unknown/custom status with no assigned color.
+export const UNKNOWN_STATUS_COLOR = "#888888";
+
+// Turn a raw custom status (e.g. "in_review") into a webview label
+// ("in review"), matching the lowercase built-in label convention.
+export function humanizeStatus(status: string): string {
+  return status.replace(/[_-]+/g, " ").trim();
+}
+
+// Display label for any status (built-in or custom).
+export function statusLabel(status: BeadStatus): string {
+  return isBuiltInStatus(status) ? STATUS_LABELS[status] : humanizeStatus(status);
+}
+
+// Display color for any status (built-in or custom).
+export function statusColor(status: BeadStatus): string {
+  return isBuiltInStatus(status) ? STATUS_COLORS[status] : UNKNOWN_STATUS_COLOR;
+}
 
 export type BeadType = "bug" | "feature" | "task" | "epic" | "chore" | "merge-request" | "molecule";
 

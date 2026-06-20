@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Beads with **deferred**, **pinned**, **hooked**, or any **custom** status silently disappeared from every view — the extension modeled only 4 of bd's 7 built-in statuses, and an unknown status was nulled, which dropped the bead. The status model now covers all 7 built-ins and passes custom statuses through (never dropping a bead), seeded from a single status→category map mirroring bd's `BuiltInStatusCategory` (vs-dz9)
+
+### Added
+
+- Deferred / Pinned / Hooked now have their own labels, colors, Kanban lanes (quiet lanes collapsed by default), and Issues filter chips
+
 ## [0.17.1] - 2026-06-19
 
 ### Fixed

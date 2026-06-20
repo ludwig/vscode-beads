@@ -15,8 +15,79 @@
 
 // --- Enumerations -----------------------------------------------------------
 
-// Bead status values (beads canonical statuses).
-export type BeadStatus = "open" | "in_progress" | "blocked" | "closed";
+// bd's seven built-in statuses (Gas Town fork, internal/types/types.go).
+//   - deferred = deliberately put on ice for later (backlog/icebox)
+//   - pinned   = persistent bead that stays open indefinitely
+//   - hooked   = work actively claimed by a worker
+export type BuiltInStatus =
+  | "open"
+  | "in_progress"
+  | "blocked"
+  | "deferred"
+  | "closed"
+  | "pinned"
+  | "hooked";
+
+// A bead's status. Built-ins are first-class; user-defined custom statuses
+// (configured via `bd config set status.custom "..."`) pass through as their
+// raw normalized string so a bead is NEVER dropped for an unrecognized status.
+// The `string & {}` keeps editor autocomplete for the built-ins while still
+// accepting any string (TS literal-union widening trick — the `{}` is load-
+// bearing here, not the "any non-nullish" footgun the lint rule guards against).
+// eslint-disable-next-line @typescript-eslint/ban-types
+export type BeadStatus = BuiltInStatus | (string & {});
+
+// Ordered list of the built-in statuses, for iteration / default lane order.
+export const BUILTIN_STATUSES: readonly BuiltInStatus[] = [
+  "open",
+  "in_progress",
+  "blocked",
+  "deferred",
+  "closed",
+  "pinned",
+  "hooked",
+];
+
+// bd's behavioral category for a status — controls whether it shows in
+// `bd ready` and default `bd list` (internal/types/types.go:StatusCategory).
+//   - active : appears in `bd ready` and default `bd list`
+//   - wip    : excluded from `bd ready`, visible in default `bd list`
+//   - done   : excluded from both
+//   - frozen : excluded from both (on ice)
+//   - unspecified : custom status with no declared category (backward-compat)
+export type StatusCategory = "active" | "wip" | "done" | "frozen" | "unspecified";
+
+// SINGLE SOURCE OF TRUTH for built-in status → category, mirroring bd's
+// BuiltInStatusCategory(). Every consumer (filters, Kanban lanes,
+// Ready/Backlog/¬closed logic) should derive from category, not hardcoded
+// status lists. Custom statuses default to "unspecified" until their category
+// is learned from bd's `status.custom` config (future work: vs-f4o/vs-x6b).
+export const BUILTIN_STATUS_CATEGORY: Record<BuiltInStatus, StatusCategory> = {
+  open: "active",
+  in_progress: "wip",
+  blocked: "wip",
+  hooked: "wip",
+  closed: "done",
+  deferred: "frozen",
+  pinned: "frozen",
+};
+
+// True when `status` is one of bd's seven built-in statuses.
+export function isBuiltInStatus(status: string): status is BuiltInStatus {
+  return Object.prototype.hasOwnProperty.call(BUILTIN_STATUS_CATEGORY, status);
+}
+
+// Behavioral category for any status (built-in or custom). Unknown custom
+// statuses are treated as "unspecified".
+export function statusCategory(status: BeadStatus): StatusCategory {
+  return isBuiltInStatus(status) ? BUILTIN_STATUS_CATEGORY[status] : "unspecified";
+}
+
+// A status counts as "closed" only when its category is "done". This lets the
+// ¬closed / Not-Closed logic derive from category instead of a hardcoded list.
+export function isClosedStatus(status: BeadStatus): boolean {
+  return statusCategory(status) === "done";
+}
 
 // Priority levels (0 = highest/critical, 4 = lowest/none).
 export type BeadPriority = 0 | 1 | 2 | 3 | 4;
@@ -120,7 +191,9 @@ export interface BeadsProject {
 // Summary statistics for the dashboard.
 export interface BeadsSummary {
   total: number;
-  byStatus: Record<BeadStatus, number>;
+  // Keyed by status string (built-in or custom) so custom statuses are counted
+  // too; built-ins are always present (seeded to 0) so they render even at 0.
+  byStatus: Record<string, number>;
   byPriority: Record<BeadPriority, number>;
   readyCount: number;
   blockedCount: number;
