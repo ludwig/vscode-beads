@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-06-20
+
+### Added
+
+- **Filters row** now stands out — a "Filters" label leads the row, the row gets a bordered background so it reads as its own zone, and the filter toggle carries an active-filter count badge that's visible even when the bar is collapsed (vs-dd7)
+
+### Fixed
+
+- **Editor tabs inherit the filter** — opening Kanban, Tree, or Graph in an editor tab now seeds the new tab with the panel's active filter (a one-time snapshot) instead of showing every bead; the "X of Y" indicator reflects the inherited scope and Graph auto-enables its Filtered toggle (vs-nme)
+
 ## [0.19.1] - 2026-06-20
 
 ### Fixed
