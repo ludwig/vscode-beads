@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Copy favorites as CSV** — a copy button on the sidebar Favorites section header writes the favorited bead IDs as a single comma-separated line to the clipboard (for pasting into a `bd` command, an agent prompt, or a spreadsheet); hidden when there are no favorites (vs-sd5.2)
+
 ## [0.20.1] - 2026-06-20
 
 ### Fixed

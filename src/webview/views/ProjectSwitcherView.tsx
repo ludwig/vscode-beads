@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, X, Rocket, ListTodo } from "lucide-react";
+import { ChevronDown, ChevronRight, X, Rocket, ListTodo, Copy } from "lucide-react";
 import { Bead, BeadsProject, FavoriteBead, statusColor } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
@@ -29,6 +29,8 @@ interface ProjectSwitcherViewProps {
   onClearBead: () => void;
   /** Unstar a favorite from the section's per-row control. */
   onUnfavorite: (beadId: string) => void;
+  /** Copy the favorite bead IDs as a single CSV line to the clipboard (vs-sd5.2). */
+  onCopyFavorites: () => void;
   /** Star/unstar a bead from the card right-click menu (vs-sd5.5). */
   onToggleFavorite: (beadId: string) => void;
   onPickReady: () => void;
@@ -69,6 +71,7 @@ export function ProjectSwitcherView({
   onOpenBeadInTab,
   onClearBead,
   onUnfavorite,
+  onCopyFavorites,
   onToggleFavorite,
   onPickReady,
   onShowIssues,
@@ -357,6 +360,17 @@ export function ProjectSwitcherView({
               <span className="context-heading-count">{favorites.length}</span>
             )}
           </button>
+          {favorites.length > 0 && (
+            <button
+              type="button"
+              className="context-heading-action"
+              title="Copy favorite IDs as CSV"
+              aria-label="Copy favorite IDs as CSV"
+              onClick={onCopyFavorites}
+            >
+              <Copy size={13} strokeWidth={2} />
+            </button>
+          )}
         </div>
         {!favoritesCollapsed && (favorites.length > 0 ? (
           <div className="favorites-list">
