@@ -45,6 +45,7 @@ import {
 } from "../types";
 import { readyBeadIds } from "../../backend/readyBeads";
 import { favoritesWithRelatives } from "../../backend/favoritesScope";
+import { deriveNotClosedStatuses, sameStatusSet } from "../../backend/notClosedStatuses";
 import { StatusBadge } from "../common/StatusBadge";
 import { PriorityBadge } from "../common/PriorityBadge";
 import { TypeBadge } from "../common/TypeBadge";
@@ -119,7 +120,13 @@ interface FilterPreset {
 
 const FILTER_PRESETS: FilterPreset[] = [
   { id: "all", label: "All", statuses: [] },
-  { id: "not-closed", label: "Not Closed", statuses: ["open", "in_progress", "blocked"] },
+  // "Not Closed" is a symbolic negation (¬closed), NOT a hardcoded OR-list. Its
+  // status set is derived at use-time from the statuses actually present, keeping
+  // only those whose category isn't "done" (isClosedStatus). The literal []
+  // here is just a marker — the real set comes from `notClosedStatuses` via
+  // `presetStatuses`. This is expansion-proof: any new built-in or custom status
+  // that isn't closed-category stays in "Not Closed" automatically (vs-x6b).
+  { id: "not-closed", label: "Not Closed", statuses: [] },
   { id: "active", label: "Active", statuses: ["in_progress", "blocked"] },
   { id: "blocked", label: "Blocked", statuses: ["blocked"] },
   { id: "closed", label: "Closed", statuses: ["closed"] },
@@ -168,11 +175,12 @@ export function IssuesView({
   // forget them). Merged into the same shared vscode state blob as the column
   // layout / readyOnly so we don't clobber the Tree's persisted sort (vs-1q1).
   const persisted = (vscode.getState() as PersistedIssuesState | undefined) ?? {};
+  // Default = no explicit status filter; the "not-closed" preset is the default
+  // (see activePreset below) and the sync effect materializes its derived status
+  // set once beads arrive. This removes the old hardcoded ["open","in_progress",
+  // "blocked"] literal that duplicated the preset and could drift (vs-x6b).
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
-    () =>
-      persisted.issuesColumnFilters ?? [
-        { id: "status", value: ["open", "in_progress", "blocked"] }, // Default: Not Closed
-      ],
+    () => persisted.issuesColumnFilters ?? [],
   );
   const [globalFilter, setGlobalFilter] = useState(() => persisted.issuesGlobalFilter ?? "");
   const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
@@ -259,6 +267,38 @@ export function IssuesView({
       issuesActivePreset: activePreset,
     });
   }, [columnFilters, globalFilter, activePreset]);
+
+  // The status set that counts as "Not Closed" — the symbolic complement of the
+  // "closed" (done) category, derived from the statuses actually present in the
+  // data rather than a hardcoded list. Expansion-proof: a new built-in or custom
+  // non-closed status is included automatically; nothing silently drops (vs-x6b).
+  const notClosedStatuses = useMemo(() => deriveNotClosedStatuses(beads), [beads]);
+
+  // Resolve a preset's effective status set. "not-closed" is derived (see above);
+  // every other preset uses its literal `statuses`.
+  const presetStatuses = useCallback(
+    (preset: FilterPreset): BeadStatus[] =>
+      preset.id === "not-closed" ? notClosedStatuses : preset.statuses,
+    [notClosedStatuses],
+  );
+
+  // Keep the derived "Not Closed" preset in sync with the data while it's active:
+  // re-materialize its status set whenever the present statuses change, so a
+  // newly-seen non-closed status doesn't fall out of the view. No-ops (guarded by
+  // sameStatusSet) when nothing changed, and never runs while a custom filter is
+  // active (activePreset === "" once the user hand-edits statuses) (vs-x6b).
+  useEffect(() => {
+    if (activePreset !== "not-closed") return;
+    setColumnFilters((prev) => {
+      const current = (prev.find((f) => f.id === "status")?.value ?? []) as BeadStatus[];
+      if (sameStatusSet(current, notClosedStatuses)) return prev;
+      const others = prev.filter((f) => f.id !== "status");
+      return notClosedStatuses.length > 0
+        ? [...others, { id: "status", value: notClosedStatuses }]
+        : others;
+    });
+  }, [activePreset, notClosedStatuses]);
+
   const [filterBarOpen, setFilterBarOpen] = useState(true);
   const [filterMenuOpen, setFilterMenuOpen] = useState<string | null>(null);
   const [columnMenuOpen, setColumnMenuOpen] = useState(false);
@@ -364,11 +404,10 @@ export function IssuesView({
     // no label filter is in play; otherwise it's a custom filter.
     const matched =
       labels.length === 0
-        ? FILTER_PRESETS.find(
-            (p) =>
-              p.statuses.length === statuses.length &&
-              p.statuses.every((s) => statuses.includes(s))
-          )
+        ? FILTER_PRESETS.find((p) => {
+            const ps = presetStatuses(p);
+            return ps.length === statuses.length && ps.every((s) => statuses.includes(s));
+          })
         : undefined;
     setActivePreset(matched ? matched.id : "");
   }, [issuesFilterRequest]);
@@ -603,10 +642,11 @@ export function IssuesView({
   const applyPreset = (presetId: string) => {
     const preset = FILTER_PRESETS.find((p) => p.id === presetId);
     if (preset) {
+      const statuses = presetStatuses(preset);
       setColumnFilters((prev) =>
         prev
           .filter((f) => f.id !== "status")
-          .concat(preset.statuses.length > 0 ? [{ id: "status", value: preset.statuses }] : [])
+          .concat(statuses.length > 0 ? [{ id: "status", value: statuses }] : [])
       );
       setActivePreset(presetId);
     }

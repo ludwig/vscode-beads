@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The Issues **Not Closed** filter is now a symbolic negation (¬closed) instead of a hardcoded `open/in_progress/blocked` list — it's derived from the statuses actually present, keeping everything that isn't closed-category. New built-in (deferred/pinned/hooked) or custom statuses now stay in "Not Closed" automatically instead of being silently excluded (vs-x6b)
+
 ## [0.18.0] - 2026-06-19
 
 ### Fixed
