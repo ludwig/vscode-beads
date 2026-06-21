@@ -97,19 +97,28 @@ flow, so we stop relearning it:**
     Code + prompt reload. This is the everyday "ship it to my editor" path.
 - **A "release"** (when we want a tagged version) = bump `package.json` version
   + finalize the `CHANGELOG.md` `[Unreleased]` section into `## [x.y.z] - date`
-  + commit `chore: release vX.Y.Z` + tag `vX.Y.Z`. We release from **`develop`**
-  (our integration branch), minor-bumping — NOT from `main` (the upstream
-  `project-release` skill assumes `main`; ignore that part).
-- **⚠️ `/.github/workflows/release.yml` is broken-by-inheritance for us.** On a
-  `v*` tag it runs `Package VSIX → publish to Marketplace → publish to Open VSX
-  → Create GitHub Release`. The two publish steps **fail by design**
-  (`TF400813: not authorized`) and kill the run **before** the GitHub Release
-  step, so CI produces **no artifact** (this is why v0.17.1's release "failed").
-  Until that workflow is fixed (drop both publish steps; keep package +
-  `softprops/action-gh-release`; fix the body URL from `jdillon` → `ludwig`),
-  **don't rely on CI for the artifact** — build it locally with `just package`
-  and, if you want a GitHub Release, attach the `.vsix` yourself
-  (`gh release create vX.Y.Z <file>.vsix`).
+  + commit `chore: release vX.Y.Z` + tag `vX.Y.Z` + **push the tag**. We release
+  from **`develop`** (our integration branch), minor-bumping — NOT from `main`
+  (the upstream `project-release` skill assumes `main`; ignore that part).
+- **✅ `/.github/workflows/release.yml` WORKS now — let CI build + attach the
+  `.vsix`; do NOT create the GitHub release yourself.** Commit `2cd5702`
+  (2026-06-19) fixed it: the Marketplace + Open VSX publish steps are commented
+  out (they used to fail `TF400813: not authorized` and kill the job — that's
+  the OLD breakage this note used to describe). On a `v*` tag push CI now runs
+  validate (tag↔package.json↔changelog) → lint → compile → **Package VSIX →
+  Create GitHub Release** (`softprops/action-gh-release`, `.vsix` attached,
+  release notes point at `CHANGELOG.md`). So the canonical release is just:
+  bump + changelog + `chore: release` commit (landed on `develop` via PR) +
+  `git tag vX.Y.Z` + `git push origin vX.Y.Z`, then **wait for the Release run**.
+  - **Gotcha (this bit us on v0.21.2):** if you `gh release create vX.Y.Z`
+    manually, CI's run fails at *finalize* with
+    `Validation Failed: already_exists, field: tag_name` — a duplicate-release
+    conflict, NOT a publish-step failure. Don't pre-create the release. If you
+    need the artifact locally too, `just package` builds an equivalent `.vsix`
+    (note: the local build bundles source maps, so it's larger than CI's
+    `--no-dependencies` artifact — both install fine).
+  - Possible future hardening: make the Release step tolerant of a pre-existing
+    release, and fix the body URL from `jdillon` → `ludwig` if it ever reappears.
 - Ignore the upstream publishing docs (`docs/publishing/vscode-marketplace.md`,
   `docs/publishing/open-vsx.md`) — upstream channels, not ours.
 
