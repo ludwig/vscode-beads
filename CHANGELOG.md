@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-06-20
+
+### Added
+
+- **Highlight favorites in the Issues table** — favorited (starred) beads now get a subtle yellow tint (matching the favorite star) + thin left accent stripe so they read as the primary set; in the Favorites filter this also distinguishes starred beads from the relatives that tag along. The Favorites toggle shows a full gold star when active. Toggle the row highlight with `beads.highlightFavorites` (default on) (vs-sd5.3)
+- **Copy Markdown** — a "Copy Markdown" entry alongside "Copy JSON" in the bead context menus (Issues, Kanban, Tree, Graph). Copies the same markdown the LLM companion document uses, so the clipboard matches what Claude Code sees (vs-3pb5)
+
+### Changed
+
+- **"Active Bead" card renamed to "Selection"** — the sidebar context card reflects what it actually shows (the currently-selected bead); a richer Active Bead concept is deferred (vs-xmlv)
+
 ## [0.22.0] - 2026-06-20
 
 ### Added

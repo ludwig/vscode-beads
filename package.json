@@ -2,7 +2,7 @@
   "name": "vscode-beads-pm",
   "displayName": "Beads (ludwig)",
   "description": "VS Code extension for managing Beads issues",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "publisher": "ludwig",
   "license": "Apache-2.0",
   "icon": "resources/icon.png",
@@ -225,6 +225,11 @@
           "type": "boolean",
           "default": true,
           "description": "Render markdown in description, design notes, and other text fields"
+        },
+        "beads.highlightFavorites": {
+          "type": "boolean",
+          "default": true,
+          "description": "Highlight favorited (starred) beads in table views with a subtle accent. In the Favorites filter this also distinguishes starred beads from the relatives that tag along (their dependency neighbors)."
         },
         "beads.userId": {
           "type": "string",

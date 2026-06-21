@@ -17,7 +17,6 @@ import { deriveIssuePrefix } from "../utils/issue-prefix";
 
 export class DashboardViewProvider extends BaseViewProvider {
   protected readonly viewType = "beadsDashboard";
-  private static readonly MIN_LOADING_MS = 500;
   private loadSequence = 0;
 
   constructor(
@@ -112,10 +111,4 @@ export class DashboardViewProvider extends BaseViewProvider {
     }
   }
 
-  private async waitForMinimumLoading(startedAt: number): Promise<void> {
-    const remaining = DashboardViewProvider.MIN_LOADING_MS - (Date.now() - startedAt);
-    if (remaining > 0) {
-      await new Promise((resolve) => setTimeout(resolve, remaining));
-    }
-  }
 }

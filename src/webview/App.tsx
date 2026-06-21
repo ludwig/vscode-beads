@@ -98,6 +98,7 @@ const initialState: AppState = {
   error: null,
   settings: {
     renderMarkdown: true,
+    highlightFavorites: true,
     userId: "",
     tooltipHoverDelay: 1000,
     extensionVersion: "",
@@ -332,6 +333,7 @@ export function App(): React.ReactElement {
             error={state.error}
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
+            highlightFavorites={state.settings.highlightFavorites}
             tooltipHoverDelay={state.settings.tooltipHoverDelay}
             issuesFilterRequest={state.issuesFilterRequest}
             applySnapshotRequest={state.applySnapshotRequest}

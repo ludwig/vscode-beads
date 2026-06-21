@@ -1,10 +1,13 @@
 /**
  * ProjectSwitcherView - the slimmed sidebar's context view.
  *
- * Two sections: "Active Project" (switcher + basic info) and "Active Bead"
+ * Two sections: "Active Project" (switcher + basic info) and "Selection"
  * (the currently-selected bead, pinned as a reference with a quick-open
- * button — and a future seed root for the Graph view). Falls back to friendly
- * empty states.
+ * button). NOTE: the user-facing label is "Selection"; the internal plumbing
+ * (activeBead prop, `active-bead` CSS, setActiveBead) keeps the "active bead"
+ * naming on purpose — a richer "Active Bead" concept is a future product
+ * refinement (vs-lu8f follow-up), and the current card is just the selection.
+ * Falls back to friendly empty states.
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -113,7 +116,7 @@ export function ProjectSwitcherView({
     [onOpenBead, onOpenBeadInTab, onToggleFavorite],
   );
 
-  // Click-count router on the Active Bead card (mirrors the Graph/Tree): 1/2
+  // Click-count router on the Selection card (mirrors the Graph/Tree): 1/2
   // clicks open it in the sidebar Details, 3 clicks open it in an editor tab.
   const clickRef = useRef<{ count: number; timer: ReturnType<typeof setTimeout> | null }>({
     count: 0,
@@ -269,7 +272,7 @@ export function ProjectSwitcherView({
           className="btn context-action-btn pick-ready"
           onClick={onPickReady}
           disabled={!activeProject}
-          title="Pick a ready-to-work bead (open, no open blocker) and make it the active bead"
+          title="Pick a ready-to-work bead (open, no open blocker) and show it as the selection"
         >
           <Rocket size={14} strokeWidth={2} />
           <span>Pick Ready Bead</span>
@@ -298,7 +301,7 @@ export function ProjectSwitcherView({
             ) : (
               <ChevronDown size={13} strokeWidth={2} className="context-heading-chevron" />
             )}
-            <span>Active Bead</span>
+            <span>Selection</span>
           </button>
         </div>
         {!beadCollapsed && (activeBead ? (
@@ -328,8 +331,8 @@ export function ProjectSwitcherView({
             <button
               type="button"
               className="context-card-x"
-              title="Clear the pinned bead"
-              aria-label="Clear active bead"
+              title="Clear the selection"
+              aria-label="Clear selection"
               onClick={onClearBead}
             >
               <X size={13} strokeWidth={2} />
@@ -337,7 +340,7 @@ export function ProjectSwitcherView({
           </div>
         ) : (
           <div className="context-empty">
-            <p>No active bead — select one from the Issues list to pin it here.</p>
+            <p>No bead selected — click one in the Issues list to show it here.</p>
           </div>
         ))}
       </section>

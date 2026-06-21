@@ -1,4 +1,4 @@
-import { favoritesWithRelatives } from "../favoritesScope";
+import { favoritesWithRelatives, favoriteRowClass } from "../favoritesScope";
 
 const edges = (...pairs: [string, string][]) => pairs.map(([from, to]) => ({ from, to }));
 
@@ -29,5 +29,25 @@ describe("favoritesWithRelatives", () => {
   it("unions relatives across multiple favorites and dedupes", () => {
     const e = edges(["a", "x"], ["b", "x"], ["b", "y"]);
     expect(favoritesWithRelatives(["a", "b"], e)).toEqual(new Set(["a", "b", "x", "y"]));
+  });
+});
+
+describe("favoriteRowClass", () => {
+  const favs = new Set(["a", "b"]);
+
+  it("marks a starred bead when highlighting is enabled", () => {
+    expect(favoriteRowClass("a", favs, true)).toBe("favorite");
+  });
+
+  it("does not mark a non-starred bead (e.g. a tag-along relative)", () => {
+    expect(favoriteRowClass("x", favs, true)).toBe("");
+  });
+
+  it("returns no class when highlighting is disabled, even for a favorite", () => {
+    expect(favoriteRowClass("a", favs, false)).toBe("");
+  });
+
+  it("returns no class for an empty favorites set", () => {
+    expect(favoriteRowClass("a", new Set(), true)).toBe("");
   });
 });

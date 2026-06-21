@@ -21,7 +21,6 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
   // Declared as `string` (not the inferred literal) so subclasses like the
   // panel shell can override with their own routing key.
   protected readonly viewType: string = "beadsPanel";
-  private static readonly MIN_LOADING_MS = 500;
   private selectedBeadId: string | null = null;
   private loadSequence = 0;
   // Drill-in filter requested from another view (e.g. a Dashboard card/badge).
@@ -204,13 +203,6 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
    */
   protected onBeadsLoaded(_beads: Bead[]): void {
     // no-op
-  }
-
-  private async waitForMinimumLoading(startedAt: number): Promise<void> {
-    const remaining = BeadsPanelViewProvider.MIN_LOADING_MS - (Date.now() - startedAt);
-    if (remaining > 0) {
-      await new Promise((resolve) => setTimeout(resolve, remaining));
-    }
   }
 
   protected async handleCustomMessage(

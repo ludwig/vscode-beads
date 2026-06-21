@@ -632,6 +632,10 @@ function rowMenuItems(
       label: "Copy JSON",
       onSelect: () => vscode.postMessage({ type: "copyBeadJson", beadId: bead.id }),
     },
+    {
+      label: "Copy Markdown",
+      onSelect: () => vscode.postMessage({ type: "copyBeadMarkdown", beadId: bead.id }),
+    },
   ];
 }
 

@@ -22,6 +22,7 @@ import { resolveEnvVariables } from "../utils/resolve-env-variables";
 import { CONFIG_NAMESPACE } from "../constants";
 import { getAppInfo } from "../appInfo";
 import { WebviewHost, hostFromView } from "./WebviewHost";
+import { renderBeadMarkdown } from "./beadMarkdown";
 
 export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
   protected _host?: WebviewHost;
@@ -151,6 +152,7 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
       type: "setSettings",
       settings: {
         renderMarkdown: config.get<boolean>("renderMarkdown", true),
+        highlightFavorites: config.get<boolean>("highlightFavorites", true),
         userId,
         tooltipHoverDelay: config.get<number>("tooltipHoverDelay", 1000),
         extensionVersion: appInfo.version,
@@ -349,6 +351,25 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         }
         break;
 
+      case "copyBeadMarkdown":
+        if (message.beadId) {
+          // Same canonical fetch + renderer as the LLM companion doc
+          // (renderBeadMarkdown), so the copied markdown is identical to what
+          // Claude Code seeds (vs-3pb5 / vs-nr3d).
+          const backend = this.projectManager.getBackend();
+          const issue = backend ? await backend.show(message.beadId) : null;
+          if (issue) {
+            await vscode.env.clipboard.writeText(renderBeadMarkdown(issue));
+            vscode.window.setStatusBarMessage(`$(check) Copied Markdown: ${message.beadId}`, 2000);
+            if (message.toast) {
+              this.postMessage({ type: "showToast", text: `Copied Markdown for ${message.beadId}` });
+            }
+          } else {
+            vscode.window.setStatusBarMessage(`$(error) Could not load ${message.beadId}`, 2000);
+          }
+        }
+        break;
+
       case "openBeadInTab":
         vscode.commands.executeCommand("beads.openBeadInTab", message.beadId);
         break;
@@ -476,6 +497,24 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
    */
   protected setLoading(loading: boolean): void {
     this.postMessage({ type: "setLoading", loading });
+  }
+
+  /**
+   * Minimum time (ms) a loading state is held so the spinner doesn't flash on a
+   * fast load. Shared by views that show a loading state (vs-qai).
+   */
+  protected static readonly MIN_LOADING_MS = 500;
+
+  /**
+   * Awaits the remainder of MIN_LOADING_MS since `startedAt`, so a quick refresh
+   * still shows the loading state long enough to avoid a jarring flash. No-op if
+   * the minimum has already elapsed. (vs-qai — hoisted from the view providers.)
+   */
+  protected async waitForMinimumLoading(startedAt: number): Promise<void> {
+    const remaining = BaseViewProvider.MIN_LOADING_MS - (Date.now() - startedAt);
+    if (remaining > 0) {
+      await new Promise((resolve) => setTimeout(resolve, remaining));
+    }
   }
 
   /**

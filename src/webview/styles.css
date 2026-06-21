@@ -1331,6 +1331,14 @@ textarea {
   background: var(--beads-accent);
   border-color: var(--beads-accent);
 }
+/* When the Favorites filter is on, fill the star solid yellow (matching the
+ * favorite-star icon color) so the toggle reads as "starred / active" at a
+ * glance — a full gold star on the accent background (vs-lu8f). CSS overrides
+ * lucide's default fill:none / stroke:currentColor on the <svg>. */
+.favorites-toggle.active svg {
+  fill: var(--vscode-charts-yellow, #d7ba7d);
+  stroke: var(--vscode-charts-yellow, #d7ba7d);
+}
 
 .preset-dropdown-menu {
   min-width: 100px;
@@ -1564,6 +1572,22 @@ textarea {
 }
 
 .bead-row:hover {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+/* Favorite rows (beads.highlightFavorites, vs-lu8f). Very subtle, and tinted with
+ * the same yellow as the favorite star (--vscode-charts-yellow) so the row alludes
+ * to the icon: a barely-there ~6% yellow wash + a thin, softened left stripe. Just
+ * enough to read starred beads as the "primary" set without competing with
+ * status/priority colors. In the Favorites filter the tag-along relatives are
+ * unstyled, giving the contrast for free. Declared before .selected so an active
+ * selection still wins the background; the stripe persists on selected favorites. */
+.bead-row.favorite {
+  background-color: color-mix(in srgb, var(--vscode-charts-yellow, #d7ba7d) 6%, transparent);
+  box-shadow: inset 2px 0 0 0 color-mix(in srgb, var(--vscode-charts-yellow, #d7ba7d) 50%, transparent);
+}
+
+.bead-row.favorite:hover {
   background-color: var(--vscode-list-hoverBackground);
 }
 
