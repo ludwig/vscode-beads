@@ -133,7 +133,7 @@
       {
         "command": "beads.initRepository",
         "title": "Beads: Initialize Repository...",
-        "icon": "$(repo-create)"
+        "icon": "$(database)"
       },
       {
         "command": "beads.openBeadInTab",
@@ -184,9 +184,14 @@
           "group": "navigation@1"
         },
         {
-          "command": "beads.refresh",
+          "command": "beads.initRepository",
           "when": "view == beadsProjectSwitcher",
           "group": "navigation@2"
+        },
+        {
+          "command": "beads.refresh",
+          "when": "view == beadsProjectSwitcher",
+          "group": "navigation@3"
         },
         {
           "command": "beads.navigateBack",

@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import { Folder } from "lucide-react";
+import { Folder, FolderPlus } from "lucide-react";
 import { BeadsProject } from "../types";
 import { Dropdown, DropdownItem } from "./Dropdown";
 import { sharedPrefixWidthCh } from "./prefixWidth";
@@ -15,12 +15,15 @@ interface ProjectDropdownProps {
   projects: BeadsProject[];
   activeProject: BeadsProject | null;
   onSelectProject: (project: BeadsProject) => void;
+  /** Launch the Initialize Repository flow from a pinned footer item (vs-r6a1.7). */
+  onCreateBoard?: () => void;
 }
 
 export function ProjectDropdown({
   projects,
   activeProject,
   onSelectProject,
+  onCreateBoard,
 }: ProjectDropdownProps): React.ReactElement {
   if (projects.length === 0) {
     return (
@@ -86,6 +89,14 @@ export function ProjectDropdown({
           </span>
         </DropdownItem>
       ))}
+      {onCreateBoard && (
+        <DropdownItem className="project-dropdown-new-board" onClick={onCreateBoard}>
+          <FolderPlus size={13} strokeWidth={2} className="project-dropdown-item-prefix" />
+          <span className="project-dropdown-item-text">
+            <span className="project-dropdown-item-name">New board…</span>
+          </span>
+        </DropdownItem>
+      )}
     </Dropdown>
   );
 }
