@@ -34,6 +34,8 @@ export type {
   CreateBeadFields,
   IssuesFilter,
   FilterSnapshot,
+  InitBoardMode,
+  InitWizardPhase,
   // The webview historically named the two message unions ExtensionMessage /
   // WebviewMessage; keep those names as aliases over the shared contract.
   ExtensionToWebviewMessage as ExtensionMessage,

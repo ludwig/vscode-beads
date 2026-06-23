@@ -14,6 +14,7 @@ import {
   ExtensionMessage,
   FavoriteBead,
   FilterSnapshot,
+  InitWizardPhase,
   IssuesFilter,
   WebviewSettings,
   vscode,
@@ -25,6 +26,7 @@ import { KanbanBoard } from "./views/KanbanBoard";
 import { TreeView } from "./views/tree/TreeView";
 import { DetailsView } from "./views/DetailsView";
 import { ProjectSwitcherView } from "./views/ProjectSwitcherView";
+import { BoardInitWizard } from "./views/BoardInitWizard";
 import { PanelShell } from "./views/PanelShell";
 import { FilterSnapshotRibbon } from "./common/FilterSnapshotRibbon";
 import { CreateBeadForm } from "./views/CreateBeadForm";
@@ -83,6 +85,9 @@ interface AppState {
   // editor tab on open (vs-tle) and lands an "Apply to all" broadcast (vs-dzm).
   // `seq` bumps each time so an identical snapshot still re-applies.
   applySnapshotRequest: { snapshot: FilterSnapshot; seq: number } | null;
+  // Board-init wizard state (vs-r6a1.8): the projects root to compose the
+  // target path, and the current init phase + message (form until a submit).
+  initWizard: { projectsRoot: string; phase: InitWizardPhase; message?: string };
 }
 
 const initialState: AppState = {
@@ -121,6 +126,7 @@ const initialState: AppState = {
   seedFilteredBeadIds: null,
   seedFilterCleared: false,
   applySnapshotRequest: null,
+  initWizard: { projectsRoot: "", phase: "form" },
 };
 
 export function App(): React.ReactElement {
@@ -131,6 +137,20 @@ export function App(): React.ReactElement {
     const message = event.data;
 
     switch (message.type) {
+      case "setInitWizard":
+        setState((prev) => ({
+          ...prev,
+          initWizard: { projectsRoot: message.projectsRoot, phase: "form" },
+        }));
+        break;
+
+      case "setInitProgress":
+        setState((prev) => ({
+          ...prev,
+          initWizard: { ...prev.initWizard, phase: message.phase, message: message.message },
+        }));
+        break;
+
       case "setViewType":
         setState((prev) => ({ ...prev, viewType: message.viewType }));
         break;
@@ -304,6 +324,18 @@ export function App(): React.ReactElement {
       }
 
       switch (state.viewType) {
+      case "beadsInitWizard":
+        return (
+          <BoardInitWizard
+            projectsRoot={state.initWizard.projectsRoot}
+            phase={state.initWizard.phase}
+            message={state.initWizard.message}
+            onSubmit={(name, mode) => vscode.postMessage({ type: "submitInitBoard", name, mode })}
+            onCancel={() => vscode.postMessage({ type: "cancelInitBoard" })}
+            onChangeRoot={() => vscode.postMessage({ type: "changeProjectsRoot" })}
+          />
+        );
+
       case "beadsDashboard":
         return (
           <DashboardView

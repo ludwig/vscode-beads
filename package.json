@@ -136,6 +136,10 @@
         "icon": "$(database)"
       },
       {
+        "command": "beads.initRepositoryQuick",
+        "title": "Beads: Initialize Repository (Quick)..."
+      },
+      {
         "command": "beads.setProjectsRoot",
         "title": "Beads: Change Projects Root...",
         "icon": "$(root-folder-opened)"
