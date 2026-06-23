@@ -10,7 +10,7 @@ import { resolveEnvVariables } from "../utils/resolve-env-variables";
 import { BeadsBackend } from "./BeadsBackend";
 import { BeadsDoltBackend } from "./BeadsDoltBackend";
 import { BeadsCommandRunner } from "./BeadsCommandRunner";
-import { CONFIG_NAMESPACE, DEFAULT_PROJECTS_ROOT } from "../constants";
+import { CONFIG_NAMESPACE, PROJECTS_ROOT_SETTING, resolveProjectsRoot } from "../constants";
 import { backendKindForMode, createDoltModeProbe, detectDoltMode } from "./doltMode";
 import { parseConfiguredPrefix } from "./projectPrefix";
 import { Bead, BeadsProject } from "./types";
@@ -101,10 +101,10 @@ export class BeadsProjectManager implements vscode.Disposable {
       if (project && !discoveredById.has(project.id)) discoveredById.set(project.id, project);
     }
 
-    // Additive: fold in every project under the default beads root that isn't
+    // Additive: fold in every project under the configured beads root that isn't
     // already discovered above. Configured/env/workspace sources win on dedup
     // so their richer `source` label is preserved.
-    for (const project of await this.discoverProjectsUnderRoot(DEFAULT_PROJECTS_ROOT)) {
+    for (const project of await this.discoverProjectsUnderRoot(this.getProjectsRoot())) {
       if (!discoveredById.has(project.id)) discoveredById.set(project.id, project);
     }
 
@@ -644,11 +644,15 @@ export class BeadsProjectManager implements vscode.Disposable {
 
   /**
    * The root directory under which new boards are created and auto-discovered.
-   * Currently the hardcoded default; vs-r6a1.6/vs-2re will swap in the
-   * `beads.projectsRoot` setting here without touching callers.
+   * Reads the `beads.projectsRoot` setting (with ${env:VAR}/`~` expansion),
+   * falling back to DEFAULT_PROJECTS_ROOT when unset (vs-2re). The init command
+   * also creates new boards here, so it honors the setting too (vs-r6a1.6).
    */
   getProjectsRoot(): string {
-    return DEFAULT_PROJECTS_ROOT;
+    const configured = vscode.workspace
+      .getConfiguration(CONFIG_NAMESPACE)
+      .get<string>(PROJECTS_ROOT_SETTING, "");
+    return resolveProjectsRoot(configured);
   }
 
   /**
