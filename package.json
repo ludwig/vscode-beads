@@ -198,11 +198,6 @@
           "group": "navigation@0"
         },
         {
-          "command": "beads.openNewIssueInTab",
-          "when": "view == beadsProjectSwitcher",
-          "group": "navigation@1"
-        },
-        {
           "command": "beads.initRepository",
           "when": "view == beadsProjectSwitcher",
           "group": "navigation@2"
