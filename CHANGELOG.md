@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Editor-tab title tracks the shown bead** — navigating from one bead to another within the same editor tab now retitles the tab to the bead you're viewing, instead of staying stuck on the bead it was opened with (vs-q0e2)
+
 ## [0.24.0] - 2026-06-23
 
 ### Added

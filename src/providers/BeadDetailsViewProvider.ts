@@ -122,6 +122,11 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
     this.currentBeadId = beadId;
     this.currentProjectId = this.projectManager.getActiveProject()?.id || null;
 
+    // Keep an editor tab's label tracking the bead it currently shows: the tab
+    // opens titled with the first bead's id, but navigating to another bead
+    // within the same tab must retitle it rather than stay stuck (vs-q0e2).
+    this._host?.setTitle(beadId);
+
     // Update context for conditional menu items
     vscode.commands.executeCommand("setContext", "beads.hasSelectedBead", true);
 
