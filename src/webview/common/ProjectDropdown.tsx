@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import { Folder, Plus } from "lucide-react";
+import { Folder, FolderPlus } from "lucide-react";
 import { BeadsProject } from "../types";
 import { Dropdown, DropdownItem } from "./Dropdown";
 import { sharedPrefixWidthCh } from "./prefixWidth";
@@ -91,7 +91,7 @@ export function ProjectDropdown({
       ))}
       {onCreateBoard && (
         <DropdownItem className="project-dropdown-new-board" onClick={onCreateBoard}>
-          <Plus size={13} strokeWidth={2} className="project-dropdown-item-prefix" />
+          <FolderPlus size={13} strokeWidth={2} className="project-dropdown-item-prefix" />
           <span className="project-dropdown-item-text">
             <span className="project-dropdown-item-name">New board…</span>
           </span>

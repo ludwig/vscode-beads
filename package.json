@@ -133,7 +133,7 @@
       {
         "command": "beads.initRepository",
         "title": "Beads: Initialize Repository...",
-        "icon": "$(repo-create)"
+        "icon": "$(new-folder)"
       },
       {
         "command": "beads.openBeadInTab",
