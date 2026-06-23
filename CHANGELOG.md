@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **"Show in tree view" from a bead's details** — a new tree icon in the bead Details header (between the favorite star and Refresh) flips the Beads panel to its Tree tab and reveals the bead: it expands the bead's collapsed ancestors and scrolls it into view. Mirrors the existing "View in graph" action (vs-kp67)
 
+### Removed
+
+- **`beads.autoSeedActiveBead` setting** — auto-seeding a bead into your LLM context is now triggered manually via the LLM badge in the bead Details header, so the experimental focus-follows setting (and its dead auto-seed-on-focus path) is gone (vs-3ssy)
+
 ### Fixed
 
 - **Editor-tab title tracks the shown bead** — navigating from one bead to another within the same editor tab now retitles the tab to the bead you're viewing, instead of staying stuck on the bead it was opened with (vs-q0e2)
