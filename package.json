@@ -133,7 +133,7 @@
       {
         "command": "beads.initRepository",
         "title": "Beads: Initialize Repository...",
-        "icon": "$(new-folder)"
+        "icon": "$(database)"
       },
       {
         "command": "beads.openBeadInTab",
@@ -179,12 +179,12 @@
           "group": "navigation@0"
         },
         {
-          "command": "beads.initRepository",
+          "command": "beads.openNewIssueInTab",
           "when": "view == beadsProjectSwitcher",
           "group": "navigation@1"
         },
         {
-          "command": "beads.openNewIssueInTab",
+          "command": "beads.initRepository",
           "when": "view == beadsProjectSwitcher",
           "group": "navigation@2"
         },
