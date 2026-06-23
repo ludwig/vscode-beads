@@ -174,6 +174,7 @@ export function ProjectSwitcherView({
               showChevron={false}
               menuPlacement="bottom-end"
             >
+              <DropdownItem onClick={onCreateBoard}>Initialize New Board…</DropdownItem>
               <DropdownItem onClick={onOpenProjectFolder}>Open Folder</DropdownItem>
               <DropdownItem onClick={onShowStatus}>Show Dolt Status</DropdownItem>
               <DropdownItem onClick={onStartDolt}>Start Dolt</DropdownItem>
@@ -189,6 +190,7 @@ export function ProjectSwitcherView({
           projects={projects}
           activeProject={activeProject}
           onSelectProject={onSelectProject}
+          onCreateBoard={onCreateBoard}
         />
 
         {activeProject ? (

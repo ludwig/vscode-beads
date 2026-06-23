@@ -179,14 +179,19 @@
           "group": "navigation@0"
         },
         {
-          "command": "beads.openNewIssueInTab",
+          "command": "beads.initRepository",
           "when": "view == beadsProjectSwitcher",
           "group": "navigation@1"
         },
         {
-          "command": "beads.refresh",
+          "command": "beads.openNewIssueInTab",
           "when": "view == beadsProjectSwitcher",
           "group": "navigation@2"
+        },
+        {
+          "command": "beads.refresh",
+          "when": "view == beadsProjectSwitcher",
+          "group": "navigation@3"
         },
         {
           "command": "beads.navigateBack",

@@ -984,6 +984,23 @@ textarea {
   align-items: flex-start;
 }
 
+/* "New board…" footer action: a pinned create affordance below the project
+   list, set apart by a hairline rule (vs-r6a1.7). The Plus glyph reuses the
+   prefix slot so it aligns with the project rows' name column. */
+.project-dropdown-new-board {
+  align-items: center;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--vscode-menu-separatorBackground, var(--vscode-dropdown-border));
+  color: var(--vscode-textLink-foreground);
+}
+.project-dropdown-new-board .project-dropdown-item-prefix {
+  background: none;
+  padding: 0;
+  margin-top: 0;
+  color: inherit;
+}
+
 .project-dropdown-item-prefix {
   flex-shrink: 0;
   /* content-box: see .project-dropdown-prefix — min-width sizes text, not
