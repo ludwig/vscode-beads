@@ -1013,9 +1013,9 @@ export function IssuesView({
             title="Show only ready-to-work beads (open, no open blocker). Composes with the other filters."
           >
             {readyOnly ? (
-              <span className="ready-toggle-emoji" aria-hidden="true">🚀</span>
+              <span className="ready-toggle-glyph ready-toggle-emoji" aria-hidden="true">🚀</span>
             ) : (
-              <Rocket size={12} strokeWidth={2.25} />
+              <Rocket size={12} strokeWidth={2.25} className="ready-toggle-glyph" />
             )}
             <span>Ready</span>
           </button>
