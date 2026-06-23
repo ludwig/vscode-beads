@@ -11,7 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Initialize a Beads board from the extension** — a new "Beads: Initialize Repository…" command (and a "Create your first board" CTA in the empty Project Switcher / no-projects prompts) walks you through name → storage mode → confirm, creates the board under your projects root, runs `bd init` (server mode by default), verifies it came up healthy, then activates it — no terminal required. If the `bd` CLI isn't installed, it points you at `brew install beads` (with a copy action) instead of failing silently (vs-r6a1)
 - **`beads.projectsRoot` setting** — the root directory scanned for boards (and where the new Initialize Repository command creates them) is now configurable, instead of being hardcoded to `~/beads`. Supports a leading `~` and `${env:VAR}` placeholders; changes take effect without a reload (vs-2re, vs-r6a1.6)
-- **Always-available "New Board" entry points** — adding a board is no longer limited to the empty state: a `+` icon in the Project Switcher title bar, an "Initialize New Board…" item in the Active Project ⋮ menu, and a "New board…" footer in the project dropdown all launch the Initialize Repository flow (vs-r6a1.7)
+- **Always-available "New Board" entry points** — adding a board is no longer limited to the empty state: a database icon in the Project Switcher title bar, an "Initialize New Board…" item in the Active Project ⋮ menu, and a "New board…" footer in the project dropdown all launch the Initialize Repository flow (vs-r6a1.7)
+- **Switch projects root from the UI** — a "Change Projects Root…" action (Active Project ⋮ menu, and a "Change…" link in the project dropdown header, which also now shows the current root) opens a folder picker and points Beads at a different root. Switching to an already-initialized root loads that whole collection of boards automatically; an empty root shows the create CTA (vs-r6a1.10)
+- **Extension settings shortcut** — a gear icon in the Project Switcher title bar (and "Extension Settings" in the ⋮ menu) opens Settings filtered to Beads (vs-r6a1.9)
 
 ## [0.23.0] - 2026-06-20
 

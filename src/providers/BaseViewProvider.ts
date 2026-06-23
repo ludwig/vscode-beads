@@ -160,6 +160,7 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         buildDirty: appInfo.dirty,
         isEditorTab: this._host?.isEditorTab ?? false,
         bundleBytes: appInfo.bundleBytes,
+        projectsRoot: this.projectManager.getProjectsRoot(),
       },
     });
 
@@ -412,6 +413,14 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
 
       case "createBoard":
         await vscode.commands.executeCommand("beads.initRepository");
+        break;
+
+      case "openSettings":
+        await vscode.commands.executeCommand("beads.openSettings");
+        break;
+
+      case "changeProjectsRoot":
+        await vscode.commands.executeCommand("beads.setProjectsRoot");
         break;
 
       default:

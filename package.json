@@ -136,6 +136,16 @@
         "icon": "$(database)"
       },
       {
+        "command": "beads.setProjectsRoot",
+        "title": "Beads: Change Projects Root...",
+        "icon": "$(root-folder-opened)"
+      },
+      {
+        "command": "beads.openSettings",
+        "title": "Beads: Open Extension Settings",
+        "icon": "$(gear)"
+      },
+      {
         "command": "beads.openBeadInTab",
         "title": "Beads: Open Issue in Editor Tab",
         "icon": "$(link-external)"
@@ -192,6 +202,11 @@
           "command": "beads.refresh",
           "when": "view == beadsProjectSwitcher",
           "group": "navigation@3"
+        },
+        {
+          "command": "beads.openSettings",
+          "when": "view == beadsProjectSwitcher",
+          "group": "navigation@4"
         },
         {
           "command": "beads.navigateBack",

@@ -17,6 +17,10 @@ interface ProjectDropdownProps {
   onSelectProject: (project: BeadsProject) => void;
   /** Launch the Initialize Repository flow from a pinned footer item (vs-r6a1.7). */
   onCreateBoard?: () => void;
+  /** Swap the projects root via a folder picker (vs-r6a1.10). */
+  onChangeRoot?: () => void;
+  /** The resolved projects root, shown in the header for context (vs-r6a1.10). */
+  projectsRoot?: string;
 }
 
 export function ProjectDropdown({
@@ -24,6 +28,8 @@ export function ProjectDropdown({
   activeProject,
   onSelectProject,
   onCreateBoard,
+  onChangeRoot,
+  projectsRoot,
 }: ProjectDropdownProps): React.ReactElement {
   if (projects.length === 0) {
     return (
@@ -65,7 +71,27 @@ export function ProjectDropdown({
       menuClassName="project-dropdown-menu"
       title={activeProject?.rootPath}
     >
-      <div className="project-dropdown-header">Beads directory</div>
+      <div className="project-dropdown-header">
+        <span>Projects root</span>
+        {onChangeRoot && (
+          <button
+            type="button"
+            className="project-dropdown-header-action"
+            onClick={(e) => {
+              e.stopPropagation();
+              onChangeRoot();
+            }}
+            title="Change the projects root (folder picker)"
+          >
+            Change…
+          </button>
+        )}
+      </div>
+      {projectsRoot && (
+        <div className="project-dropdown-root" title={projectsRoot}>
+          {projectsRoot}
+        </div>
+      )}
       {projects.map((project) => (
         <DropdownItem
           key={`${project.id}:${project.rootPath}`}

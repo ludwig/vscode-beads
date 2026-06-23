@@ -306,6 +306,34 @@ export function registerCommands(
       vscode.window.setStatusBarMessage("$(check) Beads: Refreshed", 2000);
     }),
 
+    // Open the Settings UI filtered to this extension's section (vs-r6a1.9).
+    vscode.commands.registerCommand("beads.openSettings", () => {
+      void vscode.commands.executeCommand("workbench.action.openSettings", "@ext:ludwig.vscode-beads-pm");
+    }),
+
+    // Swap the projects root via a folder picker (vs-r6a1.10). Writing the
+    // setting triggers the onDidChangeConfiguration listener in extension.ts,
+    // which re-discovers — so pointing at an already-initialized root loads
+    // that whole collection, and an empty root shows the create CTA.
+    vscode.commands.registerCommand("beads.setProjectsRoot", async () => {
+      const current = projectManager.getProjectsRoot();
+      const picked = await vscode.window.showOpenDialog({
+        title: "Select Beads projects root",
+        openLabel: "Use as projects root",
+        canSelectFiles: false,
+        canSelectFolders: true,
+        canSelectMany: false,
+        defaultUri: vscode.Uri.file(current),
+      });
+      const chosen = picked?.[0]?.fsPath;
+      if (!chosen) return; // cancelled
+      log.info(`Setting beads.projectsRoot to ${chosen}`);
+      await vscode.workspace
+        .getConfiguration("beads")
+        .update("projectsRoot", chosen, vscode.ConfigurationTarget.Global);
+      vscode.window.setStatusBarMessage(`$(database) Beads root: ${chosen}`, 3000);
+    }),
+
     vscode.commands.registerCommand("beads.startDoltServer", async () => {
       const client = projectManager.getClient();
       const project = projectManager.getActiveProject();

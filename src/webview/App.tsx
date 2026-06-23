@@ -106,6 +106,7 @@ const initialState: AppState = {
     buildDirty: false,
     isEditorTab: false,
     bundleBytes: 0,
+    projectsRoot: "",
   },
   createMode: false,
   issuesFilterRequest: null,
@@ -457,6 +458,9 @@ export function App(): React.ReactElement {
             onPickReady={() => vscode.postMessage({ type: "pickReadyBead" })}
             onShowIssues={() => vscode.postMessage({ type: "showIssues" })}
             onCreateBoard={() => vscode.postMessage({ type: "createBoard" })}
+            onChangeRoot={() => vscode.postMessage({ type: "changeProjectsRoot" })}
+            onOpenSettings={() => vscode.postMessage({ type: "openSettings" })}
+            projectsRoot={state.settings.projectsRoot}
             onShowStatus={() => vscode.postMessage({ type: "showDoltStatus" })}
             onStartDolt={() => vscode.postMessage({ type: "startDoltServer" })}
             onStopDolt={() => vscode.postMessage({ type: "stopDoltServer" })}
