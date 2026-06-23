@@ -1032,8 +1032,11 @@ export function IssuesView({
           {statusFilter.includes(NOT_CLOSED) ? (
             <FilterChip
               key="status-not-closed"
+              // Green (the "open"/active palette color), not the gray of "closed":
+              // ¬closed is the active working set, so it reads as healthy/inclusive
+              // rather than echoing the done-state it excludes (vs-th4z).
               label="¬closed"
-              accentColor={statusColor("closed")}
+              accentColor={statusColor("open")}
               negated
               onRemove={clearStatusFilter}
             />

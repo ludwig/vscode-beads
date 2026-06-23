@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **The `¬closed` filter chip reads as an exclusion** — the default "not closed" status chip now gets a faint accent-tinted fill and a bolded `¬` operator so it's visually distinct from the outline-only positive status picks (vs-th4z)
+- **Filter chips are filled, not just outlined** — each active filter chip now carries a light wash of its own accent color (e.g. Blocked shows a faint red fill behind its red outline). The default `¬closed` chip reads as an exclusion with a stronger fill + bolded `¬` operator, and is now palette-green (the active-work color) rather than echoing the gray of the "closed" state it excludes (vs-th4z)
 
 ### Fixed
 

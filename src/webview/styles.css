@@ -1370,20 +1370,22 @@ textarea {
   font-size: 12px;
   height: var(--badge-height-sm);
   line-height: 1;
-  background: transparent;
+  /* Each chip is filled with a light wash of its own accent color (with the
+     1px accent outline on top), so the active filters read as colored tokens
+     rather than empty outlines — e.g. Blocked = red outline + faint red fill
+     (vs-th4z). */
+  background: color-mix(in srgb, var(--chip-accent-color, var(--vscode-panel-border)) 15%, transparent);
   color: var(--vscode-foreground);
-  /* A complete 1px outline in the chip's accent color, rather than a lopsided
-     thick left rail (which read as an unfinished border). */
   border: 1px solid var(--chip-accent-color, var(--vscode-panel-border));
   border-radius: 3px;
   font-variant: small-caps;
 }
 
-/* Negated/exclusion chip (e.g. ¬closed): a faint accent-tinted fill plus a
-   bolded "¬" operator, so an exclusion filter reads distinctly from the
-   outline-only positive status picks (vs-th4z). */
+/* Negated/exclusion chip (e.g. the green ¬closed): a stronger accent fill plus
+   a bolded "¬" operator, so an exclusion filter reads distinctly from the
+   positive status picks (vs-th4z). */
 .filter-chip--negated {
-  background: color-mix(in srgb, var(--chip-accent-color, var(--vscode-panel-border)) 14%, transparent);
+  background: color-mix(in srgb, var(--chip-accent-color, var(--vscode-panel-border)) 24%, transparent);
   font-weight: 600;
 }
 
