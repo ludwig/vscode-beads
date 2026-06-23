@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-06-23
+
 ### Added
 
 - **Initialize a Beads board from the extension** — a new "Beads: Initialize Repository…" command (and a "Create your first board" CTA in the empty Project Switcher / no-projects prompts) opens a polished wizard in an editor tab: name → derived prefix preview → location → storage mode, then an inline progress/verify screen. It creates the board under your projects root, runs `bd init` (server mode by default), verifies it came up healthy, then activates it — no terminal required. A native QuickPick version is also available as "Beads: Initialize Repository (Quick)…". If the `bd` CLI isn't installed, it points you at `brew install beads` (with a copy action) instead of failing silently (vs-r6a1, vs-r6a1.8)
