@@ -235,6 +235,32 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       shellProvider.refresh();
       detailsProvider.refresh();
       switcherProvider.refresh();
+    }),
+
+    // Re-discover when the projects root (or configured projects) changes, so a
+    // new beads.projectsRoot takes effect without a reload (vs-2re).
+    vscode.workspace.onDidChangeConfiguration(async (e) => {
+      if (
+        !e.affectsConfiguration("beads.projectsRoot") &&
+        !e.affectsConfiguration("beads.projects")
+      ) {
+        return;
+      }
+      log.info("Beads project configuration changed, refreshing projects...");
+      const previousActiveId = projectManager.getActiveProject()?.id;
+      await projectManager.discoverProjects();
+
+      const projects = projectManager.getProjects();
+      const activeStillExists = projects.some((p) => p.id === previousActiveId);
+      if (!activeStillExists && projects.length > 0) {
+        await projectManager.setActiveProject(projects[0].id);
+      } else if (projects.length === 0) {
+        updateStatusBar();
+      }
+
+      shellProvider.refresh();
+      detailsProvider.refresh();
+      switcherProvider.refresh();
     })
   );
 

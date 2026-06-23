@@ -216,6 +216,11 @@
           "default": [],
           "description": "Additional Beads projects to show beyond the open workspace folders. Each entry is a path to a project root or its .beads directory. Supports ${env:VAR} placeholders."
         },
+        "beads.projectsRoot": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Root directory scanned for Beads projects (each immediate child holding a `.beads/` directory is auto-discovered) and where **Beads: Initialize Repository** creates new boards. Supports a leading `~` and `${env:VAR}` placeholders. Leave empty to use the default `~/beads`."
+        },
         "beads.pathToBd": {
           "type": "string",
           "default": "bd",

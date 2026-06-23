@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Initialize a Beads board from the extension** — a new "Beads: Initialize Repository…" command (and a "Create your first board" CTA in the empty Project Switcher / no-projects prompts) walks you through name → storage mode → confirm, creates the board under `~/beads/<name>`, runs `bd init` (server mode by default), verifies it came up healthy, then activates it — no terminal required. If the `bd` CLI isn't installed, it points you at `brew install beads` (with a copy action) instead of failing silently (vs-r6a1)
+- **Initialize a Beads board from the extension** — a new "Beads: Initialize Repository…" command (and a "Create your first board" CTA in the empty Project Switcher / no-projects prompts) walks you through name → storage mode → confirm, creates the board under your projects root, runs `bd init` (server mode by default), verifies it came up healthy, then activates it — no terminal required. If the `bd` CLI isn't installed, it points you at `brew install beads` (with a copy action) instead of failing silently (vs-r6a1)
+- **`beads.projectsRoot` setting** — the root directory scanned for boards (and where the new Initialize Repository command creates them) is now configurable, instead of being hardcoded to `~/beads`. Supports a leading `~` and `${env:VAR}` placeholders; changes take effect without a reload (vs-2re, vs-r6a1.6)
 
 ## [0.23.0] - 2026-06-20
 
