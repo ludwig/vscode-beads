@@ -9,11 +9,37 @@
  */
 
 import * as vscode from "vscode";
+import * as fs from "fs";
+import * as path from "path";
 import { BaseViewProvider } from "./BaseViewProvider";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
 import { Bead, BeadsSummary, issueToWebviewBead, BeadPriority, BUILTIN_STATUSES } from "../backend/types";
 import { doltStatusIsRunning } from "../backend/repositoryInitializer";
 import { Logger } from "../utils/logger";
+
+/** Recursively sum the byte sizes of every file under `dir` (0 on any error). */
+async function dirSizeBytes(dir: string): Promise<number> {
+  let total = 0;
+  let entries: fs.Dirent[];
+  try {
+    entries = await fs.promises.readdir(dir, { withFileTypes: true });
+  } catch {
+    return 0;
+  }
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    try {
+      if (entry.isDirectory()) {
+        total += await dirSizeBytes(full);
+      } else if (entry.isFile()) {
+        total += (await fs.promises.stat(full)).size;
+      }
+    } catch {
+      // Skip entries that vanish or can't be stat'd mid-walk.
+    }
+  }
+  return total;
+}
 
 export class RepositoryViewProvider extends BaseViewProvider {
   protected readonly viewType = "beadsRepository";
@@ -62,6 +88,11 @@ export class RepositoryViewProvider extends BaseViewProvider {
       const running = doltStatusIsRunning(doltStatusText);
 
       const issues = await client.list();
+
+      // On-disk size of the .beads directory, for the "DB on disk" metric card
+      // (vs-emyj). Best-effort: a walk error yields 0, surfaced as "0 B".
+      const dbSizeBytes = activeProject ? await dirSizeBytes(activeProject.beadsDir) : undefined;
+
       if (showLoading) {
         await this.waitForMinimumLoading(loadingStartedAt);
       }
@@ -69,18 +100,30 @@ export class RepositoryViewProvider extends BaseViewProvider {
         return;
       }
 
-      this.postMessage({ type: "setRepositoryInfo", doltStatus: doltStatusText, running });
-
       // Summary computed exactly as DashboardViewProvider does, so the Issues
       // card matches the Dashboard.
       const beads = issues.map(issueToWebviewBead).filter((b): b is Bead => b !== null);
       const byStatus: Record<string, number> = Object.fromEntries(BUILTIN_STATUSES.map((s) => [s, 0]));
       const byPriority: Record<BeadPriority, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
 
+      // Most recent bead update (ISO strings compare lexically), for the "Last
+      // activity" metric card (vs-emyj).
+      let lastActivity: string | null = null;
       for (const bead of beads) {
         byStatus[bead.status] = (byStatus[bead.status] ?? 0) + 1;
         if (bead.priority !== undefined) byPriority[bead.priority]++;
+        if (bead.updatedAt && (lastActivity === null || bead.updatedAt > lastActivity)) {
+          lastActivity = bead.updatedAt;
+        }
       }
+
+      this.postMessage({
+        type: "setRepositoryInfo",
+        doltStatus: doltStatusText,
+        running,
+        dbSizeBytes,
+        lastActivity,
+      });
 
       const summary: BeadsSummary = {
         total: beads.length,

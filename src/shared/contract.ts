@@ -319,9 +319,16 @@ export type ExtensionToWebviewMessage =
   | { type: "setInitWizard"; projectsRoot: string }
   // Board-init wizard: progress/result of an in-flight initialization.
   | { type: "setInitProgress"; phase: InitWizardPhase; message?: string }
-  // Raw `bd dolt status` text + a derived running flag, for the Repository
-  // Details editor-tab page (vs-beoh).
-  | { type: "setRepositoryInfo"; doltStatus: string; running: boolean };
+  // Repository Details editor-tab page metrics (vs-beoh/vs-emyj): raw `bd dolt
+  // status` text + a derived running flag, the on-disk .beads dir size, and the
+  // most recent bead update (ISO) for the "last activity" card.
+  | {
+      type: "setRepositoryInfo";
+      doltStatus: string;
+      running: boolean;
+      dbSizeBytes?: number;
+      lastActivity?: string | null;
+    };
 
 // Messages sent from the webview to the extension host.
 export type WebviewToExtensionMessage =

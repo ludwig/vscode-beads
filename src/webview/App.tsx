@@ -92,9 +92,15 @@ interface AppState {
   // Board-init wizard state (vs-r6a1.8): the projects root to compose the
   // target path, and the current init phase + message (form until a submit).
   initWizard: { projectsRoot: string; phase: InitWizardPhase; message?: string };
-  // Raw `bd dolt status` text + derived running flag for the Repository Details
-  // editor-tab page (vs-beoh). `null` until the host posts setRepositoryInfo.
-  repositoryInfo: { doltStatus: string; running: boolean } | null;
+  // Repository Details page metrics (vs-beoh/vs-emyj): raw `bd dolt status` +
+  // derived running flag, the on-disk .beads dir size, and the most recent bead
+  // update. `null` until the host posts setRepositoryInfo.
+  repositoryInfo: {
+    doltStatus: string;
+    running: boolean;
+    dbSizeBytes?: number;
+    lastActivity?: string | null;
+  } | null;
 }
 
 const initialState: AppState = {
@@ -184,7 +190,12 @@ export function App(): React.ReactElement {
       case "setRepositoryInfo":
         setState((prev) => ({
           ...prev,
-          repositoryInfo: { doltStatus: message.doltStatus, running: message.running },
+          repositoryInfo: {
+            doltStatus: message.doltStatus,
+            running: message.running,
+            dbSizeBytes: message.dbSizeBytes,
+            lastActivity: message.lastActivity,
+          },
         }));
         break;
       case "setGraph":
@@ -388,6 +399,8 @@ export function App(): React.ReactElement {
             project={state.project}
             summary={state.summary}
             repositoryInfo={state.repositoryInfo}
+            settings={state.settings}
+            memoryBytes={state.memoryBytes}
           />
         );
 
@@ -499,7 +512,6 @@ export function App(): React.ReactElement {
             version={state.settings.extensionVersion}
             buildSha={state.settings.buildSha}
             buildDirty={state.settings.buildDirty}
-            memoryBytes={state.memoryBytes}
             bundleBytes={state.settings.bundleBytes}
             onSelectProject={(project) =>
               vscode.postMessage({

@@ -15,6 +15,7 @@ import { ChevronDown, ChevronRight, X, Rocket, ListTodo, Copy, FolderPlus } from
 import { Bead, BeadsProject, FavoriteBead, statusColor } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
+import { formatBytes } from "../common/formatBytes";
 import { TypeIcon } from "../common/TypeIcon";
 import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
 import { EndFlourish } from "../common/EndFlourish";
@@ -53,18 +54,11 @@ interface ProjectSwitcherViewProps {
   version?: string;
   buildSha?: string;
   buildDirty?: boolean;
-  /** Extension-host RSS in bytes (0 = not yet sampled). */
-  memoryBytes?: number;
   /** On-disk size of our built bundle in bytes (0 = unknown). */
   bundleBytes?: number;
 }
 
 /** Auto-scaled binary size, e.g. 248 MB / 1.5 GB. */
-function formatBytes(bytes: number): string {
-  const mb = bytes / (1024 * 1024);
-  return mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${Math.round(mb)} MB`;
-}
-
 const BACKEND_LABELS: Record<string, string> = {
   running: "Running",
   stopped: "Stopped",
@@ -97,7 +91,6 @@ export function ProjectSwitcherView({
   version,
   buildSha,
   buildDirty,
-  memoryBytes = 0,
   bundleBytes = 0,
 }: ProjectSwitcherViewProps): React.ReactElement {
   const backendState = activeProject?.backendStatus ?? "unknown";
@@ -254,17 +247,6 @@ export function ProjectSwitcherView({
                     title="On-disk size of the Beads extension bundle (dist/extension.js + webview main.js/css) — an attributable 'this is Beads' figure (code on disk, not runtime RAM)."
                   >
                     {formatBytes(bundleBytes)}
-                  </dd>
-                </div>
-              )}
-              {memoryBytes > 0 && (
-                <div className="project-switcher-meta-row">
-                  <dt>Host RAM</dt>
-                  <dd
-                    className="mono-figure"
-                    title="Resident memory (RSS) of the whole VS Code extension-host process — shared by ALL installed extensions plus the Node/V8 runtime, not just Beads. There's no per-extension figure; this is a superset. Read from the OS via process.memoryUsage().rss, sampled periodically."
-                  >
-                    {formatBytes(memoryBytes)}
                   </dd>
                 </div>
               )}

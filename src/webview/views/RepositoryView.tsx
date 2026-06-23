@@ -15,6 +15,7 @@ import {
   Copy,
   Database,
   FolderOpen,
+  Gauge,
   Play,
   RefreshCw,
   ScrollText,
@@ -22,12 +23,44 @@ import {
   Settings,
   Square,
 } from "lucide-react";
-import { BeadsProject, BeadsSummary, statusColor, statusLabel, vscode } from "../types";
+import { BeadsProject, BeadsSummary, WebviewSettings, statusColor, statusLabel, vscode } from "../types";
+import { formatBytes } from "../common/formatBytes";
+import { Timestamp } from "../common/Timestamp";
 
 interface RepositoryViewProps {
   project: BeadsProject | null;
   summary: BeadsSummary | null;
-  repositoryInfo: { doltStatus: string; running: boolean } | null;
+  repositoryInfo: {
+    doltStatus: string;
+    running: boolean;
+    dbSizeBytes?: number;
+    lastActivity?: string | null;
+  } | null;
+  /** Build/runtime metrics relocated from the panel's Active Project card (vs-emyj). */
+  settings: WebviewSettings;
+  /** Extension-host RSS in bytes (0 = not yet sampled). */
+  memoryBytes: number;
+}
+
+/** A labeled metric card with a value + caption. */
+function MetricCard({
+  label,
+  value,
+  caption,
+  title,
+}: {
+  label: string;
+  value: React.ReactNode;
+  caption?: string;
+  title?: string;
+}): React.ReactElement {
+  return (
+    <div className="repository-metric-card" title={title}>
+      <span className="repository-metric-label">{label}</span>
+      <span className="repository-metric-value">{value}</span>
+      {caption && <span className="repository-metric-caption">{caption}</span>}
+    </div>
+  );
 }
 
 /** A monospace path row with a copy-to-clipboard button. */
@@ -55,6 +88,8 @@ export function RepositoryView({
   project,
   summary,
   repositoryInfo,
+  settings,
+  memoryBytes,
 }: RepositoryViewProps): React.ReactElement {
   if (!project) {
     return (
@@ -211,6 +246,53 @@ export function RepositoryView({
         ) : (
           <p className="repository-muted">No issue counts available.</p>
         )}
+      </section>
+
+      {/* Metrics card grid — build/runtime + on-disk figures, the richer set
+          relocated here from the panel's Active Project card (vs-emyj). */}
+      <section className="repository-card">
+        <h2 className="repository-card-title">
+          <Gauge size={15} strokeWidth={2} />
+          <span>Metrics</span>
+        </h2>
+        <div className="repository-metric-grid">
+          {settings.extensionVersion && (
+            <MetricCard
+              label="Extension"
+              value={`v${settings.extensionVersion}`}
+              caption={settings.buildSha && settings.buildSha !== "unknown" ? `commit ${settings.buildSha}${settings.buildDirty ? " ·dirty" : ""}` : undefined}
+              title="Installed Beads extension version (and the git commit it was built from)."
+            />
+          )}
+          {settings.bundleBytes > 0 && (
+            <MetricCard
+              label="Bundle"
+              value={formatBytes(settings.bundleBytes)}
+              caption="on disk"
+              title="On-disk size of the Beads extension bundle (dist/extension.js + webview main.js/css)."
+            />
+          )}
+          <MetricCard
+            label="DB on disk"
+            value={repositoryInfo?.dbSizeBytes != null ? formatBytes(repositoryInfo.dbSizeBytes) : "—"}
+            caption=".beads directory"
+            title="Total on-disk size of this board's .beads directory."
+          />
+          <MetricCard
+            label="Last activity"
+            value={repositoryInfo?.lastActivity ? <Timestamp value={repositoryInfo.lastActivity} format="relative" /> : "—"}
+            caption="most recent update"
+            title="The most recent updatedAt across all beads in this board."
+          />
+          {memoryBytes > 0 && (
+            <MetricCard
+              label="Host RAM"
+              value={formatBytes(memoryBytes)}
+              caption="extension host (RSS)"
+              title="Resident memory (RSS) of the whole VS Code extension-host process — shared by ALL installed extensions plus the Node/V8 runtime, not just Beads. Sampled periodically via process.memoryUsage().rss."
+            />
+          )}
+        </div>
       </section>
 
       {/* Footer actions */}

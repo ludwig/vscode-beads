@@ -5560,3 +5560,34 @@ textarea {
   color: var(--vscode-descriptionForeground);
   text-transform: capitalize;
 }
+
+/* Metric cards (vs-emyj): build/runtime + on-disk figures as a responsive grid
+   of stacked label / value / caption tiles. */
+.repository-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.repository-metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: var(--border-radius);
+  background: var(--vscode-editorWidget-background, transparent);
+}
+.repository-metric-label {
+  font-size: 0.75em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--vscode-descriptionForeground);
+}
+.repository-metric-value {
+  font-size: 1.05em;
+  font-weight: 600;
+}
+.repository-metric-caption {
+  font-size: 0.78em;
+  color: var(--vscode-descriptionForeground);
+}
