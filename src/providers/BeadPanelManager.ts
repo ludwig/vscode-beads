@@ -26,6 +26,7 @@ import {
   decideOnViewState,
 } from "./beadDocSync";
 import { BeadsPanelViewProvider } from "./BeadsPanelViewProvider";
+import { BoardInitWizardViewProvider } from "./BoardInitWizardViewProvider";
 import { DashboardViewProvider } from "./DashboardViewProvider";
 import { GraphViewProvider } from "./GraphViewProvider";
 import { KanbanViewProvider } from "./KanbanViewProvider";
@@ -173,6 +174,22 @@ export class BeadPanelManager implements vscode.Disposable {
     const provider = new BeadDetailsViewProvider(this.extensionUri, this.projectManager, this.log, this.companion, this.favorites);
     provider.attach(hostFromPanel(panel));
     provider.startCreate();
+
+    this.track(key, panel, provider);
+  }
+
+  /**
+   * Open (or focus) the board-initialization wizard as an editor tab
+   * (vs-r6a1.8). Single-instance — re-invoking focuses the existing wizard
+   * rather than opening a second one.
+   */
+  public openInitWizard(): void {
+    const key = "beadsInitWizard";
+    if (this.reveal(key)) return;
+
+    const panel = this.createPanel("Initialize Board");
+    const provider = new BoardInitWizardViewProvider(this.extensionUri, this.projectManager, this.log);
+    provider.attach(hostFromPanel(panel));
 
     this.track(key, panel, provider);
   }

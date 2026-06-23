@@ -16,6 +16,29 @@ import { Logger } from "../utils/logger";
 import { BEADS_INSTALL_DOCS_URL, BREW_INSTALL_COMMAND, detectBd } from "../backend/bdInstall";
 import { InitMode, runBdInit, validateRepoName, verifyInit } from "../backend/repositoryInitializer";
 
+/**
+ * Verify the `bd` CLI is runnable; if not, surface `brew install beads`
+ * guidance (with a copy action) and return false. Shared by the QuickPick
+ * command and the wizard opener (vs-r6a1.1). Never throws.
+ */
+export async function ensureBdInstalled(bdPath: string): Promise<boolean> {
+  const detection = await detectBd(bdPath);
+  if (detection.installed) return true;
+  const COPY = `Copy "${BREW_INSTALL_COMMAND}"`;
+  const choice = await vscode.window.showErrorMessage(
+    `Beads CLI not found (tried '${bdPath}'). Install it, then try again.`,
+    COPY,
+    "Learn More"
+  );
+  if (choice === COPY) {
+    await vscode.env.clipboard.writeText(BREW_INSTALL_COMMAND);
+    vscode.window.showInformationMessage(`Copied to clipboard: ${BREW_INSTALL_COMMAND}`);
+  } else if (choice === "Learn More") {
+    void vscode.env.openExternal(vscode.Uri.parse(BEADS_INSTALL_DOCS_URL));
+  }
+  return false;
+}
+
 /** Home-abbreviate an absolute path for compact display (e.g. ~/beads/foo). */
 function toDisplayPath(absPath: string): string {
   const home = os.homedir();
@@ -33,22 +56,7 @@ export async function runInitRepositoryCommand(deps: {
   const bdPath = projectManager.getBdPath();
 
   // 1. Preflight: don't attempt init if bd isn't installed (vs-r6a1.1).
-  const detection = await detectBd(bdPath);
-  if (!detection.installed) {
-    const COPY = `Copy "${BREW_INSTALL_COMMAND}"`;
-    const choice = await vscode.window.showErrorMessage(
-      `Beads CLI not found (tried '${bdPath}'). Install it, then try again.`,
-      COPY,
-      "Learn More"
-    );
-    if (choice === COPY) {
-      await vscode.env.clipboard.writeText(BREW_INSTALL_COMMAND);
-      vscode.window.showInformationMessage(`Copied to clipboard: ${BREW_INSTALL_COMMAND}`);
-    } else if (choice === "Learn More") {
-      void vscode.env.openExternal(vscode.Uri.parse(BEADS_INSTALL_DOCS_URL));
-    }
-    return;
-  }
+  if (!(await ensureBdInstalled(bdPath))) return;
 
   // 2. Name (validated live; also rejects an existing board at the target).
   const root = projectManager.getProjectsRoot();
@@ -113,12 +121,14 @@ export async function runInitRepositoryCommand(deps: {
       cancellable: false,
     },
     async (progress) => {
+      const onLog: (line: string) => void = (line) => log.info(line);
       try {
+        log.info(`Initializing board "${boardName}" (${picked.mode}) at ${target}`);
         progress.report({ message: "Creating directory…" });
         await fs.promises.mkdir(target, { recursive: true });
 
         progress.report({ message: `Running bd init (${picked.mode})…` });
-        const init = await runBdInit({ bdPath, cwd: target, mode: picked.mode });
+        const init = await runBdInit({ bdPath, cwd: target, mode: picked.mode, onLog });
         if (init.output) log.info(`bd init output:\n${init.output}`);
         if (!init.ok) {
           showFailure(deps.log, "bd init failed.", init.output);
@@ -126,8 +136,7 @@ export async function runInitRepositoryCommand(deps: {
         }
 
         progress.report({ message: "Verifying…" });
-        const verify = await verifyInit({ bdPath, cwd: target, mode: picked.mode });
-        log.info(`Verification: ${verify.details}`);
+        const verify = await verifyInit({ bdPath, cwd: target, mode: picked.mode, onLog });
         if (!verify.ok) {
           showFailure(deps.log, "Board initialized but verification failed.", verify.details);
           return;

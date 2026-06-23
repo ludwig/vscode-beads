@@ -5104,3 +5104,182 @@ textarea {
   margin: 4px 6px;
   background: var(--vscode-menu-separatorBackground, var(--vscode-panel-border));
 }
+
+/* ── Board-init wizard (editor tab) ────────────────────────────────── vs-r6a1.8 */
+.init-wizard {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 20px 28px;
+}
+
+.init-wizard-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.init-wizard-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  color: #fff;
+  background: var(--beads-accent);
+}
+.init-wizard-title {
+  margin: 0;
+  font-size: 1.25em;
+  font-weight: 600;
+}
+.init-wizard-subtitle {
+  margin: 2px 0 0;
+  color: var(--vscode-descriptionForeground);
+  font-size: 0.9em;
+}
+
+.init-wizard-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.init-wizard-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.init-wizard-label {
+  font-size: 0.82em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--vscode-descriptionForeground);
+}
+.init-wizard-hint {
+  font-size: 0.85em;
+  color: var(--vscode-descriptionForeground);
+}
+.init-wizard-hint-error {
+  color: var(--vscode-errorForeground);
+}
+.init-wizard-hint-muted {
+  opacity: 0.7;
+}
+
+.init-wizard-where {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.init-wizard-path {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: 6px;
+  background: var(--vscode-textBlockQuote-background, rgba(127, 127, 127, 0.1));
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 0.88em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.init-wizard-link {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: var(--vscode-textLink-foreground);
+}
+.init-wizard-link:hover {
+  text-decoration: underline;
+}
+
+.init-wizard-modes {
+  display: flex;
+  gap: 10px;
+}
+.init-wizard-mode {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: 1;
+  padding: 11px 12px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+  border: 1px solid var(--vscode-dropdown-border, var(--vscode-panel-border));
+  background: var(--vscode-editor-background);
+  color: inherit;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.init-wizard-mode:hover {
+  border-color: var(--beads-accent);
+}
+.init-wizard-mode.is-selected {
+  border-color: var(--beads-accent);
+  background: color-mix(in srgb, var(--beads-accent) 12%, transparent);
+}
+.init-wizard-mode-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.init-wizard-mode-name {
+  font-weight: 600;
+  font-size: 0.95em;
+}
+.init-wizard-mode-desc {
+  font-size: 0.82em;
+  color: var(--vscode-descriptionForeground);
+}
+
+.init-wizard-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.init-wizard-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px 11px;
+  border-radius: 6px;
+  border: 1px solid var(--vscode-inputValidation-errorBorder, var(--vscode-errorForeground));
+  background: var(--vscode-inputValidation-errorBackground, rgba(255, 0, 0, 0.08));
+  color: var(--vscode-errorForeground);
+  font-size: 0.9em;
+}
+
+.init-wizard-progress {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 28px 20px;
+}
+.init-wizard-progress-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.init-wizard-progress-label {
+  font-weight: 600;
+}
+.init-wizard-progress-detail {
+  font-size: 0.85em;
+  color: var(--vscode-descriptionForeground);
+}
+.init-wizard-spinner {
+  animation: init-wizard-spin 1s linear infinite;
+  color: var(--beads-accent);
+}
+@keyframes init-wizard-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

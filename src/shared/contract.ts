@@ -261,6 +261,18 @@ export interface FilterSnapshot {
 // --- Message protocol -------------------------------------------------------
 
 // Messages sent from the extension host to the webview.
+/** Storage mode chosen in the board-init wizard (vs-r6a1.8). */
+export type InitBoardMode = "server" | "embedded";
+
+/** Lifecycle phases of an in-flight board initialization (vs-r6a1.8). */
+export type InitWizardPhase =
+  | "form" // editing the form (no init running)
+  | "creating" // mkdir
+  | "initializing" // bd init
+  | "verifying" // post-init checks
+  | "activating" // discovery + activate
+  | "error"; // failed — message holds details (success closes the tab)
+
 export type ExtensionToWebviewMessage =
   | { type: "setViewType"; viewType: string }
   | { type: "setProject"; project: BeadsProject | null }
@@ -299,7 +311,11 @@ export type ExtensionToWebviewMessage =
   // Whether `beadId`'s companion `bead:` document is currently open, so the
   // Details view's "seed to Claude" toggle reflects reality (vs-nr3d).
   | { type: "setBeadCompanionOpen"; beadId: string; open: boolean }
-  | { type: "showToast"; text: string };
+  | { type: "showToast"; text: string }
+  // Board-init wizard (vs-r6a1.8): seed the form with the current root.
+  | { type: "setInitWizard"; projectsRoot: string }
+  // Board-init wizard: progress/result of an in-flight initialization.
+  | { type: "setInitProgress"; phase: InitWizardPhase; message?: string };
 
 // Messages sent from the webview to the extension host.
 export type WebviewToExtensionMessage =
@@ -313,6 +329,10 @@ export type WebviewToExtensionMessage =
   | { type: "openSettings" }
   // Swap the projects root via a folder picker (vs-r6a1.10).
   | { type: "changeProjectsRoot" }
+  // Board-init wizard (vs-r6a1.8): create a board with the given name + mode.
+  | { type: "submitInitBoard"; name: string; mode: InitBoardMode }
+  // Board-init wizard: dismiss the wizard tab.
+  | { type: "cancelInitBoard" }
   | { type: "showDoltStatus" }
   | { type: "startDoltServer" }
   | { type: "stopDoltServer" }

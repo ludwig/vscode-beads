@@ -17,7 +17,7 @@ import { BeadsProjectSwitcherViewProvider } from "../providers/BeadsProjectSwitc
 import { BeadPanelManager } from "../providers/BeadPanelManager";
 import { BeadDocumentProvider } from "../providers/BeadDocumentProvider";
 import { NavigationHistory } from "../providers/NavigationHistory";
-import { runInitRepositoryCommand } from "./initRepository";
+import { ensureBdInstalled, runInitRepositoryCommand } from "./initRepository";
 import { Logger } from "../utils/logger";
 
 export interface CommandDeps {
@@ -283,8 +283,14 @@ export function registerCommands(
       detailsProvider.startCreate();
     }),
 
-    // Create + initialize a new Beads board from the extension (epic vs-r6a1).
+    // Create + initialize a new Beads board: the polished editor-tab wizard is
+    // the default (vs-r6a1.8); the native QuickPick stays as a fast keyboard
+    // path under beads.initRepositoryQuick. Both share the bd preflight.
     vscode.commands.registerCommand("beads.initRepository", async () => {
+      if (!(await ensureBdInstalled(projectManager.getBdPath()))) return;
+      panelManager.openInitWizard();
+    }),
+    vscode.commands.registerCommand("beads.initRepositoryQuick", async () => {
       await runInitRepositoryCommand({ projectManager, log });
     }),
 

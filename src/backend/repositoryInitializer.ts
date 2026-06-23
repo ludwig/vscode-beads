@@ -84,25 +84,37 @@ export interface InitResult {
   output: string;
 }
 
+/**
+ * Optional logging sink. A plain callback (not a Logger) so this module stays
+ * VS Code-free and unit-testable; callers pass `(line) => log.info(line)` to
+ * surface the bd commands + results in the Beads output channel (vs-r6a1.11).
+ */
+export type LogLine = (line: string) => void;
+
 /** Run `bd init [--server] --non-interactive` with cwd = the new board dir. */
 export async function runBdInit(opts: {
   bdPath: string;
   cwd: string;
   mode: InitMode;
+  onLog?: LogLine;
 }): Promise<InitResult> {
   const args = opts.mode === "server"
     ? ["init", "--server", "--non-interactive"]
     : ["init", "--non-interactive"];
+  opts.onLog?.(`Running: ${opts.bdPath} ${args.join(" ")} (cwd=${opts.cwd})`);
   try {
     const { stdout, stderr } = await execFileAsync(opts.bdPath, args, {
       cwd: opts.cwd,
       timeout: INIT_TIMEOUT_MS,
       env: process.env,
     });
+    opts.onLog?.(`bd init succeeded (${opts.mode} mode)`);
     return { ok: true, output: `${stdout}\n${stderr}`.trim() };
   } catch (error) {
     const err = error as Error & { stdout?: string; stderr?: string };
-    return { ok: false, output: (err.stderr || err.stdout || err.message || "").trim() };
+    const output = (err.stderr || err.stdout || err.message || "").trim();
+    opts.onLog?.(`bd init failed: ${output}`);
+    return { ok: false, output };
   }
 }
 
@@ -129,6 +141,7 @@ export async function verifyInit(opts: {
   bdPath: string;
   cwd: string;
   mode: InitMode;
+  onLog?: LogLine;
 }): Promise<VerifyResult> {
   let metadataServerMode = false;
   try {
@@ -141,6 +154,7 @@ export async function verifyInit(opts: {
   let doltStatus: boolean | null = null;
   if (opts.mode === "server") {
     try {
+      opts.onLog?.(`Running: ${opts.bdPath} dolt status (cwd=${opts.cwd})`);
       const { stdout, stderr } = await execFileAsync(opts.bdPath, ["dolt", "status"], {
         cwd: opts.cwd,
         timeout: VERIFY_TIMEOUT_MS,
@@ -153,6 +167,7 @@ export async function verifyInit(opts: {
 
   let list = false;
   try {
+    opts.onLog?.(`Running: ${opts.bdPath} list (cwd=${opts.cwd})`);
     const { stdout, stderr } = await execFileAsync(opts.bdPath, ["list"], {
       cwd: opts.cwd,
       timeout: VERIFY_TIMEOUT_MS,
@@ -170,5 +185,6 @@ export async function verifyInit(opts: {
     ? `dolt server running: ${doltStatus} · metadata dolt_mode=server: ${metadataServerMode} · bd list healthy: ${list}`
     : `bd list healthy: ${list}`;
 
+  opts.onLog?.(`Verify (${opts.mode}): ${details} → ${ok ? "OK" : "FAILED"}`);
   return { ok, checks: { doltStatus, metadataServerMode, list }, details };
 }
