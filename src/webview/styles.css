@@ -2115,6 +2115,24 @@ textarea {
   margin: 0 0 var(--spacing-xs);
 }
 
+/* Empty-state "Create your first board" CTA: the primary affordance when no
+   boards exist yet (vs-r6a1.5). Accent fill, full-width, with a muted hint
+   line below pointing at the manual alternatives. */
+.context-action-btn.create-board {
+  flex: initial;
+  width: 100%;
+  margin: var(--spacing-xs) 0 var(--spacing-sm);
+  background: var(--beads-accent);
+  color: #fff;
+}
+.context-action-btn.create-board:hover {
+  background: var(--beads-accent-hover);
+}
+
+.context-empty-hint {
+  opacity: 0.85;
+}
+
 /* Active Bead reads as a pinned register slot: accent left rail + pin glyph. */
 .active-bead {
   position: relative;

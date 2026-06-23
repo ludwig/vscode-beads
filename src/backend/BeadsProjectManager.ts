@@ -280,7 +280,12 @@ export class BeadsProjectManager implements vscode.Disposable {
 
   async showProjectPicker(): Promise<BeadsProject | undefined> {
     if (this.projects.length === 0) {
-      vscode.window.showWarningMessage("No Beads projects found. Initialize a project with `bd init` first.");
+      const CREATE = "Create Board";
+      void vscode.window
+        .showWarningMessage("No Beads boards found.", CREATE)
+        .then((choice) => {
+          if (choice === CREATE) vscode.commands.executeCommand("beads.initRepository");
+        });
       return undefined;
     }
 
@@ -626,10 +631,41 @@ export class BeadsProjectManager implements vscode.Disposable {
     return fs.existsSync(raw) ? raw : "bd";
   }
 
-  private getBdPath(): string {
+  /**
+   * The resolved `bd` executable path (config + ${env:VAR} + workspace-relative
+   * resolution). Public so the init flow can preflight/run `bd` against the same
+   * binary the backend uses (vs-r6a1).
+   */
+  getBdPath(): string {
     const config = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);
     const configuredBdPath = config.get<string>("pathToBd", "bd") ?? "bd";
     return this.resolveBdPath(resolveEnvVariables(configuredBdPath).trim());
+  }
+
+  /**
+   * The root directory under which new boards are created and auto-discovered.
+   * Currently the hardcoded default; vs-r6a1.6/vs-2re will swap in the
+   * `beads.projectsRoot` setting here without touching callers.
+   */
+  getProjectsRoot(): string {
+    return DEFAULT_PROJECTS_ROOT;
+  }
+
+  /**
+   * Re-discover projects and activate the one rooted at `rootPath` (e.g. a board
+   * just created by the init command). Returns false if discovery didn't pick it
+   * up. Project ids are a hash of the .beads dir, so we match on the resolved
+   * root path rather than recomputing the id here (vs-r6a1.4).
+   */
+  async discoverAndActivateProjectAt(rootPath: string): Promise<boolean> {
+    await this.discoverProjects();
+    const target = path.resolve(rootPath);
+    const project = this.projects.find((p) => path.resolve(p.rootPath) === target);
+    if (!project) {
+      this.log.warn(`Newly created project at ${rootPath} not found after discovery`);
+      return false;
+    }
+    return this.setActiveProject(project.id);
   }
 
   private isNotInitializedError(error: unknown): boolean {

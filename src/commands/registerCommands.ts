@@ -17,6 +17,7 @@ import { BeadsProjectSwitcherViewProvider } from "../providers/BeadsProjectSwitc
 import { BeadPanelManager } from "../providers/BeadPanelManager";
 import { BeadDocumentProvider } from "../providers/BeadDocumentProvider";
 import { NavigationHistory } from "../providers/NavigationHistory";
+import { runInitRepositoryCommand } from "./initRepository";
 import { Logger } from "../utils/logger";
 
 export interface CommandDeps {
@@ -280,6 +281,11 @@ export function registerCommands(
         return;
       }
       detailsProvider.startCreate();
+    }),
+
+    // Create + initialize a new Beads board from the extension (epic vs-r6a1).
+    vscode.commands.registerCommand("beads.initRepository", async () => {
+      await runInitRepositoryCommand({ projectManager, log });
     }),
 
     // vs-2tn.2: open a New Issue form as an independent editor tab.
