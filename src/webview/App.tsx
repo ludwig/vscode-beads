@@ -54,6 +54,9 @@ interface AppState {
   // the Details/table "View in graph" action). `seq` changes on every request
   // so the panel re-switches to Graph even if it's the same bead as last time.
   showGraphRequest: { beadId: string; seq: number } | null;
+  // Same shape, for the Tree tab "show in tree" action (vs-kp67): switch to the
+  // Tree tab and reveal the bead. `seq` re-fires for a repeat of the same bead.
+  showTreeRequest: { beadId: string; seq: number } | null;
   // Bumped to switch the panel to the Issues tab + pulse a confirmation ring.
   focusIssuesSeq: number;
   // Bumped to switch the panel to the Kanban tab (vs-6xf).
@@ -115,6 +118,7 @@ const initialState: AppState = {
   createMode: false,
   issuesFilterRequest: null,
   showGraphRequest: null,
+  showTreeRequest: null,
   focusIssuesSeq: 0,
   focusKanbanSeq: 0,
   pulseSeq: 0,
@@ -201,6 +205,15 @@ export function App(): React.ReactElement {
           showGraphRequest: {
             beadId: message.beadId,
             seq: (prev.showGraphRequest?.seq ?? 0) + 1,
+          },
+        }));
+        break;
+      case "showTree":
+        setState((prev) => ({
+          ...prev,
+          showTreeRequest: {
+            beadId: message.beadId,
+            seq: (prev.showTreeRequest?.seq ?? 0) + 1,
           },
         }));
         break;
@@ -395,6 +408,7 @@ export function App(): React.ReactElement {
             issuesFilterRequest={state.issuesFilterRequest}
             applySnapshotRequest={state.applySnapshotRequest}
             showGraphRequest={state.showGraphRequest}
+            showTreeRequest={state.showTreeRequest}
             focusIssuesSeq={state.focusIssuesSeq}
             focusKanbanSeq={state.focusKanbanSeq}
           />

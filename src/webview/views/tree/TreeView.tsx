@@ -29,7 +29,7 @@ import { ErrorMessage } from "../../common/ErrorMessage";
 import { ContextMenu, type ContextMenuItem } from "../../common/ContextMenu";
 import { Timestamp } from "../../common/Timestamp";
 import { useClickOutside } from "../../hooks/useClickOutside";
-import { buildForest, filterForest, filterForestByIds, subtreeIds, compareById, type BeadComparator, type TreeNode } from "./treeModel";
+import { ancestorPath, buildForest, filterForest, filterForestByIds, subtreeIds, compareById, type BeadComparator, type TreeNode } from "./treeModel";
 
 interface DragApi {
   draggedId: string | null;
@@ -162,6 +162,12 @@ interface TreeViewProps {
   filterActive?: boolean;
   filteredCount?: number;
   totalCount?: number;
+  /**
+   * A "show in tree" deep-link target (vs-kp67): expand the bead's collapsed
+   * ancestors, select it, and scroll it into view. `seq` re-fires for a repeat
+   * of the same bead. Null when there's no pending reveal.
+   */
+  revealRequest?: { beadId: string; seq: number } | null;
   onSelectBead: (beadId: string) => void;
   onRequestGraph: () => void;
   onRetry: () => void;
@@ -177,6 +183,7 @@ export function TreeView({
   filterActive,
   filteredCount,
   totalCount,
+  revealRequest,
   onSelectBead,
   onRequestGraph,
   onRetry,
@@ -228,6 +235,7 @@ export function TreeView({
   );
   const [colMenuOpen, setColMenuOpen] = useState(false);
   const colMenuRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
   useClickOutside(colMenuRef, () => setColMenuOpen(false), colMenuOpen);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [menu, setMenu] = useState<{ x: number; y: number; bead: Bead } | null>(null);
@@ -291,6 +299,42 @@ export function TreeView({
   // Only the text query force-expands (to reveal matches); the always-on Issues
   // scope must not, so the user can still collapse/expand within it.
   const filtering = query.trim().length > 0;
+
+  // "Show in tree" deep-link (vs-kp67): expand the target's collapsed ancestors,
+  // select it, and scroll it into view. Held as pending state and retried as
+  // `visible` updates, because the graph may still be loading when the request
+  // arrives (the tree fetches its graph lazily on mount). If the bead is scoped
+  // out by the Issues filter it simply never resolves — a harmless no-op.
+  const [pendingReveal, setPendingReveal] = useState<string | null>(null);
+  const lastRevealSeq = useRef<number | null>(null);
+  useEffect(() => {
+    if (!revealRequest || lastRevealSeq.current === revealRequest.seq) return;
+    lastRevealSeq.current = revealRequest.seq;
+    setPendingReveal(revealRequest.beadId);
+  }, [revealRequest]);
+  useEffect(() => {
+    if (!pendingReveal) return;
+    const ancestors = ancestorPath(visible, pendingReveal);
+    const present =
+      ancestors.length > 0 || visible.some((n) => n.bead.id === pendingReveal);
+    if (!present) return; // graph not loaded / bead not in scope yet — retry later
+    if (ancestors.length > 0) {
+      setCollapsed((prev) => {
+        if (ancestors.every((a) => !prev.has(a))) return prev;
+        const next = new Set(prev);
+        ancestors.forEach((a) => next.delete(a));
+        return next;
+      });
+    }
+    setLocalSelectedId(pendingReveal);
+    const target = pendingReveal;
+    requestAnimationFrame(() => {
+      bodyRef.current
+        ?.querySelector(`[data-bead-id="${target}"]`)
+        ?.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
+    setPendingReveal(null);
+  }, [pendingReveal, visible]);
 
   // Every id that owns children — the set the expand/collapse-all controls act
   // on, and the basis for the "all collapsed / all expanded" affordances (vs-fpp).
@@ -546,6 +590,7 @@ export function TreeView({
         </div>
       )}
       <div
+        ref={bodyRef}
         className={`beads-tree-body${canDetach ? " can-detach" : ""}`}
         role="tree"
         onDragOver={onBodyDragOver}
@@ -682,6 +727,7 @@ function TreeRow({
       <div
         className={`beads-tree-row${isSelected ? " selected" : ""}${isDragging ? " dragging" : ""}${isDropTarget ? " drop-target" : ""}`}
         style={{ gridTemplateColumns: gridTemplate }}
+        data-bead-id={bead.id}
         role="treeitem"
         aria-expanded={hasChildren ? !isCollapsed : undefined}
         aria-selected={isSelected}

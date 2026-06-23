@@ -403,6 +403,11 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
         vscode.commands.executeCommand("beads.viewInGraph", message.beadId);
         break;
 
+      case "viewInTree":
+        // Switch the panel to the Tree tab and reveal this bead (vs-kp67).
+        vscode.commands.executeCommand("beads.viewInTree", message.beadId);
+        break;
+
       case "navigateBack":
         // Editor tabs walk their own per-tab trail (vs-9u8); the sidebar
         // delegates to the global history command.

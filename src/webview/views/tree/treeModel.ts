@@ -118,6 +118,23 @@ export function filterForestByIds(forest: TreeNode[], allowed: Set<string>): Tre
 }
 
 /**
+ * The ancestor ids of `id`, ordered root→parent (excluding `id` itself), or an
+ * empty array if `id` isn't in the forest or is a root. Used to expand the
+ * collapsed ancestors so a "reveal in tree" target becomes visible (vs-kp67).
+ */
+export function ancestorPath(forest: TreeNode[], id: string): string[] {
+  const walk = (nodes: TreeNode[], trail: string[]): string[] | null => {
+    for (const n of nodes) {
+      if (n.bead.id === id) return trail;
+      const hit = walk(n.children, [...trail, n.bead.id]);
+      if (hit) return hit;
+    }
+    return null;
+  };
+  return walk(forest, []) ?? [];
+}
+
+/**
  * All ids in the subtree rooted at `id` (including `id` itself), or an empty set
  * if `id` isn't in the forest. Used to reject an illegal reparent: a node may
  * not be dropped onto itself or any of its descendants (would make a cycle).

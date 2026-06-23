@@ -311,6 +311,11 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         vscode.commands.executeCommand("beads.viewInGraph", message.beadId);
         break;
 
+      case "viewInTree":
+        // Switch the panel to the Tree tab and reveal this bead (vs-kp67).
+        vscode.commands.executeCommand("beads.viewInTree", message.beadId);
+        break;
+
       case "copyBeadId":
         if (message.beadId) {
           await vscode.env.clipboard.writeText(message.beadId);

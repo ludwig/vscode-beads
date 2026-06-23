@@ -288,6 +288,8 @@ export type ExtensionToWebviewMessage =
   | { type: "setCreateMode"; value: boolean }
   | { type: "applyIssuesFilter"; filter: IssuesFilter }
   | { type: "showGraph"; beadId: string }
+  // Switch the panel to the Tree tab and reveal/scroll-to the bead (vs-kp67).
+  | { type: "showTree"; beadId: string }
   | { type: "focusIssuesTab" }
   | { type: "focusKanbanTab" }
   | { type: "pulse" }
@@ -349,6 +351,7 @@ export type WebviewToExtensionMessage =
   | { type: "clearActiveBead" }
   | { type: "copyText"; text: string; label?: string; toast?: boolean }
   | { type: "viewInGraph"; beadId: string }
+  | { type: "viewInTree"; beadId: string }
   | { type: "navigateBack" }
   | { type: "navigateForward" }
   | { type: "pickReadyBead" }

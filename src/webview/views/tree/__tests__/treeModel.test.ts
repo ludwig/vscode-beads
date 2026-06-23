@@ -1,4 +1,4 @@
-import { buildForest, filterForest, filterForestByIds, subtreeIds, type TreeNode } from "../treeModel";
+import { ancestorPath, buildForest, filterForest, filterForestByIds, subtreeIds, type TreeNode } from "../treeModel";
 import type { Bead } from "../../../types";
 
 function bead(id: string, title = id): Bead {
@@ -15,6 +15,27 @@ function pc(child: string, parent: string) {
 }
 
 const ids = (nodes: TreeNode[]): string[] => nodes.map((n) => n.bead.id);
+
+describe("ancestorPath (vs-kp67)", () => {
+  const forest = buildForest(
+    [bead("root"), bead("mid"), bead("leaf"), bead("solo")],
+    [pc("mid", "root"), pc("leaf", "mid")],
+  );
+
+  it("returns ancestors root→parent for a nested bead", () => {
+    expect(ancestorPath(forest, "leaf")).toEqual(["root", "mid"]);
+  });
+
+  it("returns a single ancestor for a direct child", () => {
+    expect(ancestorPath(forest, "mid")).toEqual(["root"]);
+  });
+
+  it("returns [] for a root, a standalone bead, and an unknown id", () => {
+    expect(ancestorPath(forest, "root")).toEqual([]);
+    expect(ancestorPath(forest, "solo")).toEqual([]);
+    expect(ancestorPath(forest, "nope")).toEqual([]);
+  });
+});
 
 describe("buildForest", () => {
   it("nests children under their parent", () => {

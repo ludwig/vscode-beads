@@ -124,6 +124,14 @@ export function registerCommands(
       shellProvider.showGraphForBead(beadId);
     }),
 
+    vscode.commands.registerCommand("beads.viewInTree", async (beadId?: string) => {
+      if (!beadId) {
+        return;
+      }
+      await vscode.commands.executeCommand("beadsPanelShell.focus");
+      shellProvider.showTreeForBead(beadId);
+    }),
+
     vscode.commands.registerCommand("beads.openBeadDetails", async (beadId?: string) => {
       if (!beadId) {
         // Prompt for bead ID

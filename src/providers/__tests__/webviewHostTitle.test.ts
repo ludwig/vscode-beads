@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- minimal structural fakes stand in for vscode panel/view */
 import { hostFromPanel, hostFromView } from "../WebviewHost";
 
 // The host factories only read/write plain properties and attach listeners, so
