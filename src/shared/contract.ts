@@ -204,6 +204,7 @@ export interface BeadsSummary {
 export interface WebviewSettings {
   renderMarkdown: boolean;
   highlightFavorites: boolean; // subtle accent on favorited (starred) rows in tables
+  muteClosedIssues: boolean; // gray out the titles of closed (done) issues in tables
   userId: string;
   tooltipHoverDelay: number; // 0 = disabled
   extensionVersion: string; // e.g. "0.14.0"

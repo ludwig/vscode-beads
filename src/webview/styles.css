@@ -1661,6 +1661,13 @@ textarea {
   text-overflow: ellipsis;
 }
 
+/* Mute the titles of closed (done) issues so they recede visually when shown
+   alongside open work (beads.muteClosedIssues, vs-on5g). */
+.bead-title.muted-closed {
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.7;
+}
+
 .type-cell,
 .date-cell {
   color: var(--vscode-descriptionForeground);

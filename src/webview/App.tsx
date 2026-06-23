@@ -107,6 +107,7 @@ const initialState: AppState = {
   settings: {
     renderMarkdown: true,
     highlightFavorites: true,
+    muteClosedIssues: true,
     userId: "",
     tooltipHoverDelay: 1000,
     extensionVersion: "",
@@ -379,6 +380,7 @@ export function App(): React.ReactElement {
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
             highlightFavorites={state.settings.highlightFavorites}
+            muteClosedIssues={state.settings.muteClosedIssues}
             tooltipHoverDelay={state.settings.tooltipHoverDelay}
             issuesFilterRequest={state.issuesFilterRequest}
             applySnapshotRequest={state.applySnapshotRequest}

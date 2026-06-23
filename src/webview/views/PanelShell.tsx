@@ -293,6 +293,8 @@ export function PanelShell({
             error={error}
             selectedBeadId={selectedBeadId}
             favoriteIds={favoriteIds}
+            highlightFavorites={settings.highlightFavorites}
+            muteClosedIssues={settings.muteClosedIssues}
             tooltipHoverDelay={settings.tooltipHoverDelay}
             issuesFilterRequest={localFilter ?? issuesFilterRequest}
             applySnapshotRequest={applySnapshotRequest}

@@ -76,6 +76,8 @@ interface IssuesViewProps {
   favoriteIds?: string[];
   /** When true, favorited rows get a subtle accent (beads.highlightFavorites, vs-lu8f). */
   highlightFavorites?: boolean;
+  /** When true, gray out the titles of closed (done) issues (beads.muteClosedIssues, vs-on5g). */
+  muteClosedIssues?: boolean;
   tooltipHoverDelay: number; // 0 = disabled
   /** Drill-in filter pushed from another view (e.g. a Dashboard card/badge). */
   issuesFilterRequest?: { filter: IssuesFilter; seq: number } | null;
@@ -155,6 +157,7 @@ export function IssuesView({
   selectedBeadId,
   favoriteIds = [],
   highlightFavorites = true,
+  muteClosedIssues = true,
   tooltipHoverDelay,
   issuesFilterRequest,
   applySnapshotRequest,
@@ -477,7 +480,13 @@ export function IssuesView({
             >
               {info.row.original.id}
             </span>
-            <span className="bead-title">{info.getValue()}</span>
+            <span
+              className={`bead-title${
+                muteClosedIssues && isClosedStatus(info.row.original.status) ? " muted-closed" : ""
+              }`}
+            >
+              {info.getValue()}
+            </span>
           </span>
         ),
       }),
@@ -571,7 +580,7 @@ export function IssuesView({
         sortingFn: timestampSortingFn,
       }),
     ],
-    [copiedId, selectRow]
+    [copiedId, selectRow, muteClosedIssues]
   );
 
   const table = useReactTable({

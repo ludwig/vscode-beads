@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Mute closed issues** — a new `beads.muteClosedIssues` setting (default on) grays out the titles of closed issues in table views so they recede when shown alongside open work. Grouped with markdown rendering and favorite highlighting under a new **Appearance** section in the extension settings (vs-on5g)
 - **"Show in tree view" from a bead's details** — a new tree icon in the bead Details header (between the favorite star and Refresh) flips the Beads panel to its Tree tab and reveals the bead: it expands the bead's collapsed ancestors and scrolls it into view. Mirrors the existing "View in graph" action (vs-kp67)
 
 ### Removed
