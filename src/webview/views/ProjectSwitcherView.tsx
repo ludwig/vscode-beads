@@ -40,6 +40,12 @@ interface ProjectSwitcherViewProps {
   onShowIssues: () => void;
   /** Launch the "Initialize Repository" flow (empty-state CTA, vs-r6a1.5). */
   onCreateBoard: () => void;
+  /** Swap the projects root via a folder picker (vs-r6a1.10). */
+  onChangeRoot: () => void;
+  /** Open the Settings UI filtered to this extension (vs-r6a1.9). */
+  onOpenSettings: () => void;
+  /** The resolved projects root, shown in the dropdown header (vs-r6a1.10). */
+  projectsRoot?: string;
   onShowStatus: () => void;
   onStartDolt: () => void;
   onStopDolt: () => void;
@@ -81,6 +87,9 @@ export function ProjectSwitcherView({
   onPickReady,
   onShowIssues,
   onCreateBoard,
+  onChangeRoot,
+  onOpenSettings,
+  projectsRoot,
   onShowStatus,
   onStartDolt,
   onStopDolt,
@@ -175,11 +184,13 @@ export function ProjectSwitcherView({
               menuPlacement="bottom-end"
             >
               <DropdownItem onClick={onCreateBoard}>Initialize New Board…</DropdownItem>
+              <DropdownItem onClick={onChangeRoot}>Change Projects Root…</DropdownItem>
               <DropdownItem onClick={onOpenProjectFolder}>Open Folder</DropdownItem>
               <DropdownItem onClick={onShowStatus}>Show Dolt Status</DropdownItem>
               <DropdownItem onClick={onStartDolt}>Start Dolt</DropdownItem>
               <DropdownItem onClick={onStopDolt}>Stop Dolt</DropdownItem>
               <DropdownItem onClick={onOpenDoltLog}>Open Dolt Log</DropdownItem>
+              <DropdownItem onClick={onOpenSettings}>Extension Settings</DropdownItem>
             </Dropdown>
           )}
         </div>
@@ -191,6 +202,8 @@ export function ProjectSwitcherView({
           activeProject={activeProject}
           onSelectProject={onSelectProject}
           onCreateBoard={onCreateBoard}
+          onChangeRoot={onChangeRoot}
+          projectsRoot={projectsRoot}
         />
 
         {activeProject ? (
