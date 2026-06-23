@@ -250,10 +250,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Show warning if no projects found
   if (projectManager.getProjects().length === 0) {
     vscode.window.showInformationMessage(
-      "No Beads projects found in the workspace. Initialize a project with `bd init` to get started.",
+      "No Beads boards found. Create one to get started.",
+      "Create Board",
       "Learn More"
     ).then((action) => {
-      if (action === "Learn More") {
+      if (action === "Create Board") {
+        vscode.commands.executeCommand("beads.initRepository");
+      } else if (action === "Learn More") {
         vscode.env.openExternal(vscode.Uri.parse("https://github.com/steveyegge/beads"));
       }
     });

@@ -307,6 +307,8 @@ export type WebviewToExtensionMessage =
   | { type: "refresh" }
   | { type: "selectProject"; projectId: string; projectRootPath?: string }
   | { type: "showProjectMenu"; projectId: string }
+  // Launch the "Initialize Repository" flow from an empty-state CTA (vs-r6a1.5).
+  | { type: "createBoard" }
   | { type: "showDoltStatus" }
   | { type: "startDoltServer" }
   | { type: "stopDoltServer" }

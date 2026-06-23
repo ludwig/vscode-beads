@@ -11,7 +11,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, X, Rocket, ListTodo, Copy } from "lucide-react";
+import { ChevronDown, ChevronRight, X, Rocket, ListTodo, Copy, FolderPlus } from "lucide-react";
 import { Bead, BeadsProject, FavoriteBead, statusColor } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
@@ -38,6 +38,8 @@ interface ProjectSwitcherViewProps {
   onToggleFavorite: (beadId: string) => void;
   onPickReady: () => void;
   onShowIssues: () => void;
+  /** Launch the "Initialize Repository" flow (empty-state CTA, vs-r6a1.5). */
+  onCreateBoard: () => void;
   onShowStatus: () => void;
   onStartDolt: () => void;
   onStopDolt: () => void;
@@ -78,6 +80,7 @@ export function ProjectSwitcherView({
   onToggleFavorite,
   onPickReady,
   onShowIssues,
+  onCreateBoard,
   onShowStatus,
   onStartDolt,
   onStopDolt,
@@ -255,9 +258,18 @@ export function ProjectSwitcherView({
           </>
         ) : (
           <div className="context-empty">
-            <p>No Beads project found.</p>
-            <p>
-              Run <code>bd init</code> in a folder, or point the{" "}
+            <p>No Beads boards yet.</p>
+            <button
+              type="button"
+              className="btn context-action-btn create-board"
+              onClick={onCreateBoard}
+              title="Create and initialize a new Beads board"
+            >
+              <FolderPlus size={14} strokeWidth={2} />
+              <span>Create your first board</span>
+            </button>
+            <p className="context-empty-hint">
+              Or run <code>bd init</code> in a folder, or point the{" "}
               <code>beads.projects</code> setting at one.
             </p>
           </div>

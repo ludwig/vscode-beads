@@ -410,6 +410,10 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         await vscode.commands.executeCommand("beads.createIssue");
         break;
 
+      case "createBoard":
+        await vscode.commands.executeCommand("beads.initRepository");
+        break;
+
       default:
         await this.handleCustomMessage(message);
     }

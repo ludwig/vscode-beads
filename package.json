@@ -131,6 +131,11 @@
         "icon": "$(add)"
       },
       {
+        "command": "beads.initRepository",
+        "title": "Beads: Initialize Repository...",
+        "icon": "$(repo-create)"
+      },
+      {
         "command": "beads.openBeadInTab",
         "title": "Beads: Open Issue in Editor Tab",
         "icon": "$(link-external)"
