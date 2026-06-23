@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`beads.autoSeedActiveBead` setting** — auto-seeding a bead into your LLM context is now triggered manually via the LLM badge in the bead Details header, so the experimental focus-follows setting (and its dead auto-seed-on-focus path) is gone (vs-3ssy)
 
+### Changed
+
+- **The `¬closed` filter chip reads as an exclusion** — the default "not closed" status chip now gets a faint accent-tinted fill and a bolded `¬` operator so it's visually distinct from the outline-only positive status picks (vs-th4z)
+
 ### Fixed
 
 - **Editor-tab title tracks the shown bead** — navigating from one bead to another within the same editor tab now retitles the tab to the bead you're viewing, instead of staying stuck on the bead it was opened with (vs-q0e2)

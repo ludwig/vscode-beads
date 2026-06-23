@@ -1034,6 +1034,7 @@ export function IssuesView({
               key="status-not-closed"
               label="¬closed"
               accentColor={statusColor("closed")}
+              negated
               onRemove={clearStatusFilter}
             />
           ) : (
