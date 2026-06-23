@@ -1348,6 +1348,14 @@ textarea {
   background: var(--beads-accent);
   border-color: var(--beads-accent);
 }
+/* When Ready is active, swap the line-art rocket for the colored 🚀 emoji,
+   sized to sit on the same baseline as the 12px lucide icon it replaces. */
+.ready-toggle-emoji {
+  font-size: 12px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+}
 /* When the Favorites filter is on, fill the star solid yellow (matching the
  * favorite-star icon color) so the toggle reads as "starred / active" at a
  * glance — a full gold star on the accent background (vs-lu8f). CSS overrides

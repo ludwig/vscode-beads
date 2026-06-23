@@ -1012,7 +1012,11 @@ export function IssuesView({
             onClick={toggleReady}
             title="Show only ready-to-work beads (open, no open blocker). Composes with the other filters."
           >
-            <Rocket size={12} strokeWidth={2.25} />
+            {readyOnly ? (
+              <span className="ready-toggle-emoji" aria-hidden="true">🚀</span>
+            ) : (
+              <Rocket size={12} strokeWidth={2.25} />
+            )}
             <span>Ready</span>
           </button>
 
