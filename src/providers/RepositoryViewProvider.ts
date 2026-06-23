@@ -29,6 +29,12 @@ export class RepositoryViewProvider extends BaseViewProvider {
 
   protected async loadData(reason: "initial" | "projectChange" | "manualRefresh" | "background" = "background"): Promise<void> {
     const thisRequest = ++this.loadSequence;
+
+    // Title the editor tab with the repo basename so it's identifiable among
+    // other tabs and tracks the active project as it's switched (vs-beoh).
+    const activeProject = this.projectManager.getActiveProject();
+    this._host?.setTitle(activeProject ? `Repo · ${activeProject.name}` : "Repository");
+
     const client = this.projectManager.getClient();
     if (!client) {
       this.postMessage({ type: "setRepositoryInfo", doltStatus: "", running: false });
