@@ -160,7 +160,6 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         buildDirty: appInfo.dirty,
         isEditorTab: this._host?.isEditorTab ?? false,
         bundleBytes: appInfo.bundleBytes,
-        projectsRoot: this.projectManager.getProjectsRoot(),
       },
     });
 

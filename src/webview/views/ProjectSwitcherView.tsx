@@ -40,12 +40,10 @@ interface ProjectSwitcherViewProps {
   onShowIssues: () => void;
   /** Launch the "Initialize Repository" flow (empty-state CTA, vs-r6a1.5). */
   onCreateBoard: () => void;
-  /** Swap the projects root via a folder picker (vs-r6a1.10). */
+  /** Swap the projects root via a folder picker (⋮ menu, vs-r6a1.10). */
   onChangeRoot: () => void;
   /** Open the Settings UI filtered to this extension (vs-r6a1.9). */
   onOpenSettings: () => void;
-  /** The resolved projects root, shown in the dropdown header (vs-r6a1.10). */
-  projectsRoot?: string;
   onShowStatus: () => void;
   onStartDolt: () => void;
   onStopDolt: () => void;
@@ -89,7 +87,6 @@ export function ProjectSwitcherView({
   onCreateBoard,
   onChangeRoot,
   onOpenSettings,
-  projectsRoot,
   onShowStatus,
   onStartDolt,
   onStopDolt,
@@ -202,8 +199,6 @@ export function ProjectSwitcherView({
           activeProject={activeProject}
           onSelectProject={onSelectProject}
           onCreateBoard={onCreateBoard}
-          onChangeRoot={onChangeRoot}
-          projectsRoot={projectsRoot}
         />
 
         {activeProject ? (

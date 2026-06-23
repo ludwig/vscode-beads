@@ -970,41 +970,12 @@ textarea {
 }
 
 .project-dropdown-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
   padding: 4px 10px;
   font-size: 0.78em;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--vscode-descriptionForeground);
-}
-
-/* Inline "Change…" affordance in the dropdown header → folder picker (vs-r6a1.10). */
-.project-dropdown-header-action {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  font: inherit;
-  text-transform: none;
-  letter-spacing: normal;
-  color: var(--vscode-textLink-foreground);
-}
-.project-dropdown-header-action:hover {
-  text-decoration: underline;
-}
-
-/* Current projects root, shown under the header for context (vs-r6a1.10). */
-.project-dropdown-root {
-  padding: 0 10px 4px;
-  font-size: 0.82em;
-  color: var(--vscode-descriptionForeground);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .project-dropdown-item {

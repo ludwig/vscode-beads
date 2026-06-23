@@ -211,7 +211,6 @@ export interface WebviewSettings {
   buildDirty: boolean; // built with uncommitted changes
   isEditorTab: boolean; // true when this webview is an editor-area tab, not a sidebar view
   bundleBytes: number; // on-disk size of the built extension + webview bundle (0 if unknown)
-  projectsRoot: string; // resolved beads.projectsRoot — the root boards are discovered/created under (vs-r6a1.10)
 }
 
 // Placeholder for the (not yet implemented) graph view.
