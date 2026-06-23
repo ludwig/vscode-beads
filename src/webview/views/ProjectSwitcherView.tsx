@@ -40,6 +40,8 @@ interface ProjectSwitcherViewProps {
   onShowIssues: () => void;
   /** Launch the "Initialize Repository" flow (empty-state CTA, vs-r6a1.5). */
   onCreateBoard: () => void;
+  /** Open the Repository Details editor-tab page (⋮ menu, vs-beoh). */
+  onOpenRepositoryDetails: () => void;
   /** Swap the projects root via a folder picker (⋮ menu, vs-r6a1.10). */
   onChangeRoot: () => void;
   /** Open the Settings UI filtered to this extension (vs-r6a1.9). */
@@ -85,6 +87,7 @@ export function ProjectSwitcherView({
   onPickReady,
   onShowIssues,
   onCreateBoard,
+  onOpenRepositoryDetails,
   onChangeRoot,
   onOpenSettings,
   onShowStatus,
@@ -181,6 +184,7 @@ export function ProjectSwitcherView({
               menuPlacement="bottom-end"
             >
               <DropdownItem onClick={onCreateBoard}>Initialize New Board…</DropdownItem>
+              <DropdownItem onClick={onOpenRepositoryDetails}>Repository Details…</DropdownItem>
               <DropdownItem onClick={onChangeRoot}>Change Projects Root…</DropdownItem>
               <DropdownItem onClick={onOpenProjectFolder}>Open Folder</DropdownItem>
               <DropdownItem onClick={onShowStatus}>Show Dolt Status</DropdownItem>

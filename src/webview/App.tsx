@@ -20,6 +20,7 @@ import {
   vscode,
 } from "./types";
 import { DashboardView } from "./views/DashboardView";
+import { RepositoryView } from "./views/RepositoryView";
 import { IssuesView } from "./views/IssuesView";
 import { GraphView } from "./views/graph/GraphView";
 import { KanbanBoard } from "./views/KanbanBoard";
@@ -91,6 +92,9 @@ interface AppState {
   // Board-init wizard state (vs-r6a1.8): the projects root to compose the
   // target path, and the current init phase + message (form until a submit).
   initWizard: { projectsRoot: string; phase: InitWizardPhase; message?: string };
+  // Raw `bd dolt status` text + derived running flag for the Repository Details
+  // editor-tab page (vs-beoh). `null` until the host posts setRepositoryInfo.
+  repositoryInfo: { doltStatus: string; running: boolean } | null;
 }
 
 const initialState: AppState = {
@@ -131,6 +135,7 @@ const initialState: AppState = {
   seedFilterCleared: false,
   applySnapshotRequest: null,
   initWizard: { projectsRoot: "", phase: "form" },
+  repositoryInfo: null,
 };
 
 export function App(): React.ReactElement {
@@ -175,6 +180,12 @@ export function App(): React.ReactElement {
         break;
       case "setSummary":
         setState((prev) => ({ ...prev, summary: message.summary }));
+        break;
+      case "setRepositoryInfo":
+        setState((prev) => ({
+          ...prev,
+          repositoryInfo: { doltStatus: message.doltStatus, running: message.running },
+        }));
         break;
       case "setGraph":
         setState((prev) => ({ ...prev, graph: message.graph }));
@@ -371,6 +382,15 @@ export function App(): React.ReactElement {
           />
         );
 
+      case "beadsRepository":
+        return (
+          <RepositoryView
+            project={state.project}
+            summary={state.summary}
+            repositoryInfo={state.repositoryInfo}
+          />
+        );
+
       case "beadsPanel":
         return (
           <IssuesView
@@ -505,6 +525,7 @@ export function App(): React.ReactElement {
             onPickReady={() => vscode.postMessage({ type: "pickReadyBead" })}
             onShowIssues={() => vscode.postMessage({ type: "showIssues" })}
             onCreateBoard={() => vscode.postMessage({ type: "createBoard" })}
+            onOpenRepositoryDetails={() => vscode.postMessage({ type: "openRepositoryDetails" })}
             onChangeRoot={() => vscode.postMessage({ type: "changeProjectsRoot" })}
             onOpenSettings={() => vscode.postMessage({ type: "openSettings" })}
             onShowStatus={() => vscode.postMessage({ type: "showDoltStatus" })}

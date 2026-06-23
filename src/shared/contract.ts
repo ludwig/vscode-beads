@@ -318,7 +318,10 @@ export type ExtensionToWebviewMessage =
   // Board-init wizard (vs-r6a1.8): seed the form with the current root.
   | { type: "setInitWizard"; projectsRoot: string }
   // Board-init wizard: progress/result of an in-flight initialization.
-  | { type: "setInitProgress"; phase: InitWizardPhase; message?: string };
+  | { type: "setInitProgress"; phase: InitWizardPhase; message?: string }
+  // Raw `bd dolt status` text + a derived running flag, for the Repository
+  // Details editor-tab page (vs-beoh).
+  | { type: "setRepositoryInfo"; doltStatus: string; running: boolean };
 
 // Messages sent from the webview to the extension host.
 export type WebviewToExtensionMessage =
@@ -389,4 +392,6 @@ export type WebviewToExtensionMessage =
   | { type: "removeFavorite"; beadId: string }
   // Toggle the companion `bead:` document for `beadId`: open it beside the view
   // (so Claude Code seeds it) if closed, close it if open (vs-nr3d).
-  | { type: "toggleBeadCompanion"; beadId: string };
+  | { type: "toggleBeadCompanion"; beadId: string }
+  // Open the Repository Details page as an editor tab (vs-beoh).
+  | { type: "openRepositoryDetails" };

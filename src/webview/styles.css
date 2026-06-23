@@ -5305,3 +5305,238 @@ textarea {
     transform: rotate(360deg);
   }
 }
+
+/* ── Repository Details editor-tab page (vs-beoh) ───────────────────────── */
+.repository-view {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px 24px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.repository-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 4px;
+}
+.repository-header-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.repository-header-icon {
+  color: var(--beads-accent);
+  flex-shrink: 0;
+}
+.repository-header-title h1 {
+  margin: 0;
+  font-size: 1.5em;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.repository-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.repository-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--border-radius);
+  font-size: 0.8em;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  border: 1px solid var(--vscode-panel-border);
+}
+.repository-chip-prefix {
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+.repository-chip-mode.is-server {
+  background: color-mix(in srgb, var(--beads-accent) 28%, transparent);
+  border-color: var(--beads-accent);
+  color: var(--vscode-foreground);
+}
+.repository-chip-mode.is-embedded {
+  background: color-mix(in srgb, var(--vscode-charts-green, #4caf50) 22%, transparent);
+  border-color: var(--vscode-charts-green, #4caf50);
+  color: var(--vscode-foreground);
+}
+.repository-chip-source {
+  text-transform: capitalize;
+  color: var(--vscode-descriptionForeground);
+}
+
+.repository-card {
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: var(--border-radius-lg);
+  padding: 14px 16px;
+  background: var(--vscode-editorWidget-background, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.repository-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 0.95em;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+}
+.repository-btn-inline {
+  margin-left: auto;
+  padding: 2px 8px;
+  font-size: 0.85em;
+}
+.repository-card-count {
+  margin-left: auto;
+  font-size: 0.85em;
+  color: var(--vscode-descriptionForeground);
+  background: var(--vscode-badge-background);
+  border-radius: var(--badge-radius-pill, 10px);
+  padding: 1px 9px;
+}
+
+.repository-paths {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.repository-path-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.repository-path-label {
+  flex-shrink: 0;
+  min-width: 72px;
+  font-size: 0.8em;
+  color: var(--vscode-descriptionForeground);
+}
+.repository-path-value {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 0.85em;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: var(--border-radius);
+  background: var(--vscode-textCodeBlock-background, rgba(127, 127, 127, 0.1));
+}
+.repository-copy-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  border-radius: var(--border-radius);
+}
+.repository-copy-btn:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+  color: var(--vscode-foreground);
+}
+
+.repository-status-pill {
+  margin-left: auto;
+  font-size: 0.75em;
+  font-weight: 600;
+  padding: 1px 10px;
+  border-radius: var(--badge-radius-pill, 10px);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.repository-status-pill.is-running {
+  background: color-mix(in srgb, var(--vscode-charts-green, #4caf50) 28%, transparent);
+  color: var(--vscode-foreground);
+}
+.repository-status-pill.is-stopped {
+  background: color-mix(in srgb, var(--vscode-descriptionForeground) 24%, transparent);
+  color: var(--vscode-descriptionForeground);
+}
+
+.repository-dolt-status {
+  margin: 0;
+  max-height: 220px;
+  overflow: auto;
+  padding: 10px 12px;
+  border-radius: var(--border-radius);
+  background: var(--vscode-textCodeBlock-background, rgba(127, 127, 127, 0.1));
+  border: 1px solid var(--vscode-panel-border);
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 0.82em;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.repository-muted {
+  margin: 0;
+  font-size: 0.85em;
+  color: var(--vscode-descriptionForeground);
+}
+
+.repository-actions,
+.repository-footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.repository-footer-actions {
+  margin-top: 4px;
+}
+.repository-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: var(--border-radius);
+  background: var(--vscode-button-secondaryBackground, transparent);
+  color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+  font-size: 0.85em;
+  cursor: pointer;
+}
+.repository-btn:hover {
+  background: var(--vscode-button-secondaryHoverBackground, var(--vscode-toolbar-hoverBackground));
+}
+
+.repository-stat-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+}
+.repository-stat-tile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: var(--border-radius);
+  background: var(--vscode-editorWidget-background, transparent);
+}
+.repository-stat-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.repository-stat-count {
+  font-size: 1.1em;
+  font-weight: 600;
+}
+.repository-stat-label {
+  font-size: 0.8em;
+  color: var(--vscode-descriptionForeground);
+  text-transform: capitalize;
+}

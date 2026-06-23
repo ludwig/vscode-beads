@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Repository Details page** — a new "Repository Details…" entry (Project Switcher ⋮ menu and the **Beads: Repository Details…** command) opens a stylish editor-tab page with rich repository + Dolt backend info: name, prefix, backend mode (embedded/server), `bd` version, location paths (copyable, with Open Folder), live `bd dolt status` with running/stopped state and Start/Stop server + Open Dolt Log actions, and issue counts by status. Dolt status no longer has to be dug out of the output log (vs-beoh)
 - **Mute closed issues** — a new `beads.muteClosedIssues` setting (default on) grays out the titles of closed issues in table views so they recede when shown alongside open work. Grouped with markdown rendering and favorite highlighting under a new **Appearance** section in the extension settings (vs-on5g)
 - **"Show in tree view" from a bead's details** — a new tree icon in the bead Details header (between the favorite star and Refresh) flips the Beads panel to its Tree tab and reveals the bead: it expands the bead's collapsed ancestors and scrolls it into view. Mirrors the existing "View in graph" action (vs-kp67)
 

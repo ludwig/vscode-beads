@@ -24,6 +24,7 @@ import { BoardInitWizardViewProvider } from "./BoardInitWizardViewProvider";
 import { DashboardViewProvider } from "./DashboardViewProvider";
 import { GraphViewProvider } from "./GraphViewProvider";
 import { KanbanViewProvider } from "./KanbanViewProvider";
+import { RepositoryViewProvider } from "./RepositoryViewProvider";
 import { TreeViewProvider } from "./TreeViewProvider";
 import { hostFromPanel } from "./WebviewHost";
 
@@ -93,6 +94,18 @@ export class BeadPanelManager implements vscode.Disposable {
 
     const panel = this.createPanel("Dashboard");
     const provider = new DashboardViewProvider(this.extensionUri, this.projectManager, this.log);
+    provider.attach(hostFromPanel(panel));
+
+    this.track(key, panel, provider);
+  }
+
+  /** Open (or focus) the Repository Details page as an editor tab (vs-beoh). */
+  public openRepository(): void {
+    const key = "beadsRepository";
+    if (this.reveal(key)) return;
+
+    const panel = this.createPanel("Repository");
+    const provider = new RepositoryViewProvider(this.extensionUri, this.projectManager, this.log);
     provider.attach(hostFromPanel(panel));
 
     this.track(key, panel, provider);

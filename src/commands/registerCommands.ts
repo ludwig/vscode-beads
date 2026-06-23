@@ -255,6 +255,11 @@ export function registerCommands(
       panelManager.openDashboard();
     }),
 
+    // vs-beoh: open the Repository Details page as an editor tab.
+    vscode.commands.registerCommand("beads.openRepositoryDetails", () => {
+      panelManager.openRepository();
+    }),
+
     // vs-3bp: open the dependency Graph as an editor tab. The optional arg is a
     // filter snapshot (vs-nme) seeding the new tab with the panel's filter.
     vscode.commands.registerCommand("beads.openGraphInTab", (seed?: string[] | null) => {
