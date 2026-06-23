@@ -5336,6 +5336,12 @@ textarea {
   gap: 16px;
 }
 
+/* In-page project switcher row (vs-rxgo) — left-aligned, sits above the header. */
+.repository-project-switcher {
+  display: flex;
+  align-items: center;
+}
+
 .repository-header {
   display: flex;
   flex-direction: column;

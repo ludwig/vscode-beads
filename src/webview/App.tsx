@@ -397,6 +397,7 @@ export function App(): React.ReactElement {
         return (
           <RepositoryView
             project={state.project}
+            projects={state.projects}
             summary={state.summary}
             repositoryInfo={state.repositoryInfo}
             settings={state.settings}

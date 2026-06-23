@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Switch projects from the Repository page** — a project (beads-directory) dropdown at the top of the Repository Details page re-points it at any discovered board, so it works as a singleton hub: the tab title and all its cards follow the switch (vs-rxgo)
 - **Repository Details metrics** — the Repository page now carries a Metrics card grid (extension version + build commit, bundle size, **DB-on-disk size** of the `.beads` directory, **Last activity**, and extension-host RAM), and the panel's Active Project card is trimmed to the basics (prefix, backend, bd version, extension version, bundle size) — the heavier figures live on the page (vs-emyj)
 - **Repository Details page** — a new "Repository Details…" entry (Project Switcher ⋮ menu and the **Beads: Repository Details…** command) opens a stylish editor-tab page with rich repository + Dolt backend info: name, prefix, backend mode (embedded/server), `bd` version, location paths (copyable, with Open Folder), live `bd dolt status` with running/stopped state and Start/Stop server + Open Dolt Log actions, and issue counts by status. Dolt status no longer has to be dug out of the output log (vs-beoh)
 - **Mute closed issues** — a new `beads.muteClosedIssues` setting (default on) grays out the titles of closed issues in table views so they recede when shown alongside open work. Grouped with markdown rendering and favorite highlighting under a new **Appearance** section in the extension settings (vs-on5g)

@@ -25,10 +25,13 @@ import {
 } from "lucide-react";
 import { BeadsProject, BeadsSummary, WebviewSettings, statusColor, statusLabel, vscode } from "../types";
 import { formatBytes } from "../common/formatBytes";
+import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Timestamp } from "../common/Timestamp";
 
 interface RepositoryViewProps {
   project: BeadsProject | null;
+  /** All discovered projects, for the in-page project (beads-dir) switcher (vs-rxgo). */
+  projects: BeadsProject[];
   summary: BeadsSummary | null;
   repositoryInfo: {
     doltStatus: string;
@@ -86,6 +89,7 @@ function PathRow({ label, value }: { label: string; value: string }): React.Reac
 
 export function RepositoryView({
   project,
+  projects,
   summary,
   repositoryInfo,
   settings,
@@ -109,6 +113,20 @@ export function RepositoryView({
 
   return (
     <div className="repository-view">
+      {/* In-page project switcher (vs-rxgo): this page is a singleton, so the
+          dropdown re-points it (and its title/cards) at another board. */}
+      {projects.length > 1 && (
+        <div className="repository-project-switcher">
+          <ProjectDropdown
+            projects={projects}
+            activeProject={project}
+            onSelectProject={(p) =>
+              vscode.postMessage({ type: "selectProject", projectId: p.id, projectRootPath: p.rootPath })
+            }
+          />
+        </div>
+      )}
+
       {/* Header */}
       <header className="repository-header">
         <div className="repository-header-title">
