@@ -1350,9 +1350,12 @@ textarea {
 }
 /* Fixed-width slot for the Ready toggle's leading glyph, so swapping the 12px
    line-art rocket for the (slightly wider) 🚀 emoji doesn't resize the button
-   or nudge the label — both glyphs are centered in the same 15px box. */
+   or nudge the label. Sized comfortably wider than either glyph (20px, with
+   min-width:0 so the box never grows to sub-pixel emoji metrics) to beat the
+   antialiasing-driven micro-width shifts a tighter box still let through. */
 .ready-toggle-glyph {
-  flex: 0 0 15px;
+  flex: 0 0 20px;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
