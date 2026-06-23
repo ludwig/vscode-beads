@@ -121,12 +121,14 @@ export async function runInitRepositoryCommand(deps: {
       cancellable: false,
     },
     async (progress) => {
+      const onLog: (line: string) => void = (line) => log.info(line);
       try {
+        log.info(`Initializing board "${boardName}" (${picked.mode}) at ${target}`);
         progress.report({ message: "Creating directory…" });
         await fs.promises.mkdir(target, { recursive: true });
 
         progress.report({ message: `Running bd init (${picked.mode})…` });
-        const init = await runBdInit({ bdPath, cwd: target, mode: picked.mode });
+        const init = await runBdInit({ bdPath, cwd: target, mode: picked.mode, onLog });
         if (init.output) log.info(`bd init output:\n${init.output}`);
         if (!init.ok) {
           showFailure(deps.log, "bd init failed.", init.output);
@@ -134,8 +136,7 @@ export async function runInitRepositoryCommand(deps: {
         }
 
         progress.report({ message: "Verifying…" });
-        const verify = await verifyInit({ bdPath, cwd: target, mode: picked.mode });
-        log.info(`Verification: ${verify.details}`);
+        const verify = await verifyInit({ bdPath, cwd: target, mode: picked.mode, onLog });
         if (!verify.ok) {
           showFailure(deps.log, "Board initialized but verification failed.", verify.details);
           return;

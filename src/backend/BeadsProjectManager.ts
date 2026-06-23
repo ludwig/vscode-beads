@@ -109,6 +109,10 @@ export class BeadsProjectManager implements vscode.Disposable {
     }
 
     const discoveredProjects = Array.from(discoveredById.values()).sort((a, b) => a.name.localeCompare(b.name));
+    this.log.info(
+      `Discovered ${discoveredProjects.length} project(s) under root ${this.getProjectsRoot()}` +
+        (discoveredProjects.length ? `: ${discoveredProjects.map((p) => p.name).join(", ")}` : "")
+    );
     this.projects = discoveredProjects;
     this._onProjectsChanged.fire(this.projects);
   }
@@ -669,6 +673,7 @@ export class BeadsProjectManager implements vscode.Disposable {
       this.log.warn(`Newly created project at ${rootPath} not found after discovery`);
       return false;
     }
+    this.log.info(`Activating newly discovered project ${project.name} at ${project.rootPath}`);
     return this.setActiveProject(project.id);
   }
 

@@ -60,22 +60,22 @@ export class BoardInitWizardViewProvider extends BaseViewProvider {
       return;
     }
 
+    const onLog: (line: string) => void = (line) => log.info(line);
     try {
+      log.info(`Initializing board "${name}" (${mode}) at ${target}`);
       this.postProgress("creating", "Creating directory…");
       await fs.promises.mkdir(target, { recursive: true });
 
       this.postProgress("initializing", `Running bd init (${mode})…`);
-      const init = await runBdInit({ bdPath, cwd: target, mode });
+      const init = await runBdInit({ bdPath, cwd: target, mode, onLog });
       if (init.output) log.info(`bd init output:\n${init.output}`);
       if (!init.ok) {
-        log.error(`bd init failed: ${init.output}`);
         this.postProgress("error", `bd init failed. ${firstLine(init.output)}`);
         return;
       }
 
       this.postProgress("verifying", "Verifying…");
-      const verify = await verifyInit({ bdPath, cwd: target, mode });
-      log.info(`Verification: ${verify.details}`);
+      const verify = await verifyInit({ bdPath, cwd: target, mode, onLog });
       if (!verify.ok) {
         this.postProgress("error", `Initialized, but verification failed — ${verify.details}`);
         return;

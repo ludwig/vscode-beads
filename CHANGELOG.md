@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Always-available "New Board" entry points** — adding a board is no longer limited to the empty state: a database icon in the Project Switcher title bar, an "Initialize New Board…" item in the Active Project ⋮ menu, and a "New board…" footer in the project dropdown all launch the Initialize Repository flow (vs-r6a1.7)
 - **Switch projects root from the UI** — a "Change Projects Root…" action (Active Project ⋮ menu, and a "Change…" link in the project dropdown header, which also now shows the current root) opens a folder picker and points Beads at a different root. Switching to an already-initialized root loads that whole collection of boards automatically; an empty root shows the create CTA (vs-r6a1.10)
 - **Extension settings shortcut** — a gear icon in the Project Switcher title bar (and "Extension Settings" in the ⋮ menu) opens Settings filtered to Beads (vs-r6a1.9)
+- **Init + switching are logged** — the Beads output channel now records the exact `bd init` / verification commands and their results, plus project discovery counts and activations, so creating/switching boards is traceable (vs-r6a1.11)
 
 ## [0.23.0] - 2026-06-20
 
