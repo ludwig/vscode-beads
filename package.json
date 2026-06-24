@@ -114,6 +114,11 @@
         "icon": "$(refresh)"
       },
       {
+        "command": "beads.exportIssues",
+        "title": "Beads: Export Issues as JSONL…",
+        "icon": "$(export)"
+      },
+      {
         "command": "beads.copyBeadId",
         "title": "Beads: Copy Issue ID",
         "icon": "$(copy)",

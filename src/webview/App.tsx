@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from "react";
+import { RefreshCw } from "lucide-react";
 import {
   Bead,
   BeadsProject,
@@ -374,23 +375,60 @@ export function App(): React.ReactElement {
   const toggleSeedFilter = () =>
     setState((prev) => ({ ...prev, seedFilterCleared: !prev.seedFilterCleared }));
 
-  // Wrap an editor-tab view with the snapshot ribbon when a real filter was
-  // inherited (vs-zq2). The flex-column shell keeps the view's own height/scroll
-  // model intact (Graph/React Flow needs a sized body).
-  const withSnapshotRibbon = (view: React.ReactElement): React.ReactElement =>
-    hasSeedSnapshot ? (
+  // Contextual refresh for editor-tab views: the sidebar PanelShell has its own
+  // refresh, but a view opened standalone in an editor tab had no way to refresh
+  // THAT view. Brief spin mirrors the PanelShell affordance so the click reads
+  // as registered.
+  const [tabRefreshing, setTabRefreshing] = useState(false);
+  const handleTabRefresh = useCallback(() => {
+    vscode.postMessage({ type: "refresh" });
+    setTabRefreshing(true);
+    setTimeout(() => setTabRefreshing(false), 800);
+  }, []);
+
+  // Wrap an editor-tab data view with shared chrome: a thin top toolbar holding
+  // a contextual Refresh, plus (for filter-seeded Kanban/Tree/Graph tabs) the
+  // inherited-filter snapshot ribbon (vs-zq2). The flex-column shell keeps the
+  // view's own height/scroll model intact (Graph/React Flow needs a sized body).
+  const withEditorTabChrome = (
+    view: React.ReactElement,
+    opts: { ribbon?: boolean } = {},
+  ): React.ReactElement => {
+    if (!state.settings.isEditorTab) return view;
+    const showRibbon = opts.ribbon !== false && hasSeedSnapshot;
+    return (
       <div className="editor-tab-shell">
-        <FilterSnapshotRibbon
-          filteredCount={seedSnapshot?.length ?? 0}
-          totalCount={state.beads.length}
-          cleared={state.seedFilterCleared}
-          onToggle={toggleSeedFilter}
-        />
+        <div className="editor-tab-toolbar">
+          {showRibbon ? (
+            <FilterSnapshotRibbon
+              filteredCount={seedSnapshot?.length ?? 0}
+              totalCount={state.beads.length}
+              cleared={state.seedFilterCleared}
+              onToggle={toggleSeedFilter}
+            />
+          ) : (
+            <span className="editor-tab-toolbar-spacer" />
+          )}
+          <div className="editor-tab-toolbar-actions">
+            <button
+              type="button"
+              className="panel-shell-action"
+              title="Refresh"
+              aria-label="Refresh"
+              onClick={handleTabRefresh}
+            >
+              <RefreshCw
+                size={14}
+                strokeWidth={2}
+                className={tabRefreshing ? "spinning" : undefined}
+              />
+            </button>
+          </div>
+        </div>
         <div className="editor-tab-body">{view}</div>
       </div>
-    ) : (
-      view
     );
+  };
 
   // Render the appropriate view
   const renderView = () => {
@@ -446,7 +484,7 @@ export function App(): React.ReactElement {
         );
 
       case "beadsPanel":
-        return (
+        return withEditorTabChrome(
           <IssuesView
             beads={state.beads}
             loading={state.loading}
@@ -467,7 +505,9 @@ export function App(): React.ReactElement {
             onRetry={() =>
               vscode.postMessage({ type: "refresh" })
             }
-          />
+          />,
+          // Issues has its own toolbar + "Apply to all"; no snapshot ribbon here.
+          { ribbon: false },
         );
 
       case "beadsPanelShell":
@@ -493,7 +533,7 @@ export function App(): React.ReactElement {
         );
 
       case "beadsGraph":
-        return withSnapshotRibbon(
+        return withEditorTabChrome(
           <GraphView
             graph={state.graph}
             loading={state.loading}
@@ -511,7 +551,7 @@ export function App(): React.ReactElement {
         );
 
       case "beadsKanban":
-        return withSnapshotRibbon(
+        return withEditorTabChrome(
           <KanbanBoard
             beads={state.beads}
             selectedBeadId={state.selectedBeadId}
@@ -529,7 +569,7 @@ export function App(): React.ReactElement {
         );
 
       case "beadsTree":
-        return withSnapshotRibbon(
+        return withEditorTabChrome(
           <TreeView
             graph={state.graph}
             loading={state.loading}
@@ -591,6 +631,7 @@ export function App(): React.ReactElement {
             onStartDolt={() => vscode.postMessage({ type: "startDoltServer" })}
             onStopDolt={() => vscode.postMessage({ type: "stopDoltServer" })}
             onOpenDoltLog={() => vscode.postMessage({ type: "openDoltLog" })}
+            onExportIssues={() => vscode.postMessage({ type: "exportIssues" })}
           />
         );
 

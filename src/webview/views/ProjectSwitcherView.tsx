@@ -14,7 +14,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, X, Rocket, ListTodo, Copy, FolderPlus } from "lucide-react";
 import { Bead, BeadsProject, FavoriteBead, statusColor, isClosedStatus } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
-import { Dropdown, DropdownItem } from "../common/Dropdown";
+import { Dropdown, DropdownItem, DropdownSeparator } from "../common/Dropdown";
 import { formatBytes } from "../common/formatBytes";
 import { TypeIcon } from "../common/TypeIcon";
 import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
@@ -51,6 +51,8 @@ interface ProjectSwitcherViewProps {
   onStartDolt: () => void;
   onStopDolt: () => void;
   onOpenDoltLog: () => void;
+  /** Export the active project's issues to a JSONL file (vs-ln7e.1). */
+  onExportIssues: () => void;
   version?: string;
   buildSha?: string;
   buildDirty?: boolean;
@@ -90,6 +92,7 @@ export function ProjectSwitcherView({
   onStartDolt,
   onStopDolt,
   onOpenDoltLog,
+  onExportIssues,
   version,
   buildSha,
   buildDirty,
@@ -182,11 +185,14 @@ export function ProjectSwitcherView({
               <DropdownItem onClick={onCreateBoard}>Initialize New Board…</DropdownItem>
               <DropdownItem onClick={onOpenRepositoryDetails}>Repository Details…</DropdownItem>
               <DropdownItem onClick={onChangeRoot}>Change Projects Root…</DropdownItem>
-              <DropdownItem onClick={onOpenProjectFolder}>Open Folder</DropdownItem>
+              <DropdownItem onClick={onOpenProjectFolder}>Open Folder in Finder</DropdownItem>
+              <DropdownItem onClick={onExportIssues}>Export Issues as JSONL…</DropdownItem>
+              <DropdownSeparator />
               <DropdownItem onClick={onShowStatus}>Show Dolt Status</DropdownItem>
               <DropdownItem onClick={onStartDolt}>Start Dolt</DropdownItem>
               <DropdownItem onClick={onStopDolt}>Stop Dolt</DropdownItem>
               <DropdownItem onClick={onOpenDoltLog}>Open Dolt Log</DropdownItem>
+              <DropdownSeparator />
               <DropdownItem onClick={onOpenSettings}>Extension Settings</DropdownItem>
             </Dropdown>
           )}

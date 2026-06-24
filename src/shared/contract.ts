@@ -356,6 +356,7 @@ export type WebviewToExtensionMessage =
   | { type: "stopDoltServer" }
   | { type: "openDoltLog" }
   | { type: "openProjectFolder" }
+  | { type: "exportIssues" }
   | { type: "selectBead"; beadId: string }
   | { type: "updateBead"; beadId: string; updates: Partial<Bead> }
   | { type: "deleteBead"; beadId: string }

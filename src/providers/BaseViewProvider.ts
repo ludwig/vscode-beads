@@ -303,6 +303,10 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         vscode.commands.executeCommand("beads.openRepositoryDetails");
         break;
 
+      case "exportIssues":
+        vscode.commands.executeCommand("beads.exportIssues");
+        break;
+
       case "openProjectFolder": {
         const project = this.projectManager.getActiveProject();
         if (project) {

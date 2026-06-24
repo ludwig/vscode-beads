@@ -188,3 +188,8 @@ export function DropdownItem({
     </button>
   );
 }
+
+/** A thin rule between menu items, for grouping related actions. */
+export function DropdownSeparator(): React.ReactElement {
+  return <div className="dropdown-separator" role="separator" />;
+}
