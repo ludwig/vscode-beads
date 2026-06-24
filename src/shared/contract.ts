@@ -204,6 +204,7 @@ export interface BeadsSummary {
 export interface WebviewSettings {
   renderMarkdown: boolean;
   highlightFavorites: boolean; // subtle accent on favorited (starred) rows in tables
+  favoritesHighlightColor: string; // accent color for that highlight ("" = theme chart-yellow)
   muteClosedIssues: boolean; // gray out the titles of closed (done) issues in tables
   userId: string;
   tooltipHoverDelay: number; // 0 = disabled

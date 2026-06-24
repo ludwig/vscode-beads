@@ -153,6 +153,7 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
       settings: {
         renderMarkdown: config.get<boolean>("renderMarkdown", true),
         highlightFavorites: config.get<boolean>("highlightFavorites", true),
+        favoritesHighlightColor: config.get<string>("favoritesHighlightColor", "#dcc173"),
         muteClosedIssues: config.get<boolean>("muteClosedIssues", true),
         userId,
         tooltipHoverDelay: config.get<number>("tooltipHoverDelay", 1000),

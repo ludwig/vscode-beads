@@ -117,6 +117,7 @@ const initialState: AppState = {
   settings: {
     renderMarkdown: true,
     highlightFavorites: true,
+    favoritesHighlightColor: "#dcc173",
     muteClosedIssues: true,
     userId: "",
     tooltipHoverDelay: 1000,
@@ -314,6 +315,19 @@ export function App(): React.ReactElement {
     const t = setTimeout(() => setPulsing(false), 1600);
     return () => clearTimeout(t);
   }, [state.pulseSeq]);
+
+  // Drive the favorites-highlight accent from the setting (vs-bvk7): publish it
+  // as a CSS var on :root so every favorite style (Issues row, Tree row) picks
+  // it up. Empty falls back to the theme chart-yellow via the var's CSS default.
+  useEffect(() => {
+    const root = document.documentElement;
+    const color = state.settings.favoritesHighlightColor;
+    if (color) {
+      root.style.setProperty("--beads-favorite-color", color);
+    } else {
+      root.style.removeProperty("--beads-favorite-color");
+    }
+  }, [state.settings.favoritesHighlightColor]);
 
   // Favorite bead ids (vs-sd5.1) — passed to the bead-context-menu views so a
   // right-click can star/unstar, and labelled Add/Remove based on membership.

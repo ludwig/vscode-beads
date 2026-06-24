@@ -1371,8 +1371,8 @@ textarea {
  * glance — a full gold star on the accent background (vs-lu8f). CSS overrides
  * lucide's default fill:none / stroke:currentColor on the <svg>. */
 .favorites-toggle.active svg {
-  fill: var(--vscode-charts-yellow, #d7ba7d);
-  stroke: var(--vscode-charts-yellow, #d7ba7d);
+  fill: var(--beads-favorite-color, var(--vscode-charts-yellow, #d7ba7d));
+  stroke: var(--beads-favorite-color, var(--vscode-charts-yellow, #d7ba7d));
 }
 
 .preset-dropdown-menu {
@@ -1635,8 +1635,8 @@ textarea {
  * unstyled, giving the contrast for free. Declared before .selected so an active
  * selection still wins the background; the stripe persists on selected favorites. */
 .bead-row.favorite {
-  background-color: color-mix(in srgb, var(--vscode-charts-yellow, #d7ba7d) 6%, transparent);
-  box-shadow: inset 2px 0 0 0 color-mix(in srgb, var(--vscode-charts-yellow, #d7ba7d) 50%, transparent);
+  background-color: color-mix(in srgb, var(--beads-favorite-color, var(--vscode-charts-yellow, #d7ba7d)) 6%, transparent);
+  box-shadow: inset 2px 0 0 0 color-mix(in srgb, var(--beads-favorite-color, var(--vscode-charts-yellow, #d7ba7d)) 50%, transparent);
 }
 
 .bead-row.favorite:hover {
