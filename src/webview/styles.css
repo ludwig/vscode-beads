@@ -3093,6 +3093,31 @@ textarea {
   background: var(--vscode-panel-border);
 }
 
+/* SplitButton (vs-zj9g): a primary action + a snug chevron reading as one unit. */
+.split-button {
+  display: inline-flex;
+  align-items: center;
+}
+.split-button .split-button-chevron {
+  padding-left: 1px;
+  padding-right: 1px;
+  margin-left: -2px;
+  opacity: 0.75;
+}
+.split-button .split-button-chevron:hover {
+  opacity: 1;
+}
+.split-button-menu-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.split-button-check {
+  margin-left: auto;
+  padding-left: 10px;
+  opacity: 0.8;
+}
+
 .icon-btn {
   padding: 4px;
   background: transparent;
