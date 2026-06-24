@@ -12,7 +12,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, X, Rocket, ListTodo, Copy, FolderPlus } from "lucide-react";
-import { Bead, BeadsProject, FavoriteBead, statusColor } from "../types";
+import { Bead, BeadsProject, FavoriteBead, statusColor, isClosedStatus } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
 import { formatBytes } from "../common/formatBytes";
@@ -54,6 +54,8 @@ interface ProjectSwitcherViewProps {
   version?: string;
   buildSha?: string;
   buildDirty?: boolean;
+  /** When true, gray out the titles of closed (done) favorites/active bead (beads.muteClosedIssues, vs-b0ga). */
+  muteClosedIssues?: boolean;
   /** On-disk size of our built bundle in bytes (0 = unknown). */
   bundleBytes?: number;
 }
@@ -91,6 +93,7 @@ export function ProjectSwitcherView({
   version,
   buildSha,
   buildDirty,
+  muteClosedIssues = true,
   bundleBytes = 0,
 }: ProjectSwitcherViewProps): React.ReactElement {
   const backendState = activeProject?.backendStatus ?? "unknown";
@@ -333,7 +336,7 @@ export function ProjectSwitcherView({
                     title={activeBead.status}
                   />
                 </div>
-                <span className="active-bead-title">{activeBead.title}</span>
+                <span className={`active-bead-title${muteClosedIssues && isClosedStatus(activeBead.status) ? " muted-closed" : ""}`}>{activeBead.title}</span>
               </div>
             </button>
             <button
@@ -406,7 +409,11 @@ export function ProjectSwitcherView({
                         />
                       )}
                     </div>
-                    {fav.title && <span className="active-bead-title">{fav.title}</span>}
+                    {fav.title && (
+                      <span className={`active-bead-title${muteClosedIssues && fav.status && isClosedStatus(fav.status) ? " muted-closed" : ""}`}>
+                        {fav.title}
+                      </span>
+                    )}
                   </div>
                 </button>
                 <button

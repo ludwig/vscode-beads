@@ -514,6 +514,7 @@ export function App(): React.ReactElement {
             version={state.settings.extensionVersion}
             buildSha={state.settings.buildSha}
             buildDirty={state.settings.buildDirty}
+            muteClosedIssues={state.settings.muteClosedIssues}
             bundleBytes={state.settings.bundleBytes}
             onSelectProject={(project) =>
               vscode.postMessage({
