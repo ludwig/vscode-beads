@@ -8,6 +8,8 @@
  */
 
 import * as vscode from "vscode";
+import { execFile } from "child_process";
+import * as util from "util";
 import { IssuesFilter, FilterSnapshot, Bead, issueToWebviewBead } from "../backend/types";
 import { nextReadyBead } from "../backend/readyBeads";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
@@ -19,6 +21,8 @@ import { BeadDocumentProvider } from "../providers/BeadDocumentProvider";
 import { NavigationHistory } from "../providers/NavigationHistory";
 import { ensureBdInstalled, runInitRepositoryCommand } from "./initRepository";
 import { Logger } from "../utils/logger";
+
+const execFileAsync = util.promisify(execFile);
 
 export interface CommandDeps {
   projectManager: BeadsProjectManager;
@@ -130,6 +134,22 @@ export function registerCommands(
       }
       await vscode.commands.executeCommand("beadsPanelShell.focus");
       shellProvider.showTreeForBead(beadId);
+    }),
+
+    vscode.commands.registerCommand("beads.viewInKanban", async (beadId?: string) => {
+      if (!beadId) {
+        return;
+      }
+      await vscode.commands.executeCommand("beadsPanelShell.focus");
+      shellProvider.showKanbanForBead(beadId);
+    }),
+
+    vscode.commands.registerCommand("beads.viewInIssues", async (beadId?: string) => {
+      if (!beadId) {
+        return;
+      }
+      await vscode.commands.executeCommand("beadsPanelShell.focus");
+      shellProvider.showIssuesForBead(beadId);
     }),
 
     vscode.commands.registerCommand("beads.openBeadDetails", async (beadId?: string) => {
@@ -432,6 +452,55 @@ export function registerCommands(
         await vscode.window.showTextDocument(doc, { preview: false });
       } catch (err) {
         await log.errorNotify(`Failed to open Dolt log: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }),
+
+    // Export the active project's issues to a JSONL file via `bd export -o`
+    // (vs-ln7e.1, phase 1). Works in both embedded and server modes — `bd
+    // export` reads from whichever backend the repo uses. In embedded/Dolt mode
+    // there is no issues.jsonl on disk until this runs; the data lives in Dolt.
+    vscode.commands.registerCommand("beads.exportIssues", async () => {
+      const project = projectManager.getActiveProject();
+      if (!project) {
+        vscode.window.showWarningMessage("No active Beads project");
+        return;
+      }
+      const bdPath = projectManager.getBdPath();
+      if (!(await ensureBdInstalled(bdPath))) return;
+
+      const now = new Date();
+      const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      const base = project.prefix || project.name || "beads";
+      const defaultUri = vscode.Uri.file(
+        vscode.Uri.joinPath(vscode.Uri.file(project.rootPath), `${base}-issues-${stamp}.jsonl`).fsPath,
+      );
+      const target = await vscode.window.showSaveDialog({
+        defaultUri,
+        saveLabel: "Export",
+        filters: { "JSONL (newline-delimited JSON)": ["jsonl"], "All files": ["*"] },
+        title: `Export ${project.name} issues as JSONL`,
+      });
+      if (!target) return; // user cancelled
+
+      try {
+        await execFileAsync(bdPath, ["export", "-o", target.fsPath], {
+          cwd: project.rootPath,
+          env: { ...process.env, BEADS_DIR: project.beadsDir },
+        });
+        log.info(`Exported ${project.name} issues to ${target.fsPath}`);
+        const choice = await vscode.window.showInformationMessage(
+          `Exported ${project.name} issues to ${target.fsPath}`,
+          "Reveal in Finder",
+          "Open File",
+        );
+        if (choice === "Reveal in Finder") {
+          await vscode.commands.executeCommand("revealFileInOS", target);
+        } else if (choice === "Open File") {
+          const doc = await vscode.workspace.openTextDocument(target);
+          await vscode.window.showTextDocument(doc, { preview: false });
+        }
+      } catch (err) {
+        await log.errorNotify(`Failed to export issues: ${err instanceof Error ? err.message : String(err)}`);
       }
     }),
 

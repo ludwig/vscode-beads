@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from "react";
+import { RefreshCw } from "lucide-react";
 import {
   Bead,
   BeadsProject,
@@ -58,6 +59,12 @@ interface AppState {
   // Same shape, for the Tree tab "show in tree" action (vs-kp67): switch to the
   // Tree tab and reveal the bead. `seq` re-fires for a repeat of the same bead.
   showTreeRequest: { beadId: string; seq: number } | null;
+  // Same shape, for the Kanban tab "show in kanban" action (vs-wbrz): switch to
+  // the Kanban tab and reveal the bead's card.
+  showKanbanBeadRequest: { beadId: string; seq: number } | null;
+  // Same shape, for the Issues tab "show in issues" action (vs-wbrz): switch to
+  // the Issues tab and reveal the bead's row.
+  showIssuesBeadRequest: { beadId: string; seq: number } | null;
   // Bumped to switch the panel to the Issues tab + pulse a confirmation ring.
   focusIssuesSeq: number;
   // Bumped to switch the panel to the Kanban tab (vs-6xf).
@@ -117,6 +124,7 @@ const initialState: AppState = {
   settings: {
     renderMarkdown: true,
     highlightFavorites: true,
+    favoritesHighlightColor: "#dcc173",
     muteClosedIssues: true,
     userId: "",
     tooltipHoverDelay: 1000,
@@ -130,6 +138,8 @@ const initialState: AppState = {
   issuesFilterRequest: null,
   showGraphRequest: null,
   showTreeRequest: null,
+  showKanbanBeadRequest: null,
+  showIssuesBeadRequest: null,
   focusIssuesSeq: 0,
   focusKanbanSeq: 0,
   pulseSeq: 0,
@@ -240,6 +250,24 @@ export function App(): React.ReactElement {
           },
         }));
         break;
+      case "showKanbanBead":
+        setState((prev) => ({
+          ...prev,
+          showKanbanBeadRequest: {
+            beadId: message.beadId,
+            seq: (prev.showKanbanBeadRequest?.seq ?? 0) + 1,
+          },
+        }));
+        break;
+      case "showIssuesBead":
+        setState((prev) => ({
+          ...prev,
+          showIssuesBeadRequest: {
+            beadId: message.beadId,
+            seq: (prev.showIssuesBeadRequest?.seq ?? 0) + 1,
+          },
+        }));
+        break;
       case "focusIssuesTab":
         setState((prev) => ({ ...prev, focusIssuesSeq: prev.focusIssuesSeq + 1 }));
         break;
@@ -315,6 +343,19 @@ export function App(): React.ReactElement {
     return () => clearTimeout(t);
   }, [state.pulseSeq]);
 
+  // Drive the favorites-highlight accent from the setting (vs-bvk7): publish it
+  // as a CSS var on :root so every favorite style (Issues row, Tree row) picks
+  // it up. Empty falls back to the theme chart-yellow via the var's CSS default.
+  useEffect(() => {
+    const root = document.documentElement;
+    const color = state.settings.favoritesHighlightColor;
+    if (color) {
+      root.style.setProperty("--beads-favorite-color", color);
+    } else {
+      root.style.removeProperty("--beads-favorite-color");
+    }
+  }, [state.settings.favoritesHighlightColor]);
+
   // Favorite bead ids (vs-sd5.1) — passed to the bead-context-menu views so a
   // right-click can star/unstar, and labelled Add/Remove based on membership.
   const favoriteIds = state.favorites.map((f) => f.id);
@@ -334,23 +375,60 @@ export function App(): React.ReactElement {
   const toggleSeedFilter = () =>
     setState((prev) => ({ ...prev, seedFilterCleared: !prev.seedFilterCleared }));
 
-  // Wrap an editor-tab view with the snapshot ribbon when a real filter was
-  // inherited (vs-zq2). The flex-column shell keeps the view's own height/scroll
-  // model intact (Graph/React Flow needs a sized body).
-  const withSnapshotRibbon = (view: React.ReactElement): React.ReactElement =>
-    hasSeedSnapshot ? (
+  // Contextual refresh for editor-tab views: the sidebar PanelShell has its own
+  // refresh, but a view opened standalone in an editor tab had no way to refresh
+  // THAT view. Brief spin mirrors the PanelShell affordance so the click reads
+  // as registered.
+  const [tabRefreshing, setTabRefreshing] = useState(false);
+  const handleTabRefresh = useCallback(() => {
+    vscode.postMessage({ type: "refresh" });
+    setTabRefreshing(true);
+    setTimeout(() => setTabRefreshing(false), 800);
+  }, []);
+
+  // Wrap an editor-tab data view with shared chrome: a thin top toolbar holding
+  // a contextual Refresh, plus (for filter-seeded Kanban/Tree/Graph tabs) the
+  // inherited-filter snapshot ribbon (vs-zq2). The flex-column shell keeps the
+  // view's own height/scroll model intact (Graph/React Flow needs a sized body).
+  const withEditorTabChrome = (
+    view: React.ReactElement,
+    opts: { ribbon?: boolean } = {},
+  ): React.ReactElement => {
+    if (!state.settings.isEditorTab) return view;
+    const showRibbon = opts.ribbon !== false && hasSeedSnapshot;
+    return (
       <div className="editor-tab-shell">
-        <FilterSnapshotRibbon
-          filteredCount={seedSnapshot?.length ?? 0}
-          totalCount={state.beads.length}
-          cleared={state.seedFilterCleared}
-          onToggle={toggleSeedFilter}
-        />
+        <div className="editor-tab-toolbar">
+          {showRibbon ? (
+            <FilterSnapshotRibbon
+              filteredCount={seedSnapshot?.length ?? 0}
+              totalCount={state.beads.length}
+              cleared={state.seedFilterCleared}
+              onToggle={toggleSeedFilter}
+            />
+          ) : (
+            <span className="editor-tab-toolbar-spacer" />
+          )}
+          <div className="editor-tab-toolbar-actions">
+            <button
+              type="button"
+              className="panel-shell-action"
+              title="Refresh"
+              aria-label="Refresh"
+              onClick={handleTabRefresh}
+            >
+              <RefreshCw
+                size={14}
+                strokeWidth={2}
+                className={tabRefreshing ? "spinning" : undefined}
+              />
+            </button>
+          </div>
+        </div>
         <div className="editor-tab-body">{view}</div>
       </div>
-    ) : (
-      view
     );
+  };
 
   // Render the appropriate view
   const renderView = () => {
@@ -406,7 +484,7 @@ export function App(): React.ReactElement {
         );
 
       case "beadsPanel":
-        return (
+        return withEditorTabChrome(
           <IssuesView
             beads={state.beads}
             loading={state.loading}
@@ -427,7 +505,9 @@ export function App(): React.ReactElement {
             onRetry={() =>
               vscode.postMessage({ type: "refresh" })
             }
-          />
+          />,
+          // Issues has its own toolbar + "Apply to all"; no snapshot ribbon here.
+          { ribbon: false },
         );
 
       case "beadsPanelShell":
@@ -445,13 +525,15 @@ export function App(): React.ReactElement {
             applySnapshotRequest={state.applySnapshotRequest}
             showGraphRequest={state.showGraphRequest}
             showTreeRequest={state.showTreeRequest}
+            showKanbanBeadRequest={state.showKanbanBeadRequest}
+            showIssuesBeadRequest={state.showIssuesBeadRequest}
             focusIssuesSeq={state.focusIssuesSeq}
             focusKanbanSeq={state.focusKanbanSeq}
           />
         );
 
       case "beadsGraph":
-        return withSnapshotRibbon(
+        return withEditorTabChrome(
           <GraphView
             graph={state.graph}
             loading={state.loading}
@@ -469,11 +551,12 @@ export function App(): React.ReactElement {
         );
 
       case "beadsKanban":
-        return withSnapshotRibbon(
+        return withEditorTabChrome(
           <KanbanBoard
             beads={state.beads}
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
+            muteClosedIssues={state.settings.muteClosedIssues}
             filteredBeadIds={effectiveSeed}
             filterActive={seedFilterActive}
             filteredCount={seedFilteredCount}
@@ -486,13 +569,15 @@ export function App(): React.ReactElement {
         );
 
       case "beadsTree":
-        return withSnapshotRibbon(
+        return withEditorTabChrome(
           <TreeView
             graph={state.graph}
             loading={state.loading}
             error={state.error}
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
+            highlightFavorites={state.settings.highlightFavorites}
+            muteClosedIssues={state.settings.muteClosedIssues}
             filteredBeadIds={effectiveSeed}
             filterActive={seedFilterActive}
             filteredCount={seedFilteredCount}
@@ -513,6 +598,7 @@ export function App(): React.ReactElement {
             version={state.settings.extensionVersion}
             buildSha={state.settings.buildSha}
             buildDirty={state.settings.buildDirty}
+            muteClosedIssues={state.settings.muteClosedIssues}
             bundleBytes={state.settings.bundleBytes}
             onSelectProject={(project) =>
               vscode.postMessage({
@@ -545,6 +631,7 @@ export function App(): React.ReactElement {
             onStartDolt={() => vscode.postMessage({ type: "startDoltServer" })}
             onStopDolt={() => vscode.postMessage({ type: "stopDoltServer" })}
             onOpenDoltLog={() => vscode.postMessage({ type: "openDoltLog" })}
+            onExportIssues={() => vscode.postMessage({ type: "exportIssues" })}
           />
         );
 

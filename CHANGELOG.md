@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Export Issues as JSONL** — an "Export Issues as JSONL…" action (Active Project ⋮ menu and the **Beads: Export Issues as JSONL…** command) runs `bd export` for the active board and writes a `<prefix>-issues-<date>.jsonl` file via a save dialog, then offers Reveal in Finder / Open File. Works in both embedded and server modes — in embedded/Dolt mode there's no `issues.jsonl` on disk until you export (vs-ln7e.1)
+- **"Show in view" selector on a bead** — the Details header's reveal button is a split button (Issues / Tree / Kanban / Graph) that remembers your last pick; each reveals the bead in the panel's matching tab — Kanban and Issues reveals scroll the card/row into view, joining the existing Tree/Graph reveals (vs-wbrz, vs-zj9g)
+- **Contextual refresh on editor-tab views** — a data view opened standalone in an editor tab (Issues / Kanban / Tree / Graph) now has its own Refresh button in a thin tab toolbar; the inherited-filter snapshot ribbon shares that toolbar on filter-seeded tabs (vs-fzy3)
+- **Tree view honors favorites + closed muting** — the Tree accents favorited rows and grays out closed-row titles, like the Issues table and Kanban (vs-or31)
+- **Favorites highlight color is configurable** — a new `beads.favoritesHighlightColor` setting (Appearance) drives the favorites accent across the Issues row, Tree row, and toggle star; default nudged slightly yellower (vs-bvk7)
+- **Refresh pulses the view** — a manual refresh flashes the confirmation ring so it reads as registered (vs-y1vz)
 - **Switch projects from the Repository page** — a project (beads-directory) dropdown at the top of the Repository Details page re-points it at any discovered board, so it works as a singleton hub: the tab title and all its cards follow the switch (vs-rxgo)
 - **Repository Details metrics** — the Repository page now carries a Metrics card grid (extension version + build commit, bundle size, **DB-on-disk size** of the `.beads` directory, **Last activity**, and extension-host RAM), and the panel's Active Project card is trimmed to the basics (prefix, backend, bd version, extension version, bundle size) — the heavier figures live on the page (vs-emyj)
 - **Repository Details page** — a new "Repository Details…" entry (Project Switcher ⋮ menu and the **Beads: Repository Details…** command) opens a stylish editor-tab page with rich repository + Dolt backend info: name, prefix, backend mode (embedded/server), `bd` version, location paths (copyable, with Open Folder), live `bd dolt status` with running/stopped state and Start/Stop server + Open Dolt Log actions, and issue counts by status. Dolt status no longer has to be dug out of the output log (vs-beoh)
@@ -21,12 +27,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Closed cards are muted too** — `beads.muteClosedIssues` now also grays out closed-issue titles on Kanban cards and in the Favorites/Active-bead cards (vs-b0ga)
+- **Roomier Kanban cards** — card titles show up to 3 lines instead of 2 (vs-t12r)
 - **Filter chips are filled, not just outlined** — each active filter chip now carries a light wash of its own accent color (e.g. Blocked shows a faint red fill behind its red outline). The default "not closed" status chip reads as an exclusion with a stronger fill + bold label, and is palette-green (the active-work color) rather than echoing the gray of the "closed" state it excludes (vs-th4z)
 - **Ready toggle shows the 🚀 emoji when active** — toggling the Ready filter on swaps its line-art rocket for the colored 🚀 (in a fixed-width slot so the button doesn't resize) (vs-th4z follow-up)
+- **Active Project ⋮ menu grouped with separators** — the menu now uses dividers to separate project/data actions from the Dolt server actions and from Extension Settings; "Open Folder" reads "Open Folder in Finder" (vs-x49g)
+- **Details "+" create stays a plain button** — the create control is a single New-issue button again (the editor-tab create path is reachable from the command palette); the brief split-button version is dropped (vs-3ynn)
+- **Details header actions are ordered per surface** — sidebar reads `[favorite] [refresh] | [new] [edit] | [show-in-view] [open-in-tab]`; the editor tab reads `[favorite] [LLM] [show-in-view] [edit] | [back] [forward]`. Refresh is a standalone button again (no longer inside the show-in-view split menu) (vs-hskp)
 
 ### Fixed
 
 - **Editor-tab title tracks the shown bead** — navigating from one bead to another within the same editor tab now retitles the tab to the bead you're viewing, instead of staying stuck on the bead it was opened with (vs-q0e2)
+- **"Open Folder" opens the OS file manager** — it now reveals the board in Finder/Explorer/Files instead of the VS Code Explorer (a no-op for boards outside the workspace) (vs-cn01)
 
 ## [0.24.0] - 2026-06-23
 

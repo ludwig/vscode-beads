@@ -114,6 +114,11 @@
         "icon": "$(refresh)"
       },
       {
+        "command": "beads.exportIssues",
+        "title": "Beads: Export Issues as JSONL…",
+        "icon": "$(export)"
+      },
+      {
         "command": "beads.copyBeadId",
         "title": "Beads: Copy Issue ID",
         "icon": "$(copy)",
@@ -275,6 +280,11 @@
             "type": "boolean",
             "default": true,
             "description": "Highlight favorited (starred) beads in table views with a subtle accent. In the Favorites filter this also distinguishes starred beads from the relatives that tag along (their dependency neighbors)."
+          },
+          "beads.favoritesHighlightColor": {
+            "type": "string",
+            "default": "#dcc173",
+            "description": "Accent color for the favorites highlight (a thin left stripe + faint row wash) in the Issues table and Tree. Any CSS color. Leave empty to use the theme's chart-yellow."
           },
           "beads.muteClosedIssues": {
             "type": "boolean",

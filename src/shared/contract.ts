@@ -204,6 +204,7 @@ export interface BeadsSummary {
 export interface WebviewSettings {
   renderMarkdown: boolean;
   highlightFavorites: boolean; // subtle accent on favorited (starred) rows in tables
+  favoritesHighlightColor: string; // accent color for that highlight ("" = theme chart-yellow)
   muteClosedIssues: boolean; // gray out the titles of closed (done) issues in tables
   userId: string;
   tooltipHoverDelay: number; // 0 = disabled
@@ -291,6 +292,10 @@ export type ExtensionToWebviewMessage =
   | { type: "showGraph"; beadId: string }
   // Switch the panel to the Tree tab and reveal/scroll-to the bead (vs-kp67).
   | { type: "showTree"; beadId: string }
+  // Switch the panel to the Kanban tab and reveal/scroll-to the bead (vs-wbrz).
+  | { type: "showKanbanBead"; beadId: string }
+  // Switch the panel to the Issues tab and reveal/scroll-to the bead (vs-wbrz).
+  | { type: "showIssuesBead"; beadId: string }
   | { type: "focusIssuesTab" }
   | { type: "focusKanbanTab" }
   | { type: "pulse" }
@@ -351,6 +356,7 @@ export type WebviewToExtensionMessage =
   | { type: "stopDoltServer" }
   | { type: "openDoltLog" }
   | { type: "openProjectFolder" }
+  | { type: "exportIssues" }
   | { type: "selectBead"; beadId: string }
   | { type: "updateBead"; beadId: string; updates: Partial<Bead> }
   | { type: "deleteBead"; beadId: string }
@@ -359,10 +365,15 @@ export type WebviewToExtensionMessage =
   | { type: "addComment"; beadId: string; text: string }
   | { type: "openBeadDetails"; beadId: string }
   | { type: "openBeadInTab"; beadId: string }
+  | { type: "openNewIssueInTab" }
   | { type: "clearActiveBead" }
   | { type: "copyText"; text: string; label?: string; toast?: boolean }
   | { type: "viewInGraph"; beadId: string }
   | { type: "viewInTree"; beadId: string }
+  // Switch the panel to the Kanban tab and reveal this bead's card (vs-wbrz).
+  | { type: "viewInKanban"; beadId: string }
+  // Switch the panel to the Issues tab and reveal this bead's row (vs-wbrz).
+  | { type: "viewInIssues"; beadId: string }
   | { type: "navigateBack" }
   | { type: "navigateForward" }
   | { type: "pickReadyBead" }

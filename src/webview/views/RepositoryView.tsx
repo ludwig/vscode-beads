@@ -113,25 +113,28 @@ export function RepositoryView({
 
   return (
     <div className="repository-view">
-      {/* In-page project switcher (vs-rxgo): this page is a singleton, so the
-          dropdown re-points it (and its title/cards) at another board. */}
-      {projects.length > 1 && (
-        <div className="repository-project-switcher">
-          <ProjectDropdown
-            projects={projects}
-            activeProject={project}
-            onSelectProject={(p) =>
-              vscode.postMessage({ type: "selectProject", projectId: p.id, projectRootPath: p.rootPath })
-            }
-          />
-        </div>
-      )}
-
       {/* Header */}
       <header className="repository-header">
-        <div className="repository-header-title">
-          <Database size={22} strokeWidth={2} className="repository-header-icon" />
-          <h1>{project.name}</h1>
+        <div className="repository-header-top">
+          <div className="repository-header-title">
+            <Database size={22} strokeWidth={2} className="repository-header-icon" />
+            <h1>{project.name}</h1>
+          </div>
+          {/* In-page project switcher (vs-rxgo): this page is a singleton, so the
+              dropdown re-points it (and its title/cards) at another board. Lives
+              in the header's upper-right, aligned with the repo name, rather than
+              floating above the page (vs-x49g follow-up). */}
+          {projects.length > 1 && (
+            <div className="repository-project-switcher">
+              <ProjectDropdown
+                projects={projects}
+                activeProject={project}
+                onSelectProject={(p) =>
+                  vscode.postMessage({ type: "selectProject", projectId: p.id, projectRootPath: p.rootPath })
+                }
+              />
+            </div>
+          )}
         </div>
         <div className="repository-chips">
           {project.prefix && (

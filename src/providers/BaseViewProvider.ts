@@ -153,6 +153,7 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
       settings: {
         renderMarkdown: config.get<boolean>("renderMarkdown", true),
         highlightFavorites: config.get<boolean>("highlightFavorites", true),
+        favoritesHighlightColor: config.get<string>("favoritesHighlightColor", "#dcc173"),
         muteClosedIssues: config.get<boolean>("muteClosedIssues", true),
         userId,
         tooltipHoverDelay: config.get<number>("tooltipHoverDelay", 1000),
@@ -221,6 +222,9 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         break;
 
       case "refresh":
+        // Flash the confirmation ring so a manual refresh reads as registered,
+        // then reload (vs-y1vz). pulse() no-ops if the webview isn't visible.
+        this.pulse();
         await this.loadData("manualRefresh");
         break;
 
@@ -299,10 +303,17 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         vscode.commands.executeCommand("beads.openRepositoryDetails");
         break;
 
+      case "exportIssues":
+        vscode.commands.executeCommand("beads.exportIssues");
+        break;
+
       case "openProjectFolder": {
         const project = this.projectManager.getActiveProject();
         if (project) {
-          await vscode.commands.executeCommand("revealInExplorer", vscode.Uri.file(project.rootPath));
+          // Open the board root in the OS file manager (Finder/Explorer/Files).
+          // `revealInExplorer` only reveals folders inside the open workspace —
+          // a no-op for a ~/beads/<board> root that isn't one (vs-cn01).
+          await vscode.commands.executeCommand("revealFileInOS", vscode.Uri.file(project.rootPath));
         }
         break;
       }
@@ -319,6 +330,16 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
       case "viewInTree":
         // Switch the panel to the Tree tab and reveal this bead (vs-kp67).
         vscode.commands.executeCommand("beads.viewInTree", message.beadId);
+        break;
+
+      case "viewInKanban":
+        // Switch the panel to the Kanban tab and reveal this bead (vs-wbrz).
+        vscode.commands.executeCommand("beads.viewInKanban", message.beadId);
+        break;
+
+      case "viewInIssues":
+        // Switch the panel to the Issues tab and reveal this bead (vs-wbrz).
+        vscode.commands.executeCommand("beads.viewInIssues", message.beadId);
         break;
 
       case "copyBeadId":
@@ -382,6 +403,10 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
 
       case "openBeadInTab":
         vscode.commands.executeCommand("beads.openBeadInTab", message.beadId);
+        break;
+
+      case "openNewIssueInTab":
+        vscode.commands.executeCommand("beads.openNewIssueInTab");
         break;
 
       case "openFile":

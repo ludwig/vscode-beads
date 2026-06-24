@@ -31,6 +31,8 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
   // so a freshly-focused panel still switches to the Graph tab and focuses it.
   private pendingShowGraph: string | undefined;
   private pendingShowTree: string | undefined;
+  private pendingShowKanbanBead: string | undefined;
+  private pendingShowIssuesBead: string | undefined;
   private pendingFocusIssues = false;
   private pendingFocusKanban = false;
   // Set once the Graph/Tree tab asks for the dependency graph, so a project
@@ -72,6 +74,26 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
   }
 
   /**
+   * Switch the panel to the Kanban tab and reveal the given bead's card (scroll
+   * it into view + select it). Posts immediately when the webview is live;
+   * otherwise it's flushed once the webview signals ready (vs-wbrz).
+   */
+  public showKanbanForBead(beadId: string): void {
+    this.pendingShowKanbanBead = beadId;
+    this.flushShowKanbanBead();
+  }
+
+  /**
+   * Switch the panel to the Issues tab and reveal the given bead's row (scroll
+   * it into view + select it). Posts immediately when the webview is live;
+   * otherwise it's flushed once the webview signals ready (vs-wbrz).
+   */
+  public showIssuesForBead(beadId: string): void {
+    this.pendingShowIssuesBead = beadId;
+    this.flushShowIssuesBead();
+  }
+
+  /**
    * Switch the panel to the Issues tab and pulse a confirmation ring — so
    * "Show Issues" gives visible feedback even when Issues is already showing.
    */
@@ -110,6 +132,20 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     }
   }
 
+  private flushShowKanbanBead(): void {
+    if (this.pendingShowKanbanBead !== undefined && this._host?.visible) {
+      this.postMessage({ type: "showKanbanBead", beadId: this.pendingShowKanbanBead });
+      this.pendingShowKanbanBead = undefined;
+    }
+  }
+
+  private flushShowIssuesBead(): void {
+    if (this.pendingShowIssuesBead !== undefined && this._host?.visible) {
+      this.postMessage({ type: "showIssuesBead", beadId: this.pendingShowIssuesBead });
+      this.pendingShowIssuesBead = undefined;
+    }
+  }
+
   private flushFocusIssues(): void {
     if (this.pendingFocusIssues && this._host?.visible) {
       this.postMessage({ type: "focusIssuesTab" });
@@ -129,6 +165,8 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     this.flushFilter();
     this.flushShowGraph();
     this.flushShowTree();
+    this.flushShowKanbanBead();
+    this.flushShowIssuesBead();
     this.flushFocusIssues();
     this.flushFocusKanban();
   }
