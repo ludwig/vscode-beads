@@ -375,6 +375,156 @@ export function DetailsView({
   // deps/comments aren't loaded yet, so show them as loading rather than "none".
   const partial = !!bead.partial;
 
+  // Header action controls, composed into two layouts below. The sidebar and
+  // the editor tab order their action groups differently (vs-hskp):
+  //   sidebar:    [favorite] [refresh] | [+] [edit] | [show] [open-in-tab]
+  //   editor tab: [favorite] [llm] [show] [edit] | [back] [forward]
+  const favoriteBtn = (
+    <button
+      className={`icon-btn header-icon-btn${isFavorite ? " is-favorite" : ""}`}
+      title={isFavorite ? "Unstar (remove from Favorites)" : "Star (add to Favorites)"}
+      aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+      aria-pressed={isFavorite}
+      onClick={() => onToggleFavorite?.(bead.id)}
+    >
+      <Icon name={isFavorite ? "star" : "star-outline"} size={13} />
+    </button>
+  );
+
+  const refreshBtn = (
+    <button className="icon-btn header-icon-btn" title="Refresh" aria-label="Refresh" onClick={handleRefresh}>
+      <Icon name="refresh" size={13} className={refreshing ? "spinning" : ""} />
+    </button>
+  );
+
+  // LLM-context toggle — editor tabs only. The companion doc opens BESIDE this
+  // view, which only reads sensibly in an editor tab; in the narrow sidebar it
+  // would pop open far away in the editor area, so the caller omits the handler.
+  const llmToggle = onToggleCompanion ? (
+    <button
+      className={`companion-toggle${companionOpen ? " is-on" : ""}`}
+      title={
+        companionOpen
+          ? "Remove this bead from LLM context (closes the companion document)"
+          : "Add this bead to your LLM context — opens its contents as a document beside this view so an LLM session (e.g. Claude Code) reads it"
+      }
+      aria-label="Toggle LLM context for this bead"
+      aria-pressed={companionOpen}
+      onClick={() => onToggleCompanion(bead.id)}
+    >
+      <Icon name="sparkles" size={12} className="companion-toggle-icon" />
+      <span className="companion-toggle-label">LLM</span>
+    </button>
+  ) : null;
+
+  // Reveal THIS bead in the Beads panel's matching tab (vs-wbrz). Defaults to
+  // the last-used target (Tree preserves the prior single-button behavior) and
+  // remembers the choice.
+  const showSplitBtn = (
+    <SplitButton
+      persistKey="detailsReveal"
+      defaultOptionId="tree"
+      options={[
+        {
+          id: "issues",
+          label: "Show in Issues",
+          title: "Show in Issues",
+          icon: <ListTodo size={13} strokeWidth={2} />,
+          onSelect: () => vscode.postMessage({ type: "viewInIssues", beadId: bead.id }),
+        },
+        {
+          id: "tree",
+          label: "Show in Tree",
+          title: "Show in Tree",
+          icon: <Icon name="sitemap" size={13} />,
+          onSelect: () => vscode.postMessage({ type: "viewInTree", beadId: bead.id }),
+        },
+        {
+          id: "kanban",
+          label: "Show in Kanban",
+          title: "Show in Kanban",
+          icon: <Kanban size={13} strokeWidth={2} />,
+          onSelect: () => vscode.postMessage({ type: "viewInKanban", beadId: bead.id }),
+        },
+        {
+          id: "graph",
+          label: "Show in Graph",
+          title: "Show in Graph",
+          icon: <Workflow size={13} strokeWidth={2} />,
+          onSelect: () => vscode.postMessage({ type: "viewInGraph", beadId: bead.id }),
+        },
+      ]}
+    />
+  );
+
+  const createBtn = (
+    <button
+      className="icon-btn header-icon-btn"
+      title="New issue"
+      aria-label="New issue"
+      onClick={() => vscode.postMessage({ type: "startCreate" })}
+    >
+      <Icon name="plus" size={13} />
+    </button>
+  );
+
+  const editControls = editMode ? (
+    <>
+      <button
+        className="btn btn-primary btn-sm"
+        onClick={handleSave}
+        disabled={Object.keys(editedBead).length === 0}
+      >
+        Save
+      </button>
+      <button className="btn btn-sm" onClick={handleCancel}>
+        Cancel
+      </button>
+    </>
+  ) : (
+    <button className="btn btn-sm" onClick={() => setEditMode(true)}>
+      Edit
+    </button>
+  );
+
+  const openInTabBtn = (
+    <button
+      className="icon-btn header-icon-btn"
+      title="Open in editor tab"
+      aria-label="Open in editor tab"
+      onClick={() => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id })}
+    >
+      <Icon name="external-link" size={13} />
+    </button>
+  );
+
+  const backForwardBtns = (
+    <>
+      <button
+        className="icon-btn header-icon-btn"
+        title={`Back (${navMod}←)`}
+        aria-label="Back"
+        disabled={!canNavigateBack}
+        onClick={() => onNavigateBack?.()}
+      >
+        <svg width={13} height={13} viewBox="0 0 16 16" aria-hidden="true">
+          <path fill="currentColor" d="M10.5 3L5.5 8l5 5L9 14.5 2.5 8 9 1.5z" />
+        </svg>
+      </button>
+      <button
+        className="icon-btn header-icon-btn"
+        title={`Forward (${navMod}→)`}
+        aria-label="Forward"
+        disabled={!canNavigateForward}
+        onClick={() => onNavigateForward?.()}
+      >
+        <svg width={13} height={13} viewBox="0 0 16 16" aria-hidden="true">
+          <path fill="currentColor" d="M5.5 3l5 5-5 5L7 14.5 13.5 8 7 1.5z" />
+        </svg>
+      </button>
+    </>
+  );
+
   return (
     <div className="bead-details">
       {/* Header block — the ID/actions row, title anchor, and metadata
@@ -398,155 +548,28 @@ export function DetailsView({
           {bead.id}
         </span>
         <div className="header-actions">
-          {/* Group 1 — bead quick-state: favorite and (editor tabs
-              only) the LLM-context toggle. The toggle opens the companion doc
-              BESIDE this view, which only reads sensibly in an editor tab; in
-              the narrow sidebar that doc would pop open far away in the editor
-              area, so it's hidden there. */}
-          <button
-            className={`icon-btn header-icon-btn${isFavorite ? " is-favorite" : ""}`}
-            title={isFavorite ? "Unstar (remove from Favorites)" : "Star (add to Favorites)"}
-            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-            aria-pressed={isFavorite}
-            onClick={() => onToggleFavorite?.(bead.id)}
-          >
-            <Icon name={isFavorite ? "star" : "star-outline"} size={13} />
-          </button>
-          {isEditorTab && onToggleCompanion && (
-            <button
-              className={`companion-toggle${companionOpen ? " is-on" : ""}`}
-              title={
-                companionOpen
-                  ? "Remove this bead from LLM context (closes the companion document)"
-                  : "Add this bead to your LLM context — opens its contents as a document beside this view so an LLM session (e.g. Claude Code) reads it"
-              }
-              aria-label="Toggle LLM context for this bead"
-              aria-pressed={companionOpen}
-              onClick={() => onToggleCompanion(bead.id)}
-            >
-              <Icon name="sparkles" size={12} className="companion-toggle-icon" />
-              <span className="companion-toggle-label">LLM</span>
-            </button>
-          )}
-          {/* Reveal THIS bead in the Beads panel's matching tab (vs-wbrz), plus
-              Refresh folded in as the first option. A split button defaults to
-              the last-used action (Tree preserves the prior single-button reveal
-              behavior) and remembers the choice. */}
-          <SplitButton
-            persistKey="detailsReveal"
-            defaultOptionId="tree"
-            options={[
-              {
-                id: "refresh",
-                label: "Refresh",
-                title: "Refresh",
-                icon: <Icon name="refresh" size={13} className={refreshing ? "spinning" : ""} />,
-                onSelect: handleRefresh,
-              },
-              {
-                id: "issues",
-                label: "Show in Issues",
-                title: "Show in Issues",
-                icon: <ListTodo size={13} strokeWidth={2} />,
-                onSelect: () => vscode.postMessage({ type: "viewInIssues", beadId: bead.id }),
-              },
-              {
-                id: "tree",
-                label: "Show in Tree",
-                title: "Show in Tree",
-                icon: <Icon name="sitemap" size={13} />,
-                onSelect: () => vscode.postMessage({ type: "viewInTree", beadId: bead.id }),
-              },
-              {
-                id: "kanban",
-                label: "Show in Kanban",
-                title: "Show in Kanban",
-                icon: <Kanban size={13} strokeWidth={2} />,
-                onSelect: () => vscode.postMessage({ type: "viewInKanban", beadId: bead.id }),
-              },
-              {
-                id: "graph",
-                label: "Show in Graph",
-                title: "Show in Graph",
-                icon: <Workflow size={13} strokeWidth={2} />,
-                onSelect: () => vscode.postMessage({ type: "viewInGraph", beadId: bead.id }),
-              },
-            ]}
-          />
-
-          <span className="header-actions-sep" />
-
-          {/* Group 2 — create + primary: New (sidebar) sits right before Edit.
-              Plain '+' — sidebar-only. The editor-tab path is already covered by
-              the Open-in-tab button anchored at the end of the header, so the
-              create control doesn't need a tab alternate. */}
-          {!isEditorTab && (
-            <button
-              className="icon-btn header-icon-btn"
-              title="New issue"
-              aria-label="New issue"
-              onClick={() => vscode.postMessage({ type: "startCreate" })}
-            >
-              <Icon name="plus" size={13} />
-            </button>
-          )}
-          {editMode ? (
-            <>
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={handleSave}
-                disabled={Object.keys(editedBead).length === 0}
-              >
-                Save
-              </button>
-              <button className="btn btn-sm" onClick={handleCancel}>
-                Cancel
-              </button>
-            </>
-          ) : (
-            <button className="btn btn-sm" onClick={() => setEditMode(true)}>
-              Edit
-            </button>
-          )}
-
-          <span className="header-actions-sep" />
-
-          {/* Group 3 — navigation / context, anchored at the end: Back/Forward
-              in an editor tab; Open-in-tab in the sidebar. */}
           {isEditorTab ? (
+            // [favorite] [llm] [show] [edit] | < >  (one separator)
             <>
-              <button
-                className="icon-btn header-icon-btn"
-                title={`Back (${navMod}←)`}
-                aria-label="Back"
-                disabled={!canNavigateBack}
-                onClick={() => onNavigateBack?.()}
-              >
-                <svg width={13} height={13} viewBox="0 0 16 16" aria-hidden="true">
-                  <path fill="currentColor" d="M10.5 3L5.5 8l5 5L9 14.5 2.5 8 9 1.5z" />
-                </svg>
-              </button>
-              <button
-                className="icon-btn header-icon-btn"
-                title={`Forward (${navMod}→)`}
-                aria-label="Forward"
-                disabled={!canNavigateForward}
-                onClick={() => onNavigateForward?.()}
-              >
-                <svg width={13} height={13} viewBox="0 0 16 16" aria-hidden="true">
-                  <path fill="currentColor" d="M5.5 3l5 5-5 5L7 14.5 13.5 8 7 1.5z" />
-                </svg>
-              </button>
+              {favoriteBtn}
+              {llmToggle}
+              {showSplitBtn}
+              {editControls}
+              <span className="header-actions-sep" />
+              {backForwardBtns}
             </>
           ) : (
-            <button
-              className="icon-btn header-icon-btn"
-              title="Open in editor tab"
-              aria-label="Open in editor tab"
-              onClick={() => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id })}
-            >
-              <Icon name="external-link" size={13} />
-            </button>
+            // [favorite] [refresh] | [+] [edit] | [show] [open-in-tab]
+            <>
+              {favoriteBtn}
+              {refreshBtn}
+              <span className="header-actions-sep" />
+              {createBtn}
+              {editControls}
+              <span className="header-actions-sep" />
+              {showSplitBtn}
+              {openInTabBtn}
+            </>
           )}
         </div>
       </div>

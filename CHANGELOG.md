@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Export Issues as JSONL** — an "Export Issues as JSONL…" action (Active Project ⋮ menu and the **Beads: Export Issues as JSONL…** command) runs `bd export` for the active board and writes a `<prefix>-issues-<date>.jsonl` file via a save dialog, then offers Reveal in Finder / Open File. Works in both embedded and server modes — in embedded/Dolt mode there's no `issues.jsonl` on disk until you export (vs-ln7e.1)
-- **"Show in view" selector on a bead** — the Details header's reveal button is a split button (Issues / Tree / Kanban / Graph) that remembers your last pick; each reveals the bead in the panel's matching tab — Kanban and Issues reveals scroll the card/row into view, joining the existing Tree/Graph reveals. **Refresh** is folded in as the split button's first option, replacing the separate refresh icon (vs-wbrz, vs-zj9g, vs-thfe)
+- **"Show in view" selector on a bead** — the Details header's reveal button is a split button (Issues / Tree / Kanban / Graph) that remembers your last pick; each reveals the bead in the panel's matching tab — Kanban and Issues reveals scroll the card/row into view, joining the existing Tree/Graph reveals (vs-wbrz, vs-zj9g)
 - **Contextual refresh on editor-tab views** — a data view opened standalone in an editor tab (Issues / Kanban / Tree / Graph) now has its own Refresh button in a thin tab toolbar; the inherited-filter snapshot ribbon shares that toolbar on filter-seeded tabs (vs-fzy3)
 - **Tree view honors favorites + closed muting** — the Tree accents favorited rows and grays out closed-row titles, like the Issues table and Kanban (vs-or31)
 - **Favorites highlight color is configurable** — a new `beads.favoritesHighlightColor` setting (Appearance) drives the favorites accent across the Issues row, Tree row, and toggle star; default nudged slightly yellower (vs-bvk7)
@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Ready toggle shows the 🚀 emoji when active** — toggling the Ready filter on swaps its line-art rocket for the colored 🚀 (in a fixed-width slot so the button doesn't resize) (vs-th4z follow-up)
 - **Active Project ⋮ menu grouped with separators** — the menu now uses dividers to separate project/data actions from the Dolt server actions and from Extension Settings; "Open Folder" reads "Open Folder in Finder" (vs-x49g)
 - **Details "+" create stays a plain button** — the create control is a single New-issue button again (the editor-tab create path is reachable from the command palette); the brief split-button version is dropped (vs-3ynn)
+- **Details header actions are ordered per surface** — sidebar reads `[favorite] [refresh] | [new] [edit] | [show-in-view] [open-in-tab]`; the editor tab reads `[favorite] [LLM] [show-in-view] [edit] | [back] [forward]`. Refresh is a standalone button again (no longer inside the show-in-view split menu) (vs-hskp)
 
 ### Fixed
 
