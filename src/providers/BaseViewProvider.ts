@@ -302,7 +302,10 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
       case "openProjectFolder": {
         const project = this.projectManager.getActiveProject();
         if (project) {
-          await vscode.commands.executeCommand("revealInExplorer", vscode.Uri.file(project.rootPath));
+          // Open the board root in the OS file manager (Finder/Explorer/Files).
+          // `revealInExplorer` only reveals folders inside the open workspace —
+          // a no-op for a ~/beads/<board> root that isn't one (vs-cn01).
+          await vscode.commands.executeCommand("revealFileInOS", vscode.Uri.file(project.rootPath));
         }
         break;
       }
