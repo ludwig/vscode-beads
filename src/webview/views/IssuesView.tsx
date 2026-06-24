@@ -858,6 +858,7 @@ export function IssuesView({
     setGlobalFilter("");
     setActivePreset("all");
     setReadyOnly(false);
+    setFavoritesOnly(false);
   };
 
   const filteredCount = table.getFilteredRowModel().rows.length;
