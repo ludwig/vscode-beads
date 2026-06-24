@@ -494,6 +494,8 @@ export function App(): React.ReactElement {
             error={state.error}
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
+            highlightFavorites={state.settings.highlightFavorites}
+            muteClosedIssues={state.settings.muteClosedIssues}
             filteredBeadIds={effectiveSeed}
             filterActive={seedFilterActive}
             filteredCount={seedFilteredCount}

@@ -249,6 +249,8 @@ export function PanelShell({
             error={error}
             selectedBeadId={selectedBeadId}
             favoriteIds={favoriteIds}
+            highlightFavorites={settings.highlightFavorites}
+            muteClosedIssues={settings.muteClosedIssues}
             filteredBeadIds={filteredBeadIds}
             filterActive={filterActive}
             filteredCount={filteredCount}

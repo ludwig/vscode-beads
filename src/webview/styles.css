@@ -1700,9 +1700,17 @@ textarea {
    alongside open work — in the Issues table (vs-on5g) and on cards (vs-b0ga). */
 .bead-title.muted-closed,
 .kanban-card-title.muted-closed,
-.active-bead-title.muted-closed {
+.active-bead-title.muted-closed,
+.beads-tree-title.muted-closed {
   color: var(--vscode-descriptionForeground);
   opacity: 0.7;
+}
+
+/* Favorites highlight in the Tree, mirroring the Issues table row (vs-or31).
+   Uses the shared --beads-favorite-color token (vs-bvk7) so the tint is tunable. */
+.beads-tree-row.favorite {
+  background-color: color-mix(in srgb, var(--beads-favorite-color, var(--vscode-charts-yellow, #d7ba7d)) 6%, transparent);
+  box-shadow: inset 2px 0 0 0 color-mix(in srgb, var(--beads-favorite-color, var(--vscode-charts-yellow, #d7ba7d)) 50%, transparent);
 }
 
 .type-cell,

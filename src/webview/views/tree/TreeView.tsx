@@ -19,6 +19,7 @@ import {
   TYPE_LABELS,
   statusColor,
   statusLabel,
+  isClosedStatus,
   getTypeSortOrder,
   vscode,
 } from "../../types";
@@ -153,6 +154,10 @@ interface TreeViewProps {
   selectedBeadId: string | null;
   /** Favorite bead ids — drives the right-click Add/Remove Favorites item (vs-sd5.5). */
   favoriteIds?: string[];
+  /** Accent favorited rows (beads.highlightFavorites, vs-or31). */
+  highlightFavorites?: boolean;
+  /** Gray out closed (done) row titles (beads.muteClosedIssues, vs-or31). */
+  muteClosedIssues?: boolean;
   /**
    * Ids matching the current Issues filter/search, or null when unknown. The
    * "Filtered" toggle scopes the tree to this set; null disables the toggle.
@@ -179,6 +184,8 @@ export function TreeView({
   error,
   selectedBeadId,
   favoriteIds = [],
+  highlightFavorites = true,
+  muteClosedIssues = true,
   filteredBeadIds,
   filterActive,
   filteredCount,
@@ -299,6 +306,7 @@ export function TreeView({
   // Only the text query force-expands (to reveal matches); the always-on Issues
   // scope must not, so the user can still collapse/expand within it.
   const filtering = query.trim().length > 0;
+  const favoriteIdSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
 
   // "Show in tree" deep-link (vs-kp67): expand the target's collapsed ancestors,
   // select it, and scroll it into view. Held as pending state and retried as
@@ -607,6 +615,9 @@ export function TreeView({
               columns={shownColumns}
               gridTemplate={gridTemplate}
               selectedBeadId={activeSelectedId}
+              favoriteIds={favoriteIdSet}
+              highlightFavorites={highlightFavorites}
+              muteClosedIssues={muteClosedIssues}
               collapsed={collapsed}
               forceExpand={filtering}
               onToggle={toggle}
@@ -692,6 +703,9 @@ interface TreeRowProps {
   /** Grid template shared with the header so cells stay aligned across depths. */
   gridTemplate: string;
   selectedBeadId: string | null;
+  favoriteIds: Set<string>;
+  highlightFavorites: boolean;
+  muteClosedIssues: boolean;
   collapsed: Set<string>;
   forceExpand: boolean;
   onToggle: (id: string, recursive?: boolean) => void;
@@ -706,6 +720,9 @@ function TreeRow({
   columns,
   gridTemplate,
   selectedBeadId,
+  favoriteIds,
+  highlightFavorites,
+  muteClosedIssues,
   collapsed,
   forceExpand,
   onToggle,
@@ -717,6 +734,8 @@ function TreeRow({
   const hasChildren = children.length > 0;
   const isCollapsed = !forceExpand && collapsed.has(bead.id);
   const isSelected = bead.id === selectedBeadId;
+  const isFavorite = highlightFavorites && favoriteIds.has(bead.id);
+  const isMutedClosed = muteClosedIssues && isClosedStatus(bead.status);
   const isDragging = drag.draggedId === bead.id;
   const isDropTarget = drag.dropTargetId === bead.id;
   const priorityColor =
@@ -725,7 +744,7 @@ function TreeRow({
   return (
     <>
       <div
-        className={`beads-tree-row${isSelected ? " selected" : ""}${isDragging ? " dragging" : ""}${isDropTarget ? " drop-target" : ""}`}
+        className={`beads-tree-row${isSelected ? " selected" : ""}${isFavorite ? " favorite" : ""}${isDragging ? " dragging" : ""}${isDropTarget ? " drop-target" : ""}`}
         style={{ gridTemplateColumns: gridTemplate }}
         data-bead-id={bead.id}
         role="treeitem"
@@ -773,7 +792,7 @@ function TreeRow({
           </span>
           {bead.type ? <TypeIcon type={bead.type} size={13} /> : null}
           <span className="beads-tree-id">{bead.id}</span>
-          <span className="beads-tree-title">{bead.title}</span>
+          <span className={`beads-tree-title${isMutedClosed ? " muted-closed" : ""}`}>{bead.title}</span>
         </span>
         {columns.map((col) => {
           switch (col.key) {
@@ -821,6 +840,9 @@ function TreeRow({
               columns={columns}
               gridTemplate={gridTemplate}
               selectedBeadId={selectedBeadId}
+              favoriteIds={favoriteIds}
+              highlightFavorites={highlightFavorites}
+              muteClosedIssues={muteClosedIssues}
               collapsed={collapsed}
               forceExpand={forceExpand}
               onToggle={onToggle}
