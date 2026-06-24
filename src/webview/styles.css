@@ -3117,6 +3117,12 @@ textarea {
   padding-left: 10px;
   opacity: 0.8;
 }
+/* Plus-over-arrow glyph for the "new issue in editor tab" option. */
+.split-button-stacked-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+}
 
 .icon-btn {
   padding: 4px;

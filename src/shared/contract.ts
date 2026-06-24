@@ -360,6 +360,7 @@ export type WebviewToExtensionMessage =
   | { type: "addComment"; beadId: string; text: string }
   | { type: "openBeadDetails"; beadId: string }
   | { type: "openBeadInTab"; beadId: string }
+  | { type: "openNewIssueInTab" }
   | { type: "clearActiveBead" }
   | { type: "copyText"; text: string; label?: string; toast?: boolean }
   | { type: "viewInGraph"; beadId: string }

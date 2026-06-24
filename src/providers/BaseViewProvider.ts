@@ -391,6 +391,10 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         vscode.commands.executeCommand("beads.openBeadInTab", message.beadId);
         break;
 
+      case "openNewIssueInTab":
+        vscode.commands.executeCommand("beads.openNewIssueInTab");
+        break;
+
       case "openFile":
         await this.handleOpenFile(message.filePath, message.line);
         break;

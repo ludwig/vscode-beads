@@ -154,6 +154,7 @@ import { Markdown } from "../common/Markdown";
 import { useToast } from "../common/Toast";
 import { ColoredSelect, ColoredSelectOption } from "../common/ColoredSelect";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
+import { SplitButton } from "../common/SplitButton";
 
 // Build options for ColoredSelect dropdowns (sorted by TYPE_SORT_ORDER)
 const TYPE_OPTIONS: ColoredSelectOption<BeadType>[] = (Object.keys(TYPE_LABELS) as BeadType[])
@@ -445,16 +446,36 @@ export function DetailsView({
 
           <span className="header-actions-sep" />
 
-          {/* Group 2 — create + primary: New (sidebar) sits right before Edit. */}
+          {/* Group 2 — create + primary: New (sidebar) sits right before Edit.
+              A split button (vs-jwua) defaults to the last-used create mode —
+              New issue (sidebar) vs New issue in an editor tab — and remembers
+              the choice. Sidebar-only, like the create '+' it replaces. */}
           {!isEditorTab && (
-            <button
-              className="icon-btn header-icon-btn"
-              title="New issue"
-              aria-label="New issue"
-              onClick={() => vscode.postMessage({ type: "startCreate" })}
-            >
-              <Icon name="plus" size={13} />
-            </button>
+            <SplitButton
+              persistKey="detailsCreate"
+              defaultOptionId="sidebar"
+              options={[
+                {
+                  id: "sidebar",
+                  label: "New issue",
+                  title: "New issue",
+                  icon: <Icon name="plus" size={13} />,
+                  onSelect: () => vscode.postMessage({ type: "startCreate" }),
+                },
+                {
+                  id: "tab",
+                  label: "New issue in editor tab",
+                  title: "New issue in editor tab",
+                  icon: (
+                    <span className="split-button-stacked-icon">
+                      <Icon name="plus" size={13} />
+                      <Icon name="external-link" size={9} />
+                    </span>
+                  ),
+                  onSelect: () => vscode.postMessage({ type: "openNewIssueInTab" }),
+                },
+              ]}
+            />
           )}
           {editMode ? (
             <>
