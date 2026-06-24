@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-06-23
+
 ### Added
 
 - **Export Issues as JSONL** — an "Export Issues as JSONL…" action (Active Project ⋮ menu and the **Beads: Export Issues as JSONL…** command) runs `bd export` for the active board and writes a `<prefix>-issues-<date>.jsonl` file via a save dialog, then offers Reveal in Finder / Open File. Works in both embedded and server modes — in embedded/Dolt mode there's no `issues.jsonl` on disk until you export (vs-ln7e.1)
