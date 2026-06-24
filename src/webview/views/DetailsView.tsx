@@ -398,7 +398,7 @@ export function DetailsView({
           {bead.id}
         </span>
         <div className="header-actions">
-          {/* Group 1 — bead quick-state: favorite, refresh, and (editor tabs
+          {/* Group 1 — bead quick-state: favorite and (editor tabs
               only) the LLM-context toggle. The toggle opens the companion doc
               BESIDE this view, which only reads sensibly in an editor tab; in
               the narrow sidebar that doc would pop open far away in the editor
@@ -428,13 +428,21 @@ export function DetailsView({
               <span className="companion-toggle-label">LLM</span>
             </button>
           )}
-          {/* Reveal THIS bead in the Beads panel's matching tab (vs-wbrz). A
-              split button defaults to the last-used target (Tree preserves the
-              prior single-button behavior) and remembers the choice. */}
+          {/* Reveal THIS bead in the Beads panel's matching tab (vs-wbrz), plus
+              Refresh folded in as the first option. A split button defaults to
+              the last-used action (Tree preserves the prior single-button reveal
+              behavior) and remembers the choice. */}
           <SplitButton
             persistKey="detailsReveal"
             defaultOptionId="tree"
             options={[
+              {
+                id: "refresh",
+                label: "Refresh",
+                title: "Refresh",
+                icon: <Icon name="refresh" size={13} className={refreshing ? "spinning" : ""} />,
+                onSelect: handleRefresh,
+              },
               {
                 id: "issues",
                 label: "Show in Issues",
@@ -465,47 +473,22 @@ export function DetailsView({
               },
             ]}
           />
-          <button
-            className="icon-btn header-icon-btn"
-            title="Refresh"
-            aria-label="Refresh"
-            onClick={handleRefresh}
-          >
-            <Icon name="refresh" size={13} className={refreshing ? "spinning" : ""} />
-          </button>
 
           <span className="header-actions-sep" />
 
           {/* Group 2 — create + primary: New (sidebar) sits right before Edit.
-              A split button (vs-jwua) defaults to the last-used create mode —
-              New issue (sidebar) vs New issue in an editor tab — and remembers
-              the choice. Sidebar-only, like the create '+' it replaces. */}
+              Plain '+' — sidebar-only. The editor-tab path is already covered by
+              the Open-in-tab button anchored at the end of the header, so the
+              create control doesn't need a tab alternate. */}
           {!isEditorTab && (
-            <SplitButton
-              persistKey="detailsCreate"
-              defaultOptionId="sidebar"
-              options={[
-                {
-                  id: "sidebar",
-                  label: "New issue",
-                  title: "New issue",
-                  icon: <Icon name="plus" size={13} />,
-                  onSelect: () => vscode.postMessage({ type: "startCreate" }),
-                },
-                {
-                  id: "tab",
-                  label: "New issue in editor tab",
-                  title: "New issue in editor tab",
-                  icon: (
-                    <span className="split-button-stacked-icon">
-                      <Icon name="plus" size={13} />
-                      <Icon name="external-link" size={9} />
-                    </span>
-                  ),
-                  onSelect: () => vscode.postMessage({ type: "openNewIssueInTab" }),
-                },
-              ]}
-            />
+            <button
+              className="icon-btn header-icon-btn"
+              title="New issue"
+              aria-label="New issue"
+              onClick={() => vscode.postMessage({ type: "startCreate" })}
+            >
+              <Icon name="plus" size={13} />
+            </button>
           )}
           {editMode ? (
             <>
