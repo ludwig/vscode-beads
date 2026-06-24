@@ -5,7 +5,7 @@
  * Supports drag-and-drop to change status.
  */
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
 import { Bead, BeadStatus, BuiltInStatus, BeadType, STATUS_LABELS, STATUS_COLORS, isClosedStatus, vscode } from "../types";
 import { TypeIcon } from "../common/TypeIcon";
@@ -39,6 +39,13 @@ interface KanbanBoardProps {
   filterActive?: boolean;
   filteredCount?: number;
   totalCount?: number;
+  /**
+   * A "show in kanban" deep-link target (vs-wbrz): select the bead's card and
+   * scroll it into view. `seq` re-fires for a repeat of the same bead. If the
+   * card is filtered out of the current view it's a harmless no-op. Null when
+   * there's no pending reveal.
+   */
+  revealRequest?: { beadId: string; seq: number } | null;
 }
 
 // bd's seven built-in statuses in lifecycle order: backlog → ready → doing →
@@ -56,7 +63,8 @@ const COLUMNS: BuiltInStatus[] = [
   "pinned", // standing / persistent (frozen) — outside the flow
 ];
 
-export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], muteClosedIssues = true, onSelectBead, onUpdateBead, hasActiveFilters, unfilteredCounts, filteredBeadIds, filterActive, filteredCount, totalCount }: KanbanBoardProps): React.ReactElement {
+export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], muteClosedIssues = true, onSelectBead, onUpdateBead, hasActiveFilters, unfilteredCounts, filteredBeadIds, filterActive, filteredCount, totalCount, revealRequest }: KanbanBoardProps): React.ReactElement {
+  const boardRef = useRef<HTMLDivElement>(null);
   // Track which columns are collapsed. The quiet lanes (closed + the frozen
   // deferred/pinned) start collapsed; good per-lane defaults + persistence are
   // vs-9ph.
@@ -166,6 +174,40 @@ export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], muteClose
     return acc;
   }, {} as Record<BeadStatus, Bead[]>);
 
+  // "Show in kanban" deep-link (vs-wbrz): select the target's card and scroll it
+  // into view. Held as pending state and retried as the visible cards update,
+  // because the bead list may still be loading when the request arrives. If the
+  // card is scoped out by the Issues/board filter it simply never resolves — a
+  // harmless no-op. Mirrors the Tree's pending-reveal idiom.
+  const [pendingReveal, setPendingReveal] = useState<string | null>(null);
+  const lastRevealSeq = useRef<number | null>(null);
+  useEffect(() => {
+    if (!revealRequest || lastRevealSeq.current === revealRequest.seq) return;
+    lastRevealSeq.current = revealRequest.seq;
+    setPendingReveal(revealRequest.beadId);
+  }, [revealRequest]);
+  useEffect(() => {
+    if (!pendingReveal) return;
+    const target = visibleBeads.find((b) => b.id === pendingReveal);
+    if (!target) return; // list not loaded / card not in scope yet — retry later
+    // Expand the card's column if it was collapsed, so the card is visible.
+    setCollapsedColumns((prev) => {
+      if (!prev.has(target.status)) return prev;
+      const next = new Set(prev);
+      next.delete(target.status);
+      return next;
+    });
+    setLocalSelectedId(pendingReveal);
+    onSelectBead(pendingReveal);
+    const id = pendingReveal;
+    requestAnimationFrame(() => {
+      boardRef.current
+        ?.querySelector(`[data-bead-id="${id}"]`)
+        ?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+    });
+    setPendingReveal(null);
+  }, [pendingReveal, visibleBeads, onSelectBead]);
+
   return (
     <div className="kanban">
       <div className="kanban-filterbar">
@@ -186,7 +228,7 @@ export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], muteClose
           />
         )}
       </div>
-      <div className="kanban-board">
+      <div className="kanban-board" ref={boardRef}>
       {COLUMNS.map((status) => {
         const isCollapsed = collapsedColumns.has(status);
         const items = grouped[status] || [];
@@ -217,6 +259,7 @@ export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], muteClose
                 {items.map((bead) => (
                   <div
                     key={bead.id}
+                    data-bead-id={bead.id}
                     className={`kanban-card ${bead.id === activeSelectedId ? "selected" : ""}`}
                     draggable={!!onUpdateBead}
                     onDragStart={(e) => handleDragStart(e, bead.id)}

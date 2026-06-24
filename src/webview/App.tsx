@@ -58,6 +58,12 @@ interface AppState {
   // Same shape, for the Tree tab "show in tree" action (vs-kp67): switch to the
   // Tree tab and reveal the bead. `seq` re-fires for a repeat of the same bead.
   showTreeRequest: { beadId: string; seq: number } | null;
+  // Same shape, for the Kanban tab "show in kanban" action (vs-wbrz): switch to
+  // the Kanban tab and reveal the bead's card.
+  showKanbanBeadRequest: { beadId: string; seq: number } | null;
+  // Same shape, for the Issues tab "show in issues" action (vs-wbrz): switch to
+  // the Issues tab and reveal the bead's row.
+  showIssuesBeadRequest: { beadId: string; seq: number } | null;
   // Bumped to switch the panel to the Issues tab + pulse a confirmation ring.
   focusIssuesSeq: number;
   // Bumped to switch the panel to the Kanban tab (vs-6xf).
@@ -131,6 +137,8 @@ const initialState: AppState = {
   issuesFilterRequest: null,
   showGraphRequest: null,
   showTreeRequest: null,
+  showKanbanBeadRequest: null,
+  showIssuesBeadRequest: null,
   focusIssuesSeq: 0,
   focusKanbanSeq: 0,
   pulseSeq: 0,
@@ -238,6 +246,24 @@ export function App(): React.ReactElement {
           showTreeRequest: {
             beadId: message.beadId,
             seq: (prev.showTreeRequest?.seq ?? 0) + 1,
+          },
+        }));
+        break;
+      case "showKanbanBead":
+        setState((prev) => ({
+          ...prev,
+          showKanbanBeadRequest: {
+            beadId: message.beadId,
+            seq: (prev.showKanbanBeadRequest?.seq ?? 0) + 1,
+          },
+        }));
+        break;
+      case "showIssuesBead":
+        setState((prev) => ({
+          ...prev,
+          showIssuesBeadRequest: {
+            beadId: message.beadId,
+            seq: (prev.showIssuesBeadRequest?.seq ?? 0) + 1,
           },
         }));
         break;
@@ -459,6 +485,8 @@ export function App(): React.ReactElement {
             applySnapshotRequest={state.applySnapshotRequest}
             showGraphRequest={state.showGraphRequest}
             showTreeRequest={state.showTreeRequest}
+            showKanbanBeadRequest={state.showKanbanBeadRequest}
+            showIssuesBeadRequest={state.showIssuesBeadRequest}
             focusIssuesSeq={state.focusIssuesSeq}
             focusKanbanSeq={state.focusKanbanSeq}
           />

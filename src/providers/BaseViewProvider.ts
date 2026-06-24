@@ -328,6 +328,16 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         vscode.commands.executeCommand("beads.viewInTree", message.beadId);
         break;
 
+      case "viewInKanban":
+        // Switch the panel to the Kanban tab and reveal this bead (vs-wbrz).
+        vscode.commands.executeCommand("beads.viewInKanban", message.beadId);
+        break;
+
+      case "viewInIssues":
+        // Switch the panel to the Issues tab and reveal this bead (vs-wbrz).
+        vscode.commands.executeCommand("beads.viewInIssues", message.beadId);
+        break;
+
       case "copyBeadId":
         if (message.beadId) {
           await vscode.env.clipboard.writeText(message.beadId);

@@ -132,6 +132,22 @@ export function registerCommands(
       shellProvider.showTreeForBead(beadId);
     }),
 
+    vscode.commands.registerCommand("beads.viewInKanban", async (beadId?: string) => {
+      if (!beadId) {
+        return;
+      }
+      await vscode.commands.executeCommand("beadsPanelShell.focus");
+      shellProvider.showKanbanForBead(beadId);
+    }),
+
+    vscode.commands.registerCommand("beads.viewInIssues", async (beadId?: string) => {
+      if (!beadId) {
+        return;
+      }
+      await vscode.commands.executeCommand("beadsPanelShell.focus");
+      shellProvider.showIssuesForBead(beadId);
+    }),
+
     vscode.commands.registerCommand("beads.openBeadDetails", async (beadId?: string) => {
       if (!beadId) {
         // Prompt for bead ID

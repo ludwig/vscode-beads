@@ -408,6 +408,16 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
         vscode.commands.executeCommand("beads.viewInTree", message.beadId);
         break;
 
+      case "viewInKanban":
+        // Switch the panel to the Kanban tab and reveal this bead (vs-wbrz).
+        vscode.commands.executeCommand("beads.viewInKanban", message.beadId);
+        break;
+
+      case "viewInIssues":
+        // Switch the panel to the Issues tab and reveal this bead (vs-wbrz).
+        vscode.commands.executeCommand("beads.viewInIssues", message.beadId);
+        break;
+
       case "navigateBack":
         // Editor tabs walk their own per-tab trail (vs-9u8); the sidebar
         // delegates to the global history command.

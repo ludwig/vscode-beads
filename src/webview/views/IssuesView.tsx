@@ -87,6 +87,14 @@ interface IssuesViewProps {
    * an identical snapshot.
    */
   applySnapshotRequest?: { snapshot: FilterSnapshot; seq: number } | null;
+  /**
+   * A "show in issues" deep-link target (vs-wbrz): select the bead's row and
+   * scroll it into view. `seq` re-fires for a repeat of the same bead. If the
+   * bead is filtered out of the current view, selection still applies but the
+   * scroll is a no-op (the row isn't rendered). Null when there's no pending
+   * reveal.
+   */
+  revealRequest?: { beadId: string; seq: number } | null;
   /** True in an editor-tab Issues view — gates the "Apply to all" action (vs-dzm). */
   isEditorTab?: boolean;
   /**
@@ -161,6 +169,7 @@ export function IssuesView({
   tooltipHoverDelay,
   issuesFilterRequest,
   applySnapshotRequest,
+  revealRequest,
   isEditorTab = false,
   graph,
   onRequestGraph,
@@ -430,6 +439,32 @@ export function IssuesView({
     setReadyOnly(s.readyOnly);
     setFavoritesOnly(s.favoritesOnly);
   }, [applySnapshotRequest]);
+
+  // "Show in issues" deep-link (vs-wbrz): select the target's row and scroll it
+  // into view. Held as pending state and retried as `beads` updates, because the
+  // list may still be loading when the request arrives. Selection always
+  // applies; if the bead is filtered out of the current view its row isn't
+  // rendered, so the scroll is a harmless no-op. Mirrors the Tree's idiom.
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const [pendingReveal, setPendingReveal] = useState<string | null>(null);
+  const lastRevealSeq = useRef<number | null>(null);
+  useEffect(() => {
+    if (!revealRequest || lastRevealSeq.current === revealRequest.seq) return;
+    lastRevealSeq.current = revealRequest.seq;
+    setPendingReveal(revealRequest.beadId);
+  }, [revealRequest]);
+  useEffect(() => {
+    if (!pendingReveal) return;
+    if (!beads.some((b) => b.id === pendingReveal)) return; // list not loaded yet — retry later
+    selectRow(pendingReveal);
+    const id = pendingReveal;
+    requestAnimationFrame(() => {
+      tableContainerRef.current
+        ?.querySelector(`[data-bead-id="${id}"]`)
+        ?.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
+    setPendingReveal(null);
+  }, [pendingReveal, beads, selectRow]);
 
   // Column definitions
   const columns = useMemo(
@@ -1225,7 +1260,7 @@ export function IssuesView({
               <Loading />
             </div>
           )}
-          <div className={`beads-table-container ${table.getState().columnSizingInfo.isResizingColumn ? "resizing" : ""}`}>
+          <div ref={tableContainerRef} className={`beads-table-container ${table.getState().columnSizingInfo.isResizingColumn ? "resizing" : ""}`}>
             <table
               className={`beads-table ${compact ? "compact" : ""}`}
               style={{ minWidth: table.getCenterTotalSize() }}
@@ -1400,6 +1435,7 @@ export function IssuesView({
                   table.getRowModel().rows.map((row) => (
                     <tr
                       key={row.id}
+                      data-bead-id={row.original.id}
                       onClick={() => selectRow(row.original.id)}
                       onDoubleClick={() => vscode.postMessage({ type: "openBeadInTab", beadId: row.original.id })}
                       onContextMenu={(e) => {

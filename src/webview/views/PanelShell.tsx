@@ -54,6 +54,8 @@ interface PanelShellProps {
   applySnapshotRequest: { snapshot: FilterSnapshot; seq: number } | null;
   showGraphRequest: { beadId: string; seq: number } | null;
   showTreeRequest: { beadId: string; seq: number } | null;
+  showKanbanBeadRequest: { beadId: string; seq: number } | null;
+  showIssuesBeadRequest: { beadId: string; seq: number } | null;
   focusIssuesSeq: number;
   focusKanbanSeq: number;
 }
@@ -71,6 +73,8 @@ export function PanelShell({
   applySnapshotRequest,
   showGraphRequest,
   showTreeRequest,
+  showKanbanBeadRequest,
+  showIssuesBeadRequest,
   focusIssuesSeq,
   focusKanbanSeq,
 }: PanelShellProps): React.ReactElement {
@@ -84,6 +88,12 @@ export function PanelShell({
   // Reveal target for the Tree tab, set by a "show in tree" deep-link (vs-kp67).
   // Carried into TreeView, which expands ancestors + scrolls the bead into view.
   const [treeRevealRequest, setTreeRevealRequest] = useState<{ beadId: string; seq: number } | null>(null);
+  // Reveal target for the Kanban tab, set by a "show in kanban" deep-link
+  // (vs-wbrz). Carried into KanbanBoard, which scrolls the card into view.
+  const [kanbanRevealRequest, setKanbanRevealRequest] = useState<{ beadId: string; seq: number } | null>(null);
+  // Reveal target for the Issues tab, set by a "show in issues" deep-link
+  // (vs-wbrz). Carried into IssuesView, which scrolls the row into view.
+  const [issuesRevealRequest, setIssuesRevealRequest] = useState<{ beadId: string; seq: number } | null>(null);
   // Ids of the rows currently matching the Issues filter/search, published by
   // IssuesView. The Graph "Filtered" toggle scopes its nodes to this set
   // (vs-v07). Stays current because the filter can only change on the Issues
@@ -114,6 +124,30 @@ export function PanelShell({
     setTreeRevealRequest(showTreeRequest);
     setActive("tree");
   }, [showTreeRequest]);
+
+  // A "show in kanban" deep-link: flip to the Kanban tab and reveal the card.
+  // Keyed on `seq` so a repeat request for the same bead still re-fires.
+  const lastShowKanbanBeadSeq = useRef<number | null>(null);
+  useEffect(() => {
+    if (!showKanbanBeadRequest || lastShowKanbanBeadSeq.current === showKanbanBeadRequest.seq) {
+      return;
+    }
+    lastShowKanbanBeadSeq.current = showKanbanBeadRequest.seq;
+    setKanbanRevealRequest(showKanbanBeadRequest);
+    setActive("kanban");
+  }, [showKanbanBeadRequest]);
+
+  // A "show in issues" deep-link: flip to the Issues tab and reveal the row.
+  // Keyed on `seq` so a repeat request for the same bead still re-fires.
+  const lastShowIssuesBeadSeq = useRef<number | null>(null);
+  useEffect(() => {
+    if (!showIssuesBeadRequest || lastShowIssuesBeadSeq.current === showIssuesBeadRequest.seq) {
+      return;
+    }
+    lastShowIssuesBeadSeq.current = showIssuesBeadRequest.seq;
+    setIssuesRevealRequest(showIssuesBeadRequest);
+    setActive("issues");
+  }, [showIssuesBeadRequest]);
 
   // "Show Issues": flip to the Issues tab and pulse a confirmation ring, so the
   // action reads as registered even when Issues was already showing.
@@ -239,6 +273,7 @@ export function PanelShell({
             selectedBeadId={selectedBeadId}
             favoriteIds={favoriteIds}
             muteClosedIssues={settings.muteClosedIssues}
+            revealRequest={kanbanRevealRequest}
             onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onUpdateBead={(beadId, updates) => vscode.postMessage({ type: "updateBead", beadId, updates })}
           />
@@ -301,6 +336,7 @@ export function PanelShell({
             tooltipHoverDelay={settings.tooltipHoverDelay}
             issuesFilterRequest={localFilter ?? issuesFilterRequest}
             applySnapshotRequest={applySnapshotRequest}
+            revealRequest={issuesRevealRequest}
             graph={graph}
             onRequestGraph={requestGraph}
             onFilteredBeadsChange={handleFilteredBeads}

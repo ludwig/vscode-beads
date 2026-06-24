@@ -155,6 +155,7 @@ import { useToast } from "../common/Toast";
 import { ColoredSelect, ColoredSelectOption } from "../common/ColoredSelect";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
 import { SplitButton } from "../common/SplitButton";
+import { ListTodo, Kanban, Workflow } from "lucide-react";
 
 // Build options for ColoredSelect dropdowns (sorted by TYPE_SORT_ORDER)
 const TYPE_OPTIONS: ColoredSelectOption<BeadType>[] = (Object.keys(TYPE_LABELS) as BeadType[])
@@ -427,14 +428,43 @@ export function DetailsView({
               <span className="companion-toggle-label">LLM</span>
             </button>
           )}
-          <button
-            className="icon-btn header-icon-btn"
-            title="Show in tree view"
-            aria-label="Show in tree view"
-            onClick={() => vscode.postMessage({ type: "viewInTree", beadId: bead.id })}
-          >
-            <Icon name="sitemap" size={13} />
-          </button>
+          {/* Reveal THIS bead in the Beads panel's matching tab (vs-wbrz). A
+              split button defaults to the last-used target (Tree preserves the
+              prior single-button behavior) and remembers the choice. */}
+          <SplitButton
+            persistKey="detailsReveal"
+            defaultOptionId="tree"
+            options={[
+              {
+                id: "issues",
+                label: "Show in Issues",
+                title: "Show in Issues",
+                icon: <ListTodo size={13} strokeWidth={2} />,
+                onSelect: () => vscode.postMessage({ type: "viewInIssues", beadId: bead.id }),
+              },
+              {
+                id: "tree",
+                label: "Show in Tree",
+                title: "Show in Tree",
+                icon: <Icon name="sitemap" size={13} />,
+                onSelect: () => vscode.postMessage({ type: "viewInTree", beadId: bead.id }),
+              },
+              {
+                id: "kanban",
+                label: "Show in Kanban",
+                title: "Show in Kanban",
+                icon: <Kanban size={13} strokeWidth={2} />,
+                onSelect: () => vscode.postMessage({ type: "viewInKanban", beadId: bead.id }),
+              },
+              {
+                id: "graph",
+                label: "Show in Graph",
+                title: "Show in Graph",
+                icon: <Workflow size={13} strokeWidth={2} />,
+                onSelect: () => vscode.postMessage({ type: "viewInGraph", beadId: bead.id }),
+              },
+            ]}
+          />
           <button
             className="icon-btn header-icon-btn"
             title="Refresh"

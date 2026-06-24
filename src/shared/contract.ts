@@ -292,6 +292,10 @@ export type ExtensionToWebviewMessage =
   | { type: "showGraph"; beadId: string }
   // Switch the panel to the Tree tab and reveal/scroll-to the bead (vs-kp67).
   | { type: "showTree"; beadId: string }
+  // Switch the panel to the Kanban tab and reveal/scroll-to the bead (vs-wbrz).
+  | { type: "showKanbanBead"; beadId: string }
+  // Switch the panel to the Issues tab and reveal/scroll-to the bead (vs-wbrz).
+  | { type: "showIssuesBead"; beadId: string }
   | { type: "focusIssuesTab" }
   | { type: "focusKanbanTab" }
   | { type: "pulse" }
@@ -365,6 +369,10 @@ export type WebviewToExtensionMessage =
   | { type: "copyText"; text: string; label?: string; toast?: boolean }
   | { type: "viewInGraph"; beadId: string }
   | { type: "viewInTree"; beadId: string }
+  // Switch the panel to the Kanban tab and reveal this bead's card (vs-wbrz).
+  | { type: "viewInKanban"; beadId: string }
+  // Switch the panel to the Issues tab and reveal this bead's row (vs-wbrz).
+  | { type: "viewInIssues"; beadId: string }
   | { type: "navigateBack" }
   | { type: "navigateForward" }
   | { type: "pickReadyBead" }
