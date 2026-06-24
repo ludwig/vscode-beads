@@ -222,6 +222,9 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         break;
 
       case "refresh":
+        // Flash the confirmation ring so a manual refresh reads as registered,
+        // then reload (vs-y1vz). pulse() no-ops if the webview isn't visible.
+        this.pulse();
         await this.loadData("manualRefresh");
         break;
 
