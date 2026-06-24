@@ -7,7 +7,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { Search } from "lucide-react";
-import { Bead, BeadStatus, BuiltInStatus, BeadType, STATUS_LABELS, STATUS_COLORS, vscode } from "../types";
+import { Bead, BeadStatus, BuiltInStatus, BeadType, STATUS_LABELS, STATUS_COLORS, isClosedStatus, vscode } from "../types";
 import { TypeIcon } from "../common/TypeIcon";
 import { PriorityBadge } from "../common/PriorityBadge";
 import { LabelBadge } from "../common/LabelBadge";
@@ -20,6 +20,8 @@ interface KanbanBoardProps {
   selectedBeadId: string | null;
   /** Favorite bead ids — drives the right-click Add/Remove Favorites item (vs-sd5.5). */
   favoriteIds?: string[];
+  /** When true, gray out the titles of closed (done) cards (beads.muteClosedIssues, vs-b0ga). */
+  muteClosedIssues?: boolean;
   onSelectBead: (beadId: string) => void;
   onUpdateBead?: (beadId: string, updates: Partial<Bead>) => void;
   /** Whether any filters are active (affects empty state messaging) */
@@ -54,7 +56,7 @@ const COLUMNS: BuiltInStatus[] = [
   "pinned", // standing / persistent (frozen) — outside the flow
 ];
 
-export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], onSelectBead, onUpdateBead, hasActiveFilters, unfilteredCounts, filteredBeadIds, filterActive, filteredCount, totalCount }: KanbanBoardProps): React.ReactElement {
+export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], muteClosedIssues = true, onSelectBead, onUpdateBead, hasActiveFilters, unfilteredCounts, filteredBeadIds, filterActive, filteredCount, totalCount }: KanbanBoardProps): React.ReactElement {
   // Track which columns are collapsed. The quiet lanes (closed + the frozen
   // deferred/pinned) start collapsed; good per-lane defaults + persistence are
   // vs-9ph.
@@ -228,7 +230,7 @@ export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], onSelectB
                       <TypeIcon type={(bead.type || "task") as BeadType} size={12} />
                       <span className="kanban-card-id">{bead.id}</span>
                     </div>
-                    <div className="kanban-card-title">{bead.title}</div>
+                    <div className={`kanban-card-title${muteClosedIssues && isClosedStatus(bead.status) ? " muted-closed" : ""}`}>{bead.title}</div>
                     <div className="kanban-card-meta">
                       {bead.priority !== undefined && <PriorityBadge priority={bead.priority} size="small" />}
                       {bead.assignee && (

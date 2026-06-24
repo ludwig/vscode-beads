@@ -238,6 +238,7 @@ export function PanelShell({
             totalCount={totalCount}
             selectedBeadId={selectedBeadId}
             favoriteIds={favoriteIds}
+            muteClosedIssues={settings.muteClosedIssues}
             onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onUpdateBead={(beadId, updates) => vscode.postMessage({ type: "updateBead", beadId, updates })}
           />

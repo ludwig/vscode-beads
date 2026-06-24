@@ -474,6 +474,7 @@ export function App(): React.ReactElement {
             beads={state.beads}
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
+            muteClosedIssues={state.settings.muteClosedIssues}
             filteredBeadIds={effectiveSeed}
             filterActive={seedFilterActive}
             filteredCount={seedFilteredCount}
