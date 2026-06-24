@@ -21,7 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Filter chips are filled, not just outlined** — each active filter chip now carries a light wash of its own accent color (e.g. Blocked shows a faint red fill behind its red outline). The default `¬closed` chip reads as an exclusion with a stronger fill + bolded `¬` operator, and is now palette-green (the active-work color) rather than echoing the gray of the "closed" state it excludes (vs-th4z)
+- **Filter chips are filled, not just outlined** — each active filter chip now carries a light wash of its own accent color (e.g. Blocked shows a faint red fill behind its red outline). The default "not closed" status chip reads as an exclusion with a stronger fill + bold label, and is palette-green (the active-work color) rather than echoing the gray of the "closed" state it excludes (vs-th4z)
+- **Ready toggle shows the 🚀 emoji when active** — toggling the Ready filter on swaps its line-art rocket for the colored 🚀 (in a fixed-width slot so the button doesn't resize) (vs-th4z follow-up)
 
 ### Fixed
 
