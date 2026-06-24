@@ -30,6 +30,7 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
   // (e.g. the Details "View in graph" action). Held until the webview is ready
   // so a freshly-focused panel still switches to the Graph tab and focuses it.
   private pendingShowGraph: string | undefined;
+  private pendingShowTree: string | undefined;
   private pendingFocusIssues = false;
   private pendingFocusKanban = false;
   // Set once the Graph/Tree tab asks for the dependency graph, so a project
@@ -58,6 +59,16 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
   public showGraphForBead(beadId: string): void {
     this.pendingShowGraph = beadId;
     this.flushShowGraph();
+  }
+
+  /**
+   * Switch the panel to the Tree tab and reveal the given bead (expand its
+   * ancestors + scroll to it). Posts immediately when the webview is live;
+   * otherwise it's flushed once the webview signals ready (vs-kp67).
+   */
+  public showTreeForBead(beadId: string): void {
+    this.pendingShowTree = beadId;
+    this.flushShowTree();
   }
 
   /**
@@ -92,6 +103,13 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     }
   }
 
+  private flushShowTree(): void {
+    if (this.pendingShowTree !== undefined && this._host?.visible) {
+      this.postMessage({ type: "showTree", beadId: this.pendingShowTree });
+      this.pendingShowTree = undefined;
+    }
+  }
+
   private flushFocusIssues(): void {
     if (this.pendingFocusIssues && this._host?.visible) {
       this.postMessage({ type: "focusIssuesTab" });
@@ -110,6 +128,7 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     await super.initializeView();
     this.flushFilter();
     this.flushShowGraph();
+    this.flushShowTree();
     this.flushFocusIssues();
     this.flushFocusKanban();
   }

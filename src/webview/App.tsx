@@ -20,6 +20,7 @@ import {
   vscode,
 } from "./types";
 import { DashboardView } from "./views/DashboardView";
+import { RepositoryView } from "./views/RepositoryView";
 import { IssuesView } from "./views/IssuesView";
 import { GraphView } from "./views/graph/GraphView";
 import { KanbanBoard } from "./views/KanbanBoard";
@@ -54,6 +55,9 @@ interface AppState {
   // the Details/table "View in graph" action). `seq` changes on every request
   // so the panel re-switches to Graph even if it's the same bead as last time.
   showGraphRequest: { beadId: string; seq: number } | null;
+  // Same shape, for the Tree tab "show in tree" action (vs-kp67): switch to the
+  // Tree tab and reveal the bead. `seq` re-fires for a repeat of the same bead.
+  showTreeRequest: { beadId: string; seq: number } | null;
   // Bumped to switch the panel to the Issues tab + pulse a confirmation ring.
   focusIssuesSeq: number;
   // Bumped to switch the panel to the Kanban tab (vs-6xf).
@@ -88,6 +92,15 @@ interface AppState {
   // Board-init wizard state (vs-r6a1.8): the projects root to compose the
   // target path, and the current init phase + message (form until a submit).
   initWizard: { projectsRoot: string; phase: InitWizardPhase; message?: string };
+  // Repository Details page metrics (vs-beoh/vs-emyj): raw `bd dolt status` +
+  // derived running flag, the on-disk .beads dir size, and the most recent bead
+  // update. `null` until the host posts setRepositoryInfo.
+  repositoryInfo: {
+    doltStatus: string;
+    running: boolean;
+    dbSizeBytes?: number;
+    lastActivity?: string | null;
+  } | null;
 }
 
 const initialState: AppState = {
@@ -104,6 +117,7 @@ const initialState: AppState = {
   settings: {
     renderMarkdown: true,
     highlightFavorites: true,
+    muteClosedIssues: true,
     userId: "",
     tooltipHoverDelay: 1000,
     extensionVersion: "",
@@ -115,6 +129,7 @@ const initialState: AppState = {
   createMode: false,
   issuesFilterRequest: null,
   showGraphRequest: null,
+  showTreeRequest: null,
   focusIssuesSeq: 0,
   focusKanbanSeq: 0,
   pulseSeq: 0,
@@ -126,6 +141,7 @@ const initialState: AppState = {
   seedFilterCleared: false,
   applySnapshotRequest: null,
   initWizard: { projectsRoot: "", phase: "form" },
+  repositoryInfo: null,
 };
 
 export function App(): React.ReactElement {
@@ -171,6 +187,17 @@ export function App(): React.ReactElement {
       case "setSummary":
         setState((prev) => ({ ...prev, summary: message.summary }));
         break;
+      case "setRepositoryInfo":
+        setState((prev) => ({
+          ...prev,
+          repositoryInfo: {
+            doltStatus: message.doltStatus,
+            running: message.running,
+            dbSizeBytes: message.dbSizeBytes,
+            lastActivity: message.lastActivity,
+          },
+        }));
+        break;
       case "setGraph":
         setState((prev) => ({ ...prev, graph: message.graph }));
         break;
@@ -201,6 +228,15 @@ export function App(): React.ReactElement {
           showGraphRequest: {
             beadId: message.beadId,
             seq: (prev.showGraphRequest?.seq ?? 0) + 1,
+          },
+        }));
+        break;
+      case "showTree":
+        setState((prev) => ({
+          ...prev,
+          showTreeRequest: {
+            beadId: message.beadId,
+            seq: (prev.showTreeRequest?.seq ?? 0) + 1,
           },
         }));
         break;
@@ -357,6 +393,18 @@ export function App(): React.ReactElement {
           />
         );
 
+      case "beadsRepository":
+        return (
+          <RepositoryView
+            project={state.project}
+            projects={state.projects}
+            summary={state.summary}
+            repositoryInfo={state.repositoryInfo}
+            settings={state.settings}
+            memoryBytes={state.memoryBytes}
+          />
+        );
+
       case "beadsPanel":
         return (
           <IssuesView
@@ -366,6 +414,7 @@ export function App(): React.ReactElement {
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
             highlightFavorites={state.settings.highlightFavorites}
+            muteClosedIssues={state.settings.muteClosedIssues}
             tooltipHoverDelay={state.settings.tooltipHoverDelay}
             issuesFilterRequest={state.issuesFilterRequest}
             applySnapshotRequest={state.applySnapshotRequest}
@@ -395,6 +444,7 @@ export function App(): React.ReactElement {
             issuesFilterRequest={state.issuesFilterRequest}
             applySnapshotRequest={state.applySnapshotRequest}
             showGraphRequest={state.showGraphRequest}
+            showTreeRequest={state.showTreeRequest}
             focusIssuesSeq={state.focusIssuesSeq}
             focusKanbanSeq={state.focusKanbanSeq}
           />
@@ -463,7 +513,6 @@ export function App(): React.ReactElement {
             version={state.settings.extensionVersion}
             buildSha={state.settings.buildSha}
             buildDirty={state.settings.buildDirty}
-            memoryBytes={state.memoryBytes}
             bundleBytes={state.settings.bundleBytes}
             onSelectProject={(project) =>
               vscode.postMessage({
@@ -489,6 +538,7 @@ export function App(): React.ReactElement {
             onPickReady={() => vscode.postMessage({ type: "pickReadyBead" })}
             onShowIssues={() => vscode.postMessage({ type: "showIssues" })}
             onCreateBoard={() => vscode.postMessage({ type: "createBoard" })}
+            onOpenRepositoryDetails={() => vscode.postMessage({ type: "openRepositoryDetails" })}
             onChangeRoot={() => vscode.postMessage({ type: "changeProjectsRoot" })}
             onOpenSettings={() => vscode.postMessage({ type: "openSettings" })}
             onShowStatus={() => vscode.postMessage({ type: "showDoltStatus" })}

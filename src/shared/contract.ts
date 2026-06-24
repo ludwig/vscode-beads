@@ -204,6 +204,7 @@ export interface BeadsSummary {
 export interface WebviewSettings {
   renderMarkdown: boolean;
   highlightFavorites: boolean; // subtle accent on favorited (starred) rows in tables
+  muteClosedIssues: boolean; // gray out the titles of closed (done) issues in tables
   userId: string;
   tooltipHoverDelay: number; // 0 = disabled
   extensionVersion: string; // e.g. "0.14.0"
@@ -288,6 +289,8 @@ export type ExtensionToWebviewMessage =
   | { type: "setCreateMode"; value: boolean }
   | { type: "applyIssuesFilter"; filter: IssuesFilter }
   | { type: "showGraph"; beadId: string }
+  // Switch the panel to the Tree tab and reveal/scroll-to the bead (vs-kp67).
+  | { type: "showTree"; beadId: string }
   | { type: "focusIssuesTab" }
   | { type: "focusKanbanTab" }
   | { type: "pulse" }
@@ -315,7 +318,17 @@ export type ExtensionToWebviewMessage =
   // Board-init wizard (vs-r6a1.8): seed the form with the current root.
   | { type: "setInitWizard"; projectsRoot: string }
   // Board-init wizard: progress/result of an in-flight initialization.
-  | { type: "setInitProgress"; phase: InitWizardPhase; message?: string };
+  | { type: "setInitProgress"; phase: InitWizardPhase; message?: string }
+  // Repository Details editor-tab page metrics (vs-beoh/vs-emyj): raw `bd dolt
+  // status` text + a derived running flag, the on-disk .beads dir size, and the
+  // most recent bead update (ISO) for the "last activity" card.
+  | {
+      type: "setRepositoryInfo";
+      doltStatus: string;
+      running: boolean;
+      dbSizeBytes?: number;
+      lastActivity?: string | null;
+    };
 
 // Messages sent from the webview to the extension host.
 export type WebviewToExtensionMessage =
@@ -349,6 +362,7 @@ export type WebviewToExtensionMessage =
   | { type: "clearActiveBead" }
   | { type: "copyText"; text: string; label?: string; toast?: boolean }
   | { type: "viewInGraph"; beadId: string }
+  | { type: "viewInTree"; beadId: string }
   | { type: "navigateBack" }
   | { type: "navigateForward" }
   | { type: "pickReadyBead" }
@@ -385,4 +399,6 @@ export type WebviewToExtensionMessage =
   | { type: "removeFavorite"; beadId: string }
   // Toggle the companion `bead:` document for `beadId`: open it beside the view
   // (so Claude Code seeds it) if closed, close it if open (vs-nr3d).
-  | { type: "toggleBeadCompanion"; beadId: string };
+  | { type: "toggleBeadCompanion"; beadId: string }
+  // Open the Repository Details page as an editor tab (vs-beoh).
+  | { type: "openRepositoryDetails" };

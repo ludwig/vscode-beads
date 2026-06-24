@@ -76,6 +76,8 @@ interface IssuesViewProps {
   favoriteIds?: string[];
   /** When true, favorited rows get a subtle accent (beads.highlightFavorites, vs-lu8f). */
   highlightFavorites?: boolean;
+  /** When true, gray out the titles of closed (done) issues (beads.muteClosedIssues, vs-on5g). */
+  muteClosedIssues?: boolean;
   tooltipHoverDelay: number; // 0 = disabled
   /** Drill-in filter pushed from another view (e.g. a Dashboard card/badge). */
   issuesFilterRequest?: { filter: IssuesFilter; seq: number } | null;
@@ -155,6 +157,7 @@ export function IssuesView({
   selectedBeadId,
   favoriteIds = [],
   highlightFavorites = true,
+  muteClosedIssues = true,
   tooltipHoverDelay,
   issuesFilterRequest,
   applySnapshotRequest,
@@ -477,7 +480,13 @@ export function IssuesView({
             >
               {info.row.original.id}
             </span>
-            <span className="bead-title">{info.getValue()}</span>
+            <span
+              className={`bead-title${
+                muteClosedIssues && isClosedStatus(info.row.original.status) ? " muted-closed" : ""
+              }`}
+            >
+              {info.getValue()}
+            </span>
           </span>
         ),
       }),
@@ -571,7 +580,7 @@ export function IssuesView({
         sortingFn: timestampSortingFn,
       }),
     ],
-    [copiedId, selectRow]
+    [copiedId, selectRow, muteClosedIssues]
   );
 
   const table = useReactTable({
@@ -1003,7 +1012,11 @@ export function IssuesView({
             onClick={toggleReady}
             title="Show only ready-to-work beads (open, no open blocker). Composes with the other filters."
           >
-            <Rocket size={12} strokeWidth={2.25} />
+            {readyOnly ? (
+              <span className="ready-toggle-glyph ready-toggle-emoji" aria-hidden="true">🚀</span>
+            ) : (
+              <Rocket size={12} strokeWidth={2.25} className="ready-toggle-glyph" />
+            )}
             <span>Ready</span>
           </button>
 
@@ -1023,8 +1036,13 @@ export function IssuesView({
           {statusFilter.includes(NOT_CLOSED) ? (
             <FilterChip
               key="status-not-closed"
-              label="¬closed"
-              accentColor={statusColor("closed")}
+              // Plain "not closed" copy (the ¬ logic-notation read poorly here),
+              // kept distinct via the negated styling: green ("open"/active palette
+              // color, not the gray of the closed state it excludes) + bold fill
+              // so it reads as the active working set (vs-th4z).
+              label="not closed"
+              accentColor={statusColor("open")}
+              negated
               onRemove={clearStatusFilter}
             />
           ) : (

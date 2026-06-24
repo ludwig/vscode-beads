@@ -428,6 +428,14 @@ export function DetailsView({
           )}
           <button
             className="icon-btn header-icon-btn"
+            title="Show in tree view"
+            aria-label="Show in tree view"
+            onClick={() => vscode.postMessage({ type: "viewInTree", beadId: bead.id })}
+          >
+            <Icon name="sitemap" size={13} />
+          </button>
+          <button
+            className="icon-btn header-icon-btn"
             title="Refresh"
             aria-label="Refresh"
             onClick={handleRefresh}

@@ -19,6 +19,12 @@ export interface WebviewHost {
   /** Bring the host to the foreground (focus the view / reveal the tab). */
   reveal(preserveFocus?: boolean): void;
   /**
+   * Set the host's title. Updates an editor-tab panel's tab label; a no-op for
+   * a sidebar view (its title is fixed by the view contribution). Lets a tab
+   * track the bead currently shown as the user navigates within it (vs-q0e2).
+   */
+  setTitle(title: string): void;
+  /**
    * Close the host. Disposes an editor-tab panel; a no-op for a sidebar view
    * (views aren't closeable). Used to dismiss a dedicated New Issue tab on
    * cancel (vs-2tn.2).
@@ -40,6 +46,9 @@ export function hostFromView(view: vscode.WebviewView): WebviewHost {
     },
     reveal(preserveFocus?: boolean) {
       view.show(preserveFocus);
+    },
+    setTitle() {
+      // Sidebar view titles are fixed by the view contribution — no-op.
     },
     close() {
       // Sidebar views can't be closed programmatically — no-op.
@@ -63,6 +72,9 @@ export function hostFromPanel(panel: vscode.WebviewPanel): WebviewHost {
     },
     reveal(preserveFocus?: boolean) {
       panel.reveal(undefined, preserveFocus);
+    },
+    setTitle(title: string) {
+      panel.title = title;
     },
     close() {
       panel.dispose();

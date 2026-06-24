@@ -23,6 +23,7 @@ import arrowsRotateSvg from "./arrows-rotate.svg";
 import starSvg from "./star.svg";
 import starOutlineSvg from "./star-outline.svg";
 import sparklesSvg from "./sparkles.svg";
+import sitemapSvg from "./sitemap.svg";
 import notdefSvg from "./notdef.svg";
 
 export const icons = {
@@ -43,6 +44,7 @@ export const icons = {
   star: starSvg,
   "star-outline": starOutlineSvg,
   sparkles: sparklesSvg,
+  sitemap: sitemapSvg,
   notdef: notdefSvg,
 } as const;
 

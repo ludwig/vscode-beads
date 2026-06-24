@@ -165,6 +165,11 @@
         "icon": "$(link-external)"
       },
       {
+        "command": "beads.openRepositoryDetails",
+        "title": "Beads: Repository Details…",
+        "icon": "$(database)"
+      },
+      {
         "command": "beads.openGraphInTab",
         "title": "Beads: Open Graph in Editor Tab",
         "icon": "$(link-external)"
@@ -191,11 +196,6 @@
           "command": "beads.createIssue",
           "when": "view == beadsProjectSwitcher",
           "group": "navigation@0"
-        },
-        {
-          "command": "beads.openNewIssueInTab",
-          "when": "view == beadsProjectSwitcher",
-          "group": "navigation@1"
         },
         {
           "command": "beads.initRepository",
@@ -229,60 +229,67 @@
         }
       ]
     },
-    "configuration": {
-      "title": "Beads",
-      "properties": {
-        "beads.projects": {
-          "type": "array",
-          "items": {
-            "type": "string"
+    "configuration": [
+      {
+        "title": "Beads",
+        "properties": {
+          "beads.projects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "Additional Beads projects to show beyond the open workspace folders. Each entry is a path to a project root or its .beads directory. Supports ${env:VAR} placeholders."
           },
-          "default": [],
-          "description": "Additional Beads projects to show beyond the open workspace folders. Each entry is a path to a project root or its .beads directory. Supports ${env:VAR} placeholders."
-        },
-        "beads.projectsRoot": {
-          "type": "string",
-          "default": "",
-          "markdownDescription": "Root directory scanned for Beads projects (each immediate child holding a `.beads/` directory is auto-discovered) and where **Beads: Initialize Repository** creates new boards. Supports a leading `~` and `${env:VAR}` placeholders. Leave empty to use the default `~/beads`."
-        },
-        "beads.pathToBd": {
-          "type": "string",
-          "default": "bd",
-          "description": "Path to the bd CLI executable. Supports ${env:VAR} placeholders."
-        },
-        "beads.refreshInterval": {
-          "type": "number",
-          "default": 3000,
-          "description": "Polling interval in milliseconds for Dolt change detection (0 to disable)"
-        },
-        "beads.renderMarkdown": {
-          "type": "boolean",
-          "default": true,
-          "description": "Render markdown in description, design notes, and other text fields"
-        },
-        "beads.highlightFavorites": {
-          "type": "boolean",
-          "default": true,
-          "description": "Highlight favorited (starred) beads in table views with a subtle accent. In the Favorites filter this also distinguishes starred beads from the relatives that tag along (their dependency neighbors)."
-        },
-        "beads.userId": {
-          "type": "string",
-          "default": "",
-          "description": "Your user ID for 'Assign to me'. Supports ${env:VAR} placeholders (e.g., ${env:USER}). Defaults to $USER if not set."
-        },
-        "beads.tooltipHoverDelay": {
-          "type": "number",
-          "default": 1000,
-          "minimum": 0,
-          "description": "Delay in milliseconds before showing bead description tooltip on hover. Set to 0 to disable tooltips."
-        },
-        "beads.autoSeedActiveBead": {
-          "type": "boolean",
-          "default": false,
-          "description": "Experimental. When a bead opened as an editor tab gains focus, open its content as a companion virtual 'bead:' document beside it (keeping focus on the bead tab) so Claude Code's IDE integration seeds the active bead into your session automatically. Off by default: it adds a second, companion tab. Enable only if you want auto-seeding via the companion document."
+          "beads.projectsRoot": {
+            "type": "string",
+            "default": "",
+            "markdownDescription": "Root directory scanned for Beads projects (each immediate child holding a `.beads/` directory is auto-discovered) and where **Beads: Initialize Repository** creates new boards. Supports a leading `~` and `${env:VAR}` placeholders. Leave empty to use the default `~/beads`."
+          },
+          "beads.pathToBd": {
+            "type": "string",
+            "default": "bd",
+            "description": "Path to the bd CLI executable. Supports ${env:VAR} placeholders."
+          },
+          "beads.refreshInterval": {
+            "type": "number",
+            "default": 3000,
+            "description": "Polling interval in milliseconds for Dolt change detection (0 to disable)"
+          },
+          "beads.userId": {
+            "type": "string",
+            "default": "",
+            "description": "Your user ID for 'Assign to me'. Supports ${env:VAR} placeholders (e.g., ${env:USER}). Defaults to $USER if not set."
+          }
+        }
+      },
+      {
+        "title": "Appearance",
+        "properties": {
+          "beads.renderMarkdown": {
+            "type": "boolean",
+            "default": true,
+            "description": "Render markdown in description, design notes, and other text fields"
+          },
+          "beads.highlightFavorites": {
+            "type": "boolean",
+            "default": true,
+            "description": "Highlight favorited (starred) beads in table views with a subtle accent. In the Favorites filter this also distinguishes starred beads from the relatives that tag along (their dependency neighbors)."
+          },
+          "beads.muteClosedIssues": {
+            "type": "boolean",
+            "default": true,
+            "description": "Gray out (mute) the titles of closed issues in table views so they recede visually when shown alongside open work."
+          },
+          "beads.tooltipHoverDelay": {
+            "type": "number",
+            "default": 1000,
+            "minimum": 0,
+            "description": "Delay in milliseconds before showing bead description tooltip on hover. Set to 0 to disable tooltips."
+          }
         }
       }
-    }
+    ]
   },
   "scripts": {
     "compile": "bun run compile:extension && bun run compile:webview && bun run gen:buildinfo",

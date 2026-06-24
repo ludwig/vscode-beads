@@ -124,6 +124,14 @@ export function registerCommands(
       shellProvider.showGraphForBead(beadId);
     }),
 
+    vscode.commands.registerCommand("beads.viewInTree", async (beadId?: string) => {
+      if (!beadId) {
+        return;
+      }
+      await vscode.commands.executeCommand("beadsPanelShell.focus");
+      shellProvider.showTreeForBead(beadId);
+    }),
+
     vscode.commands.registerCommand("beads.openBeadDetails", async (beadId?: string) => {
       if (!beadId) {
         // Prompt for bead ID
@@ -245,6 +253,11 @@ export function registerCommands(
     // vs-s56: open the Dashboard as an editor tab.
     vscode.commands.registerCommand("beads.openDashboardInTab", () => {
       panelManager.openDashboard();
+    }),
+
+    // vs-beoh: open the Repository Details page as an editor tab.
+    vscode.commands.registerCommand("beads.openRepositoryDetails", () => {
+      panelManager.openRepository();
     }),
 
     // vs-3bp: open the dependency Graph as an editor tab. The optional arg is a

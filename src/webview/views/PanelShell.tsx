@@ -53,6 +53,7 @@ interface PanelShellProps {
   // (vs-dzm). Forwarded to the embedded IssuesView.
   applySnapshotRequest: { snapshot: FilterSnapshot; seq: number } | null;
   showGraphRequest: { beadId: string; seq: number } | null;
+  showTreeRequest: { beadId: string; seq: number } | null;
   focusIssuesSeq: number;
   focusKanbanSeq: number;
 }
@@ -69,6 +70,7 @@ export function PanelShell({
   issuesFilterRequest,
   applySnapshotRequest,
   showGraphRequest,
+  showTreeRequest,
   focusIssuesSeq,
   focusKanbanSeq,
 }: PanelShellProps): React.ReactElement {
@@ -79,6 +81,9 @@ export function PanelShell({
   // Bead to focus on the Graph tab, set by a "View in graph" deep-link. Carried
   // into GraphView (which auto-enables Focus when it arrives).
   const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
+  // Reveal target for the Tree tab, set by a "show in tree" deep-link (vs-kp67).
+  // Carried into TreeView, which expands ancestors + scrolls the bead into view.
+  const [treeRevealRequest, setTreeRevealRequest] = useState<{ beadId: string; seq: number } | null>(null);
   // Ids of the rows currently matching the Issues filter/search, published by
   // IssuesView. The Graph "Filtered" toggle scopes its nodes to this set
   // (vs-v07). Stays current because the filter can only change on the Issues
@@ -97,6 +102,18 @@ export function PanelShell({
     setGraphFocusId(showGraphRequest.beadId);
     setActive("graph");
   }, [showGraphRequest]);
+
+  // A "show in tree" deep-link: flip to the Tree tab and reveal the bead.
+  // Keyed on `seq` so a repeat request for the same bead still re-fires.
+  const lastShowTreeSeq = useRef<number | null>(null);
+  useEffect(() => {
+    if (!showTreeRequest || lastShowTreeSeq.current === showTreeRequest.seq) {
+      return;
+    }
+    lastShowTreeSeq.current = showTreeRequest.seq;
+    setTreeRevealRequest(showTreeRequest);
+    setActive("tree");
+  }, [showTreeRequest]);
 
   // "Show Issues": flip to the Issues tab and pulse a confirmation ring, so the
   // action reads as registered even when Issues was already showing.
@@ -235,6 +252,7 @@ export function PanelShell({
             filterActive={filterActive}
             filteredCount={filteredCount}
             totalCount={totalCount}
+            revealRequest={treeRevealRequest}
             onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onRequestGraph={requestGraph}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
@@ -275,6 +293,8 @@ export function PanelShell({
             error={error}
             selectedBeadId={selectedBeadId}
             favoriteIds={favoriteIds}
+            highlightFavorites={settings.highlightFavorites}
+            muteClosedIssues={settings.muteClosedIssues}
             tooltipHoverDelay={settings.tooltipHoverDelay}
             issuesFilterRequest={localFilter ?? issuesFilterRequest}
             applySnapshotRequest={applySnapshotRequest}

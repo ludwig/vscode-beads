@@ -153,6 +153,7 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
       settings: {
         renderMarkdown: config.get<boolean>("renderMarkdown", true),
         highlightFavorites: config.get<boolean>("highlightFavorites", true),
+        muteClosedIssues: config.get<boolean>("muteClosedIssues", true),
         userId,
         tooltipHoverDelay: config.get<number>("tooltipHoverDelay", 1000),
         extensionVersion: appInfo.version,
@@ -294,6 +295,10 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         vscode.commands.executeCommand("beads.openDoltLog");
         break;
 
+      case "openRepositoryDetails":
+        vscode.commands.executeCommand("beads.openRepositoryDetails");
+        break;
+
       case "openProjectFolder": {
         const project = this.projectManager.getActiveProject();
         if (project) {
@@ -309,6 +314,11 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
       case "viewInGraph":
         // Switch the panel to the Graph tab and focus this bead's neighborhood.
         vscode.commands.executeCommand("beads.viewInGraph", message.beadId);
+        break;
+
+      case "viewInTree":
+        // Switch the panel to the Tree tab and reveal this bead (vs-kp67).
+        vscode.commands.executeCommand("beads.viewInTree", message.beadId);
         break;
 
       case "copyBeadId":
