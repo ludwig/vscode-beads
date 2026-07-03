@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Unified FilterBar as a tab-local sidecar filter** — Kanban/Tree/Graph now carry their own `FilterBar` (preset, Ready, Favorites, and status/priority/type/assignee/label chips with faceted counts) that composes on top of the inherited panel scope as `(Filtered ? parentScope : all) ∩ resolve(localSpec)`, resolved webview-side by the same pure `resolveScope`/predicates the Issues table and host use. The **Tree** hosts it in the panel subtab *and* the editor tab (structured filtering on top of its text search); Kanban/Graph get it on editor tabs. The bar collapses to a compact **ribbon** (twistie, persisted per tab) to reclaim space, with the inherited-scope Show-all/Show-filtered toggle as its leading segment. IssuesView keeps its own bar for now
+- **Unified FilterBar across Kanban, Tree, and Graph** — all three now self-host the same `FilterBar` (preset, Ready, Favorites, status/priority/type/assignee/label chips with faceted counts) in the panel subtab *and* the editor tab, composing their local filter on top of the inherited scope as `(Filtered ? parentScope : all) ∩ resolve(localSpec)`, resolved webview-side by the same pure `resolveScope`/predicates the host uses. One affordance everywhere: a **funnel icon** that collapses the bar to a compact **ribbon** (reclaiming space during active work) and **glows blue** when filters are set; the ribbon lists the active filters concisely (or a muted "Add a filter…") with a right-aligned "N of M" count and the inherited Show-all/Show-filtered toggle. Graph keeps its layout/Focus/Auto-Layout controls in the bar's always-visible extra row. IssuesView still uses its own (visually matching) bar for now
+- **Refresh icon spins while data loads** — the panel + editor-tab refresh reflects load progress (e.g. after toggling a favorite's eye/mask)
 - **Right-click a panel tab to open it in an editor tab** — the Issues/Kanban/Tree/Graph tabs now have a context menu mirroring the toolbar's open-in-tab action, seeded with the panel's active filter
 - **Drag-resize Tree columns** — the Tree's fixed columns are drag-resizable (persisted); the Title column absorbs the delta
 - **Editor-tab view heading** — a standalone editor-tab view shows a "<View> view for <project>" heading in its toolbar
@@ -17,7 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Issues filter/density toggles moved to the left** of the search input (far less pointer travel than the old far-right placement)
-- **Tree priority header shows "P"** instead of "Priority" (the full label overflowed the narrow column and inflated the header row)
+- **Filter icon shows a blue glow instead of a count badge** — the funnel/filter icon glows when filters are set (we care *that* it's set, not how many); the old count badge and its aggressive blue are gone
+- **Compact rows are the default; the toggle is inverted** — OFF (default) = compact, ON = comfortable; the toggle's active blue is softened
+- **Tree priority header shows "P"** instead of "Priority" (the full label overflowed the narrow column and inflated the header row); the Tree columns are tighter and their headers align to the cells; resizing a column no longer also toggles the sort
 - **Mask favorites in the Favorites filter group** — Favorites is modeled as a seed-based filter group: the starred beads are a seed list that expands into relatives, and each seed has an eye toggle (Photoshop-layers metaphor) to mask it out of that expansion. Masked favorites recede (gray left edge + muted card) and drop from the favorites→relatives scope; the mask is per-project, persisted in workspace state, and owned by the Favorites container (not individual cards). New reusable `FilterGroup` component
 
 ### Changed
