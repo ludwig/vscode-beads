@@ -1414,10 +1414,17 @@ textarea {
 }
 
 /* Filters ARE set: a thick blue glow on the icon signals "active" without
-   needing a count (we only care THAT it's set, not how many). */
+   needing a count (we only care THAT it's set, not how many). Set fill
+   explicitly — applying `filter:` to the SVG can drop a `fill="currentColor"`,
+   which left the icon grey. */
 .filter-toggle.has-filters {
   opacity: 1;
   color: var(--vscode-focusBorder);
+}
+
+.filter-toggle.has-filters svg,
+.filter-toggle.has-filters svg path {
+  fill: var(--vscode-focusBorder);
 }
 
 .filter-toggle.has-filters svg {

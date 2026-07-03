@@ -951,7 +951,9 @@ export function IssuesView({
       {/* Row 1: filter/density toggles (left, easy to reach) + search */}
       <div className="panel-toolbar-compact">
         <button
-          className={`filter-toggle ${filterBarOpen ? "open" : ""} ${hasActiveFilters ? "has-filters" : ""}`}
+          className={`filter-toggle ${filterBarOpen ? "open" : ""} ${
+            hasActiveFilters || readyOnly || favoritesOnly || globalFilter.trim() ? "has-filters" : ""
+          }`}
           onClick={() => setFilterBarOpen(!filterBarOpen)}
           title={activeFilterCount > 0 ? `Filters (${activeFilterCount} active)` : "Filters"}
           aria-label={activeFilterCount > 0 ? `Filters, ${activeFilterCount} active` : "Filters"}
