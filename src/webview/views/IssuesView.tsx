@@ -951,7 +951,7 @@ export function IssuesView({
       {/* Row 1: filter/density toggles (left, easy to reach) + search */}
       <div className="panel-toolbar-compact">
         <button
-          className={`filter-toggle ${filterBarOpen || hasActiveFilters ? "active" : ""}`}
+          className={`filter-toggle ${filterBarOpen ? "open" : ""} ${hasActiveFilters ? "has-filters" : ""}`}
           onClick={() => setFilterBarOpen(!filterBarOpen)}
           title={activeFilterCount > 0 ? `Filters (${activeFilterCount} active)` : "Filters"}
           aria-label={activeFilterCount > 0 ? `Filters, ${activeFilterCount} active` : "Filters"}
@@ -959,9 +959,6 @@ export function IssuesView({
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
             <path d="M6 10.5v-1h4v1H6zm-2-3v-1h8v1H4zm-2-3v-1h12v1H2z" />
           </svg>
-          {activeFilterCount > 0 && (
-            <span className="filter-toggle-badge">{activeFilterCount}</span>
-          )}
         </button>
         {/* Toggle for "comfortable rows": OFF (default) = compact, ON = comfortable. */}
         <button

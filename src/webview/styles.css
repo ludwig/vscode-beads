@@ -1403,34 +1403,26 @@ textarea {
   opacity: 0.8;
 }
 
-/* Active-filter count badge on the filter toggle (vs-dd7). */
-.filter-toggle-badge {
-  position: absolute;
-  top: -3px;
-  right: -3px;
-  min-width: 14px;
-  height: 14px;
-  padding: 0 3px;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 7px;
-  background: var(--vscode-badge-background);
-  color: var(--vscode-badge-foreground);
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 1;
-}
-
 .filter-toggle:hover {
   background: var(--vscode-toolbar-hoverBackground);
   opacity: 1;
 }
 
-.filter-toggle.active {
+/* Bar is open (but no filters set): just un-dim. */
+.filter-toggle.open {
+  opacity: 1;
+}
+
+/* Filters ARE set: a thick blue glow on the icon signals "active" without
+   needing a count (we only care THAT it's set, not how many). */
+.filter-toggle.has-filters {
   opacity: 1;
   color: var(--vscode-focusBorder);
+}
+
+.filter-toggle.has-filters svg {
+  filter: drop-shadow(0 0 4px var(--vscode-focusBorder))
+    drop-shadow(0 0 2px var(--vscode-focusBorder));
 }
 
 .filter-toggle svg {
@@ -4939,10 +4931,10 @@ textarea {
    sizes its own columns from its own content and nothing lines up (vs-wp5). */
 .beads-tree-colheader {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 76px 48px 30px;
-  column-gap: 4px;
+  grid-template-columns: minmax(0, 1fr) 84px 56px 38px;
+  column-gap: 6px;
   align-items: center;
-  padding: 3px 6px 4px 4px;
+  padding: 3px 8px 4px 4px;
   border-bottom: 1px solid var(--vscode-panel-border);
   flex: 0 0 auto;
 }
@@ -4959,7 +4951,10 @@ textarea {
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 2px 4px;
+  /* No horizontal padding: header content must sit at the track edge exactly
+     like the row cells (which have none), or the labels drift off their columns
+     — worse the narrower the column. Vertical padding only. */
+  padding: 2px 0;
   border-radius: 3px;
   font-size: 12px;
   font-weight: 600;
@@ -5022,10 +5017,10 @@ textarea {
 
 .beads-tree-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 76px 48px 30px;
-  column-gap: 4px;
+  grid-template-columns: minmax(0, 1fr) 84px 56px 38px;
+  column-gap: 6px;
   align-items: center;
-  padding: 2px 6px 2px 4px;
+  padding: 2px 8px 2px 4px;
   cursor: pointer;
   user-select: none;
   white-space: nowrap;

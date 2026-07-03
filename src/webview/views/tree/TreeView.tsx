@@ -62,11 +62,11 @@ interface TreeColumn {
   sortKey: SortKey;
 }
 const TREE_COLUMNS: TreeColumn[] = [
-  { key: "status", label: "Status", width: "76px", sortKey: "status" },
-  { key: "type", label: "Type", width: "48px", sortKey: "type" },
-  { key: "priority", label: "Priority", headerLabel: "P", width: "30px", sortKey: "priority" },
-  { key: "updated", label: "Updated", width: "78px", sortKey: "updated" },
-  { key: "created", label: "Created", width: "78px", sortKey: "created" },
+  { key: "status", label: "Status", width: "84px", sortKey: "status" },
+  { key: "type", label: "Type", width: "56px", sortKey: "type" },
+  { key: "priority", label: "Priority", headerLabel: "P", width: "38px", sortKey: "priority" },
+  { key: "updated", label: "Updated", width: "88px", sortKey: "updated" },
+  { key: "created", label: "Created", width: "88px", sortKey: "created" },
 ];
 // Default visibility: Updated shown, Created hidden, to keep the tree narrow by
 // default (mirrors the Issues table hiding some columns).
@@ -273,10 +273,14 @@ export function TreeView({
   // Drag-to-resize a fixed column: the handle on a column's right edge widens/
   // narrows THAT column; the flexible Title track absorbs the delta.
   const resizeRef = useRef<{ key: ColKey; startX: number; startW: number } | null>(null);
+  // Set while (and just after) a resize so the header's sort onClick — which
+  // fires on mouseup inside the button — doesn't also toggle the sort.
+  const didResizeRef = useRef(false);
   const startColResize = useCallback(
     (e: React.MouseEvent, c: TreeColumn) => {
       e.preventDefault();
       e.stopPropagation();
+      didResizeRef.current = true;
       resizeRef.current = { key: c.key, startX: e.clientX, startW: colWidthPx(c) };
       const onMove = (ev: MouseEvent) => {
         const st = resizeRef.current;
@@ -288,6 +292,10 @@ export function TreeView({
         resizeRef.current = null;
         document.removeEventListener("mousemove", onMove);
         document.removeEventListener("mouseup", onUp);
+        // Clear after the click that follows mouseup has been swallowed.
+        setTimeout(() => {
+          didResizeRef.current = false;
+        }, 0);
       };
       document.addEventListener("mousemove", onMove);
       document.addEventListener("mouseup", onUp);
@@ -656,7 +664,10 @@ export function TreeView({
               role="columnheader"
               aria-sort={active ? (spec!.dir === "asc" ? "ascending" : "descending") : "none"}
               className={`beads-tree-col beads-tree-col-${colKey} ${active ? "active" : ""}`}
-              onClick={(e) => setSorts((prev) => applySort(prev, sortKey, e.shiftKey))}
+              onClick={(e) => {
+                if (didResizeRef.current) return; // just resized — don't also sort
+                setSorts((prev) => applySort(prev, sortKey, e.shiftKey));
+              }}
               title={`Sort by ${label.toLowerCase()} — click to sort, Shift+click to add as a secondary sort`}
             >
               <span>{headerLabel ?? label}</span>
