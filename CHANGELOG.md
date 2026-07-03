@@ -9,7 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Tab-local filters on Kanban/Tree/Graph editor tabs** — a standalone editor-tab board/tree/graph now carries its own unified `FilterBar` (preset, Ready, Favorites, and status/priority/type/assignee/label chips with faceted counts). The tab-local filter composes on top of the inherited panel scope as `(Filtered ? parentScope : all) ∩ resolve(localSpec)`, resolved webview-side by the same pure `resolveScope`/predicates the Issues table and host use. The inherited-scope ribbon is the bar's leading segment. Filter state persists per tab. IssuesView keeps its own bar for now
+- **Unified FilterBar as a tab-local sidecar filter** — Kanban/Tree/Graph now carry their own `FilterBar` (preset, Ready, Favorites, and status/priority/type/assignee/label chips with faceted counts) that composes on top of the inherited panel scope as `(Filtered ? parentScope : all) ∩ resolve(localSpec)`, resolved webview-side by the same pure `resolveScope`/predicates the Issues table and host use. The **Tree** hosts it in the panel subtab *and* the editor tab (structured filtering on top of its text search); Kanban/Graph get it on editor tabs. The bar collapses to a compact **ribbon** (twistie, persisted per tab) to reclaim space, with the inherited-scope Show-all/Show-filtered toggle as its leading segment. IssuesView keeps its own bar for now
+- **Right-click a panel tab to open it in an editor tab** — the Issues/Kanban/Tree/Graph tabs now have a context menu mirroring the toolbar's open-in-tab action, seeded with the panel's active filter
+- **Drag-resize Tree columns** — the Tree's fixed columns are drag-resizable (persisted); the Title column absorbs the delta
+- **Editor-tab view heading** — a standalone editor-tab view shows a "<View> view for <project>" heading in its toolbar
+
+### Changed
+
+- **Issues filter/density toggles moved to the left** of the search input (far less pointer travel than the old far-right placement)
+- **Tree priority header shows "P"** instead of "Priority" (the full label overflowed the narrow column and inflated the header row)
 - **Mask favorites in the Favorites filter group** — Favorites is modeled as a seed-based filter group: the starred beads are a seed list that expands into relatives, and each seed has an eye toggle (Photoshop-layers metaphor) to mask it out of that expansion. Masked favorites recede (gray left edge + muted card) and drop from the favorites→relatives scope; the mask is per-project, persisted in workspace state, and owned by the Favorites container (not individual cards). New reusable `FilterGroup` component
 
 ### Changed
