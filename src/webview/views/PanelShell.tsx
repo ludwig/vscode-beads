@@ -278,7 +278,7 @@ export function PanelShell({
             aria-label="Refresh"
             onClick={handleRefresh}
           >
-            <RefreshCw size={14} strokeWidth={2} className={refreshing ? "spinning" : undefined} />
+            <RefreshCw size={14} strokeWidth={2} className={refreshing || loading ? "spinning" : undefined} />
           </button>
         </div>
       </nav>

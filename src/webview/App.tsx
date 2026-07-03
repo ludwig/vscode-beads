@@ -473,7 +473,7 @@ export function App(): React.ReactElement {
               <RefreshCw
                 size={14}
                 strokeWidth={2}
-                className={tabRefreshing ? "spinning" : undefined}
+                className={tabRefreshing || state.loading ? "spinning" : undefined}
               />
             </button>
           </div>
