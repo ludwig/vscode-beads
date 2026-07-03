@@ -11,7 +11,6 @@ import * as path from "path";
 import * as vscode from "vscode";
 import { BeadsProjectManager } from "./backend/BeadsProjectManager";
 import { FavoritesService } from "./backend/FavoritesService";
-import { HiddenBeadsService } from "./backend/HiddenBeadsService";
 import { PanelShellViewProvider } from "./providers/PanelShellViewProvider";
 import { BeadDetailsViewProvider } from "./providers/BeadDetailsViewProvider";
 import { BeadsProjectSwitcherViewProvider } from "./providers/BeadsProjectSwitcherViewProvider";
@@ -34,7 +33,6 @@ let detailsProvider: BeadDetailsViewProvider;
 let switcherProvider: BeadsProjectSwitcherViewProvider;
 let panelManager: BeadPanelManager;
 let favorites: FavoritesService;
-let hiddenBeads: HiddenBeadsService;
 let statusBar: vscode.StatusBarItem;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
@@ -85,16 +83,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Favorites: per-project set of starred beads, persisted in workspaceState
   // and published to every view (vs-sd5.1). Point it at the active project up
   // front so the first render shows the right set.
+  // Favorites now also own their mask (which favorites are toggled off / eye-off
+  // in the Favorites filter group) — the mask rides along on each published
+  // FavoriteBead, so there's no separate service to wire.
   favorites = new FavoritesService(context.workspaceState);
   favorites.setActiveProject(projectManager.getActiveProject()?.id ?? null);
   context.subscriptions.push(favorites);
-
-  // Hidden beads: per-project "eye-off" set (Photoshop-layers metaphor),
-  // persisted in workspaceState and published to every view. Hidden rows stay
-  // visible but marked, and are excluded from the favorites→relatives expansion.
-  hiddenBeads = new HiddenBeadsService(context.workspaceState);
-  hiddenBeads.setActiveProject(projectManager.getActiveProject()?.id ?? null);
-  context.subscriptions.push(hiddenBeads);
 
   // Initialize context for conditional menu items
   vscode.commands.executeCommand("setContext", "beads.hasSelectedBead", false);
@@ -107,16 +101,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     context.extensionUri,
     projectManager,
     log,
-    favorites,
-    hiddenBeads
+    favorites
   );
 
   switcherProvider = new BeadsProjectSwitcherViewProvider(
     context.extensionUri,
     projectManager,
     log,
-    favorites,
-    hiddenBeads
+    favorites
   );
 
   // Virtual `bead:` documents so a bead can be opened as a real TextEditor that
@@ -138,12 +130,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     projectManager,
     log,
     companionController,
-    favorites,
-    hiddenBeads
+    favorites
   );
 
   // Manages bead webviews opened as editor tabs (vs-ask, vs-fx4).
-  panelManager = new BeadPanelManager(context.extensionUri, projectManager, log, companionController, favorites, hiddenBeads);
+  panelManager = new BeadPanelManager(context.extensionUri, projectManager, log, companionController, favorites);
   context.subscriptions.push(panelManager);
 
   // Register webview providers
@@ -183,20 +174,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(
     // Fan the favorites set out to every live view whenever it changes (a
     // star/unstar in one view, or a project switch). vs-sd5.1.
+    // Fan the favorites set (with each favorite's mask state) out to every live
+    // view whenever the set OR the mask changes, or on a project switch.
     favorites.onDidChange((ids) => {
       shellProvider.publishFavorites(ids);
       detailsProvider.publishFavorites(ids);
       switcherProvider.publishFavorites(ids);
       panelManager.publishFavorites(ids);
-    }),
-
-    // Fan the hidden-beads set out to every live view whenever it changes (a
-    // hide/show toggle in one view, or a project switch).
-    hiddenBeads.onDidChange((ids) => {
-      shellProvider.publishHiddenBeads(ids);
-      detailsProvider.publishHiddenBeads(ids);
-      switcherProvider.publishHiddenBeads(ids);
-      panelManager.publishHiddenBeads(ids);
     }),
 
     // When a project's bead list (re)caches, re-publish favorites so their
@@ -218,10 +202,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
 
     projectManager.onActiveProjectChanged(() => {
-      // Re-point favorites at the new project (fires onDidChange → re-publishes).
+      // Re-point favorites (seed list + mask) at the new project (fires
+      // onDidChange → re-publishes).
       favorites.setActiveProject(projectManager.getActiveProject()?.id ?? null);
-      // Same for the hidden-beads set (fires onDidChange → re-publishes).
-      hiddenBeads.setActiveProject(projectManager.getActiveProject()?.id ?? null);
       shellProvider.setSelectedBead(null); // Clear selection on project switch
       switcherProvider.setActiveBead(null);
       shellProvider.refreshForProjectChange();

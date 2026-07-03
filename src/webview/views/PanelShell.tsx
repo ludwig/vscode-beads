@@ -47,8 +47,8 @@ interface PanelShellProps {
   selectedBeadId: string | null;
   /** Favorite bead ids, for the views' right-click star/unstar item (vs-sd5.5). */
   favoriteIds: string[];
-  /** Hidden (eye-off) bead ids, forwarded to the embedded IssuesView. */
-  hiddenIds: string[];
+  /** Masked favorite ids, forwarded to the embedded IssuesView's favorites scope. */
+  maskedIds: string[];
   settings: WebviewSettings;
   issuesFilterRequest: { filter: IssuesFilter; seq: number } | null;
   // Full Issues-filter snapshot to apply, landed by an "Apply to all" broadcast
@@ -70,7 +70,7 @@ export function PanelShell({
   error,
   selectedBeadId,
   favoriteIds,
-  hiddenIds,
+  maskedIds,
   settings,
   issuesFilterRequest,
   applySnapshotRequest,
@@ -334,7 +334,7 @@ export function PanelShell({
             error={error}
             selectedBeadId={selectedBeadId}
             favoriteIds={favoriteIds}
-            hiddenIds={hiddenIds}
+            maskedIds={maskedIds}
             highlightFavorites={settings.highlightFavorites}
             muteClosedIssues={settings.muteClosedIssues}
             tooltipHoverDelay={settings.tooltipHoverDelay}

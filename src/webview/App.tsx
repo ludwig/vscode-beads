@@ -80,9 +80,6 @@ interface AppState {
   // The active project's favorites, in curated order, resolved to summaries
   // for display (vs-sd5.1). Shared by the Favorites section + Details star.
   favorites: FavoriteBead[];
-  // The active project's hidden beads (the eye-off set). Rows stay visible but
-  // marked, and are excluded from the favorites→relatives expansion.
-  hiddenIds: string[];
   // Latest companion-doc state from the host, keyed by bead id, so the Details
   // "seed to Claude" toggle reflects whether that bead's companion is open
   // (vs-nr3d). The view only trusts the entry matching the shown bead.
@@ -149,7 +146,6 @@ const initialState: AppState = {
   memoryBytes: 0,
   tabNav: { canBack: false, canForward: false },
   favorites: [],
-  hiddenIds: [],
   companion: null,
   seedFilteredBeadIds: null,
   seedFilterCleared: false,
@@ -294,10 +290,6 @@ export function App(): React.ReactElement {
       case "setFavorites":
         setState((prev) => ({ ...prev, favorites: message.favorites }));
         break;
-
-      case "setHiddenBeads":
-        setState((prev) => ({ ...prev, hiddenIds: message.hiddenIds }));
-        break;
       case "setBeadCompanionOpen":
         setState((prev) => ({
           ...prev,
@@ -367,6 +359,9 @@ export function App(): React.ReactElement {
   // Favorite bead ids (vs-sd5.1) — passed to the bead-context-menu views so a
   // right-click can star/unstar, and labelled Add/Remove based on membership.
   const favoriteIds = state.favorites.map((f) => f.id);
+  // Masked favorites (eye-off in the Favorites filter group) — excluded from the
+  // favorites→relatives seed expansion in the Issues list.
+  const maskedIds = state.favorites.filter((f) => f.masked).map((f) => f.id);
 
   // Editor-tab filter seed (vs-nme): when a Kanban/Tree/Graph tab was opened
   // from a filtered panel, scope it to the inherited snapshot. The ribbon
@@ -499,7 +494,7 @@ export function App(): React.ReactElement {
             error={state.error}
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
-            hiddenIds={state.hiddenIds}
+            maskedIds={maskedIds}
             highlightFavorites={state.settings.highlightFavorites}
             muteClosedIssues={state.settings.muteClosedIssues}
             tooltipHoverDelay={state.settings.tooltipHoverDelay}
@@ -529,7 +524,7 @@ export function App(): React.ReactElement {
             error={state.error}
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
-            hiddenIds={state.hiddenIds}
+            maskedIds={maskedIds}
             settings={state.settings}
             issuesFilterRequest={state.issuesFilterRequest}
             applySnapshotRequest={state.applySnapshotRequest}
@@ -605,7 +600,6 @@ export function App(): React.ReactElement {
             activeProject={state.project}
             activeBead={state.selectedBead}
             favorites={state.favorites}
-            hiddenIds={state.hiddenIds}
             version={state.settings.extensionVersion}
             buildSha={state.settings.buildSha}
             buildDirty={state.settings.buildDirty}
@@ -632,7 +626,19 @@ export function App(): React.ReactElement {
               })
             }
             onToggleFavorite={(beadId) => vscode.postMessage({ type: "toggleFavorite", beadId })}
-            onToggleHidden={(beadId) => vscode.postMessage({ type: "toggleHidden", beadId })}
+            onToggleMask={(beadId) => {
+              // Optimistic: flip the mask locally so the eye + muted card (and the
+              // Issues favorites scope, both derived from state.favorites) update
+              // instantly. The host echoes the authoritative setFavorites shortly
+              // after, which reconciles to the same value.
+              setState((prev) => ({
+                ...prev,
+                favorites: prev.favorites.map((f) =>
+                  f.id === beadId ? { ...f, masked: !f.masked } : f,
+                ),
+              }));
+              vscode.postMessage({ type: "toggleFavoriteMask", beadId });
+            }}
             onPickReady={() => vscode.postMessage({ type: "pickReadyBead" })}
             onShowIssues={() => vscode.postMessage({ type: "showIssues" })}
             onCreateBoard={() => vscode.postMessage({ type: "createBoard" })}

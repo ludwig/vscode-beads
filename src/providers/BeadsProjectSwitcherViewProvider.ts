@@ -11,7 +11,6 @@ import * as vscode from "vscode";
 import { BaseViewProvider } from "./BaseViewProvider";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
 import { FavoritesService } from "../backend/FavoritesService";
-import { HiddenBeadsService } from "../backend/HiddenBeadsService";
 import { WebviewToExtensionMessage } from "../backend/types";
 import { Logger } from "../utils/logger";
 
@@ -31,10 +30,9 @@ export class BeadsProjectSwitcherViewProvider extends BaseViewProvider {
     extensionUri: vscode.Uri,
     projectManager: BeadsProjectManager,
     logger: Logger,
-    favorites?: FavoritesService,
-    hiddenBeads?: HiddenBeadsService
+    favorites?: FavoritesService
   ) {
-    super(extensionUri, projectManager, logger.child("ProjectSwitcher"), favorites, hiddenBeads);
+    super(extensionUri, projectManager, logger.child("ProjectSwitcher"), favorites);
   }
 
   protected async initializeView(): Promise<void> {

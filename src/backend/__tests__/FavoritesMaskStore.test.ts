@@ -1,4 +1,4 @@
-import { HiddenBeadsStore } from "../HiddenBeadsStore";
+import { FavoritesMaskStore } from "../FavoritesMaskStore";
 
 /**
  * Minimal in-memory stand-in for vscode.Memento (workspaceState) — the same
@@ -20,33 +20,33 @@ class FakeMemento {
   }
 }
 
-const STORAGE_KEY = "beads.hidden";
+const STORAGE_KEY = "beads.favorites.masked";
 
-describe("HiddenBeadsStore", () => {
+describe("FavoritesMaskStore", () => {
   it("is empty with no active project", () => {
-    const store = new HiddenBeadsStore(new FakeMemento());
+    const store = new FavoritesMaskStore(new FakeMemento());
     expect(store.list()).toEqual([]);
-    expect(store.isHidden("vs-1")).toBe(false);
+    expect(store.isMasked("vs-1")).toBe(false);
   });
 
-  it("hides a bead for the active project", async () => {
-    const store = new HiddenBeadsStore(new FakeMemento());
+  it("masks a favorite for the active project", async () => {
+    const store = new FavoritesMaskStore(new FakeMemento());
     store.setActiveProject("proj-a");
     await store.add("vs-1");
     expect(store.list()).toEqual(["vs-1"]);
-    expect(store.isHidden("vs-1")).toBe(true);
+    expect(store.isMasked("vs-1")).toBe(true);
   });
 
-  it("dedupes: hiding an already-hidden bead is a no-op", async () => {
-    const store = new HiddenBeadsStore(new FakeMemento());
+  it("dedupes: masking an already-masked favorite is a no-op", async () => {
+    const store = new FavoritesMaskStore(new FakeMemento());
     store.setActiveProject("proj-a");
     expect(await store.add("vs-1")).toBe(true);
     expect(await store.add("vs-1")).toBe(false);
     expect(store.list()).toEqual(["vs-1"]);
   });
 
-  it("shows a bead again and reports whether it changed", async () => {
-    const store = new HiddenBeadsStore(new FakeMemento());
+  it("unmasks a favorite and reports whether it changed", async () => {
+    const store = new FavoritesMaskStore(new FakeMemento());
     store.setActiveProject("proj-a");
     await store.add("vs-1");
     expect(await store.remove("vs-1")).toBe(true);
@@ -54,25 +54,25 @@ describe("HiddenBeadsStore", () => {
     expect(await store.remove("vs-1")).toBe(false);
   });
 
-  it("toggle returns the resulting hidden state", async () => {
-    const store = new HiddenBeadsStore(new FakeMemento());
+  it("toggle returns the resulting masked state", async () => {
+    const store = new FavoritesMaskStore(new FakeMemento());
     store.setActiveProject("proj-a");
     expect(await store.toggle("vs-1")).toBe(true);
-    expect(store.isHidden("vs-1")).toBe(true);
+    expect(store.isMasked("vs-1")).toBe(true);
     expect(await store.toggle("vs-1")).toBe(false);
-    expect(store.isHidden("vs-1")).toBe(false);
+    expect(store.isMasked("vs-1")).toBe(false);
   });
 
   it("ignores mutations when there is no active project", async () => {
-    const store = new HiddenBeadsStore(new FakeMemento());
+    const store = new FavoritesMaskStore(new FakeMemento());
     expect(await store.add("vs-1")).toBe(false);
     expect(await store.toggle("vs-1")).toBe(false);
     expect(store.list()).toEqual([]);
   });
 
-  it("keys hidden sets per project — sets do not bleed across projects", async () => {
+  it("keys masks per project — sets do not bleed across projects", async () => {
     const memento = new FakeMemento();
-    const store = new HiddenBeadsStore(memento);
+    const store = new FavoritesMaskStore(memento);
 
     store.setActiveProject("proj-a");
     await store.add("vs-1");
@@ -89,7 +89,7 @@ describe("HiddenBeadsStore", () => {
 
   it("persists a project-keyed map under a single workspaceState key", async () => {
     const memento = new FakeMemento();
-    const store = new HiddenBeadsStore(memento);
+    const store = new FavoritesMaskStore(memento);
     store.setActiveProject("proj-a");
     await store.add("vs-1");
     store.setActiveProject("proj-b");
@@ -102,7 +102,7 @@ describe("HiddenBeadsStore", () => {
   });
 
   it("returns a defensive copy from list()", async () => {
-    const store = new HiddenBeadsStore(new FakeMemento());
+    const store = new FavoritesMaskStore(new FakeMemento());
     store.setActiveProject("proj-a");
     await store.add("vs-1");
     const snapshot = store.list();

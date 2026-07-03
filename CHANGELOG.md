@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Hide beads (eye-off / Photoshop-layers model)** — each Issues row has a leading eye toggle (also a "Hide from views" / "Show in views" right-click item, and on Favorites cards). A hidden bead's row stays visible but is marked with a left-edge stripe + eye-off icon, and is excluded from the favorites→relatives expansion. The set is per-project, persisted in workspace state
+- **Mask favorites in the Favorites filter group** — Favorites is modeled as a seed-based filter group: the starred beads are a seed list that expands into relatives, and each seed has an eye toggle (Photoshop-layers metaphor) to mask it out of that expansion. Masked favorites recede (gray left edge + muted card) and drop from the favorites→relatives scope; the mask is per-project, persisted in workspace state, and owned by the Favorites container (not individual cards). New reusable `FilterGroup` component
 
 ### Changed
 
