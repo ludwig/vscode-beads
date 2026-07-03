@@ -237,12 +237,50 @@ export function TreeView({
     vscode.setState({ ...prev, treeColumns: visibleCols });
   }, [visibleCols]);
   const shownColumns = useMemo(() => TREE_COLUMNS.filter((c) => visibleCols[c.key]), [visibleCols]);
+  // Per-column widths, drag-resizable and persisted (overrides the declared
+  // default width). Only the fixed columns resize; Title stays the flexible 1fr.
+  const [colWidths, setColWidths] = useState<Partial<Record<ColKey, number>>>(() => {
+    const saved = (vscode.getState() as { treeColWidths?: Partial<Record<ColKey, number>> } | undefined)?.treeColWidths;
+    return saved && typeof saved === "object" ? saved : {};
+  });
+  useEffect(() => {
+    const prev = (vscode.getState() as Record<string, unknown>) ?? {};
+    vscode.setState({ ...prev, treeColWidths: colWidths });
+  }, [colWidths]);
+  const colWidthPx = useCallback(
+    (c: TreeColumn) => colWidths[c.key] ?? parseInt(c.width, 10),
+    [colWidths],
+  );
   // The Title (tree) column is the only flexible one; the shown fixed columns
-  // follow at their declared widths. Set inline so header + every row share the
-  // exact same template as columns toggle on/off.
+  // follow at their (resizable) widths. Set inline so header + every row share
+  // the exact same template as columns toggle on/off or resize.
   const gridTemplate = useMemo(
-    () => `minmax(0, 1fr) ${shownColumns.map((c) => c.width).join(" ")}`,
-    [shownColumns],
+    () => `minmax(0, 1fr) ${shownColumns.map((c) => `${colWidthPx(c)}px`).join(" ")}`,
+    [shownColumns, colWidthPx],
+  );
+  // Drag-to-resize a fixed column: the handle on a column's right edge widens/
+  // narrows THAT column; the flexible Title track absorbs the delta.
+  const resizeRef = useRef<{ key: ColKey; startX: number; startW: number } | null>(null);
+  const startColResize = useCallback(
+    (e: React.MouseEvent, c: TreeColumn) => {
+      e.preventDefault();
+      e.stopPropagation();
+      resizeRef.current = { key: c.key, startX: e.clientX, startW: colWidthPx(c) };
+      const onMove = (ev: MouseEvent) => {
+        const st = resizeRef.current;
+        if (!st) return;
+        const next = Math.max(32, Math.min(400, st.startW + (ev.clientX - st.startX)));
+        setColWidths((prev) => ({ ...prev, [st.key]: next }));
+      };
+      const onUp = () => {
+        resizeRef.current = null;
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+      };
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    },
+    [colWidthPx],
   );
   const [colMenuOpen, setColMenuOpen] = useState(false);
   const colMenuRef = useRef<HTMLDivElement>(null);
@@ -578,6 +616,19 @@ export function TreeView({
               {active && sorts.length > 1 ? (
                 <span className="beads-tree-sort-rank">{idx + 1}</span>
               ) : null}
+              {colKey !== "title" && (
+                <span
+                  className="beads-tree-col-resize"
+                  role="separator"
+                  aria-hidden="true"
+                  title="Drag to resize"
+                  onMouseDown={(e) => {
+                    const col = TREE_COLUMNS.find((tc) => tc.key === colKey);
+                    if (col) startColResize(e, col);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )}
             </button>
           );
         })}

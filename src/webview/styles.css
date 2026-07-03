@@ -4888,9 +4888,11 @@ textarea {
    foreground color — not the old uppercase/gray treatment, which read as a
    different control than the Issues tab. */
 .beads-tree-col {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 3px;
+  width: 100%;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -4899,12 +4901,38 @@ textarea {
   font-size: 12px;
   font-weight: 600;
   color: var(--vscode-foreground);
-  justify-self: start;
+  justify-content: flex-start;
 }
 /* Status / Type / Priority headers sit over fixed-width tracks; align each
    header with its column's cell content. */
 .beads-tree-col-priority {
-  justify-self: end;
+  justify-content: flex-end;
+}
+
+/* Drag-to-resize handle straddling a fixed column's right edge (into the
+   column-gap). Invisible until hovered; shows a subtle rule like the Issues
+   table's column resizer. */
+.beads-tree-col-resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -5px;
+  width: 9px;
+  cursor: col-resize;
+  z-index: 1;
+}
+.beads-tree-col-resize::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 4px;
+  width: 2px;
+  border-radius: 1px;
+  background: transparent;
+}
+.beads-tree-col-resize:hover::after {
+  background: var(--vscode-focusBorder);
 }
 .beads-tree-col:hover {
   background: var(--vscode-toolbar-hoverBackground);
