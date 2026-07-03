@@ -51,13 +51,17 @@ type ColKey = "status" | "type" | "priority" | "updated" | "created";
 interface TreeColumn {
   key: ColKey;
   label: string;
+  /** Short header label when the full `label` is too wide for the column (e.g.
+   * "Priority" wrapping in a 44px column injects whitespace); falls back to
+   * `label`. The full `label` is still used in the column-toggle menu + tooltip. */
+  headerLabel?: string;
   width: string;
   sortKey: SortKey;
 }
 const TREE_COLUMNS: TreeColumn[] = [
   { key: "status", label: "Status", width: "92px", sortKey: "status" },
   { key: "type", label: "Type", width: "64px", sortKey: "type" },
-  { key: "priority", label: "Priority", width: "44px", sortKey: "priority" },
+  { key: "priority", label: "Priority", headerLabel: "P", width: "44px", sortKey: "priority" },
   { key: "updated", label: "Updated", width: "96px", sortKey: "updated" },
   { key: "created", label: "Created", width: "96px", sortKey: "created" },
 ];
@@ -547,9 +551,9 @@ export function TreeView({
       </div>
       <div className="beads-tree-colheader" role="row" style={{ gridTemplateColumns: gridTemplate }}>
         {[
-          { sortKey: "title" as SortKey, label: "Title", colKey: "title" },
-          ...shownColumns.map((c) => ({ sortKey: c.sortKey, label: c.label, colKey: c.key })),
-        ].map(({ sortKey, label, colKey }) => {
+          { sortKey: "title" as SortKey, label: "Title", headerLabel: undefined as string | undefined, colKey: "title" },
+          ...shownColumns.map((c) => ({ sortKey: c.sortKey, label: c.label, headerLabel: c.headerLabel, colKey: c.key })),
+        ].map(({ sortKey, label, headerLabel, colKey }) => {
           const idx = sorts.findIndex((s) => s.key === sortKey);
           const spec = idx >= 0 ? sorts[idx] : null;
           const active = spec != null;
@@ -563,7 +567,7 @@ export function TreeView({
               onClick={(e) => setSorts((prev) => applySort(prev, sortKey, e.shiftKey))}
               title={`Sort by ${label.toLowerCase()} — click to sort, Shift+click to add as a secondary sort`}
             >
-              <span>{label}</span>
+              <span>{headerLabel ?? label}</span>
               {active ? (
                 spec!.dir === "asc" ? (
                   <ArrowUp size={11} strokeWidth={2.5} className="beads-tree-sort-dir" />
