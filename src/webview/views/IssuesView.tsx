@@ -963,13 +963,14 @@ export function IssuesView({
             <span className="filter-toggle-badge">{activeFilterCount}</span>
           )}
         </button>
+        {/* Toggle for "comfortable rows": OFF (default) = compact, ON = comfortable. */}
         <button
-          className={`compact-toggle ${compact ? "active" : ""}`}
+          className={`compact-toggle ${!compact ? "active" : ""}`}
           onClick={() => setCompact((c) => !c)}
           title={compact ? "Comfortable rows" : "Compact rows"}
-          aria-pressed={compact}
+          aria-pressed={!compact}
         >
-          {compact ? <Rows2 size={14} /> : <Rows3 size={14} />}
+          {compact ? <Rows3 size={14} /> : <Rows2 size={14} />}
         </button>
         <div className="search-input-wrapper">
           <input
