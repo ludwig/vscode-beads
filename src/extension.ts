@@ -11,6 +11,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 import { BeadsProjectManager } from "./backend/BeadsProjectManager";
 import { FavoritesService } from "./backend/FavoritesService";
+import { HiddenBeadsService } from "./backend/HiddenBeadsService";
 import { PanelShellViewProvider } from "./providers/PanelShellViewProvider";
 import { BeadDetailsViewProvider } from "./providers/BeadDetailsViewProvider";
 import { BeadsProjectSwitcherViewProvider } from "./providers/BeadsProjectSwitcherViewProvider";
@@ -33,6 +34,7 @@ let detailsProvider: BeadDetailsViewProvider;
 let switcherProvider: BeadsProjectSwitcherViewProvider;
 let panelManager: BeadPanelManager;
 let favorites: FavoritesService;
+let hiddenBeads: HiddenBeadsService;
 let statusBar: vscode.StatusBarItem;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
@@ -87,6 +89,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   favorites.setActiveProject(projectManager.getActiveProject()?.id ?? null);
   context.subscriptions.push(favorites);
 
+  // Hidden beads: per-project "eye-off" set (Photoshop-layers metaphor),
+  // persisted in workspaceState and published to every view. Hidden rows stay
+  // visible but marked, and are excluded from the favorites→relatives expansion.
+  hiddenBeads = new HiddenBeadsService(context.workspaceState);
+  hiddenBeads.setActiveProject(projectManager.getActiveProject()?.id ?? null);
+  context.subscriptions.push(hiddenBeads);
+
   // Initialize context for conditional menu items
   vscode.commands.executeCommand("setContext", "beads.hasSelectedBead", false);
   vscode.commands.executeCommand("setContext", "beads.canNavigateBack", false);
@@ -98,14 +107,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     context.extensionUri,
     projectManager,
     log,
-    favorites
+    favorites,
+    hiddenBeads
   );
 
   switcherProvider = new BeadsProjectSwitcherViewProvider(
     context.extensionUri,
     projectManager,
     log,
-    favorites
+    favorites,
+    hiddenBeads
   );
 
   // Virtual `bead:` documents so a bead can be opened as a real TextEditor that
@@ -127,11 +138,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     projectManager,
     log,
     companionController,
-    favorites
+    favorites,
+    hiddenBeads
   );
 
   // Manages bead webviews opened as editor tabs (vs-ask, vs-fx4).
-  panelManager = new BeadPanelManager(context.extensionUri, projectManager, log, companionController, favorites);
+  panelManager = new BeadPanelManager(context.extensionUri, projectManager, log, companionController, favorites, hiddenBeads);
   context.subscriptions.push(panelManager);
 
   // Register webview providers
@@ -178,6 +190,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       panelManager.publishFavorites(ids);
     }),
 
+    // Fan the hidden-beads set out to every live view whenever it changes (a
+    // hide/show toggle in one view, or a project switch).
+    hiddenBeads.onDidChange((ids) => {
+      shellProvider.publishHiddenBeads(ids);
+      detailsProvider.publishHiddenBeads(ids);
+      switcherProvider.publishHiddenBeads(ids);
+      panelManager.publishHiddenBeads(ids);
+    }),
+
     // When a project's bead list (re)caches, re-publish favorites so their
     // id→title/type resolution fills in. On a project switch the cache is
     // cleared then refilled asynchronously, so the initial post-switch publish
@@ -199,6 +220,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     projectManager.onActiveProjectChanged(() => {
       // Re-point favorites at the new project (fires onDidChange → re-publishes).
       favorites.setActiveProject(projectManager.getActiveProject()?.id ?? null);
+      // Same for the hidden-beads set (fires onDidChange → re-publishes).
+      hiddenBeads.setActiveProject(projectManager.getActiveProject()?.id ?? null);
       shellProvider.setSelectedBead(null); // Clear selection on project switch
       switcherProvider.setActiveBead(null);
       shellProvider.refreshForProjectChange();

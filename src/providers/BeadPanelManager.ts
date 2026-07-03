@@ -14,6 +14,7 @@
 import * as vscode from "vscode";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
 import { FavoritesService } from "../backend/FavoritesService";
+import { HiddenBeadsService } from "../backend/HiddenBeadsService";
 import { FilterSnapshot } from "../backend/types";
 import { Logger } from "../utils/logger";
 import { BaseViewProvider } from "./BaseViewProvider";
@@ -44,7 +45,8 @@ export class BeadPanelManager implements vscode.Disposable {
     private readonly projectManager: BeadsProjectManager,
     private readonly log: Logger,
     private readonly companion: BeadCompanionController,
-    private readonly favorites?: FavoritesService
+    private readonly favorites?: FavoritesService,
+    private readonly hiddenBeads?: HiddenBeadsService
   ) {
     // Keep open tabs in sync with the rest of the extension.
     this.subscriptions.push(
@@ -61,7 +63,7 @@ export class BeadPanelManager implements vscode.Disposable {
     if (this.reveal(key)) return;
 
     const panel = this.createPanel(beadId);
-    const provider = new BeadDetailsViewProvider(this.extensionUri, this.projectManager, this.log, this.companion, this.favorites);
+    const provider = new BeadDetailsViewProvider(this.extensionUri, this.projectManager, this.log, this.companion, this.favorites, this.hiddenBeads);
     provider.attach(hostFromPanel(panel));
     // currentBeadId is set synchronously, so the webview's "ready" handshake
     // (which triggers initializeView → loadData) renders this bead.
@@ -80,7 +82,7 @@ export class BeadPanelManager implements vscode.Disposable {
     if (this.reveal(key)) return;
 
     const panel = this.createPanel("Issues");
-    const provider = new BeadsPanelViewProvider(this.extensionUri, this.projectManager, this.log, this.favorites);
+    const provider = new BeadsPanelViewProvider(this.extensionUri, this.projectManager, this.log, this.favorites, this.hiddenBeads);
     provider.attach(hostFromPanel(panel));
     if (seed) provider.seedIssuesFilter(seed);
 
@@ -163,7 +165,7 @@ export class BeadPanelManager implements vscode.Disposable {
   public openNewIssue(): void {
     const key = `beadsNewIssue:${++this.newIssueSeq}`;
     const panel = this.createPanel("New Issue");
-    const provider = new BeadDetailsViewProvider(this.extensionUri, this.projectManager, this.log, this.companion, this.favorites);
+    const provider = new BeadDetailsViewProvider(this.extensionUri, this.projectManager, this.log, this.companion, this.favorites, this.hiddenBeads);
     provider.attach(hostFromPanel(panel));
     provider.startCreate();
 
@@ -237,6 +239,11 @@ export class BeadPanelManager implements vscode.Disposable {
   /** Push the favorites set to every open editor-tab panel (vs-sd5.1). */
   public publishFavorites(favorites: string[]): void {
     this.forEachProvider((p) => p.publishFavorites(favorites));
+  }
+
+  /** Push the hidden-beads set to every open editor-tab panel. */
+  public publishHiddenBeads(hiddenIds: string[]): void {
+    this.forEachProvider((p) => p.publishHiddenBeads(hiddenIds));
   }
 
   /**

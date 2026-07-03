@@ -80,6 +80,9 @@ interface AppState {
   // The active project's favorites, in curated order, resolved to summaries
   // for display (vs-sd5.1). Shared by the Favorites section + Details star.
   favorites: FavoriteBead[];
+  // The active project's hidden beads (the eye-off set). Rows stay visible but
+  // marked, and are excluded from the favorites→relatives expansion.
+  hiddenIds: string[];
   // Latest companion-doc state from the host, keyed by bead id, so the Details
   // "seed to Claude" toggle reflects whether that bead's companion is open
   // (vs-nr3d). The view only trusts the entry matching the shown bead.
@@ -146,6 +149,7 @@ const initialState: AppState = {
   memoryBytes: 0,
   tabNav: { canBack: false, canForward: false },
   favorites: [],
+  hiddenIds: [],
   companion: null,
   seedFilteredBeadIds: null,
   seedFilterCleared: false,
@@ -289,6 +293,10 @@ export function App(): React.ReactElement {
         break;
       case "setFavorites":
         setState((prev) => ({ ...prev, favorites: message.favorites }));
+        break;
+
+      case "setHiddenBeads":
+        setState((prev) => ({ ...prev, hiddenIds: message.hiddenIds }));
         break;
       case "setBeadCompanionOpen":
         setState((prev) => ({
@@ -491,6 +499,7 @@ export function App(): React.ReactElement {
             error={state.error}
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
+            hiddenIds={state.hiddenIds}
             highlightFavorites={state.settings.highlightFavorites}
             muteClosedIssues={state.settings.muteClosedIssues}
             tooltipHoverDelay={state.settings.tooltipHoverDelay}
@@ -520,6 +529,7 @@ export function App(): React.ReactElement {
             error={state.error}
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
+            hiddenIds={state.hiddenIds}
             settings={state.settings}
             issuesFilterRequest={state.issuesFilterRequest}
             applySnapshotRequest={state.applySnapshotRequest}
@@ -595,6 +605,7 @@ export function App(): React.ReactElement {
             activeProject={state.project}
             activeBead={state.selectedBead}
             favorites={state.favorites}
+            hiddenIds={state.hiddenIds}
             version={state.settings.extensionVersion}
             buildSha={state.settings.buildSha}
             buildDirty={state.settings.buildDirty}
@@ -621,6 +632,7 @@ export function App(): React.ReactElement {
               })
             }
             onToggleFavorite={(beadId) => vscode.postMessage({ type: "toggleFavorite", beadId })}
+            onToggleHidden={(beadId) => vscode.postMessage({ type: "toggleHidden", beadId })}
             onPickReady={() => vscode.postMessage({ type: "pickReadyBead" })}
             onShowIssues={() => vscode.postMessage({ type: "showIssues" })}
             onCreateBoard={() => vscode.postMessage({ type: "createBoard" })}

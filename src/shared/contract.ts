@@ -303,6 +303,10 @@ export type ExtensionToWebviewMessage =
   // The active project's favorites, in curated order, resolved to lightweight
   // summaries (id + title + type icon) for display (vs-sd5.1).
   | { type: "setFavorites"; favorites: FavoriteBead[] }
+  // The active project's hidden beads (the eye-off set). Just the id set —
+  // hidden rows stay visible in the list but marked, and are excluded from the
+  // favorites→relatives expansion.
+  | { type: "setHiddenBeads"; hiddenIds: string[] }
   // Per-tab Back/Forward enablement for an editor-tab Details view (vs-9u8).
   | { type: "setTabNavState"; canBack: boolean; canForward: boolean }
   // A one-time snapshot of the Issues filter (the matching bead ids), pushed to
@@ -408,6 +412,8 @@ export type WebviewToExtensionMessage =
   // Star/unstar a bead in the active project's favorites set (vs-sd5.1).
   | { type: "toggleFavorite"; beadId: string }
   | { type: "removeFavorite"; beadId: string }
+  // Flip a bead's hidden (eye-off) state in the active project's hidden set.
+  | { type: "toggleHidden"; beadId: string }
   // Toggle the companion `bead:` document for `beadId`: open it beside the view
   // (so Claude Code seeds it) if closed, close it if open (vs-nr3d).
   | { type: "toggleBeadCompanion"; beadId: string }
