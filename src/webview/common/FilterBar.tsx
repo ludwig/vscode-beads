@@ -13,7 +13,7 @@
  */
 
 import React, { useRef, useState } from "react";
-import { Rocket, Star, ChevronDown, ChevronRight } from "lucide-react";
+import { Rocket, Star } from "lucide-react";
 import {
   BeadStatus,
   BeadPriority,
@@ -68,13 +68,19 @@ interface FilterBarProps {
   facets: FacetData;
   ops: FilterOps;
   inherited?: InheritedScope;
+  /** Result count shown right-aligned in the bar (both forms): "N of M". */
+  count?: { shown: number; total: number };
   /** When `true`, render the compact ribbon (minimized) form. */
   collapsed?: boolean;
   /**
-   * Toggle expanded ↔ ribbon. When provided, a twistie is rendered and the
-   * `collapsed` prop is honored; omit for a non-collapsible bar.
+   * Toggle expanded ↔ ribbon. When provided, the funnel toggle is rendered and
+   * the `collapsed` prop is honored; omit for a non-collapsible bar.
    */
   onToggleCollapsed?: () => void;
+  /** View-specific controls rendered on the trailing edge (e.g. Tree fold/column). */
+  trailing?: React.ReactNode;
+  /** A second, view-specific row under the main bar (e.g. Graph's graph-only filters). */
+  extraRow?: React.ReactNode;
 }
 
 type MenuPage = "main" | "status" | "priority" | "type" | "assignee" | "label" | null;
@@ -84,8 +90,11 @@ export function FilterBar({
   facets,
   ops,
   inherited,
+  count,
   collapsed = false,
   onToggleCollapsed,
+  trailing,
+  extraRow,
 }: FilterBarProps): React.ReactElement {
   const [menu, setMenu] = useState<MenuPage>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -137,17 +146,27 @@ export function FilterBar({
     (o) => o.value !== "__unassigned__" && !assignee.includes(o.value),
   );
 
+  // The funnel toggle — one affordance across all views: click to expand/collapse
+  // the bar, glows blue when filters are set (replaces the old chevron twistie).
   const twistie = onToggleCollapsed && (
     <button
       type="button"
-      className="filter-bar-twistie"
+      className={`filter-bar-funnel ${hasActiveFilters ? "has-filters" : ""}`}
       onClick={onToggleCollapsed}
       title={collapsed ? "Expand filters" : "Collapse filters"}
       aria-label={collapsed ? "Expand filters" : "Collapse filters"}
       aria-expanded={!collapsed}
     >
-      {collapsed ? <ChevronRight size={14} strokeWidth={2.25} /> : <ChevronDown size={14} strokeWidth={2.25} />}
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M6 10.5v-1h4v1H6zm-2-3v-1h8v1H4zm-2-3v-1h12v1H2z" />
+      </svg>
     </button>
+  );
+
+  const countEl = count && (
+    <span className="filter-bar-count">
+      {count.shown < count.total ? `${count.shown} of ${count.total}` : `${count.total}`}
+    </span>
   );
 
   // Collapsed (ribbon) form: a concise readout of the active filters + the
@@ -176,6 +195,7 @@ export function FilterBar({
             </button>
           )}
         </span>
+        {countEl}
         {inherited && (
           <button type="button" className="filter-snapshot-ribbon-btn" onClick={inherited.onToggle}>
             {inherited.cleared ? `Show filtered (${inherited.filteredCount})` : "Show all"}
@@ -186,6 +206,7 @@ export function FilterBar({
   }
 
   return (
+    <>
     <div className="filter-bar">
       {twistie}
       {inherited && (
@@ -389,6 +410,15 @@ export function FilterBar({
           Clear
         </button>
       )}
+
+      {(trailing || countEl) && (
+        <span className="filter-bar-trailing">
+          {trailing}
+          {countEl}
+        </span>
+      )}
     </div>
+    {extraRow && <div className="filter-bar-extra-row">{extraRow}</div>}
+    </>
   );
 }

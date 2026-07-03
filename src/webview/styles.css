@@ -255,22 +255,72 @@ body {
   background: transparent;
 }
 
-/* Twistie: expand/collapse toggle for the FilterBar. */
-.filter-bar-twistie {
+/* Funnel toggle: the single expand/collapse affordance for the FilterBar
+   (unified with the Issues filter icon). Glows blue when filters are set. */
+.filter-bar-funnel {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  padding: 2px;
+  padding: 3px;
   border: none;
+  border-radius: var(--border-radius);
   background: transparent;
   color: var(--vscode-foreground);
   cursor: pointer;
   opacity: 0.75;
 }
 
-.filter-bar-twistie:hover {
+.filter-bar-funnel:hover {
   opacity: 1;
+  background: var(--vscode-toolbar-hoverBackground);
+}
+
+.filter-bar-funnel.has-filters {
+  opacity: 1;
+  color: var(--vscode-focusBorder);
+}
+
+.filter-bar-funnel.has-filters svg,
+.filter-bar-funnel.has-filters svg path {
+  fill: var(--vscode-focusBorder);
+}
+
+.filter-bar-funnel.has-filters svg {
+  filter: drop-shadow(0 0 4px var(--vscode-focusBorder))
+    drop-shadow(0 0 2px var(--vscode-focusBorder));
+}
+
+/* Trailing group (view-specific controls + count), pushed to the right edge. */
+.filter-bar-trailing {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Result count "N of M". In the collapsed ribbon it right-aligns via the
+   flex:1 summary before it; in the expanded bar via .filter-bar-trailing. */
+.filter-bar-count {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  white-space: nowrap;
+}
+
+.filter-bar-trailing .filter-bar-count {
+  margin-left: 0;
+}
+
+/* A second, view-specific row under the main bar (e.g. Graph's graph filters). */
+.filter-bar-extra-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
 }
 
 /* Collapsed (ribbon) form: a single non-wrapping summary line. */

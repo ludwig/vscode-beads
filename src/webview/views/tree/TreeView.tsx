@@ -24,7 +24,6 @@ import {
   vscode,
 } from "../../types";
 import { TypeIcon } from "../../common/TypeIcon";
-import { FilterIndicator } from "../../common/FilterIndicator";
 import { FilterBar } from "../../common/FilterBar";
 import { useLocalFilter } from "../../hooks/useLocalFilter";
 import { intersect } from "../../composeScope";
@@ -383,7 +382,6 @@ export function TreeView({
   );
 
   const total = totalCount ?? (graph?.nodes.length ?? 0);
-  const scopeActive = finalScope != null && finalScope.length < total;
   const scopeCount = finalScope?.length ?? total;
   const visible = useMemo(() => filterForest(scoped, query), [scoped, query]);
   // Only the text query force-expands (to reveal matches); the always-on Issues
@@ -564,6 +562,7 @@ export function TreeView({
         snapshot={lf.snapshot}
         facets={lf.facets}
         ops={lf.ops}
+        count={{ shown: scopeCount, total }}
         collapsed={lf.collapsed}
         onToggleCollapsed={lf.toggleCollapsed}
         inherited={
@@ -590,13 +589,6 @@ export function TreeView({
           onChange={(e) => setQuery(e.target.value)}
           spellCheck={false}
         />
-        {scopeActive && (
-          <FilterIndicator
-            count={scopeCount}
-            total={total}
-            className="beads-tree-filter-indicator"
-          />
-        )}
         {parentIds.size > 0 && (
           <div className="beads-tree-foldctl" role="group" aria-label="Expand or collapse the tree">
             <button

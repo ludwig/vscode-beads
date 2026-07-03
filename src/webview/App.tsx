@@ -439,6 +439,7 @@ export function App(): React.ReactElement {
               snapshot={chromeFilter.snapshot}
               facets={chromeFilter.facets}
               ops={chromeFilter.ops}
+              count={{ shown: composedCount, total: state.beads.length }}
               collapsed={chromeFilter.collapsed}
               onToggleCollapsed={chromeFilter.toggleCollapsed}
               inherited={
