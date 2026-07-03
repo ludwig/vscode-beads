@@ -180,6 +180,7 @@ export function FilterBar({
         : `Filtered · ${inherited.filteredCount} of ${inherited.totalCount}`
       : null;
     return (
+      <>
       <div className="filter-bar filter-bar-collapsed" role="status">
         {twistie}
         <span className="filter-bar-summary">
@@ -201,7 +202,11 @@ export function FilterBar({
             {inherited.cleared ? `Show filtered (${inherited.filteredCount})` : "Show all"}
           </button>
         )}
-      </div>
+        </div>
+        {/* extraRow stays visible even collapsed — it holds view controls
+            (e.g. Graph layout/focus), not filters. */}
+        {extraRow && <div className="filter-bar-extra-row">{extraRow}</div>}
+      </>
     );
   }
 

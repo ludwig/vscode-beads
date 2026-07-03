@@ -220,8 +220,6 @@ export function PanelShell({
   // Graph's auto-enabled "Filtered" toggle. Stays accurate while IssuesView is
   // unmounted because filteredBeadIds holds the last published slice.
   const totalCount = beads.length;
-  const filteredCount = filteredBeadIds?.length ?? totalCount;
-  const filterActive = filteredBeadIds != null && filteredCount < totalCount;
 
   // Open a given tab's view in an editor tab, seeded with the panel's active
   // filter (Kanban/Tree/Graph inherit the bead-id slice, vs-nme; Issues inherits
@@ -323,9 +321,9 @@ export function PanelShell({
             error={error}
             selectedBeadId={selectedBeadId}
             favoriteIds={favoriteIds}
+            maskedIds={maskedIds}
             focusBeadId={graphFocusId}
             filteredBeadIds={filteredBeadIds}
-            issuesFilterActive={filterActive}
             onOpenBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onRequestGraph={requestGraph}
             onRetry={() => vscode.postMessage({ type: "refresh" })}

@@ -4838,6 +4838,27 @@ textarea {
   min-height: 0;
 }
 
+/* The graph self-hosts a FilterBar as its top strip (like Tree/Kanban); its
+   graph-specific controls ride in the FilterBar's extra row. */
+.graph-view > .filter-bar {
+  flex: 0 0 auto;
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  background: transparent;
+}
+.graph-view > .filter-bar-extra-row {
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+/* The node quick-search inside the extra row shouldn't stretch full-width. */
+.filter-bar-extra-row .graph-filterbar {
+  flex: 1 1 180px;
+  min-width: 140px;
+  border-bottom: none;
+  padding: 0;
+}
+
 /* Tree view (vs-bw9) — file-explorer-style hierarchical bead tree */
 .beads-tree {
   display: flex;

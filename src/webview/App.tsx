@@ -30,9 +30,6 @@ import { DetailsView } from "./views/DetailsView";
 import { ProjectSwitcherView } from "./views/ProjectSwitcherView";
 import { BoardInitWizard } from "./views/BoardInitWizard";
 import { PanelShell } from "./views/PanelShell";
-import { FilterBar } from "./common/FilterBar";
-import { intersect } from "./composeScope";
-import { useLocalFilter } from "./hooks/useLocalFilter";
 import { CreateBeadForm } from "./views/CreateBeadForm";
 import { Loading } from "./common/Loading";
 import { ToastProvider, triggerToast } from "./common/Toast";
@@ -365,41 +362,14 @@ export function App(): React.ReactElement {
   // favorites→relatives seed expansion in the Issues list.
   const maskedIds = state.favorites.filter((f) => f.masked).map((f) => f.id);
 
-  // Tab-local sidecar filter (unified filter bar, Phase 2) for the editor-tab
-  // CHROME (Kanban/Graph). The Tree self-hosts its own FilterBar instead (so it
-  // works in the panel subtab too), so it doesn't use this one. The final scope
-  // handed to a chrome-hosted view is the inherited parent scope intersected
-  // with this locally-resolved filter (composition below).
-  const chromeFilter = useLocalFilter({
-    persistKey: "localFilterSnapshot",
-    beads: state.beads,
-    edges: state.graph?.edges ?? [],
-    favoriteIds,
-    maskedIds,
-    hasGraph: !!state.graph,
-    onRequestGraph: () => vscode.postMessage({ type: "requestGraph" }),
-  });
-  const localScope = chromeFilter.localScope;
-
   // Editor-tab filter scope: a Kanban/Tree/Graph tab inherits the panel's LIVE
-  // parent scope (host-computed). The ribbon (vs-zq2) can temporarily drop it
-  // ("Show all"), which only zeroes the ids handed to the view — the live scope
-  // is retained so "Show filtered" restores it.
+  // parent scope (host-computed). Each view self-hosts its own FilterBar and
+  // composes its local filter on top; the ribbon's Show-all/Show-filtered toggle
+  // (driven by `seedFilterCleared`) lets a tab temporarily drop the inherited
+  // scope. So App just hands the views the raw parent scope + the toggle.
   const seedSnapshot = state.parentScope;
-  // A real snapshot narrows to a strict subset; equal length = no-op filter.
-  const hasSeedSnapshot = seedSnapshot != null && seedSnapshot.length < state.beads.length;
-  const effectiveSeed = state.seedFilterCleared ? null : seedSnapshot;
   const toggleSeedFilter = () =>
     setState((prev) => ({ ...prev, seedFilterCleared: !prev.seedFilterCleared }));
-
-  // Compose the inherited parent scope with the tab-local filter (Phase 2):
-  //   composed = (Filtered ? parentScope : all) ∩ resolve(localSpec)
-  // `effectiveSeed` already encodes the ribbon's Show-all/Show-filtered toggle;
-  // `localScope` is null when the local filter narrows nothing. The composed
-  // set is what the Kanban/Tree/Graph views actually render.
-  const composedSeed = intersect(effectiveSeed, localScope);
-  const composedActive = composedSeed != null && composedSeed.length < state.beads.length;
-  const composedCount = composedSeed?.length ?? state.beads.length;
 
   // Contextual refresh for editor-tab views: the sidebar PanelShell has its own
   // refresh, but a view opened standalone in an editor tab had no way to refresh
@@ -413,10 +383,9 @@ export function App(): React.ReactElement {
   }, []);
 
   // Wrap an editor-tab data view with shared chrome: a thin top toolbar holding
-  // a contextual Refresh, plus (for Kanban/Tree/Graph tabs) the unified FilterBar
-  // — a tab-local sidecar filter whose leading segment is the inherited-scope
-  // ribbon (shown only when the panel actually narrowed the scope). The
-  // flex-column shell keeps the view's own height/scroll model intact
+  // a contextual Refresh + a "<View> view for <project>" heading. Each view
+  // self-hosts its own FilterBar in its body now, so the chrome no longer injects
+  // one. The flex-column shell keeps the view's own height/scroll model intact
   // (Graph/React Flow needs a sized body).
   const VIEW_LABELS: Record<string, string> = {
     beadsPanel: "Issues",
@@ -424,38 +393,14 @@ export function App(): React.ReactElement {
     beadsTree: "Tree",
     beadsGraph: "Graph",
   };
-  const withEditorTabChrome = (
-    view: React.ReactElement,
-    opts: { filterBar?: boolean } = {},
-  ): React.ReactElement => {
+  const withEditorTabChrome = (view: React.ReactElement): React.ReactElement => {
     if (!state.settings.isEditorTab) return view;
     const viewLabel = VIEW_LABELS[state.viewType];
     const projectName = state.project?.displayPath ?? state.project?.name;
     return (
       <div className="editor-tab-shell">
         <div className="editor-tab-toolbar">
-          {opts.filterBar ? (
-            <FilterBar
-              snapshot={chromeFilter.snapshot}
-              facets={chromeFilter.facets}
-              ops={chromeFilter.ops}
-              count={{ shown: composedCount, total: state.beads.length }}
-              collapsed={chromeFilter.collapsed}
-              onToggleCollapsed={chromeFilter.toggleCollapsed}
-              inherited={
-                hasSeedSnapshot
-                  ? {
-                      filteredCount: seedSnapshot?.length ?? 0,
-                      totalCount: state.beads.length,
-                      cleared: state.seedFilterCleared,
-                      onToggle: toggleSeedFilter,
-                    }
-                  : undefined
-              }
-            />
-          ) : (
-            <span className="editor-tab-toolbar-spacer" />
-          )}
+          <span className="editor-tab-toolbar-spacer" />
           <div className="editor-tab-toolbar-actions">
             {viewLabel && projectName && (
               <span className="editor-tab-title" title={`${viewLabel} view · ${projectName}`}>
@@ -596,15 +541,16 @@ export function App(): React.ReactElement {
             error={state.error}
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
+            maskedIds={maskedIds}
             focusBeadId={null}
-            filteredBeadIds={composedSeed}
-            issuesFilterActive={composedActive}
+            filteredBeadIds={seedSnapshot}
+            parentCleared={state.seedFilterCleared}
+            onToggleParentScope={toggleSeedFilter}
             onOpenBead={(beadId) =>
               vscode.postMessage({ type: "openBeadDetails", beadId })
             }
             onRetry={() => vscode.postMessage({ type: "refresh" })}
           />,
-          { filterBar: true },
         );
 
       case "beadsKanban":
