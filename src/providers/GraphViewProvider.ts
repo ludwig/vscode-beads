@@ -8,13 +8,14 @@
 import * as vscode from "vscode";
 import { BeadsPanelViewProvider } from "./BeadsPanelViewProvider";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
+import { ScopeService } from "../backend/ScopeService";
 import { Logger } from "../utils/logger";
 
 export class GraphViewProvider extends BeadsPanelViewProvider {
   protected readonly viewType = "beadsGraph";
 
-  constructor(extensionUri: vscode.Uri, projectManager: BeadsProjectManager, logger: Logger) {
-    super(extensionUri, projectManager, logger);
+  constructor(extensionUri: vscode.Uri, projectManager: BeadsProjectManager, logger: Logger, scope?: ScopeService) {
+    super(extensionUri, projectManager, logger, undefined, scope);
     // This tab IS the graph, so always push graph data alongside the bead list
     // (on initial load, project switch, refresh, and re-show). Don't depend on
     // the webview's one-shot requestGraph, which races initializeView in a

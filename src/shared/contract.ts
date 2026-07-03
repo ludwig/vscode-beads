@@ -310,6 +310,11 @@ export type ExtensionToWebviewMessage =
   // The active project's favorites, in curated order, resolved to lightweight
   // summaries (id + title + type icon) for display (vs-sd5.1).
   | { type: "setFavorites"; favorites: FavoriteBead[] }
+  // The live parent scope: the matching bead-id set for the shared (panel)
+  // filter, recomputed host-side on any input change (beads/favorites/mask/
+  // spec). null = no active filter (all beads). Replaces the frozen one-time
+  // seedFilter as the way other views inherit the panel's scope.
+  | { type: "setParentScope"; beadIds: string[] | null }
   // Per-tab Back/Forward enablement for an editor-tab Details view (vs-9u8).
   | { type: "setTabNavState"; canBack: boolean; canForward: boolean }
   // A one-time snapshot of the Issues filter (the matching bead ids), pushed to
@@ -418,6 +423,9 @@ export type WebviewToExtensionMessage =
   // Flip a favorite's mask (eye-off) in the Favorites filter group — masked
   // favorites drop out of the favorites→relatives seed expansion.
   | { type: "toggleFavoriteMask"; beadId: string }
+  // The panel Issues view publishes its current filter snapshot so the host can
+  // recompute the shared parent scope authoritatively (live, for all views).
+  | { type: "setSharedFilter"; snapshot: FilterSnapshot }
   // Toggle the companion `bead:` document for `beadId`: open it beside the view
   // (so Claude Code seeds it) if closed, close it if open (vs-nr3d).
   | { type: "toggleBeadCompanion"; beadId: string }

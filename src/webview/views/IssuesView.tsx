@@ -56,6 +56,15 @@ import { LabelBadge } from "../common/LabelBadge";
 import { FilterChip } from "../common/FilterChip";
 import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
 import { Rows3, Rows2, Rocket, Star, Share2 } from "lucide-react";
+import {
+  NOT_CLOSED,
+  matchType,
+  matchStatus,
+  matchPriority,
+  matchLabels,
+  matchAssignee,
+  matchSearch,
+} from "../../backend/filterPredicates";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { Loading } from "../common/Loading";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
@@ -140,12 +149,12 @@ interface PersistedIssuesState {
   issuesActivePreset?: string;
 }
 
-// Sentinel status-filter value for the symbolic ¬closed preset (vs-x6b option B).
-// When the status column filter holds this token it means a TRUE exclusion —
-// "status is not in the closed (done) category" — evaluated per-row via
-// isClosedStatus, NOT an OR of enumerated statuses. So it renders as a single
-// ¬closed chip and never drifts as the status set grows.
-const NOT_CLOSED = "__not-closed__";
+// Sentinel status-filter value for the symbolic ¬closed preset (vs-x6b option B):
+// a TRUE exclusion ("status is not in the closed/done category"), evaluated
+// per-row by the shared matchStatus predicate rather than an OR of enumerated
+// statuses — so it renders as a single ¬closed chip and never drifts as the
+// status set grows. Imported from filterPredicates (single source of truth,
+// shared with the host-side resolveScope).
 
 // Filter presets
 interface FilterPreset {
@@ -509,11 +518,7 @@ export function IssuesView({
             <TypeBadge type={info.getValue() as BeadType} size="small" />
           ) : null,
         sortingFn: typeSortingFn,
-        filterFn: (row, columnId, filterValue: string[]) => {
-          if (!filterValue || filterValue.length === 0) return true;
-          const val = row.getValue(columnId) as string | undefined;
-          return val !== undefined && filterValue.includes(val);
-        },
+        filterFn: (row, _columnId, filterValue: string[]) => matchType(row.original, filterValue),
       }),
       columnHelper.accessor("title", {
         header: "Title",
@@ -548,15 +553,8 @@ export function IssuesView({
         size: 96,
         minSize: 30,
         cell: (info) => <StatusBadge status={info.getValue()} size="small" />,
-        filterFn: (row, columnId, filterValue: BeadStatus[]) => {
-          if (!filterValue || filterValue.length === 0) return true;
-          // Symbolic ¬closed: exclude the closed (done) category, expansion-proof
-          // for any built-in/custom status (vs-x6b option B).
-          if (filterValue.includes(NOT_CLOSED)) {
-            return !isClosedStatus(row.getValue(columnId) as BeadStatus);
-          }
-          return filterValue.includes(row.getValue(columnId));
-        },
+        // ¬closed (NOT_CLOSED) + explicit-membership handled by the shared matcher.
+        filterFn: (row, _columnId, filterValue: BeadStatus[]) => matchStatus(row.original, filterValue),
       }),
       columnHelper.accessor("priority", {
         header: "Priority",
@@ -566,11 +564,7 @@ export function IssuesView({
           info.getValue() !== undefined ? (
             <PriorityBadge priority={info.getValue()!} size="small" />
           ) : null,
-        filterFn: (row, columnId, filterValue: BeadPriority[]) => {
-          if (!filterValue || filterValue.length === 0) return true;
-          const val = row.getValue(columnId) as BeadPriority | undefined;
-          return val !== undefined && filterValue.includes(val);
-        },
+        filterFn: (row, _columnId, filterValue: BeadPriority[]) => matchPriority(row.original, filterValue),
       }),
       columnHelper.accessor("labels", {
         header: "Labels",
@@ -584,31 +578,14 @@ export function IssuesView({
             ))}
           </>
         ),
-        filterFn: (row, columnId, filterValue: string[]) => {
-          if (!filterValue || filterValue.length === 0) return true;
-          const labels = row.getValue(columnId) as string[] | undefined;
-          if (!labels || labels.length === 0) {
-            // Special handling for "Unlabeled" filter
-            return filterValue.includes("__unlabeled__");
-          }
-          // Match if any of the issue's labels are in the filter
-          return labels.some((label) => filterValue.includes(label));
-        },
+        filterFn: (row, _columnId, filterValue: string[]) => matchLabels(row.original, filterValue),
       }),
       columnHelper.accessor("assignee", {
         header: "Assignee",
         size: 80,
         minSize: 30,
         cell: (info) => info.getValue() || "-",
-        filterFn: (row, columnId, filterValue: string[]) => {
-          if (!filterValue || filterValue.length === 0) return true;
-          const val = row.getValue(columnId) as string | undefined;
-          // Special handling for "Unassigned" filter
-          if (filterValue.includes("__unassigned__")) {
-            if (!val) return true;
-          }
-          return val !== undefined && filterValue.includes(val);
-        },
+        filterFn: (row, _columnId, filterValue: string[]) => matchAssignee(row.original, filterValue),
       }),
       columnHelper.accessor("estimatedMinutes", {
         id: "estimate",
@@ -650,16 +627,7 @@ export function IssuesView({
     onGlobalFilterChange: setGlobalFilter,
     onColumnVisibilityChange: setColumnVisibility,
     onColumnOrderChange: setColumnOrder,
-    globalFilterFn: (row, _columnId, filterValue: string) => {
-      const search = filterValue.toLowerCase();
-      const bead = row.original;
-      return (
-        bead.id.toLowerCase().includes(search) ||
-        bead.title.toLowerCase().includes(search) ||
-        (bead.description?.toLowerCase().includes(search) ?? false) ||
-        (bead.labels?.some((l) => l.toLowerCase().includes(search)) ?? false)
-      );
-    },
+    globalFilterFn: (row, _columnId, filterValue: string) => matchSearch(row.original, filterValue),
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -950,6 +918,16 @@ export function IssuesView({
     vscode.postMessage({ type: "applyFilterGlobally", snapshot, filteredBeadIds });
     triggerToast("Applied this filter to all open views", "top-right");
   }, [columnFilters, globalFilter, activePreset, readyOnly, favoritesOnly, filteredBeadIds]);
+
+  // Publish the shared (panel) filter to the host so it recomputes the LIVE
+  // parent scope for every other view. Only the panel's Issues view owns the
+  // shared filter — an editor-tab Issues view gets its own local filter (Phase 2)
+  // and must not clobber the shared one.
+  useEffect(() => {
+    if (isEditorTab) return;
+    const snapshot: FilterSnapshot = { columnFilters, globalFilter, activePreset, readyOnly, favoritesOnly };
+    vscode.postMessage({ type: "setSharedFilter", snapshot });
+  }, [isEditorTab, columnFilters, globalFilter, activePreset, readyOnly, favoritesOnly]);
 
   // Build label autocomplete options
   const labelOptions = useMemo((): AutocompleteOption[] => {

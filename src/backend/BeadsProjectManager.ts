@@ -14,6 +14,7 @@ import { CONFIG_NAMESPACE, PROJECTS_ROOT_SETTING, resolveProjectsRoot } from "..
 import { backendKindForMode, createDoltModeProbe, detectDoltMode } from "./doltMode";
 import { parseConfiguredPrefix } from "./projectPrefix";
 import { Bead, BeadsProject } from "./types";
+import type { Edge } from "./resolveScope";
 
 const ACTIVE_PROJECT_KEY = "beads.activeProjectId";
 const execFileAsync = util.promisify(execFile);
@@ -55,6 +56,7 @@ export class BeadsProjectManager implements vscode.Disposable {
    * project switch so a stale project's beads are never surfaced.
    */
   private cachedBeads = new Map<string, Bead>();
+  private edgesCache: Edge[] | null = null;
 
   /** Active issue prefix (e.g. "vs"), derived from the loaded issue IDs. */
   private activePrefix: string | null = null;
@@ -137,7 +139,28 @@ export class BeadsProjectManager implements vscode.Disposable {
    */
   cacheBeadList(beads: Bead[]): void {
     this.cachedBeads = new Map(beads.map((bead) => [bead.id, bead]));
+    // The list just changed → the dependency edges may have too. Drop the cache
+    // so the next getDependencyEdges() (primed after a data change) refetches.
+    this.edgesCache = null;
     this._onBeadsCached.fire();
+  }
+
+  /**
+   * Dependency edges for the active project, cached until the bead list changes.
+   * Fetched lazily via the backend (one `getDependencyGraph`), so host-side
+   * scope resolution (favorites→relatives, ready) doesn't refetch per recompute.
+   */
+  async getDependencyEdges(): Promise<Edge[]> {
+    if (this.edgesCache) return this.edgesCache;
+    const client = this.getClient();
+    if (!client) return [];
+    this.edgesCache = await client.getDependencyGraph();
+    return this.edgesCache;
+  }
+
+  /** Synchronous snapshot of the cached edges (empty until primed). */
+  getCachedEdges(): Edge[] {
+    return this.edgesCache ?? [];
   }
 
   /**

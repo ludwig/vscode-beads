@@ -11,6 +11,7 @@ import * as vscode from "vscode";
 import { BeadsPanelViewProvider } from "./BeadsPanelViewProvider";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
 import { FavoritesService } from "../backend/FavoritesService";
+import { ScopeService } from "../backend/ScopeService";
 import { Logger } from "../utils/logger";
 
 export class TreeViewProvider extends BeadsPanelViewProvider {
@@ -20,9 +21,10 @@ export class TreeViewProvider extends BeadsPanelViewProvider {
     extensionUri: vscode.Uri,
     projectManager: BeadsProjectManager,
     logger: Logger,
-    favorites?: FavoritesService
+    favorites?: FavoritesService,
+    scope?: ScopeService
   ) {
-    super(extensionUri, projectManager, logger, favorites);
+    super(extensionUri, projectManager, logger, favorites, scope);
     // This tab IS the tree, which renders from the dependency graph — push graph
     // data alongside the bead list on every load instead of waiting for the
     // webview's one-shot requestGraph (which races initializeView, vs-e4k).

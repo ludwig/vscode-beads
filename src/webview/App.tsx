@@ -84,13 +84,14 @@ interface AppState {
   // "seed to Claude" toggle reflects whether that bead's companion is open
   // (vs-nr3d). The view only trusts the entry matching the shown bead.
   companion: { beadId: string; open: boolean } | null;
-  // One-time Issues-filter snapshot for an editor-tab Kanban/Tree/Graph view,
-  // pushed by the provider on open so the tab inherits the panel's active
-  // filter instead of opening unfiltered (vs-nme). `null` = no filter.
-  seedFilteredBeadIds: string[] | null;
-  // True when the user has temporarily dropped the inherited snapshot via the
-  // ribbon's "Show all" (vs-zq2). The snapshot itself is retained so they can
-  // flip back to "Show filtered". Reset whenever a fresh seed arrives.
+  // The LIVE parent scope: the shared (panel) filter's matching id set,
+  // recomputed host-side and pushed on any change (setParentScope). `null` = no
+  // active filter (all beads). Replaces the frozen one-time seed — an editor-tab
+  // Kanban/Tree/Graph inherits the panel's scope and now tracks it live.
+  parentScope: string[] | null;
+  // True when the user has temporarily dropped the inherited scope via the
+  // ribbon's "Show all" (vs-zq2). The scope itself is retained so they can flip
+  // back to "Show filtered". Local to this webview (the "Filtered" toggle).
   seedFilterCleared: boolean;
   // A full Issues-filter snapshot to apply to the IssuesView — seeds an Issues
   // editor tab on open (vs-tle) and lands an "Apply to all" broadcast (vs-dzm).
@@ -147,7 +148,7 @@ const initialState: AppState = {
   tabNav: { canBack: false, canForward: false },
   favorites: [],
   companion: null,
-  seedFilteredBeadIds: null,
+  parentScope: null,
   seedFilterCleared: false,
   applySnapshotRequest: null,
   initWizard: { projectsRoot: "", phase: "form" },
@@ -296,12 +297,11 @@ export function App(): React.ReactElement {
           companion: { beadId: message.beadId, open: message.open },
         }));
         break;
-      case "seedFilter":
-        setState((prev) => ({
-          ...prev,
-          seedFilteredBeadIds: message.filteredBeadIds,
-          seedFilterCleared: false,
-        }));
+      case "setParentScope":
+        // Live shared-filter scope from the host. Updated continuously — do NOT
+        // reset the local "Filtered"/cleared toggle here (that would fight the
+        // user's choice); the toggle only flips on explicit user action.
+        setState((prev) => ({ ...prev, parentScope: message.beadIds }));
         break;
       case "applyIssuesFilterSnapshot":
         setState((prev) => ({
@@ -363,12 +363,11 @@ export function App(): React.ReactElement {
   // favorites→relatives seed expansion in the Issues list.
   const maskedIds = state.favorites.filter((f) => f.masked).map((f) => f.id);
 
-  // Editor-tab filter seed (vs-nme): when a Kanban/Tree/Graph tab was opened
-  // from a filtered panel, scope it to the inherited snapshot. The ribbon
-  // (vs-zq2) can temporarily drop the scope ("Show all"), which only zeroes the
-  // ids handed to the view — the snapshot is retained so "Show filtered"
-  // restores it.
-  const seedSnapshot = state.seedFilteredBeadIds;
+  // Editor-tab filter scope: a Kanban/Tree/Graph tab inherits the panel's LIVE
+  // parent scope (host-computed). The ribbon (vs-zq2) can temporarily drop it
+  // ("Show all"), which only zeroes the ids handed to the view — the live scope
+  // is retained so "Show filtered" restores it.
+  const seedSnapshot = state.parentScope;
   // A real snapshot narrows to a strict subset; equal length = no-op filter.
   const hasSeedSnapshot = seedSnapshot != null && seedSnapshot.length < state.beads.length;
   const effectiveSeed = state.seedFilterCleared ? null : seedSnapshot;
@@ -525,6 +524,7 @@ export function App(): React.ReactElement {
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
             maskedIds={maskedIds}
+            parentScope={state.parentScope}
             settings={state.settings}
             issuesFilterRequest={state.issuesFilterRequest}
             applySnapshotRequest={state.applySnapshotRequest}
