@@ -195,6 +195,60 @@ body {
   background: var(--vscode-button-secondaryHoverBackground);
 }
 
+/* FilterBar hosted in the editor-tab toolbar: fill the strip and shed the
+   standalone-card chrome (the toolbar row supplies the divider). */
+.editor-tab-toolbar .filter-bar {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* Inherited-scope ribbon as an INLINE segment of the bar (not a full-width
+   banner): a compact pill with no divider of its own. More specific than the
+   generic .editor-tab-toolbar .filter-snapshot-ribbon rule above so it wins. */
+.editor-tab-toolbar .filter-bar .filter-snapshot-ribbon {
+  flex: 0 1 auto;
+  padding: 2px 8px;
+  border-bottom: none;
+  border-radius: var(--border-radius);
+}
+
+/* Twistie: expand/collapse toggle for the FilterBar. */
+.filter-bar-twistie {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 2px;
+  border: none;
+  background: transparent;
+  color: var(--vscode-foreground);
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.filter-bar-twistie:hover {
+  opacity: 1;
+}
+
+/* Collapsed (ribbon) form: a single non-wrapping summary line. */
+.filter-bar-collapsed {
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.filter-bar-summary {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ==================== Common Components ==================== */
 
 /* Buttons */

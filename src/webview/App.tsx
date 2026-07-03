@@ -399,6 +399,19 @@ export function App(): React.ReactElement {
     vscode.setState({ ...prev, localFilterSnapshot: localSnapshot });
   }, [localSnapshot]);
 
+  // The FilterBar's expanded/ribbon state, persisted per tab (default expanded).
+  const [filterBarCollapsed, setFilterBarCollapsed] = useState<boolean>(() =>
+    Boolean((vscode.getState() as { localFilterCollapsed?: boolean } | undefined)?.localFilterCollapsed),
+  );
+  const toggleFilterBarCollapsed = useCallback(() => {
+    setFilterBarCollapsed((c) => {
+      const next = !c;
+      const prev = (vscode.getState() as Record<string, unknown> | undefined) ?? {};
+      vscode.setState({ ...prev, localFilterCollapsed: next });
+      return next;
+    });
+  }, []);
+
   // Bind the pure snapshot transforms to setState (stable — only closes over the
   // setter). This is the callback surface the FilterBar edits through.
   const filterOps: FilterOps = useMemo(() => {
@@ -498,6 +511,8 @@ export function App(): React.ReactElement {
               snapshot={localSnapshot}
               facets={facets}
               ops={filterOps}
+              collapsed={filterBarCollapsed}
+              onToggleCollapsed={toggleFilterBarCollapsed}
               inherited={
                 hasSeedSnapshot
                   ? {

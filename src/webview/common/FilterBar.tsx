@@ -13,7 +13,7 @@
  */
 
 import React, { useRef, useState } from "react";
-import { Rocket, Star } from "lucide-react";
+import { Rocket, Star, ChevronDown, ChevronRight } from "lucide-react";
 import {
   BeadStatus,
   BeadPriority,
@@ -68,11 +68,25 @@ interface FilterBarProps {
   facets: FacetData;
   ops: FilterOps;
   inherited?: InheritedScope;
+  /** When `true`, render the compact ribbon (minimized) form. */
+  collapsed?: boolean;
+  /**
+   * Toggle expanded ↔ ribbon. When provided, a twistie is rendered and the
+   * `collapsed` prop is honored; omit for a non-collapsible bar.
+   */
+  onToggleCollapsed?: () => void;
 }
 
 type MenuPage = "main" | "status" | "priority" | "type" | "assignee" | "label" | null;
 
-export function FilterBar({ snapshot, facets, ops, inherited }: FilterBarProps): React.ReactElement {
+export function FilterBar({
+  snapshot,
+  facets,
+  ops,
+  inherited,
+  collapsed = false,
+  onToggleCollapsed,
+}: FilterBarProps): React.ReactElement {
   const [menu, setMenu] = useState<MenuPage>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   useClickOutside(menuRef, () => setMenu(null));
@@ -111,8 +125,50 @@ export function FilterBar({ snapshot, facets, ops, inherited }: FilterBarProps):
     (o) => o.value !== "__unassigned__" && !assignee.includes(o.value),
   );
 
+  const twistie = onToggleCollapsed && (
+    <button
+      type="button"
+      className="filter-bar-twistie"
+      onClick={onToggleCollapsed}
+      title={collapsed ? "Expand filters" : "Collapse filters"}
+      aria-label={collapsed ? "Expand filters" : "Collapse filters"}
+      aria-expanded={!collapsed}
+    >
+      {collapsed ? <ChevronRight size={14} strokeWidth={2.25} /> : <ChevronDown size={14} strokeWidth={2.25} />}
+    </button>
+  );
+
+  // Collapsed (ribbon) form: a one-line summary of what's active, the inherited
+  // Show-all/Show-filtered toggle, and the twistie to expand. No editing surface.
+  if (onToggleCollapsed && collapsed) {
+    const parts: string[] = [];
+    if (inherited) {
+      parts.push(
+        inherited.cleared
+          ? `Showing all ${inherited.totalCount}`
+          : `Filtered · ${inherited.filteredCount} of ${inherited.totalCount}`,
+      );
+    }
+    if (hasActiveFilters) {
+      parts.push(`${activeFilterCount} filter${activeFilterCount === 1 ? "" : "s"}`);
+    }
+    if (parts.length === 0) parts.push("No filters");
+    return (
+      <div className="filter-bar filter-bar-collapsed" role="status">
+        {twistie}
+        <span className="filter-bar-summary">{parts.join(" · ")}</span>
+        {inherited && (
+          <button type="button" className="filter-snapshot-ribbon-btn" onClick={inherited.onToggle}>
+            {inherited.cleared ? `Show filtered (${inherited.filteredCount})` : "Show all"}
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="filter-bar">
+      {twistie}
       {inherited && (
         <FilterSnapshotRibbon
           filteredCount={inherited.filteredCount}
