@@ -13,6 +13,7 @@ import { BaseViewProvider } from "./BaseViewProvider";
 import { BeadCompanionController } from "./BeadCompanionController";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
 import { FavoritesService } from "../backend/FavoritesService";
+import { ScopeService } from "../backend/ScopeService";
 import { WebviewHost } from "./WebviewHost";
 import { WebviewToExtensionMessage, issueToWebviewBead } from "../backend/types";
 import { Logger } from "../utils/logger";
@@ -40,9 +41,10 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
     projectManager: BeadsProjectManager,
     logger: Logger,
     private readonly companion: BeadCompanionController,
-    favorites?: FavoritesService
+    favorites?: FavoritesService,
+    scope?: ScopeService
   ) {
-    super(extensionUri, projectManager, logger.child("Details"), favorites);
+    super(extensionUri, projectManager, logger.child("Details"), favorites, scope);
   }
 
   /**

@@ -13,6 +13,7 @@ import * as vscode from "vscode";
 import { BaseViewProvider } from "./BaseViewProvider";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
 import { FavoritesService } from "../backend/FavoritesService";
+import { ScopeService } from "../backend/ScopeService";
 import { WebviewToExtensionMessage, Bead, IssuesFilter, issueToWebviewBead } from "../backend/types";
 import { Logger } from "../utils/logger";
 import { deriveIssuePrefix } from "../utils/issue-prefix";
@@ -175,9 +176,10 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     extensionUri: vscode.Uri,
     projectManager: BeadsProjectManager,
     logger: Logger,
-    favorites?: FavoritesService
+    favorites?: FavoritesService,
+    scope?: ScopeService
   ) {
-    super(extensionUri, projectManager, logger.child("Panel"), favorites);
+    super(extensionUri, projectManager, logger.child("Panel"), favorites, scope);
   }
 
   /**
