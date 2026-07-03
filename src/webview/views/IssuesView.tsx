@@ -199,6 +199,7 @@ export function IssuesView({
   } = useColumnState({
     defaultSorting: [{ id: "updatedAt", desc: true }],
     defaultVisibility,
+    defaultCompact: true, // compact (packed rows) is the default; persisted choice wins
   });
 
   // Active filters + search persist across reloads and Panel-tab switches

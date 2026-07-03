@@ -1416,8 +1416,8 @@ textarea {
   align-items: center;
   justify-content: center;
   border-radius: 7px;
-  background: var(--vscode-focusBorder);
-  color: var(--vscode-button-foreground, #fff);
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
   font-size: 9px;
   font-weight: 700;
   line-height: 1;
@@ -4760,8 +4760,9 @@ textarea {
 }
 
 .compact-toggle.active {
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
+  background: var(--vscode-inputOption-activeBackground);
+  color: var(--vscode-inputOption-activeForeground, var(--vscode-foreground));
+  border-color: var(--vscode-inputOption-activeBorder, var(--vscode-panel-border));
 }
 
 .compact-toggle svg {
