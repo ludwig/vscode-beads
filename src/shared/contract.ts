@@ -166,6 +166,13 @@ export interface FavoriteBead {
   type?: string;
   status?: BeadStatus;
   priority?: BeadPriority;
+  /**
+   * True when this favorite is *masked* — toggled off (eye-off) in the Favorites
+   * filter group. A masked favorite is excluded from the favorites→relatives
+   * expansion (it's dropped from the seed list); the mask is a property of the
+   * Favorites container, so it rides along on each published favorite.
+   */
+  masked?: boolean;
 }
 
 // A Beads project (database/workspace).
@@ -303,10 +310,6 @@ export type ExtensionToWebviewMessage =
   // The active project's favorites, in curated order, resolved to lightweight
   // summaries (id + title + type icon) for display (vs-sd5.1).
   | { type: "setFavorites"; favorites: FavoriteBead[] }
-  // The active project's hidden beads (the eye-off set). Just the id set —
-  // hidden rows stay visible in the list but marked, and are excluded from the
-  // favorites→relatives expansion.
-  | { type: "setHiddenBeads"; hiddenIds: string[] }
   // Per-tab Back/Forward enablement for an editor-tab Details view (vs-9u8).
   | { type: "setTabNavState"; canBack: boolean; canForward: boolean }
   // A one-time snapshot of the Issues filter (the matching bead ids), pushed to
@@ -412,8 +415,9 @@ export type WebviewToExtensionMessage =
   // Star/unstar a bead in the active project's favorites set (vs-sd5.1).
   | { type: "toggleFavorite"; beadId: string }
   | { type: "removeFavorite"; beadId: string }
-  // Flip a bead's hidden (eye-off) state in the active project's hidden set.
-  | { type: "toggleHidden"; beadId: string }
+  // Flip a favorite's mask (eye-off) in the Favorites filter group — masked
+  // favorites drop out of the favorites→relatives seed expansion.
+  | { type: "toggleFavoriteMask"; beadId: string }
   // Toggle the companion `bead:` document for `beadId`: open it beside the view
   // (so Claude Code seeds it) if closed, close it if open (vs-nr3d).
   | { type: "toggleBeadCompanion"; beadId: string }

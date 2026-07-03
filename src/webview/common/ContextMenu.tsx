@@ -10,8 +10,6 @@ export interface ContextMenuItem {
   label: string;
   onSelect: () => void;
   separatorBefore?: boolean;
-  /** Optional leading icon (e.g. an eye/eye-off glyph for the Hide action). */
-  icon?: React.ReactNode;
 }
 
 interface ContextMenuProps {
@@ -53,7 +51,6 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps): React.R
               onClose();
             }}
           >
-            {item.icon && <span className="app-context-menu-icon">{item.icon}</span>}
             {item.label}
           </button>
         </React.Fragment>

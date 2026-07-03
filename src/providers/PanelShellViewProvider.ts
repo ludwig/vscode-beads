@@ -13,7 +13,6 @@ import * as vscode from "vscode";
 import { BeadsPanelViewProvider } from "./BeadsPanelViewProvider";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
 import { FavoritesService } from "../backend/FavoritesService";
-import { HiddenBeadsService } from "../backend/HiddenBeadsService";
 import { Bead, BeadPriority, BeadsSummary, BUILTIN_STATUSES } from "../backend/types";
 import { Logger } from "../utils/logger";
 
@@ -24,10 +23,9 @@ export class PanelShellViewProvider extends BeadsPanelViewProvider {
     extensionUri: vscode.Uri,
     projectManager: BeadsProjectManager,
     logger: Logger,
-    favorites?: FavoritesService,
-    hiddenBeads?: HiddenBeadsService
+    favorites?: FavoritesService
   ) {
-    super(extensionUri, projectManager, logger, favorites, hiddenBeads);
+    super(extensionUri, projectManager, logger, favorites);
   }
 
   /** Derive and push the Dashboard summary from the just-loaded bead list. */

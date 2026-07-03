@@ -55,7 +55,7 @@ import { TypeIcon } from "../common/TypeIcon";
 import { LabelBadge } from "../common/LabelBadge";
 import { FilterChip } from "../common/FilterChip";
 import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
-import { Rows3, Rows2, Rocket, Star, Share2, Eye, EyeOff } from "lucide-react";
+import { Rows3, Rows2, Rocket, Star, Share2 } from "lucide-react";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { Loading } from "../common/Loading";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
@@ -66,7 +66,6 @@ import { triggerToast } from "../common/Toast";
 import { getLabelColorStyle } from "../utils/label-colors";
 import { useClickOutside } from "../hooks/useClickOutside";
 import { useColumnState } from "../hooks/useColumnState";
-import { VisibilityEye } from "../common/VisibilityEye";
 
 interface IssuesViewProps {
   beads: Bead[];
@@ -76,12 +75,11 @@ interface IssuesViewProps {
   /** Favorite bead ids — drives the right-click Add/Remove Favorites item (vs-sd5.5). */
   favoriteIds?: string[];
   /**
-   * Hidden (eye-off) bead ids. Photoshop-layers model: these rows stay VISIBLE
-   * in the list but are marked (left-edge stripe + eye-off toggle) and excluded
-   * from the favorites→relatives expansion. Toggled via the row's eye control or
-   * the right-click Hide/Show item.
+   * Masked favorite ids (eye-off in the Favorites filter group). Excluded from
+   * the favorites→relatives seed expansion — that's the only effect here; the
+   * Issues list just reflects the resulting expansion (no per-row eye/marking).
    */
-  hiddenIds?: string[];
+  maskedIds?: string[];
   /** When true, favorited rows get a subtle accent (beads.highlightFavorites, vs-lu8f). */
   highlightFavorites?: boolean;
   /** When true, gray out the titles of closed (done) issues (beads.muteClosedIssues, vs-on5g). */
@@ -172,7 +170,7 @@ export function IssuesView({
   error,
   selectedBeadId,
   favoriteIds = [],
-  hiddenIds = [],
+  maskedIds = [],
   highlightFavorites = true,
   muteClosedIssues = true,
   tooltipHoverDelay,
@@ -286,20 +284,20 @@ export function IssuesView({
     return new Set(readyBeadIds(beads, blocks));
   }, [graph, beads]);
   // Hidden (eye-off) ids as a set for O(1) per-row lookups (stripe + toggle).
-  const hiddenIdSet = useMemo(() => new Set(hiddenIds), [hiddenIds]);
+  const maskedIdSet = useMemo(() => new Set(maskedIds), [maskedIds]);
   // Favorites + their 1-hop neighbors (relatives), or null when the filter is
-  // off. Until the graph loads it's just the favorites themselves. Hidden beads
-  // are dropped from the SEED so they neither appear nor expand into their
-  // relatives — "exclude the bead from the list that expands into related beads".
+  // off. Until the graph loads it's just the favorites themselves. Masked
+  // favorites are dropped from the SEED so they neither appear nor expand into
+  // their relatives — the Favorites filter group's mask, applied here.
   const favoritesScope = useMemo(
     () =>
       favoritesOnly
         ? favoritesWithRelatives(
-            favoriteIds.filter((id) => !hiddenIdSet.has(id)),
+            favoriteIds.filter((id) => !maskedIdSet.has(id)),
             graph?.edges ?? [],
           )
         : null,
-    [favoritesOnly, favoriteIds, hiddenIdSet, graph],
+    [favoritesOnly, favoriteIds, maskedIdSet, graph],
   );
   // Set for O(1) per-row favorite lookups when applying the row highlight (vs-lu8f).
   const favoriteIdSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
@@ -522,36 +520,26 @@ export function IssuesView({
         size: 200,
         minSize: 100,
         cell: (info) => (
-          <div className="issues-title-with-eye">
-            {/* Eye lives IN the identity cluster (not a dedicated column), so it
-                reads as part of the bead's card. Shared VisibilityEye owns the
-                control; the row's `is-hidden` stripe is driven off the same
-                hidden boolean. */}
-            <VisibilityEye
-              hidden={hiddenIdSet.has(info.row.original.id)}
-              onToggle={() => vscode.postMessage({ type: "toggleHidden", beadId: info.row.original.id })}
-            />
-            <span className="title-inner">
-              <span
-                className={`bead-id ${copiedId === info.row.original.id ? "copied" : ""}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleCopyId(info.row.original.id);
-                  selectRow(info.row.original.id);
-                }}
-                title={copiedId === info.row.original.id ? "Copied!" : "Click to copy"}
-              >
-                {info.row.original.id}
-              </span>
-              <span
-                className={`bead-title${
-                  muteClosedIssues && isClosedStatus(info.row.original.status) ? " muted-closed" : ""
-                }`}
-              >
-                {info.getValue()}
-              </span>
+          <span className="title-inner">
+            <span
+              className={`bead-id ${copiedId === info.row.original.id ? "copied" : ""}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCopyId(info.row.original.id);
+                selectRow(info.row.original.id);
+              }}
+              title={copiedId === info.row.original.id ? "Copied!" : "Click to copy"}
+            >
+              {info.row.original.id}
             </span>
-          </div>
+            <span
+              className={`bead-title${
+                muteClosedIssues && isClosedStatus(info.row.original.status) ? " muted-closed" : ""
+              }`}
+            >
+              {info.getValue()}
+            </span>
+          </span>
         ),
       }),
       columnHelper.accessor("status", {
@@ -644,7 +632,7 @@ export function IssuesView({
         sortingFn: timestampSortingFn,
       }),
     ],
-    [copiedId, selectRow, muteClosedIssues, hiddenIdSet]
+    [copiedId, selectRow, muteClosedIssues]
   );
 
   const table = useReactTable({
@@ -709,11 +697,6 @@ export function IssuesView({
         onSelect: () => vscode.postMessage({ type: "toggleFavorite", beadId: bead.id }),
       },
       {
-        label: hiddenIdSet.has(bead.id) ? "Show in views" : "Hide from views",
-        icon: hiddenIdSet.has(bead.id) ? <Eye size={13} strokeWidth={2} /> : <EyeOff size={13} strokeWidth={2} />,
-        onSelect: () => vscode.postMessage({ type: "toggleHidden", beadId: bead.id }),
-      },
-      {
         label: "Copy ID",
         separatorBefore: true,
         onSelect: () => handleCopyId(bead.id),
@@ -731,7 +714,7 @@ export function IssuesView({
         onSelect: () => vscode.postMessage({ type: "copyBeadMarkdown", beadId: bead.id }),
       },
     ],
-    [handleCopyId, favoriteIds, hiddenIdSet],
+    [handleCopyId, favoriteIds],
   );
 
   // Filter helpers
@@ -1477,7 +1460,7 @@ export function IssuesView({
                         e.preventDefault();
                         setRowMenu({ x: e.clientX, y: e.clientY, bead: row.original });
                       }}
-                      className={`bead-row ${row.original.id === activeSelectedId ? "selected" : ""} ${favoriteRowClass(row.original.id, favoriteIdSet, highlightFavorites)}${hiddenIdSet.has(row.original.id) ? " is-hidden" : ""}`}
+                      className={`bead-row ${row.original.id === activeSelectedId ? "selected" : ""} ${favoriteRowClass(row.original.id, favoriteIdSet, highlightFavorites)}`}
                     >
                       {row.getVisibleCells().map((cell) => {
                         const isIcon = cell.column.id === "icon";
