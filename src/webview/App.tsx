@@ -5,7 +5,7 @@
  * Manages global state and message passing with the extension.
  */
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { RefreshCw } from "lucide-react";
 import {
   Bead,
@@ -30,7 +30,29 @@ import { DetailsView } from "./views/DetailsView";
 import { ProjectSwitcherView } from "./views/ProjectSwitcherView";
 import { BoardInitWizard } from "./views/BoardInitWizard";
 import { PanelShell } from "./views/PanelShell";
-import { FilterSnapshotRibbon } from "./common/FilterSnapshotRibbon";
+import { FilterBar } from "./common/FilterBar";
+import { computeFacets } from "./facets";
+import { intersect } from "./composeScope";
+import { resolveScope } from "../backend/resolveScope";
+import {
+  emptyFilterSnapshot,
+  applyPreset,
+  addStatus,
+  removeStatus,
+  clearStatus,
+  addPriority,
+  removePriority,
+  addType,
+  removeType,
+  addLabel,
+  removeLabel,
+  addAssignee,
+  removeAssignee,
+  toggleReady,
+  toggleFavoritesOnly,
+  clearAll,
+  type FilterOps,
+} from "./filterSnapshotOps";
 import { CreateBeadForm } from "./views/CreateBeadForm";
 import { Loading } from "./common/Loading";
 import { ToastProvider, triggerToast } from "./common/Toast";
@@ -363,6 +385,69 @@ export function App(): React.ReactElement {
   // favorites→relatives seed expansion in the Issues list.
   const maskedIds = state.favorites.filter((f) => f.masked).map((f) => f.id);
 
+  // Tab-local sidecar filter (unified filter bar, Phase 2). Each editor tab
+  // (Kanban/Tree/Graph) owns its own FilterSnapshot, persisted per-tab in this
+  // webview's state. The final scope handed to the view is the inherited parent
+  // scope intersected with this locally-resolved filter (composition below).
+  const [localSnapshot, setLocalSnapshot] = useState<FilterSnapshot>(() => {
+    const persisted = (vscode.getState() as { localFilterSnapshot?: FilterSnapshot } | undefined)
+      ?.localFilterSnapshot;
+    return persisted ?? emptyFilterSnapshot();
+  });
+  useEffect(() => {
+    const prev = (vscode.getState() as Record<string, unknown> | undefined) ?? {};
+    vscode.setState({ ...prev, localFilterSnapshot: localSnapshot });
+  }, [localSnapshot]);
+
+  // Bind the pure snapshot transforms to setState (stable — only closes over the
+  // setter). This is the callback surface the FilterBar edits through.
+  const filterOps: FilterOps = useMemo(() => {
+    const edit = (fn: (s: FilterSnapshot) => FilterSnapshot) => setLocalSnapshot((s) => fn(s));
+    return {
+      applyPreset: (id) => edit((s) => applyPreset(s, id)),
+      addStatus: (v) => edit((s) => addStatus(s, v)),
+      removeStatus: (v) => edit((s) => removeStatus(s, v)),
+      clearStatus: () => edit((s) => clearStatus(s)),
+      addPriority: (v) => edit((s) => addPriority(s, v)),
+      removePriority: (v) => edit((s) => removePriority(s, v)),
+      addType: (v) => edit((s) => addType(s, v)),
+      removeType: (v) => edit((s) => removeType(s, v)),
+      addLabel: (v) => edit((s) => addLabel(s, v)),
+      removeLabel: (v) => edit((s) => removeLabel(s, v)),
+      addAssignee: (v) => edit((s) => addAssignee(s, v)),
+      removeAssignee: (v) => edit((s) => removeAssignee(s, v)),
+      toggleReady: () => edit((s) => toggleReady(s)),
+      toggleFavoritesOnly: () => edit((s) => toggleFavoritesOnly(s)),
+      clearAll: () => edit((s) => clearAll(s)),
+    };
+  }, []);
+
+  const facets = useMemo(() => computeFacets(state.beads), [state.beads]);
+
+  // Ready/Favorites predicates need the dependency graph; fetch it lazily when a
+  // local filter first activates one (mirrors IssuesView's behavior).
+  useEffect(() => {
+    if (!state.settings.isEditorTab) return;
+    if ((localSnapshot.readyOnly || localSnapshot.favoritesOnly) && !state.graph) {
+      vscode.postMessage({ type: "requestGraph" });
+    }
+  }, [state.settings.isEditorTab, localSnapshot.readyOnly, localSnapshot.favoritesOnly, state.graph]);
+
+  // Resolve the local filter to an id-set (null = local filter narrows nothing),
+  // using the SAME pure resolver the host uses for the shared scope.
+  const localScope = useMemo(
+    () =>
+      resolveScope({
+        beads: state.beads,
+        edges: state.graph?.edges ?? [],
+        favoriteIds,
+        maskedIds,
+        spec: localSnapshot,
+      }),
+    // favoriteIds/maskedIds derive from state.favorites; depend on the source.
+    [state.beads, state.graph, state.favorites, localSnapshot],
+  );
+
   // Editor-tab filter scope: a Kanban/Tree/Graph tab inherits the panel's LIVE
   // parent scope (host-computed). The ribbon (vs-zq2) can temporarily drop it
   // ("Show all"), which only zeroes the ids handed to the view — the live scope
@@ -371,11 +456,17 @@ export function App(): React.ReactElement {
   // A real snapshot narrows to a strict subset; equal length = no-op filter.
   const hasSeedSnapshot = seedSnapshot != null && seedSnapshot.length < state.beads.length;
   const effectiveSeed = state.seedFilterCleared ? null : seedSnapshot;
-  const seedFilterActive =
-    effectiveSeed != null && effectiveSeed.length < state.beads.length;
-  const seedFilteredCount = effectiveSeed?.length ?? state.beads.length;
   const toggleSeedFilter = () =>
     setState((prev) => ({ ...prev, seedFilterCleared: !prev.seedFilterCleared }));
+
+  // Compose the inherited parent scope with the tab-local filter (Phase 2):
+  //   composed = (Filtered ? parentScope : all) ∩ resolve(localSpec)
+  // `effectiveSeed` already encodes the ribbon's Show-all/Show-filtered toggle;
+  // `localScope` is null when the local filter narrows nothing. The composed
+  // set is what the Kanban/Tree/Graph views actually render.
+  const composedSeed = intersect(effectiveSeed, localScope);
+  const composedActive = composedSeed != null && composedSeed.length < state.beads.length;
+  const composedCount = composedSeed?.length ?? state.beads.length;
 
   // Contextual refresh for editor-tab views: the sidebar PanelShell has its own
   // refresh, but a view opened standalone in an editor tab had no way to refresh
@@ -389,24 +480,34 @@ export function App(): React.ReactElement {
   }, []);
 
   // Wrap an editor-tab data view with shared chrome: a thin top toolbar holding
-  // a contextual Refresh, plus (for filter-seeded Kanban/Tree/Graph tabs) the
-  // inherited-filter snapshot ribbon (vs-zq2). The flex-column shell keeps the
-  // view's own height/scroll model intact (Graph/React Flow needs a sized body).
+  // a contextual Refresh, plus (for Kanban/Tree/Graph tabs) the unified FilterBar
+  // — a tab-local sidecar filter whose leading segment is the inherited-scope
+  // ribbon (shown only when the panel actually narrowed the scope). The
+  // flex-column shell keeps the view's own height/scroll model intact
+  // (Graph/React Flow needs a sized body).
   const withEditorTabChrome = (
     view: React.ReactElement,
-    opts: { ribbon?: boolean } = {},
+    opts: { filterBar?: boolean } = {},
   ): React.ReactElement => {
     if (!state.settings.isEditorTab) return view;
-    const showRibbon = opts.ribbon !== false && hasSeedSnapshot;
     return (
       <div className="editor-tab-shell">
         <div className="editor-tab-toolbar">
-          {showRibbon ? (
-            <FilterSnapshotRibbon
-              filteredCount={seedSnapshot?.length ?? 0}
-              totalCount={state.beads.length}
-              cleared={state.seedFilterCleared}
-              onToggle={toggleSeedFilter}
+          {opts.filterBar ? (
+            <FilterBar
+              snapshot={localSnapshot}
+              facets={facets}
+              ops={filterOps}
+              inherited={
+                hasSeedSnapshot
+                  ? {
+                      filteredCount: seedSnapshot?.length ?? 0,
+                      totalCount: state.beads.length,
+                      cleared: state.seedFilterCleared,
+                      onToggle: toggleSeedFilter,
+                    }
+                  : undefined
+              }
             />
           ) : (
             <span className="editor-tab-toolbar-spacer" />
@@ -509,8 +610,7 @@ export function App(): React.ReactElement {
               vscode.postMessage({ type: "refresh" })
             }
           />,
-          // Issues has its own toolbar + "Apply to all"; no snapshot ribbon here.
-          { ribbon: false },
+          // Issues has its own toolbar + "Apply to all"; no sidecar FilterBar here.
         );
 
       case "beadsPanelShell":
@@ -546,13 +646,14 @@ export function App(): React.ReactElement {
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
             focusBeadId={null}
-            filteredBeadIds={effectiveSeed}
-            issuesFilterActive={seedFilterActive}
+            filteredBeadIds={composedSeed}
+            issuesFilterActive={composedActive}
             onOpenBead={(beadId) =>
               vscode.postMessage({ type: "openBeadDetails", beadId })
             }
             onRetry={() => vscode.postMessage({ type: "refresh" })}
-          />
+          />,
+          { filterBar: true },
         );
 
       case "beadsKanban":
@@ -562,15 +663,16 @@ export function App(): React.ReactElement {
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
             muteClosedIssues={state.settings.muteClosedIssues}
-            filteredBeadIds={effectiveSeed}
-            filterActive={seedFilterActive}
-            filteredCount={seedFilteredCount}
+            filteredBeadIds={composedSeed}
+            filterActive={composedActive}
+            filteredCount={composedCount}
             totalCount={state.beads.length}
             onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onUpdateBead={(beadId, updates) =>
               vscode.postMessage({ type: "updateBead", beadId, updates })
             }
-          />
+          />,
+          { filterBar: true },
         );
 
       case "beadsTree":
@@ -583,14 +685,15 @@ export function App(): React.ReactElement {
             favoriteIds={favoriteIds}
             highlightFavorites={state.settings.highlightFavorites}
             muteClosedIssues={state.settings.muteClosedIssues}
-            filteredBeadIds={effectiveSeed}
-            filterActive={seedFilterActive}
-            filteredCount={seedFilteredCount}
+            filteredBeadIds={composedSeed}
+            filterActive={composedActive}
+            filteredCount={composedCount}
             totalCount={state.beads.length}
             onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onRequestGraph={() => vscode.postMessage({ type: "requestGraph" })}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
-          />
+          />,
+          { filterBar: true },
         );
 
       case "beadsProjectSwitcher":

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Tab-local filters on Kanban/Tree/Graph editor tabs** — a standalone editor-tab board/tree/graph now carries its own unified `FilterBar` (preset, Ready, Favorites, and status/priority/type/assignee/label chips with faceted counts). The tab-local filter composes on top of the inherited panel scope as `(Filtered ? parentScope : all) ∩ resolve(localSpec)`, resolved webview-side by the same pure `resolveScope`/predicates the Issues table and host use. The inherited-scope ribbon is the bar's leading segment. Filter state persists per tab. IssuesView keeps its own bar for now
 - **Mask favorites in the Favorites filter group** — Favorites is modeled as a seed-based filter group: the starred beads are a seed list that expands into relatives, and each seed has an eye toggle (Photoshop-layers metaphor) to mask it out of that expansion. Masked favorites recede (gray left edge + muted card) and drop from the favorites→relatives scope; the mask is per-project, persisted in workspace state, and owned by the Favorites container (not individual cards). New reusable `FilterGroup` component
 
 ### Changed
