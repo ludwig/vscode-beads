@@ -265,8 +265,11 @@ export function TreeView({
   // The Title (tree) column is the only flexible one; the shown fixed columns
   // follow at their (resizable) widths. Set inline so header + every row share
   // the exact same template as columns toggle on/off or resize.
+  // A trailing gutter track holds the column show/hide menu in the header (like
+  // the Issues table). Body rows leave it empty; sharing the template keeps the
+  // fixed columns aligned between header and rows.
   const gridTemplate = useMemo(
-    () => `minmax(0, 1fr) ${shownColumns.map((c) => `${colWidthPx(c)}px`).join(" ")}`,
+    () => `minmax(0, 1fr) ${shownColumns.map((c) => `${colWidthPx(c)}px`).join(" ")} 28px`,
     [shownColumns, colWidthPx],
   );
   // Drag-to-resize a fixed column: the handle on a column's right edge widens/
@@ -599,32 +602,6 @@ export function TreeView({
                 </button>
               </div>
             )}
-            <div className="beads-tree-colmenu" ref={colMenuRef}>
-              <button
-                type="button"
-                className="beads-tree-foldbtn"
-                title="Show or hide columns"
-                aria-label="Show or hide columns"
-                aria-expanded={colMenuOpen}
-                onClick={() => setColMenuOpen((v) => !v)}
-              >
-                <Columns3 size={14} strokeWidth={2} />
-              </button>
-              {colMenuOpen && (
-                <div className="col-menu beads-tree-col-menu">
-                  {TREE_COLUMNS.map((c) => (
-                    <label key={c.key}>
-                      <input
-                        type="checkbox"
-                        checked={visibleCols[c.key]}
-                        onChange={() => setVisibleCols((prev) => ({ ...prev, [c.key]: !prev[c.key] }))}
-                      />
-                      {c.label}
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
           </>
         }
         inherited={
@@ -686,6 +663,34 @@ export function TreeView({
             </button>
           );
         })}
+        {/* Column show/hide menu — anchored to the header's right edge (in the
+            trailing gutter track), mirroring the Issues table. */}
+        <div className="beads-tree-colmenu" ref={colMenuRef}>
+          <button
+            type="button"
+            className="beads-tree-colmenu-btn"
+            title="Show or hide columns"
+            aria-label="Show or hide columns"
+            aria-expanded={colMenuOpen}
+            onClick={() => setColMenuOpen((v) => !v)}
+          >
+            <Columns3 size={14} strokeWidth={2} />
+          </button>
+          {colMenuOpen && (
+            <div className="col-menu beads-tree-col-menu">
+              {TREE_COLUMNS.map((c) => (
+                <label key={c.key}>
+                  <input
+                    type="checkbox"
+                    checked={visibleCols[c.key]}
+                    onChange={() => setVisibleCols((prev) => ({ ...prev, [c.key]: !prev[c.key] }))}
+                  />
+                  {c.label}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       {canDetach && (
         <div

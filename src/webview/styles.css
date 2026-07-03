@@ -5254,10 +5254,32 @@ textarea {
   text-overflow: ellipsis;
 }
 
-/* Column show/hide selector — positioned wrapper for the .col-menu popover. */
+/* Column show/hide selector — anchored in the header's trailing gutter track,
+   right-aligned like the Issues table's column menu. */
 .beads-tree-colmenu {
   position: relative;
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.beads-tree-colmenu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  transition: color var(--transition-fast, 0.12s ease), background var(--transition-fast, 0.12s ease);
+}
+.beads-tree-colmenu-btn:hover {
+  color: var(--vscode-foreground);
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
 }
 
 .beads-tree-empty {
