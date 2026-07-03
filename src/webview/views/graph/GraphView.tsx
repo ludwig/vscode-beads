@@ -343,35 +343,38 @@ function GraphCanvas({
   const total = graph?.nodes.length ?? 0;
   const scopeCount = finalScope?.length ?? total;
 
-  // Graph-specific controls (node search + layout/focus/auto) ride in the
-  // FilterBar's extraRow, so they stay visible even when the structured filter
-  // is collapsed to its ribbon.
+  // Node quick-search: its own row ABOVE the FilterBar (always visible, like the
+  // Issues search), so it doesn't collapse with the structured filter.
+  const searchRow = (
+    <div className="graph-filterbar">
+      <Search size={13} strokeWidth={2} className="graph-filter-icon" />
+      <input
+        type="text"
+        className="graph-filter-input"
+        placeholder="Filter nodes…"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") setQuery("");
+        }}
+      />
+      {query && (
+        <button
+          type="button"
+          className="graph-filter-clear"
+          title="Clear filter (Esc)"
+          aria-label="Clear filter"
+          onClick={() => setQuery("")}
+        >
+          <X size={13} strokeWidth={2} />
+        </button>
+      )}
+    </div>
+  );
+  // Graph-specific controls (layout/focus/auto) ride in the FilterBar's extraRow
+  // — the "third row" — so they collapse when the funnel is pressed.
   const graphControls = (
-    <>
-      <div className="graph-filterbar">
-        <Search size={13} strokeWidth={2} className="graph-filter-icon" />
-        <input
-          type="text"
-          className="graph-filter-input"
-          placeholder="Filter nodes…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") setQuery("");
-          }}
-        />
-        {query && (
-          <button
-            type="button"
-            className="graph-filter-clear"
-            title="Clear filter (Esc)"
-            aria-label="Clear filter"
-            onClick={() => setQuery("")}
-          >
-            <X size={13} strokeWidth={2} />
-          </button>
-        )}
-      </div>
+    <div className="graph-toolbar">
       <div className="graph-layout-toggle" role="radiogroup" aria-label="Graph layout">
         <button
           type="button"
@@ -445,11 +448,12 @@ function GraphCanvas({
         <Wand2 size={14} strokeWidth={2} />
         <span>Auto Layout</span>
       </button>
-    </>
+    </div>
   );
 
   return (
     <div className="graph-view">
+      {searchRow}
       <FilterBar
         snapshot={lf.snapshot}
         facets={lf.facets}

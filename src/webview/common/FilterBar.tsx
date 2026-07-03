@@ -151,7 +151,7 @@ export function FilterBar({
   const twistie = onToggleCollapsed && (
     <button
       type="button"
-      className={`filter-bar-funnel ${hasActiveFilters ? "has-filters" : ""}`}
+      className={`filter-bar-funnel ${hasActiveFilters ? "has-filters" : ""} ${collapsed ? "is-collapsed" : ""}`}
       onClick={onToggleCollapsed}
       title={collapsed ? "Expand filters" : "Collapse filters"}
       aria-label={collapsed ? "Expand filters" : "Collapse filters"}
@@ -180,7 +180,6 @@ export function FilterBar({
         : `Filtered · ${inherited.filteredCount} of ${inherited.totalCount}`
       : null;
     return (
-      <>
       <div className="filter-bar filter-bar-collapsed" role="status">
         {twistie}
         <span className="filter-bar-summary">
@@ -189,7 +188,11 @@ export function FilterBar({
             <span className="filter-bar-summary-sep" aria-hidden="true">·</span>
           )}
           {filterTokens.length > 0 ? (
-            <span className="filter-bar-summary-tokens">{filterTokens.join(", ")}</span>
+            <span className="filter-bar-summary-tokens">
+              {filterTokens.map((t) => (
+                <span key={t} className="filter-bar-token-pill">{t}</span>
+              ))}
+            </span>
           ) : (
             <button type="button" className="filter-bar-add-hint" onClick={onToggleCollapsed}>
               Add a filter…
@@ -202,11 +205,7 @@ export function FilterBar({
             {inherited.cleared ? `Show filtered (${inherited.filteredCount})` : "Show all"}
           </button>
         )}
-        </div>
-        {/* extraRow stays visible even collapsed — it holds view controls
-            (e.g. Graph layout/focus), not filters. */}
-        {extraRow && <div className="filter-bar-extra-row">{extraRow}</div>}
-      </>
+      </div>
     );
   }
 

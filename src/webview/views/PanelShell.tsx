@@ -263,20 +263,20 @@ export function PanelShell({
           <button
             type="button"
             className="panel-shell-action"
-            title={`Open ${tabs.find((t) => t.id === active)?.label ?? "view"} in an editor tab`}
-            aria-label="Open in editor tab"
-            onClick={() => openInEditorTab(active)}
-          >
-            <ExternalLink size={14} strokeWidth={2} />
-          </button>
-          <button
-            type="button"
-            className="panel-shell-action"
             title="Refresh"
             aria-label="Refresh"
             onClick={handleRefresh}
           >
             <RefreshCw size={14} strokeWidth={2} className={refreshing || loading ? "spinning" : undefined} />
+          </button>
+          <button
+            type="button"
+            className="panel-shell-action"
+            title={`Open ${tabs.find((t) => t.id === active)?.label ?? "view"} in an editor tab`}
+            aria-label="Open in editor tab"
+            onClick={() => openInEditorTab(active)}
+          >
+            <ExternalLink size={14} strokeWidth={2} />
           </button>
         </div>
       </nav>
