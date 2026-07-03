@@ -569,6 +569,9 @@ export function TreeView({
             : undefined
         }
       />
+      {/* The whole filter block (search + fold + column controls) collapses with
+          the FilterBar, so the ribbon alone reclaims the strip during active use. */}
+      {!lf.collapsed && (
       <div className="beads-tree-filter">
         <Search size={13} strokeWidth={2} className="beads-tree-filter-icon" />
         <input
@@ -637,6 +640,7 @@ export function TreeView({
           )}
         </div>
       </div>
+      )}
       <div className="beads-tree-colheader" role="row" style={{ gridTemplateColumns: gridTemplate }}>
         {[
           { sortKey: "title" as SortKey, label: "Title", headerLabel: undefined as string | undefined, colKey: "title" },
