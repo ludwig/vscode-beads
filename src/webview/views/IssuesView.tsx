@@ -1001,8 +1001,10 @@ export function IssuesView({
         )}
       </div>
 
-      {/* Row 2: Filter bar */}
-      {(filterBarOpen || hasActiveFilters) && (
+      {/* Row 2: Filter bar. The funnel is the master toggle — it fully collapses
+          the bar even when filters are active (the funnel glows to signal that),
+          matching the unified FilterBar's collapse behavior. */}
+      {filterBarOpen && (
         <div className="filter-bar">
           <Dropdown
             trigger={FILTER_PRESETS.find((p) => p.id === activePreset)?.label || "Custom"}
