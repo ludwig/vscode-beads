@@ -19,12 +19,14 @@ import { formatBytes } from "../common/formatBytes";
 import { TypeIcon } from "../common/TypeIcon";
 import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
 import { EndFlourish } from "../common/EndFlourish";
+import { FilterGroup } from "../common/FilterGroup";
 
 interface ProjectSwitcherViewProps {
   projects: BeadsProject[];
   activeProject: BeadsProject | null;
   activeBead: Bead | null;
-  /** The active project's favorites, in curated order (vs-sd5.1). */
+  /** The active project's favorites, in curated order (vs-sd5.1). Each carries
+   *  its own `masked` flag (the Favorites filter group's eye-off state). */
   favorites: FavoriteBead[];
   onSelectProject: (project: BeadsProject) => void;
   onOpenProjectFolder: () => void;
@@ -37,6 +39,8 @@ interface ProjectSwitcherViewProps {
   onCopyFavorites: () => void;
   /** Star/unstar a bead from the card right-click menu (vs-sd5.5). */
   onToggleFavorite: (beadId: string) => void;
+  /** Toggle a favorite's mask (eye-off) in the Favorites filter group. */
+  onToggleMask: (beadId: string) => void;
   onPickReady: () => void;
   onShowIssues: () => void;
   /** Launch the "Initialize Repository" flow (empty-state CTA, vs-r6a1.5). */
@@ -82,6 +86,7 @@ export function ProjectSwitcherView({
   onUnfavorite,
   onCopyFavorites,
   onToggleFavorite,
+  onToggleMask,
   onPickReady,
   onShowIssues,
   onCreateBoard,
@@ -103,6 +108,13 @@ export function ProjectSwitcherView({
   const [projectCollapsed, setProjectCollapsed] = useState(false);
   const [beadCollapsed, setBeadCollapsed] = useState(false);
   const [favoritesCollapsed, setFavoritesCollapsed] = useState(false);
+
+  // We're rearranging the Repository panel (vs-beads visibility work). The
+  // Selection card is pulled from the *view* only — the section JSX and its
+  // handlers stay intact below so we can relocate it later. Flip to `true` to
+  // bring it back. Keep the guarded branch referencing its state/handlers so
+  // esbuild/tsc/lint don't flag them as unused while the card is dark.
+  const SHOW_SELECTION_CARD = false;
 
   // Right-click menu for a bead card/row (vs-sd5.5). `isFavorite` is captured at
   // open time so the toggle label reads correctly for the menu's bead.
@@ -305,6 +317,7 @@ export function ProjectSwitcherView({
         </button>
       </div>
 
+      {SHOW_SELECTION_CARD && (
       <section className="context-section">
         <div className="context-section-head">
           <button
@@ -361,26 +374,18 @@ export function ProjectSwitcherView({
           </div>
         ))}
       </section>
+      )}
 
-      <section className="context-section">
-        <div className="context-section-head">
-          <button
-            type="button"
-            className="context-heading context-heading-toggle"
-            aria-expanded={!favoritesCollapsed}
-            onClick={() => setFavoritesCollapsed((v) => !v)}
-          >
-            {favoritesCollapsed ? (
-              <ChevronRight size={13} strokeWidth={2} className="context-heading-chevron" />
-            ) : (
-              <ChevronDown size={13} strokeWidth={2} className="context-heading-chevron" />
-            )}
-            <span>Favorites</span>
-            {favorites.length > 0 && (
-              <span className="context-heading-count">{favorites.length}</span>
-            )}
-          </button>
-          {favorites.length > 0 && (
+      {/* Favorites is a seed-based FilterGroup: the seed list (starred beads)
+          expands into relatives in the Issues view, and each seed's eye masks it
+          out of that expansion. The mask is owned by the group, not the card. */}
+      <FilterGroup
+        title="Favorites"
+        collapsed={favoritesCollapsed}
+        onToggleCollapsed={() => setFavoritesCollapsed((v) => !v)}
+        count={favorites.length}
+        headerAction={
+          favorites.length > 0 ? (
             <button
               type="button"
               className="context-heading-action"
@@ -390,56 +395,57 @@ export function ProjectSwitcherView({
             >
               <Copy size={13} strokeWidth={2} />
             </button>
-          )}
-        </div>
-        {!favoritesCollapsed && (favorites.length > 0 ? (
-          <div className="favorites-list">
-            {favorites.map((fav) => (
-              <div key={fav.id} className="context-card-row">
-                <button
-                  type="button"
-                  className="active-bead context-card-open"
-                  title={`${fav.id}${fav.title ? ` — ${fav.title}` : ""}\nClick to open in Details · triple-click to open in an editor tab`}
-                  onClick={() => activateBead(fav.id)}
-                  onContextMenu={(e) => openCardMenu(e, fav.id, true)}
-                >
-                  <div className="active-bead-main">
-                    <div className="active-bead-head">
-                      {fav.type && <TypeIcon type={fav.type} size={13} />}
-                      <span className="active-bead-id">{fav.id}</span>
-                      {fav.status && (
-                        <span
-                          className="active-bead-status"
-                          style={{ backgroundColor: statusColor(fav.status) }}
-                          title={fav.status}
-                        />
-                      )}
-                    </div>
-                    {fav.title && (
-                      <span className={`active-bead-title${muteClosedIssues && fav.status && isClosedStatus(fav.status) ? " muted-closed" : ""}`}>
-                        {fav.title}
-                      </span>
-                    )}
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  className="context-card-x"
-                  title="Unstar this bead"
-                  aria-label={`Unstar ${fav.id}`}
-                  onClick={() => onUnfavorite(fav.id)}
-                >
-                  <X size={13} strokeWidth={2} />
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
+          ) : undefined
+        }
+        items={favorites}
+        getKey={(fav) => fav.id}
+        isMasked={(fav) => !!fav.masked}
+        onToggleMask={(fav) => onToggleMask(fav.id)}
+        emptyState={
           <div className="context-empty">
             <p>No favorites yet — star a bead to pin it here.</p>
           </div>
-        ))}
-      </section>
+        }
+        renderItem={(fav) => (
+          <button
+            type="button"
+            className="active-bead context-card-open"
+            title={`${fav.id}${fav.title ? ` — ${fav.title}` : ""}\nClick to open in Details · triple-click to open in an editor tab`}
+            onClick={() => activateBead(fav.id)}
+            onContextMenu={(e) => openCardMenu(e, fav.id, true)}
+          >
+            <div className="active-bead-main">
+              <div className="active-bead-head">
+                {fav.type && <TypeIcon type={fav.type} size={13} />}
+                <span className="active-bead-id">{fav.id}</span>
+                {fav.status && (
+                  <span
+                    className="active-bead-status"
+                    style={{ backgroundColor: statusColor(fav.status) }}
+                    title={fav.status}
+                  />
+                )}
+              </div>
+              {fav.title && (
+                <span className={`active-bead-title${muteClosedIssues && fav.status && isClosedStatus(fav.status) ? " muted-closed" : ""}`}>
+                  {fav.title}
+                </span>
+              )}
+            </div>
+          </button>
+        )}
+        renderTrailing={(fav) => (
+          <button
+            type="button"
+            className="context-card-x"
+            title="Unstar this bead"
+            aria-label={`Unstar ${fav.id}`}
+            onClick={() => onUnfavorite(fav.id)}
+          >
+            <X size={13} strokeWidth={2} />
+          </button>
+        )}
+      />
 
       <div className="view-end" aria-hidden="true">
         <EndFlourish />

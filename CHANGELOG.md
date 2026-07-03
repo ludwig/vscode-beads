@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Mask favorites in the Favorites filter group** — Favorites is modeled as a seed-based filter group: the starred beads are a seed list that expands into relatives, and each seed has an eye toggle (Photoshop-layers metaphor) to mask it out of that expansion. Masked favorites recede (gray left edge + muted card) and drop from the favorites→relatives scope; the mask is per-project, persisted in workspace state, and owned by the Favorites container (not individual cards). New reusable `FilterGroup` component
+
+### Changed
+
+- **Selection card removed from the Repository panel** — the Repository panel is being rearranged; the Selection section is pulled from the view (the code is retained for possible relocation)
+
+### Fixed
+
+- **Filter scope propagates live to every view** — masking a favorite (or editing the panel filter) now updates Kanban/Tree/Graph instantly, on both the panel subtabs and standalone editor tabs, instead of leaving them on a frozen snapshot. The shared filter is resolved host-side by one pure `resolveScope` (shared with the Issues table so they can't diverge) and broadcast live, so a view no longer needs the Issues view mounted to re-scope. Refresh is no longer needed to pick up a filter change
+
 ## [0.25.0] - 2026-06-23
 
 ### Added

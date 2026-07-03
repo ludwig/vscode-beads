@@ -11,6 +11,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 import { BeadsProjectManager } from "./backend/BeadsProjectManager";
 import { FavoritesService } from "./backend/FavoritesService";
+import { ScopeService } from "./backend/ScopeService";
 import { PanelShellViewProvider } from "./providers/PanelShellViewProvider";
 import { BeadDetailsViewProvider } from "./providers/BeadDetailsViewProvider";
 import { BeadsProjectSwitcherViewProvider } from "./providers/BeadsProjectSwitcherViewProvider";
@@ -83,9 +84,34 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Favorites: per-project set of starred beads, persisted in workspaceState
   // and published to every view (vs-sd5.1). Point it at the active project up
   // front so the first render shows the right set.
+  // Favorites now also own their mask (which favorites are toggled off / eye-off
+  // in the Favorites filter group) — the mask rides along on each published
+  // FavoriteBead, so there's no separate service to wire.
   favorites = new FavoritesService(context.workspaceState);
   favorites.setActiveProject(projectManager.getActiveProject()?.id ?? null);
   context.subscriptions.push(favorites);
+
+  // Host authority for the LIVE parent scope: recomputes the shared-filter id
+  // set (via the pure resolveScope) on any input change and broadcasts it to
+  // every view, so masking a favorite / editing the panel filter propagates to
+  // Kanban/Tree/Graph without depending on which view is mounted. Reads beads +
+  // cached edges from the project manager and favorites + mask from the
+  // favorites service.
+  const scope = new ScopeService({
+    getBeads: () => projectManager.getCachedBeadList(),
+    getEdges: () => projectManager.getCachedEdges(),
+    getFavoriteIds: () => favorites.list(),
+    getMaskedIds: () => favorites.list().filter((id) => favorites.isMasked(id)),
+  });
+  context.subscriptions.push(scope);
+
+  // Refresh the edges cache, then recompute the scope. Edges are fetched lazily
+  // and cached in the project manager (invalidated when the bead list changes),
+  // so this only hits the backend when the cache is cold.
+  const primeScope = async (): Promise<void> => {
+    await projectManager.getDependencyEdges();
+    scope.recompute();
+  };
 
   // Initialize context for conditional menu items
   vscode.commands.executeCommand("setContext", "beads.hasSelectedBead", false);
@@ -98,14 +124,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     context.extensionUri,
     projectManager,
     log,
-    favorites
+    favorites,
+    scope
   );
 
   switcherProvider = new BeadsProjectSwitcherViewProvider(
     context.extensionUri,
     projectManager,
     log,
-    favorites
+    favorites,
+    scope
   );
 
   // Virtual `bead:` documents so a bead can be opened as a real TextEditor that
@@ -127,11 +155,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     projectManager,
     log,
     companionController,
-    favorites
+    favorites,
+    scope
   );
 
   // Manages bead webviews opened as editor tabs (vs-ask, vs-fx4).
-  panelManager = new BeadPanelManager(context.extensionUri, projectManager, log, companionController, favorites);
+  panelManager = new BeadPanelManager(context.extensionUri, projectManager, log, companionController, favorites, scope);
   context.subscriptions.push(panelManager);
 
   // Register webview providers
@@ -171,11 +200,24 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(
     // Fan the favorites set out to every live view whenever it changes (a
     // star/unstar in one view, or a project switch). vs-sd5.1.
+    // Fan the favorites set (with each favorite's mask state) out to every live
+    // view whenever the set OR the mask changes, or on a project switch.
     favorites.onDidChange((ids) => {
       shellProvider.publishFavorites(ids);
       detailsProvider.publishFavorites(ids);
       switcherProvider.publishFavorites(ids);
       panelManager.publishFavorites(ids);
+      // Favorites/mask are inputs to the shared scope — recompute + rebroadcast.
+      scope.recompute();
+    }),
+
+    // Broadcast the live parent scope to every view whenever it changes (a
+    // filter edit, a favorites/mask toggle, a data change, or a project switch).
+    scope.onDidChange((ids) => {
+      shellProvider.publishParentScope(ids);
+      detailsProvider.publishParentScope(ids);
+      switcherProvider.publishParentScope(ids);
+      panelManager.publishParentScope(ids);
     }),
 
     // When a project's bead list (re)caches, re-publish favorites so their
@@ -194,11 +236,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       shellProvider.refresh();
       detailsProvider.refresh();
       switcherProvider.refresh();
+      // Beads (and possibly edges) changed → refresh the edges cache and
+      // recompute the parent scope so all views re-scope live.
+      void primeScope();
     }),
 
     projectManager.onActiveProjectChanged(() => {
-      // Re-point favorites at the new project (fires onDidChange → re-publishes).
+      // Re-point favorites (seed list + mask) at the new project (fires
+      // onDidChange → re-publishes).
       favorites.setActiveProject(projectManager.getActiveProject()?.id ?? null);
+      // Reset the shared filter for the new project, then refresh edges + scope.
+      scope.setActiveProject();
+      void primeScope();
       shellProvider.setSelectedBead(null); // Clear selection on project switch
       switcherProvider.setActiveBead(null);
       shellProvider.refreshForProjectChange();

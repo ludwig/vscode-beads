@@ -47,6 +47,14 @@ interface PanelShellProps {
   selectedBeadId: string | null;
   /** Favorite bead ids, for the views' right-click star/unstar item (vs-sd5.5). */
   favoriteIds: string[];
+  /** Masked favorite ids, forwarded to the embedded IssuesView's favorites scope. */
+  maskedIds: string[];
+  /**
+   * The LIVE parent scope (host-computed shared-filter id set, or null = all).
+   * Drives the embedded Kanban/Tree/Graph scope so they track the panel filter
+   * (and favorites mask) even while the Issues subview is unmounted.
+   */
+  parentScope: string[] | null;
   settings: WebviewSettings;
   issuesFilterRequest: { filter: IssuesFilter; seq: number } | null;
   // Full Issues-filter snapshot to apply, landed by an "Apply to all" broadcast
@@ -68,6 +76,8 @@ export function PanelShell({
   error,
   selectedBeadId,
   favoriteIds,
+  maskedIds,
+  parentScope,
   settings,
   issuesFilterRequest,
   applySnapshotRequest,
@@ -94,12 +104,12 @@ export function PanelShell({
   // Reveal target for the Issues tab, set by a "show in issues" deep-link
   // (vs-wbrz). Carried into IssuesView, which scrolls the row into view.
   const [issuesRevealRequest, setIssuesRevealRequest] = useState<{ beadId: string; seq: number } | null>(null);
-  // Ids of the rows currently matching the Issues filter/search, published by
-  // IssuesView. The Graph "Filtered" toggle scopes its nodes to this set
-  // (vs-v07). Stays current because the filter can only change on the Issues
-  // tab, and the last value persists while IssuesView is unmounted.
-  const [filteredBeadIds, setFilteredBeadIds] = useState<string[] | null>(null);
-  const handleFilteredBeads = useCallback((ids: string[]) => setFilteredBeadIds(ids), []);
+  // Ids currently matching the shared (panel) filter — the LIVE parent scope
+  // computed host-side. Drives the Kanban/Tree indicators and the Graph
+  // "Filtered" toggle (vs-v07). Sourced from the host (not the embedded
+  // IssuesView) so it stays correct even while IssuesView is unmounted and
+  // updates live when the filter or the favorites mask changes.
+  const filteredBeadIds = parentScope;
 
   // A "View in graph" deep-link: flip to the Graph tab and focus the bead.
   // Keyed on `seq` so a repeat request for the same bead still re-fires.
@@ -331,6 +341,7 @@ export function PanelShell({
             error={error}
             selectedBeadId={selectedBeadId}
             favoriteIds={favoriteIds}
+            maskedIds={maskedIds}
             highlightFavorites={settings.highlightFavorites}
             muteClosedIssues={settings.muteClosedIssues}
             tooltipHoverDelay={settings.tooltipHoverDelay}
@@ -339,7 +350,6 @@ export function PanelShell({
             revealRequest={issuesRevealRequest}
             graph={graph}
             onRequestGraph={requestGraph}
-            onFilteredBeadsChange={handleFilteredBeads}
             onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
           />

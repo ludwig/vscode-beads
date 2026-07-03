@@ -11,6 +11,7 @@
 import * as vscode from "vscode";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
 import { FavoritesService } from "../backend/FavoritesService";
+import { ScopeService } from "../backend/ScopeService";
 import {
   ExtensionToWebviewMessage,
   FavoriteBead,
@@ -33,6 +34,9 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
   // favorites can omit it; when present, the base wires star/unstar messages
   // and publishes the current set on (re)init.
   protected readonly favorites?: FavoritesService;
+  // Host authority for the live parent scope (shared-filter id set). Optional,
+  // same as favorites: the panel + editor-tab views get it wired; others omit.
+  protected readonly scope?: ScopeService;
   protected abstract readonly viewType: string;
   private readonly disposables: vscode.Disposable[] = [];
   // When set, the webview is pulsed once it signals "ready" — used by editor
@@ -53,12 +57,14 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     extensionUri: vscode.Uri,
     projectManager: BeadsProjectManager,
     logger: Logger,
-    favorites?: FavoritesService
+    favorites?: FavoritesService,
+    scope?: ScopeService
   ) {
     this.extensionUri = extensionUri;
     this.projectManager = projectManager;
     this.log = logger;
     this.favorites = favorites;
+    this.scope = scope;
   }
 
   public resolveWebviewView(
@@ -181,6 +187,12 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
       this.publishFavorites(this.favorites.list());
     }
 
+    // Seed the live parent scope so a freshly-(re)mounted view scopes correctly
+    // immediately, without waiting for the next recompute.
+    if (this.scope) {
+      this.publishParentScope(this.scope.current());
+    }
+
     // Load view-specific data only for visible views.
     if (this._host.visible) {
       await this.loadData("initial");
@@ -194,13 +206,20 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
    * icon. Uncached favorites degrade gracefully to `{ id }` (vs-sd5.1).
    */
   public publishFavorites(ids: string[]): void {
+    const masked = this.favorites;
     const favorites: FavoriteBead[] = ids.map((id) => {
+      const isMasked = masked?.isMasked(id) ?? false;
       const bead = this.projectManager.getCachedBead(id);
       return bead
-        ? { id, title: bead.title, type: bead.type, status: bead.status, priority: bead.priority }
-        : { id };
+        ? { id, title: bead.title, type: bead.type, status: bead.status, priority: bead.priority, masked: isMasked }
+        : { id, masked: isMasked };
     });
     this.postMessage({ type: "setFavorites", favorites });
+  }
+
+  /** Push the live parent scope (shared-filter id set, or null = all) to this view. */
+  public publishParentScope(beadIds: string[] | null): void {
+    this.postMessage({ type: "setParentScope", beadIds });
   }
 
   /**
@@ -439,6 +458,20 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
           break;
         }
         await this.favorites.remove(message.beadId);
+        break;
+
+      case "toggleFavoriteMask":
+        if (!this.favorites) {
+          this.log.warn(`toggleFavoriteMask ignored: ${this.viewType} has no FavoritesService`);
+          break;
+        }
+        await this.favorites.toggleMask(message.beadId);
+        break;
+
+      case "setSharedFilter":
+        // The panel Issues view is publishing its filter; the host recomputes
+        // the shared parent scope authoritatively and broadcasts it live.
+        this.scope?.setSharedFilter(message.snapshot);
         break;
 
       case "startCreate":

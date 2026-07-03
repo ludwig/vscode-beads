@@ -1684,6 +1684,35 @@ textarea {
   background-color: var(--vscode-list-activeSelectionBackground);
 }
 
+/* The seed-mask eye (VisibilityEye), used inside a FilterGroup's seed rows.
+ * Ghosted until the row is hovered so the group stays calm; a masked seed keeps
+ * its eye-off showing so the state is legible at a glance. */
+.bead-eye-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 2px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--transition-fast), color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.filter-group-row:hover .bead-eye-toggle,
+.bead-eye-toggle:focus-visible,
+.bead-eye-toggle.is-hidden {
+  opacity: 1;
+}
+
+.bead-eye-toggle:hover {
+  background-color: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+  color: var(--vscode-foreground);
+}
+
 /* The (unnamed) icon cell is the tooltip affordance: highlight it on hover (and
  * use a help cursor) so users learn to hover there for the bead's description. */
 .icon-cell-hoverable {
@@ -2306,10 +2335,47 @@ textarea {
   color: var(--vscode-badge-foreground);
 }
 
-.favorites-list {
+/* FilterGroup seed list (Favorites is the first instance). A column of seed
+ * rows, each: [eye] [seed card] [trailing]. The eye + trailing are siblings of
+ * the card body, so the body can mute (masked) while they stay crisp. */
+.filter-group-list {
   display: flex;
   flex-direction: column;
   gap: 5px;
+}
+
+.filter-group-row {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+
+/* Center the seed's mask eye against the card rather than stretching it. */
+.filter-group-eye {
+  align-self: center;
+}
+
+.filter-group-item {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  transition: opacity var(--transition-fast);
+}
+
+/* Masked seed — recede the whole card with a gray left edge, mirroring the
+ * closed-vs-hidden distinction (closed mutes only the title; masked mutes the
+ * card). Hover restores full opacity so the row stays readable. The eye is a
+ * sibling, so it stays crisp regardless. */
+.filter-group-row.is-masked .filter-group-item {
+  opacity: 0.5;
+}
+
+.filter-group-row.is-masked:hover .filter-group-item {
+  opacity: 1;
+}
+
+.filter-group-row.is-masked .active-bead {
+  border-left-color: var(--vscode-descriptionForeground);
 }
 
 .context-card-row {
@@ -2339,7 +2405,8 @@ textarea {
   transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
 }
 
-.context-card-row:hover .context-card-x {
+.context-card-row:hover .context-card-x,
+.filter-group-row:hover .context-card-x {
   opacity: 1;
 }
 
