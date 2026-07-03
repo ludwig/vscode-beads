@@ -287,12 +287,13 @@ export function PanelShell({
         {active === "kanban" ? (
           <KanbanBoard
             beads={beads}
+            graph={graph}
+            onRequestGraph={requestGraph}
             filteredBeadIds={filteredBeadIds}
-            filterActive={filterActive}
-            filteredCount={filteredCount}
             totalCount={totalCount}
             selectedBeadId={selectedBeadId}
             favoriteIds={favoriteIds}
+            maskedIds={maskedIds}
             muteClosedIssues={settings.muteClosedIssues}
             revealRequest={kanbanRevealRequest}
             onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}

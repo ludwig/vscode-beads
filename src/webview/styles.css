@@ -4549,6 +4549,15 @@ textarea {
 /* Ad-hoc quick-filter bar for the board (mirrors the Tree's filter row). Hosts
    the local card filter and, when scoped to an Issues filter, the "N of M" chip
    (right-aligned). */
+/* The board self-hosts a FilterBar as its top strip (like the Tree). */
+.kanban > .filter-bar {
+  flex: 0 0 auto;
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  background: transparent;
+}
+
 .kanban-filterbar {
   flex: 0 0 auto;
   display: flex;

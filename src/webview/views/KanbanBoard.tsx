@@ -7,12 +7,14 @@
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
-import { Bead, BeadStatus, BuiltInStatus, BeadType, STATUS_LABELS, STATUS_COLORS, isClosedStatus, vscode } from "../types";
+import { Bead, BeadStatus, BuiltInStatus, BeadType, DependencyGraph, STATUS_LABELS, STATUS_COLORS, isClosedStatus, vscode } from "../types";
 import { TypeIcon } from "../common/TypeIcon";
 import { PriorityBadge } from "../common/PriorityBadge";
 import { LabelBadge } from "../common/LabelBadge";
 import { Icon } from "../common/Icon";
-import { FilterIndicator } from "../common/FilterIndicator";
+import { FilterBar } from "../common/FilterBar";
+import { useLocalFilter } from "../hooks/useLocalFilter";
+import { intersect } from "../composeScope";
 import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
 
 interface KanbanBoardProps {
@@ -20,8 +22,13 @@ interface KanbanBoardProps {
   selectedBeadId: string | null;
   /** Favorite bead ids — drives the right-click Add/Remove Favorites item (vs-sd5.5). */
   favoriteIds?: string[];
+  /** Masked favorites (eye-off), excluded from the board FilterBar's Favorites seed. */
+  maskedIds?: string[];
   /** When true, gray out the titles of closed (done) cards (beads.muteClosedIssues, vs-b0ga). */
   muteClosedIssues?: boolean;
+  /** Dependency graph — supplies edges for the board FilterBar's Ready/Favorites. */
+  graph?: DependencyGraph | null;
+  onRequestGraph?: () => void;
   onSelectBead: (beadId: string) => void;
   onUpdateBead?: (beadId: string, updates: Partial<Bead>) => void;
   /** Whether any filters are active (affects empty state messaging) */
@@ -29,15 +36,13 @@ interface KanbanBoardProps {
   /** Unfiltered counts per status (to show "0 of N" when filtering) */
   unfilteredCounts?: Record<string, number>;
   /**
-   * Ids matching the current Issues filter, or null/undefined when the board
-   * should show every bead. When set, the board scopes its cards to this slice
-   * (always-on, mirroring the Tree). Omitted by the in-Issues board view-mode,
-   * whose `beads` are already filtered.
+   * The inherited parent scope (panel filter / editor-tab seed), or null. The
+   * board's own FilterBar composes on top of this (mirroring the Tree).
    */
   filteredBeadIds?: string[] | null;
-  /** Whether the Issues filter narrows to a strict subset (drives the indicator). */
-  filterActive?: boolean;
-  filteredCount?: number;
+  /** Editor-tab inherited-scope ribbon controls (omitted in the panel subtab). */
+  parentCleared?: boolean;
+  onToggleParentScope?: () => void;
   totalCount?: number;
   /**
    * A "show in kanban" deep-link target (vs-wbrz): select the bead's card and
@@ -63,7 +68,7 @@ const COLUMNS: BuiltInStatus[] = [
   "pinned", // standing / persistent (frozen) — outside the flow
 ];
 
-export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], muteClosedIssues = true, onSelectBead, onUpdateBead, hasActiveFilters, unfilteredCounts, filteredBeadIds, filterActive, filteredCount, totalCount, revealRequest }: KanbanBoardProps): React.ReactElement {
+export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], maskedIds = [], muteClosedIssues = true, graph, onRequestGraph, onSelectBead, onUpdateBead, hasActiveFilters, unfilteredCounts, filteredBeadIds, parentCleared, onToggleParentScope, totalCount, revealRequest }: KanbanBoardProps): React.ReactElement {
   const boardRef = useRef<HTMLDivElement>(null);
   // Track which columns are collapsed. The quiet lanes (closed + the frozen
   // deferred/pinned) start collapsed; good per-lane defaults + persistence are
@@ -154,12 +159,31 @@ export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], muteClose
     }
   };
 
-  // Scope to the Issues filter slice when provided (always-on, like the Tree).
+  // The board's own unified FilterBar (structured local filter), composed on top
+  // of the inherited parent scope: (Filtered ? parentScope : all) ∩ resolve(local).
+  const lf = useLocalFilter({
+    persistKey: "kanbanLocalFilter",
+    beads,
+    edges: graph?.edges ?? [],
+    favoriteIds,
+    maskedIds,
+    hasGraph: !!graph,
+    onRequestGraph,
+  });
+  const inheritedScope = parentCleared ? null : (filteredBeadIds ?? null);
+  const finalScope = useMemo(
+    () => intersect(inheritedScope, lf.localScope),
+    [inheritedScope, lf.localScope],
+  );
+  const total = totalCount ?? beads.length;
+  const scopeCount = finalScope?.length ?? total;
+
+  // Scope to the composed id-set (always-on, like the Tree).
   const scopedBeads = useMemo(() => {
-    if (filteredBeadIds == null) return effectiveBeads;
-    const allowed = new Set(filteredBeadIds);
+    if (finalScope == null) return effectiveBeads;
+    const allowed = new Set(finalScope);
     return effectiveBeads.filter((b) => allowed.has(b.id));
-  }, [effectiveBeads, filteredBeadIds]);
+  }, [effectiveBeads, finalScope]);
 
   // Apply the ad-hoc board filter on top (id/title contains, case-insensitive).
   const visibleBeads = useMemo(() => {
@@ -210,24 +234,38 @@ export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], muteClose
 
   return (
     <div className="kanban">
-      <div className="kanban-filterbar">
-        <Search size={13} strokeWidth={2} className="kanban-filter-icon" />
-        <input
-          type="text"
-          className="kanban-filter-input"
-          placeholder="Filter cards…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          spellCheck={false}
-        />
-        {filterActive && (
-          <FilterIndicator
-            count={filteredCount ?? scopedBeads.length}
-            total={totalCount ?? beads.length}
-            className="kanban-filter-indicator"
+      <FilterBar
+        snapshot={lf.snapshot}
+        facets={lf.facets}
+        ops={lf.ops}
+        count={{ shown: scopeCount, total }}
+        collapsed={lf.collapsed}
+        onToggleCollapsed={lf.toggleCollapsed}
+        inherited={
+          onToggleParentScope
+            ? {
+                filteredCount: filteredBeadIds?.length ?? 0,
+                totalCount: total,
+                cleared: !!parentCleared,
+                onToggle: onToggleParentScope,
+              }
+            : undefined
+        }
+      />
+      {/* Search collapses with the FilterBar (whole filter block hides). */}
+      {!lf.collapsed && (
+        <div className="kanban-filterbar">
+          <Search size={13} strokeWidth={2} className="kanban-filter-icon" />
+          <input
+            type="text"
+            className="kanban-filter-input"
+            placeholder="Filter cards…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            spellCheck={false}
           />
-        )}
-      </div>
+        </div>
+      )}
       <div className="kanban-board" ref={boardRef}>
       {COLUMNS.map((status) => {
         const isCollapsed = collapsedColumns.has(status);

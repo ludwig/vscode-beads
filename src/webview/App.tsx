@@ -608,22 +608,26 @@ export function App(): React.ReactElement {
         );
 
       case "beadsKanban":
+        // Self-hosts its FilterBar (like the Tree): raw parent scope + ribbon
+        // toggle, own compose; no chrome FilterBar.
         return withEditorTabChrome(
           <KanbanBoard
             beads={state.beads}
+            graph={state.graph}
+            onRequestGraph={() => vscode.postMessage({ type: "requestGraph" })}
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
+            maskedIds={maskedIds}
             muteClosedIssues={state.settings.muteClosedIssues}
-            filteredBeadIds={composedSeed}
-            filterActive={composedActive}
-            filteredCount={composedCount}
+            filteredBeadIds={seedSnapshot}
+            parentCleared={state.seedFilterCleared}
+            onToggleParentScope={toggleSeedFilter}
             totalCount={state.beads.length}
             onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onUpdateBead={(beadId, updates) =>
               vscode.postMessage({ type: "updateBead", beadId, updates })
             }
           />,
-          { filterBar: true },
         );
 
       case "beadsTree":
