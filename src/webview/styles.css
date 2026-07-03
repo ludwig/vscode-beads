@@ -287,8 +287,8 @@ body {
 }
 
 .filter-bar-funnel.has-filters svg {
-  filter: drop-shadow(0 0 4px var(--vscode-focusBorder))
-    drop-shadow(0 0 2px var(--vscode-focusBorder));
+  filter: drop-shadow(0 0 8px var(--vscode-focusBorder))
+    drop-shadow(0 0 4px var(--vscode-focusBorder));
 }
 
 /* Trailing group (view-specific controls + count), pushed to the right edge. */
@@ -1478,8 +1478,8 @@ textarea {
 }
 
 .filter-toggle.has-filters svg {
-  filter: drop-shadow(0 0 4px var(--vscode-focusBorder))
-    drop-shadow(0 0 2px var(--vscode-focusBorder));
+  filter: drop-shadow(0 0 8px var(--vscode-focusBorder))
+    drop-shadow(0 0 4px var(--vscode-focusBorder));
 }
 
 .filter-toggle svg {
