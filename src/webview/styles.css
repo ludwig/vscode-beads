@@ -4574,6 +4574,13 @@ textarea {
   text-orientation: mixed;
 }
 
+/* Mute a collapsed lane's vertical title so parked/quiet lanes recede during
+   active use (matches the closed-issue muting; the count badge stays legible). */
+.kanban-column.collapsed .kanban-column-title {
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.7;
+}
+
 .kanban-column-body {
   /* Grow with content (basis auto) AND fill the floored column height (grow 1)
      so the whole lane is a drop target; never an inner scrollbar. */
