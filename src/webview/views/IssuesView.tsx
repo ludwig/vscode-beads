@@ -65,6 +65,7 @@ import {
   matchAssignee,
   matchSearch,
 } from "../../backend/filterPredicates";
+import { FILTER_PRESETS } from "../filterPresets";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { Loading } from "../common/Loading";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
@@ -155,21 +156,6 @@ interface PersistedIssuesState {
 // statuses — so it renders as a single ¬closed chip and never drifts as the
 // status set grows. Imported from filterPredicates (single source of truth,
 // shared with the host-side resolveScope).
-
-// Filter presets
-interface FilterPreset {
-  id: string;
-  label: string;
-  statuses: BeadStatus[];
-}
-
-const FILTER_PRESETS: FilterPreset[] = [
-  { id: "all", label: "All", statuses: [] },
-  { id: "not-closed", label: "Not Closed", statuses: [NOT_CLOSED] },
-  { id: "active", label: "Active", statuses: ["in_progress", "blocked"] },
-  { id: "blocked", label: "Blocked", statuses: ["blocked"] },
-  { id: "closed", label: "Closed", statuses: ["closed"] },
-];
 
 const columnHelper = createColumnHelper<Bead>();
 
