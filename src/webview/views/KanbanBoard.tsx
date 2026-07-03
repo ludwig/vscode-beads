@@ -234,6 +234,19 @@ export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], maskedIds
 
   return (
     <div className="kanban">
+      {/* Search is the top row (always visible, above the FilterBar) so it sits
+          in the same place across all views. */}
+      <div className="kanban-filterbar">
+        <Search size={13} strokeWidth={2} className="kanban-filter-icon" />
+        <input
+          type="text"
+          className="kanban-filter-input"
+          placeholder="Filter cards…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          spellCheck={false}
+        />
+      </div>
       <FilterBar
         snapshot={lf.snapshot}
         facets={lf.facets}
@@ -252,20 +265,6 @@ export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], maskedIds
             : undefined
         }
       />
-      {/* Search collapses with the FilterBar (whole filter block hides). */}
-      {!lf.collapsed && (
-        <div className="kanban-filterbar">
-          <Search size={13} strokeWidth={2} className="kanban-filter-icon" />
-          <input
-            type="text"
-            className="kanban-filter-input"
-            placeholder="Filter cards…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            spellCheck={false}
-          />
-        </div>
-      )}
       <div className="kanban-board" ref={boardRef}>
       {COLUMNS.map((status) => {
         const isCollapsed = collapsedColumns.has(status);

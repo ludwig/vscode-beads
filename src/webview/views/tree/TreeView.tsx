@@ -558,27 +558,8 @@ export function TreeView({
 
   return (
     <div className="beads-tree">
-      <FilterBar
-        snapshot={lf.snapshot}
-        facets={lf.facets}
-        ops={lf.ops}
-        count={{ shown: scopeCount, total }}
-        collapsed={lf.collapsed}
-        onToggleCollapsed={lf.toggleCollapsed}
-        inherited={
-          onToggleParentScope
-            ? {
-                filteredCount: filteredBeadIds?.length ?? 0,
-                totalCount: total,
-                cleared: !!parentCleared,
-                onToggle: onToggleParentScope,
-              }
-            : undefined
-        }
-      />
-      {/* The whole filter block (search + fold + column controls) collapses with
-          the FilterBar, so the ribbon alone reclaims the strip during active use. */}
-      {!lf.collapsed && (
+      {/* Search + fold + column controls: the top row, always visible (above the
+          FilterBar) so it stays in the same place across all views. */}
       <div className="beads-tree-filter">
         <Search size={13} strokeWidth={2} className="beads-tree-filter-icon" />
         <input
@@ -640,7 +621,24 @@ export function TreeView({
           )}
         </div>
       </div>
-      )}
+      <FilterBar
+        snapshot={lf.snapshot}
+        facets={lf.facets}
+        ops={lf.ops}
+        count={{ shown: scopeCount, total }}
+        collapsed={lf.collapsed}
+        onToggleCollapsed={lf.toggleCollapsed}
+        inherited={
+          onToggleParentScope
+            ? {
+                filteredCount: filteredBeadIds?.length ?? 0,
+                totalCount: total,
+                cleared: !!parentCleared,
+                onToggle: onToggleParentScope,
+              }
+            : undefined
+        }
+      />
       <div className="beads-tree-colheader" role="row" style={{ gridTemplateColumns: gridTemplate }}>
         {[
           { sortKey: "title" as SortKey, label: "Title", headerLabel: undefined as string | undefined, colKey: "title" },
