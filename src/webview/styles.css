@@ -1684,6 +1684,65 @@ textarea {
   background-color: var(--vscode-list-activeSelectionBackground);
 }
 
+/* Hidden ("eye-off") rows — the Photoshop-layers metaphor. The row stays fully
+ * visible in the list; we DON'T reuse the closed-issue muting (that channel is
+ * taken). Instead a distinct left-edge stripe marks the excluded state — a
+ * different color from the favorite stripe so the two read apart. Kept subtle so
+ * it doesn't fight status/priority colors. */
+.bead-row.is-hidden {
+  box-shadow: inset 3px 0 0 0 var(--vscode-charts-purple, #b180d7);
+}
+
+/* The inline eye toggle (leading "visibility" column). Ghosted until the row is
+ * hovered so the list stays calm; a hidden bead keeps its eye-off showing so the
+ * state is legible at a glance. */
+.bead-eye-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 2px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--transition-fast), color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.bead-row:hover .bead-eye-toggle,
+.context-card-row:hover .bead-eye-toggle,
+.bead-eye-toggle:focus-visible,
+.bead-eye-toggle.is-hidden {
+  opacity: 1;
+}
+
+/* The eye now lives inside the identity cell (not a dedicated column), so the
+ * cell is a flex row: [eye] [id / title stacked]. `.title-inner` keeps its own
+ * min-width:0 for ellipsis; this wrapper just seats the eye beside it. */
+.issues-title-with-eye {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Card-row eye (Favorites): center it against the card instead of stretching to
+ * the row's full height (.context-card-row is align-items: stretch). */
+.context-card-eye {
+  align-self: center;
+}
+
+.bead-eye-toggle.is-hidden {
+  color: var(--vscode-charts-purple, #b180d7);
+}
+
+.bead-eye-toggle:hover {
+  background-color: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+  color: var(--vscode-foreground);
+}
+
 /* The (unnamed) icon cell is the tooltip affordance: highlight it on hover (and
  * use a help cursor) so users learn to hover there for the bead's description. */
 .icon-cell-hoverable {
@@ -2254,6 +2313,12 @@ textarea {
 .active-bead:hover {
   background: var(--vscode-list-hoverBackground);
   box-shadow: 0 0 0 1px var(--vscode-focusBorder);
+}
+
+/* Hidden ("eye-off") bead card — recolor the left edge to match the Issues-row
+ * hidden stripe, so a hidden favorite reads the same across surfaces. */
+.active-bead.is-hidden {
+  border-left-color: var(--vscode-charts-purple, #b180d7);
 }
 
 .active-bead-main {
@@ -5197,7 +5262,9 @@ textarea {
 }
 
 .app-context-menu-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   width: 100%;
   padding: 5px 10px;
   text-align: left;
@@ -5207,6 +5274,14 @@ textarea {
   border: none;
   border-radius: 3px;
   cursor: pointer;
+}
+
+/* Leading icon in a context-menu item (e.g. the Hide/Show eye). */
+.app-context-menu-icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--vscode-descriptionForeground);
 }
 
 .app-context-menu-item:hover {

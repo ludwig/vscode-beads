@@ -11,6 +11,7 @@
 import * as vscode from "vscode";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
 import { FavoritesService } from "../backend/FavoritesService";
+import { HiddenBeadsService } from "../backend/HiddenBeadsService";
 import {
   ExtensionToWebviewMessage,
   FavoriteBead,
@@ -33,6 +34,9 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
   // favorites can omit it; when present, the base wires star/unstar messages
   // and publishes the current set on (re)init.
   protected readonly favorites?: FavoritesService;
+  // Shared hidden-beads set (the eye-off set). Optional, same as favorites:
+  // providers that surface the hide control get it wired; others omit it.
+  protected readonly hiddenBeads?: HiddenBeadsService;
   protected abstract readonly viewType: string;
   private readonly disposables: vscode.Disposable[] = [];
   // When set, the webview is pulsed once it signals "ready" — used by editor
@@ -53,12 +57,14 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     extensionUri: vscode.Uri,
     projectManager: BeadsProjectManager,
     logger: Logger,
-    favorites?: FavoritesService
+    favorites?: FavoritesService,
+    hiddenBeads?: HiddenBeadsService
   ) {
     this.extensionUri = extensionUri;
     this.projectManager = projectManager;
     this.log = logger;
     this.favorites = favorites;
+    this.hiddenBeads = hiddenBeads;
   }
 
   public resolveWebviewView(
@@ -181,6 +187,12 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
       this.publishFavorites(this.favorites.list());
     }
 
+    // Publish the current hidden-beads set so the view can mark/exclude them
+    // immediately on (re)mount.
+    if (this.hiddenBeads) {
+      this.publishHiddenBeads(this.hiddenBeads.list());
+    }
+
     // Load view-specific data only for visible views.
     if (this._host.visible) {
       await this.loadData("initial");
@@ -201,6 +213,15 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         : { id };
     });
     this.postMessage({ type: "setFavorites", favorites });
+  }
+
+  /**
+   * Push the hidden-beads set to this view (called when the shared set changes).
+   * Just the id set — the webview marks matching rows (eye-off + left-edge
+   * stripe) and drops them from the favorites→relatives expansion.
+   */
+  public publishHiddenBeads(ids: string[]): void {
+    this.postMessage({ type: "setHiddenBeads", hiddenIds: ids });
   }
 
   /**
@@ -439,6 +460,14 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
           break;
         }
         await this.favorites.remove(message.beadId);
+        break;
+
+      case "toggleHidden":
+        if (!this.hiddenBeads) {
+          this.log.warn(`toggleHidden ignored: ${this.viewType} has no HiddenBeadsService`);
+          break;
+        }
+        await this.hiddenBeads.toggle(message.beadId);
         break;
 
       case "startCreate":

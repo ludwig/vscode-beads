@@ -11,7 +11,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, X, Rocket, ListTodo, Copy, FolderPlus } from "lucide-react";
+import { ChevronDown, ChevronRight, X, Rocket, ListTodo, Copy, FolderPlus, Eye, EyeOff } from "lucide-react";
 import { Bead, BeadsProject, FavoriteBead, statusColor, isClosedStatus } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem, DropdownSeparator } from "../common/Dropdown";
@@ -19,6 +19,7 @@ import { formatBytes } from "../common/formatBytes";
 import { TypeIcon } from "../common/TypeIcon";
 import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
 import { EndFlourish } from "../common/EndFlourish";
+import { VisibilityEye } from "../common/VisibilityEye";
 
 interface ProjectSwitcherViewProps {
   projects: BeadsProject[];
@@ -26,6 +27,8 @@ interface ProjectSwitcherViewProps {
   activeBead: Bead | null;
   /** The active project's favorites, in curated order (vs-sd5.1). */
   favorites: FavoriteBead[];
+  /** Hidden (eye-off) bead ids — drives the card menu's Hide/Show item + styling. */
+  hiddenIds?: string[];
   onSelectProject: (project: BeadsProject) => void;
   onOpenProjectFolder: () => void;
   onOpenBead: (beadId: string) => void;
@@ -37,6 +40,8 @@ interface ProjectSwitcherViewProps {
   onCopyFavorites: () => void;
   /** Star/unstar a bead from the card right-click menu (vs-sd5.5). */
   onToggleFavorite: (beadId: string) => void;
+  /** Hide/show a bead (eye-off toggle) from the card right-click menu. */
+  onToggleHidden: (beadId: string) => void;
   onPickReady: () => void;
   onShowIssues: () => void;
   /** Launch the "Initialize Repository" flow (empty-state CTA, vs-r6a1.5). */
@@ -74,6 +79,7 @@ export function ProjectSwitcherView({
   activeProject,
   activeBead,
   favorites,
+  hiddenIds = [],
   onSelectProject,
   onOpenProjectFolder,
   onOpenBead,
@@ -82,6 +88,7 @@ export function ProjectSwitcherView({
   onUnfavorite,
   onCopyFavorites,
   onToggleFavorite,
+  onToggleHidden,
   onPickReady,
   onShowIssues,
   onCreateBoard,
@@ -104,6 +111,13 @@ export function ProjectSwitcherView({
   const [beadCollapsed, setBeadCollapsed] = useState(false);
   const [favoritesCollapsed, setFavoritesCollapsed] = useState(false);
 
+  // We're rearranging the Repository panel (vs-beads visibility work). The
+  // Selection card is pulled from the *view* only — the section JSX and its
+  // handlers stay intact below so we can relocate it later. Flip to `true` to
+  // bring it back. Keep the guarded branch referencing its state/handlers so
+  // esbuild/tsc/lint don't flag them as unused while the card is dark.
+  const SHOW_SELECTION_CARD = false;
+
   // Right-click menu for a bead card/row (vs-sd5.5). `isFavorite` is captured at
   // open time so the toggle label reads correctly for the menu's bead.
   const [cardMenu, setCardMenu] = useState<{ x: number; y: number; id: string; isFavorite: boolean } | null>(null);
@@ -123,8 +137,13 @@ export function ProjectSwitcherView({
         separatorBefore: true,
         onSelect: () => onToggleFavorite(id),
       },
+      {
+        label: hiddenIds.includes(id) ? "Show in views" : "Hide from views",
+        icon: hiddenIds.includes(id) ? <Eye size={13} strokeWidth={2} /> : <EyeOff size={13} strokeWidth={2} />,
+        onSelect: () => onToggleHidden(id),
+      },
     ],
-    [onOpenBead, onOpenBeadInTab, onToggleFavorite],
+    [onOpenBead, onOpenBeadInTab, onToggleFavorite, onToggleHidden, hiddenIds],
   );
 
   // Click-count router on the Selection card (mirrors the Graph/Tree): 1/2
@@ -305,6 +324,7 @@ export function ProjectSwitcherView({
         </button>
       </div>
 
+      {SHOW_SELECTION_CARD && (
       <section className="context-section">
         <div className="context-section-head">
           <button
@@ -361,6 +381,7 @@ export function ProjectSwitcherView({
           </div>
         ))}
       </section>
+      )}
 
       <section className="context-section">
         <div className="context-section-head">
@@ -396,9 +417,17 @@ export function ProjectSwitcherView({
           <div className="favorites-list">
             {favorites.map((fav) => (
               <div key={fav.id} className="context-card-row">
+                {/* Eye is a sibling, not nested: .active-bead is itself a
+                    <button>, so the shared VisibilityEye rides alongside it in
+                    the card row (like the trailing unstar X). */}
+                <VisibilityEye
+                  hidden={hiddenIds.includes(fav.id)}
+                  onToggle={() => onToggleHidden(fav.id)}
+                  className="context-card-eye"
+                />
                 <button
                   type="button"
-                  className="active-bead context-card-open"
+                  className={`active-bead context-card-open${hiddenIds.includes(fav.id) ? " is-hidden" : ""}`}
                   title={`${fav.id}${fav.title ? ` — ${fav.title}` : ""}\nClick to open in Details · triple-click to open in an editor tab`}
                   onClick={() => activateBead(fav.id)}
                   onContextMenu={(e) => openCardMenu(e, fav.id, true)}

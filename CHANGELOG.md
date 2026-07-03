@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Hide beads (eye-off / Photoshop-layers model)** — each Issues row has a leading eye toggle (also a "Hide from views" / "Show in views" right-click item, and on Favorites cards). A hidden bead's row stays visible but is marked with a left-edge stripe + eye-off icon, and is excluded from the favorites→relatives expansion. The set is per-project, persisted in workspace state
+
+### Changed
+
+- **Selection card removed from the Repository panel** — the Repository panel is being rearranged; the Selection section is pulled from the view (the code is retained for possible relocation)
+
 ## [0.25.0] - 2026-06-23
 
 ### Added
