@@ -282,11 +282,52 @@ body {
 .filter-bar-summary {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   font-size: 12px;
-  color: var(--vscode-descriptionForeground);
   white-space: nowrap;
   overflow: hidden;
+}
+
+/* Inherited-scope text (muted) vs. the local filter tokens (foreground). */
+.filter-bar-summary-inherited {
+  flex-shrink: 0;
+  color: var(--vscode-descriptionForeground);
+}
+
+.filter-bar-summary-sep {
+  flex-shrink: 0;
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.6;
+}
+
+.filter-bar-summary-tokens {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--vscode-foreground);
+}
+
+/* Empty-state affordance: a muted, inviting "Add a filter…" that expands the bar. */
+.filter-bar-add-hint {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.85;
+  cursor: pointer;
+}
+
+.filter-bar-add-hint:hover {
+  opacity: 1;
+  color: var(--vscode-foreground);
 }
 
 /* ==================== Common Components ==================== */
@@ -4575,10 +4616,13 @@ textarea {
 }
 
 /* Mute a collapsed lane's vertical title so parked/quiet lanes recede during
-   active use (matches the closed-issue muting; the count badge stays legible). */
+   active use. Stronger than the closed-issue muting: descriptionForeground can
+   sit close to foreground in dark themes, so drop the opacity further and thin
+   the weight to make the de-emphasis unmistakable. The count badge stays legible. */
 .kanban-column.collapsed .kanban-column-title {
   color: var(--vscode-descriptionForeground);
-  opacity: 0.7;
+  opacity: 0.5;
+  font-weight: 400;
 }
 
 .kanban-column-body {

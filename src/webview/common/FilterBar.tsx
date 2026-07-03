@@ -105,11 +105,23 @@ export function FilterBar({
   const unassignedCount = countIn(facets.assignees, "__unassigned__");
   const unlabeledCount = countIn(facets.labels, "__unlabeled__");
 
-  const activeFilterCount =
-    status.length + priority.length + type.length + assignee.length + label.length +
-    (snapshot.readyOnly ? 1 : 0) + (snapshot.favoritesOnly ? 1 : 0) +
-    (snapshot.globalFilter.trim() ? 1 : 0);
-  const hasActiveFilters = activeFilterCount > 0;
+  const hasActiveFilters =
+    status.length + priority.length + type.length + assignee.length + label.length > 0 ||
+    snapshot.readyOnly ||
+    snapshot.favoritesOnly ||
+    snapshot.globalFilter.trim().length > 0;
+
+  // A concise, human-readable list of the active filters, for the collapsed
+  // ribbon (e.g. "not closed, p0, ui, Ready"). Mirrors the chip labels.
+  const filterTokens: string[] = [];
+  if (status.includes(NOT_CLOSED as BeadStatus)) filterTokens.push("not closed");
+  else for (const s of status) filterTokens.push(statusLabel(s));
+  for (const p of priority) filterTokens.push(`p${p}`);
+  for (const t of type) filterTokens.push(TYPE_LABELS[t as BeadType] || t);
+  for (const a of assignee) filterTokens.push(a === "__unassigned__" ? "Unassigned" : a);
+  for (const l of label) filterTokens.push(l === "__unlabeled__" ? "Unlabeled" : l);
+  if (snapshot.readyOnly) filterTokens.push("Ready");
+  if (snapshot.favoritesOnly) filterTokens.push("Favorites");
 
   // Label autocomplete options: distinct labels (minus already-selected), plus
   // the Unlabeled bucket when present and not already selected.
@@ -138,25 +150,32 @@ export function FilterBar({
     </button>
   );
 
-  // Collapsed (ribbon) form: a one-line summary of what's active, the inherited
-  // Show-all/Show-filtered toggle, and the twistie to expand. No editing surface.
+  // Collapsed (ribbon) form: a concise readout of the active filters + the
+  // inherited Show-all/Show-filtered toggle + the twistie to expand. When
+  // nothing is set, an inviting muted "Add a filter…" affordance (expands on
+  // click). No editing surface here.
   if (onToggleCollapsed && collapsed) {
-    const parts: string[] = [];
-    if (inherited) {
-      parts.push(
-        inherited.cleared
-          ? `Showing all ${inherited.totalCount}`
-          : `Filtered · ${inherited.filteredCount} of ${inherited.totalCount}`,
-      );
-    }
-    if (hasActiveFilters) {
-      parts.push(`${activeFilterCount} filter${activeFilterCount === 1 ? "" : "s"}`);
-    }
-    if (parts.length === 0) parts.push("No filters");
+    const inheritedText = inherited
+      ? inherited.cleared
+        ? `Showing all ${inherited.totalCount}`
+        : `Filtered · ${inherited.filteredCount} of ${inherited.totalCount}`
+      : null;
     return (
       <div className="filter-bar filter-bar-collapsed" role="status">
         {twistie}
-        <span className="filter-bar-summary">{parts.join(" · ")}</span>
+        <span className="filter-bar-summary">
+          {inheritedText && <span className="filter-bar-summary-inherited">{inheritedText}</span>}
+          {inheritedText && filterTokens.length > 0 && (
+            <span className="filter-bar-summary-sep" aria-hidden="true">·</span>
+          )}
+          {filterTokens.length > 0 ? (
+            <span className="filter-bar-summary-tokens">{filterTokens.join(", ")}</span>
+          ) : (
+            <button type="button" className="filter-bar-add-hint" onClick={onToggleCollapsed}>
+              Add a filter…
+            </button>
+          )}
+        </span>
         {inherited && (
           <button type="button" className="filter-snapshot-ribbon-btn" onClick={inherited.onToggle}>
             {inherited.cleared ? `Show filtered (${inherited.filteredCount})` : "Show all"}
