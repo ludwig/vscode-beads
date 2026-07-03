@@ -235,13 +235,24 @@ body {
 }
 
 /* Inherited-scope ribbon as an INLINE segment of the bar (not a full-width
-   banner): a compact pill with no divider of its own. More specific than the
-   generic .editor-tab-toolbar .filter-snapshot-ribbon rule above so it wins. */
-.editor-tab-toolbar .filter-bar .filter-snapshot-ribbon {
+   banner): a compact pill with no divider of its own. Applies wherever a
+   FilterBar hosts the ribbon (editor-tab chrome + the Tree's own FilterBar).
+   Comes after the generic .editor-tab-toolbar .filter-snapshot-ribbon rule so
+   it wins on equal specificity. */
+.filter-bar .filter-snapshot-ribbon {
   flex: 0 1 auto;
   padding: 2px 8px;
   border-bottom: none;
   border-radius: var(--border-radius);
+}
+
+/* The Tree self-hosts a FilterBar as its top strip: drop the standalone-card
+   chrome so it reads as a header row above the search/fold toolbar. */
+.beads-tree > .filter-bar {
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  background: transparent;
 }
 
 /* Twistie: expand/collapse toggle for the FilterBar. */

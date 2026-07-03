@@ -25,6 +25,9 @@ import {
 } from "../../types";
 import { TypeIcon } from "../../common/TypeIcon";
 import { FilterIndicator } from "../../common/FilterIndicator";
+import { FilterBar } from "../../common/FilterBar";
+import { useLocalFilter } from "../../hooks/useLocalFilter";
+import { intersect } from "../../composeScope";
 import { Loading } from "../../common/Loading";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { ContextMenu, type ContextMenuItem } from "../../common/ContextMenu";
@@ -158,18 +161,26 @@ interface TreeViewProps {
   selectedBeadId: string | null;
   /** Favorite bead ids — drives the right-click Add/Remove Favorites item (vs-sd5.5). */
   favoriteIds?: string[];
+  /** Masked favorites (eye-off), excluded from the favorites→relatives seed in
+   * the Tree's own Favorites filter. */
+  maskedIds?: string[];
   /** Accent favorited rows (beads.highlightFavorites, vs-or31). */
   highlightFavorites?: boolean;
   /** Gray out closed (done) row titles (beads.muteClosedIssues, vs-or31). */
   muteClosedIssues?: boolean;
   /**
-   * Ids matching the current Issues filter/search, or null when unknown. The
-   * "Filtered" toggle scopes the tree to this set; null disables the toggle.
+   * The inherited parent scope (panel filter / editor-tab seed), or null for no
+   * inherited scope. The Tree's own FilterBar composes on top of this.
    */
   filteredBeadIds: string[] | null;
-  /** Whether the Issues filter narrows to a strict subset (drives the indicator). */
-  filterActive?: boolean;
-  filteredCount?: number;
+  /**
+   * Editor-tab only: the inherited-scope ribbon controls. When `onToggleParentScope`
+   * is provided, the Tree's FilterBar shows the Show-all/Show-filtered ribbon and
+   * `parentCleared` gates the inherited scope. Omitted in the panel subtab (the
+   * inherited scope simply applies).
+   */
+  parentCleared?: boolean;
+  onToggleParentScope?: () => void;
   totalCount?: number;
   /**
    * A "show in tree" deep-link target (vs-kp67): expand the bead's collapsed
@@ -188,11 +199,12 @@ export function TreeView({
   error,
   selectedBeadId,
   favoriteIds = [],
+  maskedIds = [],
   highlightFavorites = true,
   muteClosedIssues = true,
   filteredBeadIds,
-  filterActive,
-  filteredCount,
+  parentCleared,
+  onToggleParentScope,
   totalCount,
   revealRequest,
   onSelectBead,
@@ -337,13 +349,34 @@ export function TreeView({
     () => (graph ? buildForest(graph.nodes, graph.edges, comparatorFor(sorts)) : []),
     [graph, sorts],
   );
-  // The Tree always reflects the current Issues filter set (vs-wp5): Issues is
-  // where filters are defined; the Tree scopes to that slice (keeping the
-  // ancestor path so it stays connected). Then narrow further by the text query.
-  const scoped = useMemo(
-    () => (filteredBeadIds != null ? filterForestByIds(forest, new Set(filteredBeadIds)) : forest),
-    [forest, filteredBeadIds],
+
+  // The Tree's own unified FilterBar (structured local filter), composed on top
+  // of the inherited parent scope: (Filtered ? parentScope : all) ∩ resolve(local).
+  const lf = useLocalFilter({
+    persistKey: "treeLocalFilter",
+    beads: graph?.nodes ?? [],
+    edges: graph?.edges ?? [],
+    favoriteIds,
+    maskedIds,
+    hasGraph: !!graph,
+    onRequestGraph,
+  });
+  const inheritedScope = parentCleared ? null : filteredBeadIds;
+  const finalScope = useMemo(
+    () => intersect(inheritedScope, lf.localScope),
+    [inheritedScope, lf.localScope],
   );
+
+  // Scope the forest to the composed id-set (keeping ancestor paths so nodes stay
+  // connected). Then narrow further by the text query.
+  const scoped = useMemo(
+    () => (finalScope != null ? filterForestByIds(forest, new Set(finalScope)) : forest),
+    [forest, finalScope],
+  );
+
+  const total = totalCount ?? (graph?.nodes.length ?? 0);
+  const scopeActive = finalScope != null && finalScope.length < total;
+  const scopeCount = finalScope?.length ?? total;
   const visible = useMemo(() => filterForest(scoped, query), [scoped, query]);
   // Only the text query force-expands (to reveal matches); the always-on Issues
   // scope must not, so the user can still collapse/expand within it.
@@ -519,6 +552,23 @@ export function TreeView({
 
   return (
     <div className="beads-tree">
+      <FilterBar
+        snapshot={lf.snapshot}
+        facets={lf.facets}
+        ops={lf.ops}
+        collapsed={lf.collapsed}
+        onToggleCollapsed={lf.toggleCollapsed}
+        inherited={
+          onToggleParentScope
+            ? {
+                filteredCount: filteredBeadIds?.length ?? 0,
+                totalCount: total,
+                cleared: !!parentCleared,
+                onToggle: onToggleParentScope,
+              }
+            : undefined
+        }
+      />
       <div className="beads-tree-filter">
         <Search size={13} strokeWidth={2} className="beads-tree-filter-icon" />
         <input
@@ -529,10 +579,10 @@ export function TreeView({
           onChange={(e) => setQuery(e.target.value)}
           spellCheck={false}
         />
-        {filterActive && (
+        {scopeActive && (
           <FilterIndicator
-            count={filteredCount ?? 0}
-            total={totalCount ?? 0}
+            count={scopeCount}
+            total={total}
             className="beads-tree-filter-indicator"
           />
         )}

@@ -305,11 +305,10 @@ export function PanelShell({
             error={error}
             selectedBeadId={selectedBeadId}
             favoriteIds={favoriteIds}
+            maskedIds={maskedIds}
             highlightFavorites={settings.highlightFavorites}
             muteClosedIssues={settings.muteClosedIssues}
             filteredBeadIds={filteredBeadIds}
-            filterActive={filterActive}
-            filteredCount={filteredCount}
             totalCount={totalCount}
             revealRequest={treeRevealRequest}
             onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}

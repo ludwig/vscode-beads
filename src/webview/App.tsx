@@ -5,7 +5,7 @@
  * Manages global state and message passing with the extension.
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { RefreshCw } from "lucide-react";
 import {
   Bead,
@@ -31,28 +31,8 @@ import { ProjectSwitcherView } from "./views/ProjectSwitcherView";
 import { BoardInitWizard } from "./views/BoardInitWizard";
 import { PanelShell } from "./views/PanelShell";
 import { FilterBar } from "./common/FilterBar";
-import { computeFacets } from "./facets";
 import { intersect } from "./composeScope";
-import { resolveScope } from "../backend/resolveScope";
-import {
-  emptyFilterSnapshot,
-  applyPreset,
-  addStatus,
-  removeStatus,
-  clearStatus,
-  addPriority,
-  removePriority,
-  addType,
-  removeType,
-  addLabel,
-  removeLabel,
-  addAssignee,
-  removeAssignee,
-  toggleReady,
-  toggleFavoritesOnly,
-  clearAll,
-  type FilterOps,
-} from "./filterSnapshotOps";
+import { useLocalFilter } from "./hooks/useLocalFilter";
 import { CreateBeadForm } from "./views/CreateBeadForm";
 import { Loading } from "./common/Loading";
 import { ToastProvider, triggerToast } from "./common/Toast";
@@ -385,81 +365,21 @@ export function App(): React.ReactElement {
   // favorites→relatives seed expansion in the Issues list.
   const maskedIds = state.favorites.filter((f) => f.masked).map((f) => f.id);
 
-  // Tab-local sidecar filter (unified filter bar, Phase 2). Each editor tab
-  // (Kanban/Tree/Graph) owns its own FilterSnapshot, persisted per-tab in this
-  // webview's state. The final scope handed to the view is the inherited parent
-  // scope intersected with this locally-resolved filter (composition below).
-  const [localSnapshot, setLocalSnapshot] = useState<FilterSnapshot>(() => {
-    const persisted = (vscode.getState() as { localFilterSnapshot?: FilterSnapshot } | undefined)
-      ?.localFilterSnapshot;
-    return persisted ?? emptyFilterSnapshot();
+  // Tab-local sidecar filter (unified filter bar, Phase 2) for the editor-tab
+  // CHROME (Kanban/Graph). The Tree self-hosts its own FilterBar instead (so it
+  // works in the panel subtab too), so it doesn't use this one. The final scope
+  // handed to a chrome-hosted view is the inherited parent scope intersected
+  // with this locally-resolved filter (composition below).
+  const chromeFilter = useLocalFilter({
+    persistKey: "localFilterSnapshot",
+    beads: state.beads,
+    edges: state.graph?.edges ?? [],
+    favoriteIds,
+    maskedIds,
+    hasGraph: !!state.graph,
+    onRequestGraph: () => vscode.postMessage({ type: "requestGraph" }),
   });
-  useEffect(() => {
-    const prev = (vscode.getState() as Record<string, unknown> | undefined) ?? {};
-    vscode.setState({ ...prev, localFilterSnapshot: localSnapshot });
-  }, [localSnapshot]);
-
-  // The FilterBar's expanded/ribbon state, persisted per tab (default expanded).
-  const [filterBarCollapsed, setFilterBarCollapsed] = useState<boolean>(() =>
-    Boolean((vscode.getState() as { localFilterCollapsed?: boolean } | undefined)?.localFilterCollapsed),
-  );
-  const toggleFilterBarCollapsed = useCallback(() => {
-    setFilterBarCollapsed((c) => {
-      const next = !c;
-      const prev = (vscode.getState() as Record<string, unknown> | undefined) ?? {};
-      vscode.setState({ ...prev, localFilterCollapsed: next });
-      return next;
-    });
-  }, []);
-
-  // Bind the pure snapshot transforms to setState (stable — only closes over the
-  // setter). This is the callback surface the FilterBar edits through.
-  const filterOps: FilterOps = useMemo(() => {
-    const edit = (fn: (s: FilterSnapshot) => FilterSnapshot) => setLocalSnapshot((s) => fn(s));
-    return {
-      applyPreset: (id) => edit((s) => applyPreset(s, id)),
-      addStatus: (v) => edit((s) => addStatus(s, v)),
-      removeStatus: (v) => edit((s) => removeStatus(s, v)),
-      clearStatus: () => edit((s) => clearStatus(s)),
-      addPriority: (v) => edit((s) => addPriority(s, v)),
-      removePriority: (v) => edit((s) => removePriority(s, v)),
-      addType: (v) => edit((s) => addType(s, v)),
-      removeType: (v) => edit((s) => removeType(s, v)),
-      addLabel: (v) => edit((s) => addLabel(s, v)),
-      removeLabel: (v) => edit((s) => removeLabel(s, v)),
-      addAssignee: (v) => edit((s) => addAssignee(s, v)),
-      removeAssignee: (v) => edit((s) => removeAssignee(s, v)),
-      toggleReady: () => edit((s) => toggleReady(s)),
-      toggleFavoritesOnly: () => edit((s) => toggleFavoritesOnly(s)),
-      clearAll: () => edit((s) => clearAll(s)),
-    };
-  }, []);
-
-  const facets = useMemo(() => computeFacets(state.beads), [state.beads]);
-
-  // Ready/Favorites predicates need the dependency graph; fetch it lazily when a
-  // local filter first activates one (mirrors IssuesView's behavior).
-  useEffect(() => {
-    if (!state.settings.isEditorTab) return;
-    if ((localSnapshot.readyOnly || localSnapshot.favoritesOnly) && !state.graph) {
-      vscode.postMessage({ type: "requestGraph" });
-    }
-  }, [state.settings.isEditorTab, localSnapshot.readyOnly, localSnapshot.favoritesOnly, state.graph]);
-
-  // Resolve the local filter to an id-set (null = local filter narrows nothing),
-  // using the SAME pure resolver the host uses for the shared scope.
-  const localScope = useMemo(
-    () =>
-      resolveScope({
-        beads: state.beads,
-        edges: state.graph?.edges ?? [],
-        favoriteIds,
-        maskedIds,
-        spec: localSnapshot,
-      }),
-    // favoriteIds/maskedIds derive from state.favorites; depend on the source.
-    [state.beads, state.graph, state.favorites, localSnapshot],
-  );
+  const localScope = chromeFilter.localScope;
 
   // Editor-tab filter scope: a Kanban/Tree/Graph tab inherits the panel's LIVE
   // parent scope (host-computed). The ribbon (vs-zq2) can temporarily drop it
@@ -516,11 +436,11 @@ export function App(): React.ReactElement {
         <div className="editor-tab-toolbar">
           {opts.filterBar ? (
             <FilterBar
-              snapshot={localSnapshot}
-              facets={facets}
-              ops={filterOps}
-              collapsed={filterBarCollapsed}
-              onToggleCollapsed={toggleFilterBarCollapsed}
+              snapshot={chromeFilter.snapshot}
+              facets={chromeFilter.facets}
+              ops={chromeFilter.ops}
+              collapsed={chromeFilter.collapsed}
+              onToggleCollapsed={chromeFilter.toggleCollapsed}
               inherited={
                 hasSeedSnapshot
                   ? {
@@ -706,6 +626,9 @@ export function App(): React.ReactElement {
         );
 
       case "beadsTree":
+        // The Tree self-hosts its FilterBar (so it works in the panel too), so
+        // it gets the RAW parent scope + the inherited-ribbon toggle and does its
+        // own compose; no chrome FilterBar here.
         return withEditorTabChrome(
           <TreeView
             graph={state.graph}
@@ -713,17 +636,17 @@ export function App(): React.ReactElement {
             error={state.error}
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
+            maskedIds={maskedIds}
             highlightFavorites={state.settings.highlightFavorites}
             muteClosedIssues={state.settings.muteClosedIssues}
-            filteredBeadIds={composedSeed}
-            filterActive={composedActive}
-            filteredCount={composedCount}
+            filteredBeadIds={seedSnapshot}
+            parentCleared={state.seedFilterCleared}
+            onToggleParentScope={toggleSeedFilter}
             totalCount={state.beads.length}
             onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onRequestGraph={() => vscode.postMessage({ type: "requestGraph" })}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
           />,
-          { filterBar: true },
         );
 
       case "beadsProjectSwitcher":
