@@ -4597,7 +4597,9 @@ textarea {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px var(--spacing-sm);
+  padding: 6px 8px;
+  height: 36px;
+  box-sizing: border-box;
   border-bottom: 1px solid var(--vscode-panel-border);
 }
 .kanban-filter-icon {
@@ -4910,6 +4912,8 @@ textarea {
   align-items: center;
   gap: 6px;
   padding: 6px 8px;
+  height: 36px;
+  box-sizing: border-box;
   border-bottom: 1px solid var(--vscode-panel-border);
   flex: 0 0 auto;
 }
@@ -4946,8 +4950,8 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border: none;
   border-radius: 3px;
   background: transparent;
@@ -5312,6 +5316,8 @@ textarea {
   align-items: center;
   gap: 6px;
   padding: 6px 8px;
+  height: 36px;
+  box-sizing: border-box;
   border-bottom: 1px solid var(--vscode-panel-border);
   flex: 0 0 auto;
 }
