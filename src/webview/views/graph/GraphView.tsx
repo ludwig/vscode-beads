@@ -24,7 +24,7 @@ import {
   type Edge,
   type Connection,
 } from "@xyflow/react";
-import { GitBranch, Network, Crosshair, Wand2, ListTree, Radar, Search, X } from "lucide-react";
+import { GitBranch, Network, Crosshair, Wand2, ListTree, Radar, X } from "lucide-react";
 import { Bead, DependencyGraph, statusColor, vscode } from "../../types";
 import { Loading } from "../../common/Loading";
 import { ErrorMessage } from "../../common/ErrorMessage";
@@ -343,14 +343,13 @@ function GraphCanvas({
   const total = graph?.nodes.length ?? 0;
   const scopeCount = finalScope?.length ?? total;
 
-  // Node quick-search: its own row ABOVE the FilterBar (always visible, like the
-  // Issues search), so it doesn't collapse with the structured filter.
+  // Node quick-search: the leading slot of the FilterBar (row 1, after the
+  // funnel), folding away with the whole structure when the funnel is pressed.
   const searchRow = (
-    <div className="graph-filterbar">
-      <Search size={13} strokeWidth={2} className="graph-filter-icon" />
+    <>
       <input
         type="text"
-        className="graph-filter-input"
+        className="filter-bar-search-input"
         placeholder="Filter nodes…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
@@ -369,7 +368,7 @@ function GraphCanvas({
           <X size={13} strokeWidth={2} />
         </button>
       )}
-    </div>
+    </>
   );
   // Graph-specific controls (layout/focus/auto) ride in the FilterBar's extraRow
   // — the "third row" — so they collapse when the funnel is pressed.
@@ -453,7 +452,6 @@ function GraphCanvas({
 
   return (
     <div className="graph-view">
-      {searchRow}
       <FilterBar
         snapshot={lf.snapshot}
         facets={lf.facets}
@@ -461,6 +459,7 @@ function GraphCanvas({
         count={{ shown: scopeCount, total }}
         collapsed={lf.collapsed}
         onToggleCollapsed={lf.toggleCollapsed}
+        search={searchRow}
         inherited={
           onToggleParentScope
             ? {

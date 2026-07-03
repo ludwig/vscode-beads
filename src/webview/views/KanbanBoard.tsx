@@ -6,7 +6,6 @@
  */
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { Search } from "lucide-react";
 import { Bead, BeadStatus, BuiltInStatus, BeadType, DependencyGraph, STATUS_LABELS, STATUS_COLORS, isClosedStatus, vscode } from "../types";
 import { TypeIcon } from "../common/TypeIcon";
 import { PriorityBadge } from "../common/PriorityBadge";
@@ -234,19 +233,6 @@ export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], maskedIds
 
   return (
     <div className="kanban">
-      {/* Search is the top row (always visible, above the FilterBar) so it sits
-          in the same place across all views. */}
-      <div className="kanban-filterbar">
-        <Search size={13} strokeWidth={2} className="kanban-filter-icon" />
-        <input
-          type="text"
-          className="kanban-filter-input"
-          placeholder="Filter cards…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          spellCheck={false}
-        />
-      </div>
       <FilterBar
         snapshot={lf.snapshot}
         facets={lf.facets}
@@ -254,6 +240,16 @@ export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], maskedIds
         count={{ shown: scopeCount, total }}
         collapsed={lf.collapsed}
         onToggleCollapsed={lf.toggleCollapsed}
+        search={
+          <input
+            type="text"
+            className="filter-bar-search-input"
+            placeholder="Filter cards…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            spellCheck={false}
+          />
+        }
         inherited={
           onToggleParentScope
             ? {

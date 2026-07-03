@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight, ChevronDown, Search, ArrowUp, ArrowDown, CornerLeftUp, UnfoldVertical, FoldVertical, Columns3 } from "lucide-react";
+import { ChevronRight, ChevronDown, ArrowUp, ArrowDown, CornerLeftUp, UnfoldVertical, FoldVertical, Columns3 } from "lucide-react";
 import {
   Bead,
   BeadType,
@@ -558,69 +558,6 @@ export function TreeView({
 
   return (
     <div className="beads-tree">
-      {/* Search + fold + column controls: the top row, always visible (above the
-          FilterBar) so it stays in the same place across all views. */}
-      <div className="beads-tree-filter">
-        <Search size={13} strokeWidth={2} className="beads-tree-filter-icon" />
-        <input
-          type="text"
-          className="beads-tree-filter-input"
-          placeholder="Filter beads…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          spellCheck={false}
-        />
-        {parentIds.size > 0 && (
-          <div className="beads-tree-foldctl" role="group" aria-label="Expand or collapse the tree">
-            <button
-              type="button"
-              className="beads-tree-foldbtn"
-              title="Expand all (⇧-click a row's chevron to expand just its subtree)"
-              aria-label="Expand all"
-              disabled={allExpanded || filtering}
-              onClick={expandAll}
-            >
-              <UnfoldVertical size={14} strokeWidth={2} />
-            </button>
-            <button
-              type="button"
-              className="beads-tree-foldbtn"
-              title="Collapse all (⇧-click a row's chevron to collapse just its subtree)"
-              aria-label="Collapse all"
-              disabled={allCollapsed || filtering}
-              onClick={collapseAll}
-            >
-              <FoldVertical size={14} strokeWidth={2} />
-            </button>
-          </div>
-        )}
-        <div className="beads-tree-colmenu" ref={colMenuRef}>
-          <button
-            type="button"
-            className="beads-tree-foldbtn"
-            title="Show or hide columns"
-            aria-label="Show or hide columns"
-            aria-expanded={colMenuOpen}
-            onClick={() => setColMenuOpen((v) => !v)}
-          >
-            <Columns3 size={14} strokeWidth={2} />
-          </button>
-          {colMenuOpen && (
-            <div className="col-menu beads-tree-col-menu">
-              {TREE_COLUMNS.map((c) => (
-                <label key={c.key}>
-                  <input
-                    type="checkbox"
-                    checked={visibleCols[c.key]}
-                    onChange={() => setVisibleCols((prev) => ({ ...prev, [c.key]: !prev[c.key] }))}
-                  />
-                  {c.label}
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
       <FilterBar
         snapshot={lf.snapshot}
         facets={lf.facets}
@@ -628,6 +565,68 @@ export function TreeView({
         count={{ shown: scopeCount, total }}
         collapsed={lf.collapsed}
         onToggleCollapsed={lf.toggleCollapsed}
+        search={
+          <>
+            <input
+              type="text"
+              className="filter-bar-search-input"
+              placeholder="Filter beads…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              spellCheck={false}
+            />
+            {parentIds.size > 0 && (
+              <div className="beads-tree-foldctl" role="group" aria-label="Expand or collapse the tree">
+                <button
+                  type="button"
+                  className="beads-tree-foldbtn"
+                  title="Expand all (⇧-click a row's chevron to expand just its subtree)"
+                  aria-label="Expand all"
+                  disabled={allExpanded || filtering}
+                  onClick={expandAll}
+                >
+                  <UnfoldVertical size={14} strokeWidth={2} />
+                </button>
+                <button
+                  type="button"
+                  className="beads-tree-foldbtn"
+                  title="Collapse all (⇧-click a row's chevron to collapse just its subtree)"
+                  aria-label="Collapse all"
+                  disabled={allCollapsed || filtering}
+                  onClick={collapseAll}
+                >
+                  <FoldVertical size={14} strokeWidth={2} />
+                </button>
+              </div>
+            )}
+            <div className="beads-tree-colmenu" ref={colMenuRef}>
+              <button
+                type="button"
+                className="beads-tree-foldbtn"
+                title="Show or hide columns"
+                aria-label="Show or hide columns"
+                aria-expanded={colMenuOpen}
+                onClick={() => setColMenuOpen((v) => !v)}
+              >
+                <Columns3 size={14} strokeWidth={2} />
+              </button>
+              {colMenuOpen && (
+                <div className="col-menu beads-tree-col-menu">
+                  {TREE_COLUMNS.map((c) => (
+                    <label key={c.key}>
+                      <input
+                        type="checkbox"
+                        checked={visibleCols[c.key]}
+                        onChange={() => setVisibleCols((prev) => ({ ...prev, [c.key]: !prev[c.key] }))}
+                      />
+                      {c.label}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        }
         inherited={
           onToggleParentScope
             ? {

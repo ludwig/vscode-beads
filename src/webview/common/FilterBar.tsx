@@ -77,6 +77,12 @@ interface FilterBarProps {
    * the `collapsed` prop is honored; omit for a non-collapsible bar.
    */
   onToggleCollapsed?: () => void;
+  /**
+   * The host's free-text search field (+ any adjacent view controls). Rendered
+   * as the leading row, right after the funnel, and folded away with the rest of
+   * the structure when collapsed — the funnel is the single master toggle.
+   */
+  search?: React.ReactNode;
   /** View-specific controls rendered on the trailing edge (e.g. Tree fold/column). */
   trailing?: React.ReactNode;
   /** A second, view-specific row under the main bar (e.g. Graph's graph-only filters). */
@@ -93,6 +99,7 @@ export function FilterBar({
   count,
   collapsed = false,
   onToggleCollapsed,
+  search,
   trailing,
   extraRow,
 }: FilterBarProps): React.ReactElement {
@@ -211,8 +218,13 @@ export function FilterBar({
 
   return (
     <>
+    {(twistie || search) && (
+      <div className="filter-bar-search-row">
+        {twistie}
+        {search}
+      </div>
+    )}
     <div className="filter-bar">
-      {twistie}
       {inherited && (
         <FilterSnapshotRibbon
           filteredCount={inherited.filteredCount}

@@ -329,6 +329,37 @@ body {
   margin-left: 0;
 }
 
+/* Leading row of the expanded bar: the funnel (master toggle) + the host's
+   search field + any adjacent view controls (Tree fold/columns, Graph clear).
+   Folds away with the rest of the structure when collapsed — the whole block
+   collapses to the ribbon, reclaiming screen real estate during active work. */
+.filter-bar-search-row {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  height: 36px;
+  box-sizing: border-box;
+}
+
+/* Shared search field: one look across Kanban / Tree / Graph. The funnel leads
+   the row and the placeholder carries the context, so no leading loupe glyph. */
+.filter-bar-search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, transparent);
+  border-radius: 3px;
+  padding: 3px 6px;
+  font-size: 12px;
+  outline: none;
+}
+.filter-bar-search-input:focus {
+  border-color: var(--vscode-focusBorder);
+}
+
 /* A second, view-specific row under the main bar (e.g. Graph's graph filters). */
 .filter-bar-extra-row {
   display: flex;
@@ -4592,34 +4623,6 @@ textarea {
   background: transparent;
 }
 
-.kanban-filterbar {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  height: 36px;
-  box-sizing: border-box;
-  border-bottom: 1px solid var(--vscode-panel-border);
-}
-.kanban-filter-icon {
-  flex: 0 0 auto;
-  color: var(--vscode-descriptionForeground);
-}
-.kanban-filter-input {
-  flex: 1 1 auto;
-  min-width: 0;
-  background: var(--vscode-input-background);
-  color: var(--vscode-input-foreground);
-  border: 1px solid var(--vscode-input-border, transparent);
-  border-radius: 3px;
-  padding: 3px 6px;
-  font-size: 12px;
-  outline: none;
-}
-.kanban-filter-input:focus {
-  border-color: var(--vscode-focusBorder);
-}
 .kanban-filter-indicator {
   flex: 0 0 auto;
   margin-left: auto;
@@ -4875,12 +4878,9 @@ textarea {
 }
 
 /* The node quick-search is the top row (always visible, Issues-style). */
-.graph-view > .graph-filterbar {
-  flex: 0 0 auto;
-}
-/* The graph self-hosts a FilterBar below the search (funnel + structured filter);
-   its graph-specific controls (layout/Focus/Auto) are the third row, riding in
-   the FilterBar's extra row so they collapse with the funnel. */
+/* The graph self-hosts a FilterBar (funnel + search + structured filter); its
+   graph-specific controls (layout/Focus/Auto) are the third row, riding in the
+   FilterBar's extra row so they collapse with the funnel. */
 .graph-view > .filter-bar {
   flex: 0 0 auto;
   border: none;
@@ -4905,37 +4905,6 @@ textarea {
   flex-direction: column;
   height: 100%;
   min-height: 0;
-}
-
-.beads-tree-filter {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  height: 36px;
-  box-sizing: border-box;
-  border-bottom: 1px solid var(--vscode-panel-border);
-  flex: 0 0 auto;
-}
-
-.beads-tree-filter-icon {
-  color: var(--vscode-descriptionForeground);
-  flex: 0 0 auto;
-}
-
-.beads-tree-filter-input {
-  flex: 1 1 auto;
-  background: var(--vscode-input-background);
-  color: var(--vscode-input-foreground);
-  border: 1px solid var(--vscode-input-border, transparent);
-  border-radius: 3px;
-  padding: 3px 6px;
-  font-size: 12px;
-  outline: none;
-}
-
-.beads-tree-filter-input:focus {
-  border-color: var(--vscode-focusBorder);
 }
 
 /* Expand-all / collapse-all controls (vs-fpp). */
@@ -5307,42 +5276,8 @@ textarea {
   flex: 0 0 auto;
 }
 
-/* Ad-hoc quick-filter row (vs-v6h) — its own top row above the button toolbar,
-   mirroring the Kanban (.kanban-filterbar) and Tree (.beads-tree-filter) bars so
-   the search glyph stays in the same place across tabs (and the input isn't
-   squished competing with the layout buttons). */
-.graph-filterbar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  height: 36px;
-  box-sizing: border-box;
-  border-bottom: 1px solid var(--vscode-panel-border);
-  flex: 0 0 auto;
-}
-
-.graph-filter-icon {
-  flex: 0 0 auto;
-  color: var(--vscode-descriptionForeground);
-}
-
-.graph-filter-input {
-  flex: 1 1 auto;
-  min-width: 0;
-  background: var(--vscode-input-background);
-  color: var(--vscode-input-foreground);
-  border: 1px solid var(--vscode-input-border, transparent);
-  border-radius: 3px;
-  padding: 3px 6px;
-  font-size: 12px;
-  outline: none;
-}
-
-.graph-filter-input:focus {
-  border-color: var(--vscode-focusBorder);
-}
-
+/* Node quick-search clear (X) button — rides in the FilterBar's search slot
+   (vs-v6h), after the shared search input. */
 .graph-filter-clear {
   display: inline-flex;
   align-items: center;
