@@ -18,6 +18,7 @@ import { KanbanBoard } from "./KanbanBoard";
 import { GraphView } from "./graph/GraphView";
 import { TreeView } from "./tree/TreeView";
 import { Loading } from "../common/Loading";
+import { ContextMenu } from "../common/ContextMenu";
 
 type PanelTab = "issues" | "dashboard" | "kanban" | "graph" | "tree";
 
@@ -222,6 +223,22 @@ export function PanelShell({
   const filteredCount = filteredBeadIds?.length ?? totalCount;
   const filterActive = filteredBeadIds != null && filteredCount < totalCount;
 
+  // Open a given tab's view in an editor tab, seeded with the panel's active
+  // filter (Kanban/Tree/Graph inherit the bead-id slice, vs-nme; Issues inherits
+  // the full filter spec, vs-tle). Shared by the toolbar button and the
+  // right-click-a-tab context menu.
+  const openInEditorTab = useCallback(
+    (view: PanelTab) =>
+      vscode.postMessage({
+        type: "openViewInTab",
+        view,
+        filteredBeadIds,
+        issuesFilter: view === "issues" ? readIssuesFilterSnapshot() : null,
+      }),
+    [filteredBeadIds],
+  );
+  const [tabMenu, setTabMenu] = useState<{ id: PanelTab; label: string; x: number; y: number } | null>(null);
+
   return (
     <div className={`panel-shell${pulsing ? " pulsing" : ""}`}>
       <nav className="panel-shell-nav" role="tablist">
@@ -234,6 +251,10 @@ export function PanelShell({
               aria-selected={active === id}
               className={`panel-shell-tab ${active === id ? "active" : ""}`}
               onClick={() => setActive(id)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setTabMenu({ id, label, x: e.clientX, y: e.clientY });
+              }}
             >
               <Icon size={15} strokeWidth={2} className="panel-shell-tab-icon" />
               <span>{label}</span>
@@ -246,17 +267,7 @@ export function PanelShell({
             className="panel-shell-action"
             title={`Open ${tabs.find((t) => t.id === active)?.label ?? "view"} in an editor tab`}
             aria-label="Open in editor tab"
-            onClick={() =>
-              // Seed the new tab with the panel's active filter so it opens
-              // scoped, not blank: Kanban/Tree/Graph inherit the bead-id slice
-              // (vs-nme); the Issues tab inherits the full filter spec (vs-tle).
-              vscode.postMessage({
-                type: "openViewInTab",
-                view: active,
-                filteredBeadIds,
-                issuesFilter: active === "issues" ? readIssuesFilterSnapshot() : null,
-              })
-            }
+            onClick={() => openInEditorTab(active)}
           >
             <ExternalLink size={14} strokeWidth={2} />
           </button>
@@ -355,6 +366,20 @@ export function PanelShell({
           />
         )}
       </div>
+
+      {tabMenu && (
+        <ContextMenu
+          x={tabMenu.x}
+          y={tabMenu.y}
+          items={[
+            {
+              label: `Open ${tabMenu.label} in editor tab`,
+              onSelect: () => openInEditorTab(tabMenu.id),
+            },
+          ]}
+          onClose={() => setTabMenu(null)}
+        />
+      )}
     </div>
   );
 }
