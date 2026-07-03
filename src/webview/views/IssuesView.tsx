@@ -947,26 +947,8 @@ export function IssuesView({
 
   return (
     <div className="beads-panel">
-      {/* Row 1: search + filter toggle */}
+      {/* Row 1: filter/density toggles (left, easy to reach) + search */}
       <div className="panel-toolbar-compact">
-        <div className="search-input-wrapper">
-          <input
-            type="text"
-            className="search-input-compact"
-            placeholder="Search..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-          />
-          {globalFilter && (
-            <button
-              className="search-clear-btn"
-              onClick={() => setGlobalFilter("")}
-              title="Clear search"
-            >
-              ×
-            </button>
-          )}
-        </div>
         <button
           className={`filter-toggle ${filterBarOpen || hasActiveFilters ? "active" : ""}`}
           onClick={() => setFilterBarOpen(!filterBarOpen)}
@@ -988,6 +970,24 @@ export function IssuesView({
         >
           {compact ? <Rows2 size={14} /> : <Rows3 size={14} />}
         </button>
+        <div className="search-input-wrapper">
+          <input
+            type="text"
+            className="search-input-compact"
+            placeholder="Search..."
+            value={globalFilter}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+          />
+          {globalFilter && (
+            <button
+              className="search-clear-btn"
+              onClick={() => setGlobalFilter("")}
+              title="Clear search"
+            >
+              ×
+            </button>
+          )}
+        </div>
         {isEditorTab && (
           <button
             className="apply-all-btn"

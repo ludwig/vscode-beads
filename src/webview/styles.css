@@ -148,8 +148,37 @@ body {
 .editor-tab-toolbar-actions {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 8px;
   padding: 3px 6px;
+}
+
+/* Stylish view heading in the tab toolbar (e.g. "Tree view for ~/beads/vs") —
+   fills the otherwise-empty space beside Refresh and reads well in screenshots. */
+.editor-tab-title {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.editor-tab-title-view {
+  font-weight: 600;
+  color: var(--vscode-foreground);
+}
+
+.editor-tab-title-for {
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.8;
+}
+
+.editor-tab-title-project {
+  font-family: var(--vscode-editor-font-family, monospace);
+  color: var(--vscode-textLink-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Snapshot ribbon (vs-zq2): makes an inherited filter on an editor tab

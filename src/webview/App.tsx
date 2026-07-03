@@ -498,11 +498,19 @@ export function App(): React.ReactElement {
   // ribbon (shown only when the panel actually narrowed the scope). The
   // flex-column shell keeps the view's own height/scroll model intact
   // (Graph/React Flow needs a sized body).
+  const VIEW_LABELS: Record<string, string> = {
+    beadsPanel: "Issues",
+    beadsKanban: "Kanban",
+    beadsTree: "Tree",
+    beadsGraph: "Graph",
+  };
   const withEditorTabChrome = (
     view: React.ReactElement,
     opts: { filterBar?: boolean } = {},
   ): React.ReactElement => {
     if (!state.settings.isEditorTab) return view;
+    const viewLabel = VIEW_LABELS[state.viewType];
+    const projectName = state.project?.displayPath ?? state.project?.name;
     return (
       <div className="editor-tab-shell">
         <div className="editor-tab-toolbar">
@@ -528,6 +536,13 @@ export function App(): React.ReactElement {
             <span className="editor-tab-toolbar-spacer" />
           )}
           <div className="editor-tab-toolbar-actions">
+            {viewLabel && projectName && (
+              <span className="editor-tab-title" title={`${viewLabel} view · ${projectName}`}>
+                <span className="editor-tab-title-view">{viewLabel} view</span>
+                <span className="editor-tab-title-for">for</span>
+                <span className="editor-tab-title-project">{projectName}</span>
+              </span>
+            )}
             <button
               type="button"
               className="panel-shell-action"
