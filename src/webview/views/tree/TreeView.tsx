@@ -62,11 +62,11 @@ interface TreeColumn {
   sortKey: SortKey;
 }
 const TREE_COLUMNS: TreeColumn[] = [
-  { key: "status", label: "Status", width: "92px", sortKey: "status" },
-  { key: "type", label: "Type", width: "64px", sortKey: "type" },
-  { key: "priority", label: "Priority", headerLabel: "P", width: "44px", sortKey: "priority" },
-  { key: "updated", label: "Updated", width: "96px", sortKey: "updated" },
-  { key: "created", label: "Created", width: "96px", sortKey: "created" },
+  { key: "status", label: "Status", width: "76px", sortKey: "status" },
+  { key: "type", label: "Type", width: "48px", sortKey: "type" },
+  { key: "priority", label: "Priority", headerLabel: "P", width: "30px", sortKey: "priority" },
+  { key: "updated", label: "Updated", width: "78px", sortKey: "updated" },
+  { key: "created", label: "Created", width: "78px", sortKey: "created" },
 ];
 // Default visibility: Updated shown, Created hidden, to keep the tree narrow by
 // default (mirrors the Issues table hiding some columns).
