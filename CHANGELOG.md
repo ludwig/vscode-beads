@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Kanban card priority moved to a top-right chip** — the `Pn` priority badge now sits as a small color-coded chip pinned to the card's top-right corner (echoing the graph node's priority dot but keeping the label) instead of a full-size badge on the bottom meta row
+- **"Filtered" toggle reads the same collapsed as expanded** — the collapsed ribbon now shows the same funnel-icon "Filtered" toggle as the open bar (was an inconsistent text `Show all` / `Show filtered (N)` button), so the inherited-scope control is one recognizable affordance in both states
 - **Issues density toggle sits right of the search box** — the compact/comfortable toggle moved from the trailing group into the search row (right of the textbox), mirroring the Tree's fold-toggle placement
 - **"Filtered" toggle placement is consistent across views** — the inherited-scope "Filtered" toggle sits rightmost on the second row in every view (Kanban/Tree/Graph), styled as a peer of the Ready/Favorites toggles (funnel icon + label)
 - **Collapsed-ribbon filter pills restyled** — active-filter pills in the collapsed ribbon are now a muted pastel blue (echoing the funnel's active-filter glow) with a hover outline; the Favorites pill shows its ★ icon

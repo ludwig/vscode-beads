@@ -247,19 +247,10 @@ export function FilterBar({
   // filtering (no local pills AND no inherited scope applied), never when filters
   // are active. No editing surface here.
   if (onToggleCollapsed && collapsed) {
-    const inheritedText = inherited
-      ? inherited.cleared
-        ? `Showing all ${inherited.totalCount}`
-        : `Filtered · ${inherited.filteredCount} of ${inherited.totalCount}`
-      : null;
     return (
       <div className="filter-bar filter-bar-collapsed" role="status">
         {twistie}
         <span className="filter-bar-summary">
-          {inheritedText && <span className="filter-bar-summary-inherited">{inheritedText}</span>}
-          {inheritedText && (filterTokens.length > 0 || hasSearch) && (
-            <span className="filter-bar-summary-sep" aria-hidden="true">·</span>
-          )}
           {(filterTokens.length > 0 || hasSearch) ? (
             <span className="filter-bar-summary-tokens">
               {searchChip}
@@ -279,11 +270,9 @@ export function FilterBar({
           ) : null}
         </span>
         {countEl}
-        {inherited && (
-          <button type="button" className="filter-snapshot-ribbon-btn" onClick={inherited.onToggle}>
-            {inherited.cleared ? `Show filtered (${inherited.filteredCount})` : "Show all"}
-          </button>
-        )}
+        {/* Same "Filtered" toggle as the expanded bar, so the inherited-scope
+            control reads identically whether the bar is open or collapsed. */}
+        {inheritedPill}
       </div>
     );
   }
