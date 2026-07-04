@@ -113,6 +113,13 @@ interface IssuesViewProps {
    */
   applySnapshotRequest?: { snapshot: FilterSnapshot; seq: number } | null;
   /**
+   * Panel only: the broadcast shared filter spec. When it changes from another
+   * panel view's edit, the panel Issues view syncs its structured filter to
+   * match (search stays local) — the consuming half of the shared-filter link.
+   * Omitted in an editor tab (which keeps its own divergent filter).
+   */
+  sharedSpec?: FilterSnapshot;
+  /**
    * A "show in issues" deep-link target (vs-wbrz): select the bead's row and
    * scroll it into view. `seq` re-fires for a repeat of the same bead. If the
    * bead is filtered out of the current view, selection still applies but the
@@ -176,6 +183,7 @@ export function IssuesView({
   tooltipHoverDelay,
   issuesFilterRequest,
   applySnapshotRequest,
+  sharedSpec,
   revealRequest,
   isEditorTab = false,
   graph,
@@ -439,6 +447,28 @@ export function IssuesView({
     setReadyOnly(s.readyOnly);
     setFavoritesOnly(s.favoritesOnly);
   }, [applySnapshotRequest]);
+
+  // Consume the broadcast shared spec (panel only): when another panel view
+  // edits the common surface, sync our structured filter to match. Search
+  // (globalFilter) stays local, so we never touch it here. Guarded by an
+  // equality check so our OWN publish echo (host → back to us with an identical
+  // spec) is a no-op — no feedback loop. Depends only on [sharedSpec]; including
+  // local state would let a stale spec clobber the user's in-flight edit.
+  useEffect(() => {
+    if (!sharedSpec || isEditorTab) return;
+    const sameStructured =
+      activePreset === sharedSpec.activePreset &&
+      readyOnly === sharedSpec.readyOnly &&
+      favoritesOnly === sharedSpec.favoritesOnly &&
+      JSON.stringify(columnFilters) === JSON.stringify(sharedSpec.columnFilters);
+    if (sameStructured) return;
+    setColumnFilters(sharedSpec.columnFilters as ColumnFiltersState);
+    setActivePreset(sharedSpec.activePreset);
+    setReadyOnly(sharedSpec.readyOnly);
+    setFavoritesOnly(sharedSpec.favoritesOnly);
+    // Intentionally depends only on [sharedSpec]: re-running on local edits
+    // would let a stale broadcast clobber an in-flight change.
+  }, [sharedSpec]);
 
   // "Show in issues" deep-link (vs-wbrz): select the target's row and scroll it
   // into view. Held as pending state and retried as `beads` updates, because the

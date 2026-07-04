@@ -9,7 +9,7 @@
  * this shell just routes between them client-side.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LayoutDashboard, ListTodo, Workflow, ListTree, Kanban, RefreshCw, ExternalLink, LucideIcon } from "lucide-react";
 import { Bead, BeadsSummary, DependencyGraph, FilterSnapshot, IssuesFilter, WebviewSettings, vscode } from "../types";
 import { DashboardView } from "./DashboardView";
@@ -56,6 +56,12 @@ interface PanelShellProps {
    * (and favorites mask) even while the Issues subview is unmounted.
    */
   parentScope: string[] | null;
+  /**
+   * The shared (panel) filter spec, broadcast by the host. Drives the common
+   * FilterBar surface of every panel view (Issues/Kanban/Tree/Graph) so they stay
+   * linked; edits publish back via `setSharedFilter`. Free-text search is local.
+   */
+  sharedSpec: FilterSnapshot;
   settings: WebviewSettings;
   issuesFilterRequest: { filter: IssuesFilter; seq: number } | null;
   // Full Issues-filter snapshot to apply, landed by an "Apply to all" broadcast
@@ -79,6 +85,7 @@ export function PanelShell({
   favoriteIds,
   maskedIds,
   parentScope,
+  sharedSpec,
   settings,
   issuesFilterRequest,
   applySnapshotRequest,
@@ -111,6 +118,19 @@ export function PanelShell({
   // IssuesView) so it stays correct even while IssuesView is unmounted and
   // updates live when the filter or the favorites mask changes.
   const filteredBeadIds = parentScope;
+
+  // The shared filter control handed to every panel view: they render their
+  // common FilterBar surface from `sharedSpec` and publish edits via
+  // `setSharedFilter`, so toggling Favorites/Ready/a chip in ANY panel view
+  // updates the host spec → re-scopes → echoes back to all of them. This is the
+  // "shared base"; each view keeps its own local free-text search + collapse.
+  const sharedFilter = useMemo(
+    () => ({
+      snapshot: sharedSpec,
+      onPublish: (next: FilterSnapshot) => vscode.postMessage({ type: "setSharedFilter", snapshot: next }),
+    }),
+    [sharedSpec],
+  );
 
   // A "View in graph" deep-link: flip to the Graph tab and focus the bead.
   // Keyed on `seq` so a repeat request for the same bead still re-fires.
@@ -315,6 +335,7 @@ export function PanelShell({
             onRequestGraph={requestGraph}
             filteredBeadIds={filteredBeadIds}
             {...parentScopeProps("kanban")}
+            sharedFilter={sharedFilter}
             totalCount={totalCount}
             selectedBeadId={selectedBeadId}
             favoriteIds={favoriteIds}
@@ -336,6 +357,7 @@ export function PanelShell({
             muteClosedIssues={settings.muteClosedIssues}
             filteredBeadIds={filteredBeadIds}
             {...parentScopeProps("tree")}
+            sharedFilter={sharedFilter}
             totalCount={totalCount}
             revealRequest={treeRevealRequest}
             onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
@@ -353,6 +375,7 @@ export function PanelShell({
             focusBeadId={graphFocusId}
             filteredBeadIds={filteredBeadIds}
             {...parentScopeProps("graph")}
+            sharedFilter={sharedFilter}
             onOpenBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onRequestGraph={requestGraph}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
@@ -385,6 +408,7 @@ export function PanelShell({
             tooltipHoverDelay={settings.tooltipHoverDelay}
             issuesFilterRequest={localFilter ?? issuesFilterRequest}
             applySnapshotRequest={applySnapshotRequest}
+            sharedSpec={sharedSpec}
             revealRequest={issuesRevealRequest}
             graph={graph}
             onRequestGraph={requestGraph}

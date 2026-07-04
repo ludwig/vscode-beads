@@ -25,7 +25,7 @@ import {
 } from "../../types";
 import { TypeIcon } from "../../common/TypeIcon";
 import { FilterBar } from "../../common/FilterBar";
-import { useLocalFilter } from "../../hooks/useLocalFilter";
+import { useLocalFilter, type SharedFilterControl } from "../../hooks/useLocalFilter";
 import { intersect } from "../../composeScope";
 import { Loading } from "../../common/Loading";
 import { ErrorMessage } from "../../common/ErrorMessage";
@@ -180,6 +180,12 @@ interface TreeViewProps {
    */
   parentCleared?: boolean;
   onToggleParentScope?: () => void;
+  /**
+   * Panel only: controls for the shared filter surface. When provided, the
+   * Tree's FilterBar common controls read/write the shared (panel) spec — linked
+   * with every other panel view. Omitted in an editor tab (self-owned filter).
+   */
+  sharedFilter?: SharedFilterControl;
   totalCount?: number;
   /**
    * A "show in tree" deep-link target (vs-kp67): expand the bead's collapsed
@@ -204,6 +210,7 @@ export function TreeView({
   filteredBeadIds,
   parentCleared,
   onToggleParentScope,
+  sharedFilter,
   totalCount,
   revealRequest,
   onSelectBead,
@@ -375,6 +382,7 @@ export function TreeView({
     maskedIds,
     hasGraph: !!graph,
     onRequestGraph,
+    shared: sharedFilter,
   });
   const inheritedScope = parentCleared ? null : filteredBeadIds;
   const finalScope = useMemo(
