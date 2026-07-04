@@ -33,14 +33,7 @@ import {
   DependencyGraph,
   IssuesFilter,
   FilterSnapshot,
-  STATUS_LABELS,
   isClosedStatus,
-  statusLabel,
-  statusColor,
-  PRIORITY_COLORS,
-  TYPE_LABELS,
-  TYPE_COLORS,
-  TYPE_SORT_ORDER,
   getTypeSortOrder,
   sortLabels,
   vscode,
@@ -53,9 +46,8 @@ import { PriorityBadge } from "../common/PriorityBadge";
 import { TypeBadge } from "../common/TypeBadge";
 import { TypeIcon } from "../common/TypeIcon";
 import { LabelBadge } from "../common/LabelBadge";
-import { FilterChip } from "../common/FilterChip";
 import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
-import { Rows3, Rows2, Rocket, Star, Share2 } from "lucide-react";
+import { Rows3, Rows2, Share2 } from "lucide-react";
 import {
   NOT_CLOSED,
   matchType,
@@ -68,12 +60,9 @@ import {
 import { FILTER_PRESETS } from "../filterPresets";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { Loading } from "../common/Loading";
-import { Dropdown, DropdownItem } from "../common/Dropdown";
 import { Timestamp, timestampSortingFn } from "../common/Timestamp";
-import { AutocompleteInput, AutocompleteOption } from "../common/AutocompleteInput";
 import { Markdown } from "../common/Markdown";
 import { triggerToast } from "../common/Toast";
-import { getLabelColorStyle } from "../utils/label-colors";
 import { useClickOutside } from "../hooks/useClickOutside";
 import { useColumnState } from "../hooks/useColumnState";
 import { FilterBar } from "../common/FilterBar";
@@ -149,10 +138,6 @@ interface IssuesViewProps {
   onFilteredBeadsChange?: (beadIds: string[]) => void;
 }
 
-// Issue types sorted by TYPE_SORT_ORDER (epic first)
-const ISSUE_TYPES = Object.keys(TYPE_SORT_ORDER).sort(
-  (a, b) => getTypeSortOrder(a) - getTypeSortOrder(b)
-);
 
 // Custom sorting function for type columns (epic first)
 const typeSortingFn = (rowA: { getValue: (id: string) => unknown }, rowB: { getValue: (id: string) => unknown }) => {
@@ -278,22 +263,14 @@ export function IssuesView({
     const prev = (vscode.getState() as Record<string, unknown>) ?? {};
     vscode.setState({ ...prev, issuesFavoritesOnly: favoritesOnly });
   }, [favoritesOnly]);
-  const toggleFavoritesOnly = useCallback(() => {
-    setFavoritesOnly((on) => {
-      // `!on` is the post-toggle state: enabling needs the graph to resolve relatives.
-      if (needsDependencyGraph(!on, !!graph)) onRequestGraph?.();
-      return !on;
-    });
-  }, [graph, onRequestGraph]);
-  // A Ready/Favorites filter restored as active from persisted state needs the
-  // dependency graph just like a freshly-toggled one, but the lazy fetch lives in
-  // the toggle handlers — which never run on mount. Without this, a restored
-  // Favorites filter renders each favorite stripped of its 1-hop relatives (and
-  // Ready can't filter at all) until the user toggles the filter off and on
-  // (vs-mbqc). Mount-only: later enables are handled by the toggle callbacks.
+  // Ready/Favorites need the dependency graph (blocker resolution / relatives).
+  // Fetch it lazily whenever either is active and the graph isn't loaded — this
+  // one effect covers a persisted-active filter on mount AND a fresh toggle from
+  // the shared FilterBar (whose ops just set state, carrying no fetch of their
+  // own), mirroring useLocalFilter (vs-mbqc).
   useEffect(() => {
     if (needsDependencyGraph(readyOnly || favoritesOnly, !!graph)) onRequestGraph?.();
-  }, []); // mount-only by design — see comment above
+  }, [readyOnly, favoritesOnly, graph, onRequestGraph]);
   const readySet = useMemo(() => {
     if (!graph) return null;
     const blocks = graph.edges.filter((e) => e.type === "blocks");
@@ -323,13 +300,6 @@ export function IssuesView({
     if (favoritesScope) rows = rows.filter((b) => favoritesScope.has(b.id));
     return rows;
   }, [readyOnly, readySet, favoritesScope, beads]);
-  const toggleReady = useCallback(() => {
-    setReadyOnly((on) => {
-      // `!on` is the post-toggle state: enabling needs the graph the first time.
-      if (needsDependencyGraph(!on, !!graph)) onRequestGraph?.();
-      return !on;
-    });
-  }, [graph, onRequestGraph]);
   const [activePreset, setActivePreset] = useState<string>(() => persisted.issuesActivePreset ?? "not-closed");
   // Persist filters + search + preset whenever they change (merge, don't clobber).
   useEffect(() => {
@@ -342,10 +312,8 @@ export function IssuesView({
     });
   }, [columnFilters, globalFilter, activePreset]);
   const [filterBarOpen, setFilterBarOpen] = useState(true);
-  const [filterMenuOpen, setFilterMenuOpen] = useState<string | null>(null);
   const [columnMenuOpen, setColumnMenuOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const filterMenuRef = useRef<HTMLDivElement>(null);
   const columnMenuRef = useRef<HTMLTableCellElement>(null);
 
   // Tooltip state
@@ -417,8 +385,7 @@ export function IssuesView({
     };
   }, []);
 
-  // Click outside to close menus
-  useClickOutside(filterMenuRef, () => setFilterMenuOpen(null), !!filterMenuOpen);
+  // Click outside to close the column menu
   useClickOutside(columnMenuRef, () => setColumnMenuOpen(false), columnMenuOpen);
 
   // Apply a drill-in filter pushed from another view (Dashboard card/badge).
@@ -699,160 +666,6 @@ export function IssuesView({
   const assigneeFilter = (columnFilters.find((f) => f.id === "assignee")?.value || []) as string[];
   const labelFilter = (columnFilters.find((f) => f.id === "labels")?.value || []) as string[];
   const hasActiveFilters = statusFilter.length > 0 || priorityFilter.length > 0 || typeFilter.length > 0 || assigneeFilter.length > 0 || labelFilter.length > 0;
-  // Count of active filters surfaced on the toggle badge (vs-dd7): every filter
-  // chip (one per value), plus the Ready/Favorites toggles and an active text
-  // search. The preset isn't counted separately — its status values already
-  // show up as chips.
-  const activeFilterCount =
-    statusFilter.length +
-    priorityFilter.length +
-    typeFilter.length +
-    assigneeFilter.length +
-    labelFilter.length +
-    (readyOnly ? 1 : 0) +
-    (favoritesOnly ? 1 : 0) +
-    (globalFilter.trim() ? 1 : 0);
-
-  const applyPreset = (presetId: string) => {
-    const preset = FILTER_PRESETS.find((p) => p.id === presetId);
-    if (preset) {
-      setColumnFilters((prev) =>
-        prev
-          .filter((f) => f.id !== "status")
-          .concat(preset.statuses.length > 0 ? [{ id: "status", value: preset.statuses }] : [])
-      );
-      setActivePreset(presetId);
-    }
-  };
-
-  const addStatusFilter = (status: BeadStatus) => {
-    // Picking an explicit status leaves the symbolic ¬closed preset: drop the
-    // sentinel and start a concrete status list.
-    const base = statusFilter.filter((s) => s !== NOT_CLOSED);
-    if (!base.includes(status)) {
-      setColumnFilters((prev) => {
-        const others = prev.filter((f) => f.id !== "status");
-        return [...others, { id: "status", value: [...base, status] }];
-      });
-      setActivePreset("");
-    }
-    setFilterMenuOpen(null);
-  };
-
-  const removeStatusFilter = (status: BeadStatus) => {
-    const newStatuses = statusFilter.filter((s) => s !== status);
-    setColumnFilters((prev) => {
-      const others = prev.filter((f) => f.id !== "status");
-      return newStatuses.length > 0
-        ? [...others, { id: "status", value: newStatuses }]
-        : others;
-    });
-    setActivePreset("");
-  };
-
-  // Clear the status filter entirely (used by the single ¬closed chip's remove);
-  // semantically equivalent to the "All" preset.
-  const clearStatusFilter = () => {
-    setColumnFilters((prev) => prev.filter((f) => f.id !== "status"));
-    setActivePreset("all");
-  };
-
-  const addPriorityFilter = (priority: BeadPriority) => {
-    if (!priorityFilter.includes(priority)) {
-      setColumnFilters((prev) => {
-        const others = prev.filter((f) => f.id !== "priority");
-        return [...others, { id: "priority", value: [...priorityFilter, priority] }];
-      });
-      setActivePreset("");
-    }
-    setFilterMenuOpen(null);
-  };
-
-  const addTypeFilter = (type: string) => {
-    if (!typeFilter.includes(type)) {
-      setColumnFilters((prev) => {
-        const others = prev.filter((f) => f.id !== "type");
-        return [...others, { id: "type", value: [...typeFilter, type] }];
-      });
-      setActivePreset("");
-    }
-    setFilterMenuOpen(null);
-  };
-
-  const removePriorityFilter = (priority: BeadPriority) => {
-    const newPriorities = priorityFilter.filter((p) => p !== priority);
-    setColumnFilters((prev) => {
-      const others = prev.filter((f) => f.id !== "priority");
-      return newPriorities.length > 0
-        ? [...others, { id: "priority", value: newPriorities }]
-        : others;
-    });
-    setActivePreset("");
-  };
-
-  const removeTypeFilter = (type: string) => {
-    const newTypes = typeFilter.filter((t) => t !== type);
-    setColumnFilters((prev) => {
-      const others = prev.filter((f) => f.id !== "type");
-      return newTypes.length > 0
-        ? [...others, { id: "type", value: newTypes }]
-        : others;
-    });
-    setActivePreset("");
-  };
-
-  const addAssigneeFilter = (assignee: string) => {
-    if (!assigneeFilter.includes(assignee)) {
-      setColumnFilters((prev) => {
-        const others = prev.filter((f) => f.id !== "assignee");
-        return [...others, { id: "assignee", value: [...assigneeFilter, assignee] }];
-      });
-      setActivePreset("");
-    }
-    setFilterMenuOpen(null);
-  };
-
-  const removeAssigneeFilter = (assignee: string) => {
-    const newAssignees = assigneeFilter.filter((a) => a !== assignee);
-    setColumnFilters((prev) => {
-      const others = prev.filter((f) => f.id !== "assignee");
-      return newAssignees.length > 0
-        ? [...others, { id: "assignee", value: newAssignees }]
-        : others;
-    });
-    setActivePreset("");
-  };
-
-  const addLabelFilter = (label: string) => {
-    if (!labelFilter.includes(label)) {
-      setColumnFilters((prev) => {
-        const others = prev.filter((f) => f.id !== "labels");
-        return [...others, { id: "labels", value: [...labelFilter, label] }];
-      });
-      setActivePreset("");
-    }
-    setFilterMenuOpen(null);
-  };
-
-  const removeLabelFilter = (label: string) => {
-    const newLabels = labelFilter.filter((l) => l !== label);
-    setColumnFilters((prev) => {
-      const others = prev.filter((f) => f.id !== "labels");
-      return newLabels.length > 0
-        ? [...others, { id: "labels", value: newLabels }]
-        : others;
-    });
-    setActivePreset("");
-  };
-
-  const clearAllFilters = () => {
-    setColumnFilters([]);
-    setGlobalFilter("");
-    setActivePreset("all");
-    setReadyOnly(false);
-    setFavoritesOnly(false);
-  };
-
   const filteredCount = table.getFilteredRowModel().rows.length;
   const totalCount = beads.length;
 
@@ -900,50 +713,6 @@ export function IssuesView({
   );
   const facets = useMemo(() => computeFacets(beads), [beads]);
 
-  // Get faceted counts for filters (counts based on OTHER active filters, not this column)
-  const statusFacets = table.getColumn("status")?.getFacetedUniqueValues() ?? new Map();
-  const priorityFacets = table.getColumn("priority")?.getFacetedUniqueValues() ?? new Map();
-  const typeFacets = table.getColumn("type")?.getFacetedUniqueValues() ?? new Map();
-  const assigneeFacets = table.getColumn("assignee")?.getFacetedUniqueValues() ?? new Map();
-
-  // Unfiltered counts per status (for kanban empty state messaging)
-  // Get unique assignees from facets for filter menu
-  const uniqueAssignees = useMemo(() => {
-    const assignees = Array.from(assigneeFacets.keys()).filter((a): a is string => typeof a === "string" && a !== "");
-    return assignees.sort();
-  }, [assigneeFacets]);
-
-  // Count unassigned issues
-  const unassignedCount = useMemo(() => {
-    // Count null/undefined/empty assignees
-    let count = 0;
-    for (const [key, value] of assigneeFacets.entries()) {
-      if (!key || key === "") {
-        count += value;
-      }
-    }
-    return count;
-  }, [assigneeFacets]);
-
-  // Get unique labels and counts from filtered rows (labels are arrays, so facets don't work directly)
-  const { uniqueLabels, labelCounts, unlabeledCount } = useMemo(() => {
-    const counts = new Map<string, number>();
-    let unlabeled = 0;
-    const filteredRows = table.getFilteredRowModel().rows;
-    for (const row of filteredRows) {
-      const labels = row.original.labels;
-      if (!labels || labels.length === 0) {
-        unlabeled++;
-      } else {
-        for (const label of labels) {
-          counts.set(label, (counts.get(label) || 0) + 1);
-        }
-      }
-    }
-    const sorted = Array.from(counts.keys()).sort();
-    return { uniqueLabels: sorted, labelCounts: counts, unlabeledCount: unlabeled };
-  }, [table.getFilteredRowModel().rows]);
-
   // Publish the filtered bead ids upward so the shell can scope the Graph view
   // to the same slice (vs-v07). Fires whenever the filter/search result changes.
   const filteredBeadIds = useMemo(
@@ -979,36 +748,6 @@ export function IssuesView({
     const snapshot: FilterSnapshot = { columnFilters, globalFilter, activePreset, readyOnly, favoritesOnly };
     vscode.postMessage({ type: "setSharedFilter", snapshot });
   }, [isEditorTab, columnFilters, globalFilter, activePreset, readyOnly, favoritesOnly]);
-
-  // Build label autocomplete options
-  const labelOptions = useMemo((): AutocompleteOption[] => {
-    const options: AutocompleteOption[] = [];
-    // Add "Unlabeled" option first if available
-    if (!labelFilter.includes("__unlabeled__") && unlabeledCount > 0) {
-      options.push({
-        value: "__unlabeled__",
-        label: "Unlabeled",
-        count: unlabeledCount,
-      });
-    }
-    // Add all unique labels not already filtered
-    for (const label of uniqueLabels) {
-      if (!labelFilter.includes(label)) {
-        options.push({
-          value: label,
-          label: label,
-          count: labelCounts.get(label) ?? 0,
-          render: () => (
-            <>
-              <LabelBadge label={label} />
-              <span className="autocomplete-option-count">({labelCounts.get(label) ?? 0})</span>
-            </>
-          ),
-        });
-      }
-    }
-    return options;
-  }, [uniqueLabels, labelCounts, unlabeledCount, labelFilter]);
 
   return (
     <div className="beads-panel">
