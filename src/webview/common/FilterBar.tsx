@@ -29,7 +29,7 @@ import {
   getTypeSortOrder,
 } from "../types";
 import { NOT_CLOSED } from "../../backend/filterPredicates";
-import { FILTER_PRESETS } from "../filterPresets";
+import { FILTER_PRESETS, matchStatusPreset } from "../filterPresets";
 import type { FacetData } from "../facets";
 import type { FilterOps } from "../filterSnapshotOps";
 import {
@@ -132,14 +132,16 @@ export function FilterBar({
   const trimmedSearch = (searchTerm ?? snapshot.globalFilter).trim();
   const hasSearch = trimmedSearch.length > 0;
 
-  // Preset dropdown label + which menu item reads as active. The stored
-  // `activePreset` is "" once an add/remove op marks the filter custom — but if
-  // no column filters remain (e.g. the user just removed the last status chip),
-  // the filter is effectively "All", so resolve to the "all" preset rather than
-  // showing a stale "Custom". A non-empty custom column set stays "Custom".
-  const effectivePresetId =
-    snapshot.activePreset || (snapshot.columnFilters.length === 0 ? "all" : "");
-  const presetLabel = FILTER_PRESETS.find((p) => p.id === effectivePresetId)?.label ?? "Custom";
+  // Preset dropdown label + which menu item reads as active. Derived PURELY from
+  // the status column (the axis presets actually control), NOT the stored
+  // `activePreset` string — a follower tab can inherit a foreign/stale preset id
+  // (e.g. the "custom" sentinel from an empty shared spec) that would otherwise
+  // leave the dropdown stuck on "Custom" even when nothing narrows the status.
+  // Empty status ⇒ "All"; an exact set match ⇒ that preset; anything else ⇒
+  // "Custom".
+  const matchedPreset = matchStatusPreset(status);
+  const effectivePresetId = matchedPreset?.id ?? "";
+  const presetLabel = matchedPreset?.label ?? "Custom";
 
   const hasActiveFilters =
     status.length + priority.length + type.length + assignee.length + label.length > 0 ||
@@ -258,6 +260,8 @@ export function FilterBar({
                 <span key={t} className="filter-bar-token-pill">
                   {t === "Favorites" ? (
                     <Star size={9} strokeWidth={2.5} fill="currentColor" className="filter-bar-token-icon" />
+                  ) : t === "Ready" ? (
+                    <span className="filter-bar-token-icon filter-bar-token-emoji" aria-hidden="true">🚀</span>
                   ) : null}
                   {t}
                 </span>

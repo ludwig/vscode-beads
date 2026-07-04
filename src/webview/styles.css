@@ -454,6 +454,12 @@ body {
   flex: 0 0 auto;
   opacity: 0.9;
 }
+/* Emoji glyph (🚀 for Ready) sized down to sit with the 9px lucide icons. */
+.filter-bar-token-emoji {
+  font-size: 8px;
+  line-height: 1;
+  opacity: 1;
+}
 
 /* Empty-state affordance: a muted, inviting "Add a filter…" that expands the bar. */
 .filter-bar-add-hint {

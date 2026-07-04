@@ -660,6 +660,7 @@ export function App(): React.ReactElement {
                 toast: true,
               })
             }
+            onCopyId={(beadId) => vscode.postMessage({ type: "copyBeadId", beadId, toast: true })}
             onToggleFavorite={(beadId) => vscode.postMessage({ type: "toggleFavorite", beadId })}
             onToggleMask={(beadId) => {
               // Optimistic: flip the mask locally so the eye + muted card (and the

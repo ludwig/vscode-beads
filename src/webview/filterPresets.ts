@@ -25,3 +25,18 @@ export const FILTER_PRESETS: FilterPreset[] = [
   { id: "blocked", label: "Blocked", statuses: ["blocked"] },
   { id: "closed", label: "Closed", statuses: ["closed"] },
 ];
+
+/**
+ * Resolve which preset a status selection corresponds to — derived PURELY from
+ * the status column, never a stored preset id. This is what the filter bar's
+ * dropdown label reads from: a follower tab can inherit a foreign/stale preset
+ * id (e.g. the "custom" sentinel from an empty shared spec) which must NOT leave
+ * the dropdown stuck on "Custom" when nothing narrows the status. An empty
+ * status set matches the "all" preset (its `statuses` is `[]`); an exact set
+ * match returns that preset; anything else returns `undefined` (⇒ "Custom").
+ */
+export function matchStatusPreset(statuses: BeadStatus[]): FilterPreset | undefined {
+  return FILTER_PRESETS.find(
+    (p) => p.statuses.length === statuses.length && p.statuses.every((s) => statuses.includes(s)),
+  );
+}

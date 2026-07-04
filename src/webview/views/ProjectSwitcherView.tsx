@@ -37,6 +37,8 @@ interface ProjectSwitcherViewProps {
   onUnfavorite: (beadId: string) => void;
   /** Copy the favorite bead IDs as a single CSV line to the clipboard (vs-sd5.2). */
   onCopyFavorites: () => void;
+  /** Copy a single bead's ID to the clipboard (card right-click menu). */
+  onCopyId: (beadId: string) => void;
   /** Star/unstar a bead from the card right-click menu (vs-sd5.5). */
   onToggleFavorite: (beadId: string) => void;
   /** Toggle a favorite's mask (eye-off) in the Favorites filter group. */
@@ -90,6 +92,7 @@ export function ProjectSwitcherView({
   onClearBead,
   onUnfavorite,
   onCopyFavorites,
+  onCopyId,
   onToggleFavorite,
   onToggleMask,
   favoritesFilterOn,
@@ -146,6 +149,7 @@ export function ProjectSwitcherView({
   const cardMenuItems = useCallback(
     (id: string, isFavorite: boolean): ContextMenuItem[] => {
       const items: ContextMenuItem[] = [
+        { label: "Copy ID", onSelect: () => onCopyId(id) },
         { label: "Show Details", onSelect: () => onOpenBead(id) },
         { label: "Open in editor tab", onSelect: () => onOpenBeadInTab(id) },
       ];
@@ -165,7 +169,7 @@ export function ProjectSwitcherView({
       });
       return items;
     },
-    [onOpenBead, onOpenBeadInTab, onToggleFavorite, onToggleMask, favorites],
+    [onCopyId, onOpenBead, onOpenBeadInTab, onToggleFavorite, onToggleMask, favorites],
   );
 
   // Click-count router on the Selection card (mirrors the Graph/Tree): 1/2
@@ -327,6 +331,16 @@ export function ProjectSwitcherView({
       <div className="context-actions">
         <button
           type="button"
+          className="btn context-action-btn pick-ready"
+          onClick={onPickReady}
+          disabled={!activeProject}
+          title="Pick a ready-to-work bead (open, no open blocker) and show it as the selection"
+        >
+          <Rocket size={14} strokeWidth={2} />
+          <span>Pick Ready Bead</span>
+        </button>
+        <button
+          type="button"
           className="btn context-action-btn show-issues"
           onClick={onShowIssues}
           title="Show the Issues panel"
@@ -342,16 +356,6 @@ export function ProjectSwitcherView({
         >
           <ListTree size={14} strokeWidth={2} />
           <span>Show Tree</span>
-        </button>
-        <button
-          type="button"
-          className="btn context-action-btn pick-ready"
-          onClick={onPickReady}
-          disabled={!activeProject}
-          title="Pick a ready-to-work bead (open, no open blocker) and show it as the selection"
-        >
-          <Rocket size={14} strokeWidth={2} />
-          <span>Pick Ready Bead</span>
         </button>
       </div>
 
