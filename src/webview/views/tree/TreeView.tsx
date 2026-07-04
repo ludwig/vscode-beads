@@ -892,12 +892,12 @@ function rowMenuItems(
 ): ContextMenuItem[] {
   return [
     {
-      label: "Show in editor tab",
-      onSelect: () => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id }),
-    },
-    {
       label: "Show Details",
       onSelect: () => vscode.postMessage({ type: "openBeadDetails", beadId: bead.id }),
+    },
+    {
+      label: "Show in editor tab",
+      onSelect: () => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id }),
     },
     {
       label: opts.isFavorite ? "Remove from Favorites" : "Add to Favorites",

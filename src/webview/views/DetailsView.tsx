@@ -145,9 +145,6 @@ function sortDependencies(deps: BeadDependency[]): BeadDependency[] {
   });
 }
 import { LabelBadge } from "../common/LabelBadge";
-import { StatusBadge } from "../common/StatusBadge";
-import { PriorityBadge } from "../common/PriorityBadge";
-import { TypeBadge } from "../common/TypeBadge";
 import { TypeIcon } from "../common/TypeIcon";
 import { Icon } from "../common/Icon";
 import { Markdown } from "../common/Markdown";
@@ -530,34 +527,22 @@ export function DetailsView({
       {/* Header block — the ID/actions row, title anchor, and metadata
           chiclets, grouped and delimited from the body as one header unit. */}
       <div className="details-headerblock">
-      {/* Header row: type icon, ID chip, action cluster */}
-      <div className="details-header">
-        {/* Sidebar takeover only: pop back to the Project view. */}
+      {/* Toolbar row: the action cluster on its own line — led (in the sidebar
+          takeover) by a labeled "← Project" button that pops back to the
+          Project screen. */}
+      <div className="details-toolbar">
         {!isEditorTab && (
           <button
-            className="icon-btn header-icon-btn details-back-btn"
+            className="btn btn-sm details-back-btn"
             title="Back to the project view"
             aria-label="Back to the project view"
             onClick={() => vscode.postMessage({ type: "backToProject" })}
           >
-            <ArrowLeft size={15} strokeWidth={2} />
+            <ArrowLeft size={14} strokeWidth={2} />
+            <span>Project</span>
           </button>
         )}
-        <TypeIcon type={(displayBead.type || "task") as BeadType} size={20} />
-        <span
-          className="bead-id-badge clickable"
-          onClick={() => {
-            if (onCopyId) {
-              onCopyId(bead.id);
-            } else {
-              // Fallback: copy directly without feedback
-              navigator.clipboard.writeText(bead.id);
-            }
-          }}
-          title="Click to copy ID"
-        >
-          {bead.id}
-        </span>
+        <span className="details-toolbar-spacer" />
         <div className="header-actions">
           {isEditorTab ? (
             // [favorite] [llm] [show] [edit] | < >  (one separator)
@@ -583,6 +568,37 @@ export function DetailsView({
             </>
           )}
         </div>
+      </div>
+
+      {/* Identity row: type icon + ID on the left, the merged
+          type|status|priority pill right-aligned (display mode; the editable
+          selects live in the badges row while editing). */}
+      <div className="details-header">
+        <TypeIcon type={(displayBead.type || "task") as BeadType} size={20} />
+        <span
+          className="bead-id-badge clickable"
+          onClick={() => {
+            if (onCopyId) {
+              onCopyId(bead.id);
+            } else {
+              // Fallback: copy directly without feedback
+              navigator.clipboard.writeText(bead.id);
+            }
+          }}
+          title="Click to copy ID"
+        >
+          {bead.id}
+        </span>
+        {!editMode && (
+          <>
+            <span className="details-header-spacer" />
+            <StatusPriorityPill
+              type={(displayBead.type || "task") as BeadType}
+              status={displayBead.status}
+              priority={displayBead.priority ?? 4}
+            />
+          </>
+        )}
       </div>
 
       {/* Title - full width */}
@@ -673,30 +689,8 @@ export function DetailsView({
           </>
         ) : (
           <>
-            <ColoredSelect
-              value={(displayBead.type || "task") as BeadType}
-              options={TYPE_OPTIONS}
-              onChange={(v) => handleInlineUpdate("type", v)}
-              renderTrigger={() => <TypeBadge type={(displayBead.type || "task") as BeadType} size="small" />}
-              renderOption={(opt) => <TypeBadge type={opt.value as BeadType} size="small" />}
-              showChevron={false}
-            />
-            <ColoredSelect
-              value={displayBead.status}
-              options={STATUS_OPTIONS}
-              onChange={(v) => handleInlineUpdate("status", v)}
-              renderTrigger={() => <StatusBadge status={displayBead.status} size="small" />}
-              renderOption={(opt) => <StatusBadge status={opt.value as BeadStatus} size="small" />}
-              showChevron={false}
-            />
-            <ColoredSelect
-              value={displayBead.priority ?? 4}
-              options={PRIORITY_OPTIONS}
-              onChange={(v) => handleInlineUpdate("priority", v)}
-              renderTrigger={() => <PriorityBadge priority={displayBead.priority ?? 4} size="small" />}
-              renderOption={(opt) => <PriorityBadge priority={opt.value as BeadPriority} size="small" />}
-              showChevron={false}
-            />
+            {/* type/status/priority moved to the header pill; the badges row
+                keeps the inline-editable assignee + labels. */}
             <Dropdown
               trigger={
                 <span className="assignee-trigger">

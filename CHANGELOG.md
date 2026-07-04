@@ -27,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Details header reworked** — the action cluster now sits on its own toolbar line, led (in the sidebar takeover) by a labeled **← Project** button that pops back to the Project screen. The identity row (type icon + ID) now carries the **type · status · priority** as a single merged pill, right-aligned — the same joined-pill style used in the dependency lists. In display mode it's a compact read-only pill; the inline-editable selects appear in the badges row when editing
+- **Selection card pills right-aligned + merged** — the Project view's Selection card (medium-LOD `BeadSummary`) renders type/status/priority as the same right-aligned merged pill and drops the now-redundant "Type" metadata row
+- **Context-menu order: "Show Details" before "Show in editor tab"** in the Issues, Tree, and Kanban right-click menus (was reversed)
 - **Filter-bar collapse is now synced across the panel tabs** — collapsing the FilterBar in one lower-panel tab (Issues/Kanban/Tree/Graph) collapses it in all of them, matching the already-synced filters (it was confusing to collapse in one and find it open in the next). Standalone editor-tab views keep their own local collapse
 - **Selection card moved below the Favorites** in the Project view (above the end marquee), so a selection refresh never shifts the Favorites list and the Pick Ready / Show Issues / Show Tree row stays at the top
 - **Clicking a Favorites card now *selects* the bead** (updates the Selection card) instead of opening the Details takeover — matching the app-wide single-click-selects model. Double-click opens Details; triple-click opens an editor tab

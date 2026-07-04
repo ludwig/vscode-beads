@@ -808,6 +808,7 @@ textarea {
   line-height: 1;
 }
 
+.status-priority-pill .pill-type,
 .status-priority-pill .pill-status,
 .status-priority-pill .pill-priority {
   display: inline-flex;
@@ -820,18 +821,27 @@ textarea {
   font-variant: small-caps;
 }
 
+.status-priority-pill .pill-type,
 .status-priority-pill .pill-status {
   color: #fff;
-  border-radius: var(--border-radius) 0 0 var(--border-radius);
 }
 
 .status-priority-pill .pill-priority {
   font-weight: 600;
-  border-radius: 0 var(--border-radius) var(--border-radius) 0;
 }
 
-/* When only priority is shown (no status), use full border-radius */
-.status-priority-pill .pill-priority:only-child {
+/* Round only the OUTER corners so any subset ([type|status|priority],
+   [status|priority], or a lone segment) reads as one joined pill. */
+.status-priority-pill > span {
+  border-radius: 0;
+}
+.status-priority-pill > span:first-child {
+  border-radius: var(--border-radius) 0 0 var(--border-radius);
+}
+.status-priority-pill > span:last-child {
+  border-radius: 0 var(--border-radius) var(--border-radius) 0;
+}
+.status-priority-pill > span:only-child {
   border-radius: var(--border-radius);
 }
 
@@ -3383,14 +3393,36 @@ textarea {
   border-bottom: 1px solid var(--vscode-panel-border);
 }
 
+/* Toolbar row: the action cluster on its own line, back-to-Project button on
+   the left and the actions pushed to the right. */
+.details-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.details-toolbar-spacer {
+  flex: 1 1 auto;
+}
+
+/* The "← Project" back button — a labeled button (icon + word) rather than a
+   bare icon, so its destination reads at a glance. */
+.details-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .details-header {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.details-header .header-actions {
-  margin-left: auto;
+/* Pushes the merged type|status|priority pill to the right edge of the
+   identity row. */
+.details-header-spacer {
+  flex: 1 1 auto;
 }
 
 /* The bead ID reads as a copyable identifier — a quiet bordered monospace chip
@@ -6185,6 +6217,10 @@ textarea {
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+}
+/* Pushes the merged type|status|priority pill to the right edge of the head. */
+.bead-readout-head-spacer {
+  flex: 1 1 auto;
 }
 .bead-readout-id {
   font-family: var(--vscode-editor-font-family);

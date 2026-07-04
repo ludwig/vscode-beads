@@ -10,10 +10,9 @@
  */
 
 import React from "react";
-import { Bead, isClosedStatus, TYPE_LABELS, BeadType } from "../types";
+import { Bead, isClosedStatus, BeadType } from "../types";
 import { TypeIcon } from "./TypeIcon";
-import { StatusBadge } from "./StatusBadge";
-import { PriorityBadge } from "./PriorityBadge";
+import { StatusPriorityPill } from "./StatusPriorityPill";
 import { getLabelColorStyle } from "../utils/label-colors";
 
 interface BeadSummaryProps {
@@ -50,7 +49,6 @@ export function BeadSummary({
   const extraLabels = labels.length - shownLabels.length;
   const desc = bead.description ? excerpt(bead.description) : "";
   const closedMuted = muteClosed && isClosedStatus(bead.status);
-  const typeLabel = bead.type ? TYPE_LABELS[bead.type as BeadType] ?? bead.type : null;
 
   return (
     <div
@@ -64,19 +62,17 @@ export function BeadSummary({
       <div className="bead-readout-head">
         <TypeIcon type={bead.type || "task"} size={14} />
         <span className="bead-readout-id">{bead.id}</span>
-        <StatusBadge status={bead.status} size="small" />
-        {bead.priority !== undefined && <PriorityBadge priority={bead.priority} size="small" />}
+        <span className="bead-readout-head-spacer" />
+        <StatusPriorityPill
+          type={(bead.type || "task") as BeadType}
+          status={bead.status}
+          priority={bead.priority}
+        />
       </div>
 
       <div className={`bead-readout-title${closedMuted ? " muted-closed" : ""}`}>{bead.title}</div>
 
       <dl className="bead-readout-meta">
-        {typeLabel && (
-          <div className="bead-readout-row">
-            <dt>Type</dt>
-            <dd>{typeLabel}</dd>
-          </div>
-        )}
         {bead.assignee && (
           <div className="bead-readout-row">
             <dt>Assignee</dt>

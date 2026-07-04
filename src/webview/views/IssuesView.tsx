@@ -657,12 +657,12 @@ export function IssuesView({
   const rowMenuItems = useCallback(
     (bead: Bead): ContextMenuItem[] => [
       {
-        label: "Show in editor tab",
-        onSelect: () => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id }),
-      },
-      {
         label: "Show Details",
         onSelect: () => vscode.postMessage({ type: "openBeadDetails", beadId: bead.id }),
+      },
+      {
+        label: "Show in editor tab",
+        onSelect: () => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id }),
       },
       {
         label: "Focus on Graph",

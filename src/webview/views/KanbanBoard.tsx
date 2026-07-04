@@ -383,12 +383,12 @@ export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], maskedIds
 function cardMenuItems(bead: Bead, isFavorite: boolean): ContextMenuItem[] {
   return [
     {
-      label: "Show in editor tab",
-      onSelect: () => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id }),
-    },
-    {
       label: "Show Details",
       onSelect: () => vscode.postMessage({ type: "openBeadDetails", beadId: bead.id }),
+    },
+    {
+      label: "Show in editor tab",
+      onSelect: () => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id }),
     },
     {
       label: "Focus on Graph",
