@@ -379,33 +379,6 @@ body {
   box-sizing: border-box;
 }
 
-/* Demure "Filtered" toggle pill — the compact replacement for the long inherited
-   banner that used to lead the EXPANDED filter bar. Outline when the upstream
-   filter is dropped; filled (the belle of the ball) when it's applied. Sits in
-   the right/trailing group, never the packed left button cluster. (The collapsed
-   ribbon keeps its own richer summary + Show-all/Show-filtered toggle.) */
-.filter-bar-filtered-pill {
-  flex: 0 0 auto;
-  padding: 1px 9px;
-  border-radius: var(--badge-radius-pill, 10px);
-  font-size: 11px;
-  line-height: 1.5;
-  border: 1px solid var(--vscode-badge-background);
-  background: transparent;
-  color: var(--vscode-descriptionForeground);
-  cursor: pointer;
-  white-space: nowrap;
-}
-.filter-bar-filtered-pill:hover {
-  color: var(--vscode-foreground);
-  border-color: var(--vscode-focusBorder);
-}
-.filter-bar-filtered-pill.active {
-  color: var(--vscode-badge-foreground);
-  background: var(--vscode-badge-background);
-  border-color: var(--vscode-badge-background);
-}
-
 .filter-bar-summary {
   flex: 1;
   min-width: 0;

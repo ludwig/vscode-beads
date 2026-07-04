@@ -531,7 +531,7 @@ export function IssuesView({
         filterFn: (row, _columnId, filterValue: BeadStatus[]) => matchStatus(row.original, filterValue),
       }),
       columnHelper.accessor("priority", {
-        header: "Priority",
+        header: "P",
         size: 70,
         minSize: 30,
         cell: (info) =>

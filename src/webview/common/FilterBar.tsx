@@ -13,7 +13,7 @@
  */
 
 import React, { useRef, useState } from "react";
-import { Rocket, Star } from "lucide-react";
+import { Rocket, Star, Filter } from "lucide-react";
 import {
   BeadStatus,
   BeadPriority,
@@ -207,10 +207,14 @@ export function FilterBar({
   // inherited-scope ribbon. Lives in the right/trailing group (never the packed
   // left button cluster). Filled when the upstream Issues filter is applied,
   // outline when the user has dropped it ("show all"); click flips.
+  // The inherited-scope toggle, styled as a peer of the Ready/Favorites toggles
+  // (funnel icon + label, same active treatment). Filled when the upstream
+  // Issues filter is applied to this view; click to drop it (show all) or
+  // re-apply.
   const inheritedPill = inherited && (
     <button
       type="button"
-      className={`filter-bar-filtered-pill ${inheritedApplied ? "active" : ""}`}
+      className={`ready-toggle filtered-toggle ${inheritedApplied ? "active" : ""}`}
       onClick={inherited.onToggle}
       aria-pressed={inheritedApplied}
       title={
@@ -219,7 +223,8 @@ export function FilterBar({
           : `Inherited Issues filter dropped — click to re-apply (${inherited.filteredCount} of ${inherited.totalCount})`
       }
     >
-      Filtered
+      <Filter size={12} strokeWidth={2.25} />
+      <span>Filtered</span>
     </button>
   );
 
