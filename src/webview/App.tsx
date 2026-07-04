@@ -790,7 +790,6 @@ export function App(): React.ReactElement {
             onSelectBead={(beadId) => vscode.postMessage({ type: "selectBead", beadId })}
             onUpdateBead={(beadId, updates) => vscode.postMessage({ type: "updateBead", beadId, updates })}
             onClearBead={() => vscode.postMessage({ type: "clearActiveBead" })}
-            onUnfavorite={(beadId) => vscode.postMessage({ type: "removeFavorite", beadId })}
             onCopyFavorites={() =>
               vscode.postMessage({
                 type: "copyText",

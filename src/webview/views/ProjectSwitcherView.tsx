@@ -38,8 +38,6 @@ interface ProjectSwitcherViewProps {
   /** Commit a field patch from the Selection card's inline-editable pill. */
   onUpdateBead: (beadId: string, updates: Partial<Bead>) => void;
   onClearBead: () => void;
-  /** Unstar a favorite from the section's per-row control. */
-  onUnfavorite: (beadId: string) => void;
   /** Copy the favorite bead IDs as a single CSV line to the clipboard (vs-sd5.2). */
   onCopyFavorites: () => void;
   /** Copy a single bead's ID to the clipboard (card right-click menu). */
@@ -97,7 +95,6 @@ export function ProjectSwitcherView({
   onSelectBead,
   onUpdateBead,
   onClearBead,
-  onUnfavorite,
   onCopyFavorites,
   onCopyId,
   onToggleFavorite,
@@ -461,17 +458,6 @@ export function ProjectSwitcherView({
                 </span>
               )}
             </div>
-          </button>
-        )}
-        renderTrailing={(fav) => (
-          <button
-            type="button"
-            className="context-card-x"
-            title="Unstar this bead"
-            aria-label={`Unstar ${fav.id}`}
-            onClick={() => onUnfavorite(fav.id)}
-          >
-            <X size={13} strokeWidth={2} />
           </button>
         )}
       />

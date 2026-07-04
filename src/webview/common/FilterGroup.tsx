@@ -82,12 +82,14 @@ export function FilterGroup<T,>({
               const masked = isMasked(item);
               return (
                 <div key={getKey(item)} className={`filter-group-row${masked ? " is-masked" : ""}`}>
-                  {/* Eye is owned by the group and sits beside the seed (a sibling
-                      of the card body), so the body can mute while the eye stays
-                      crisp — the mask belongs to the container, not the card. */}
-                  <VisibilityEye hidden={masked} onToggle={() => onToggleMask(item)} className="filter-group-eye" />
                   <div className="filter-group-item">{renderItem(item)}</div>
                   {renderTrailing?.(item)}
+                  {/* Eye is owned by the group and sits at the trailing edge of
+                      each seed (a sibling of the card body): hiding is the common
+                      per-row op, so the eye takes the reach-for-it slot. Removal
+                      lives in the card's context menu. The body can mute while
+                      the eye stays crisp — the mask belongs to the container. */}
+                  <VisibilityEye hidden={masked} onToggle={() => onToggleMask(item)} className="filter-group-eye" />
                 </div>
               );
             })}
