@@ -6129,6 +6129,13 @@ textarea {
   border: 1px solid var(--vscode-panel-border);
   border-radius: var(--border-radius);
   background: var(--vscode-editorWidget-background, transparent);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+/* Quiet hover lift, matching the Active Project card's stat chips
+ * (.project-switcher-meta-row) — informational, not a clickable cue. */
+.repository-metric-card:hover {
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+  border-color: var(--vscode-focusBorder);
 }
 .repository-metric-label {
   font-size: 0.75em;
