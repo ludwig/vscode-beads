@@ -380,8 +380,8 @@ export function DetailsView({
   //   editor tab: [favorite] [llm] [show] [edit] | [back] [forward]
   const favoriteBtn = (
     <button
-      className={`icon-btn header-icon-btn${isFavorite ? " is-favorite" : ""}`}
-      title={isFavorite ? "Unstar (remove from Favorites)" : "Star (add to Favorites)"}
+      className={`icon-btn header-icon-btn fb-tip${isFavorite ? " is-favorite" : ""}`}
+      data-tip={isFavorite ? "Unstar (remove from Favorites)" : "Star (add to Favorites)"}
       aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
       aria-pressed={isFavorite}
       onClick={() => onToggleFavorite?.(bead.id)}
@@ -391,7 +391,7 @@ export function DetailsView({
   );
 
   const refreshBtn = (
-    <button className="icon-btn header-icon-btn" title="Refresh" aria-label="Refresh" onClick={handleRefresh}>
+    <button className="icon-btn header-icon-btn fb-tip fb-tip-end" data-tip="Refresh" aria-label="Refresh" onClick={handleRefresh}>
       <Icon name="refresh" size={13} className={refreshing ? "spinning" : ""} />
     </button>
   );
@@ -401,8 +401,8 @@ export function DetailsView({
   // would pop open far away in the editor area, so the caller omits the handler.
   const llmToggle = onToggleCompanion ? (
     <button
-      className={`companion-toggle${companionOpen ? " is-on" : ""}`}
-      title={
+      className={`companion-toggle fb-tip${companionOpen ? " is-on" : ""}`}
+      data-tip={
         companionOpen
           ? "Remove this bead from LLM context (closes the companion document)"
           : "Add this bead to your LLM context — opens its contents as a document beside this view so an LLM session (e.g. Claude Code) reads it"
@@ -421,32 +421,32 @@ export function DetailsView({
   const showTabBtns = (
     <div className="header-show-tabs" role="group" aria-label="Show this issue in a panel tab">
       <button
-        className="icon-btn header-icon-btn"
-        title="Show in Issues"
+        className="icon-btn header-icon-btn fb-tip fb-tip-end"
+        data-tip="Show in Issues"
         aria-label="Show in Issues"
         onClick={() => vscode.postMessage({ type: "viewInIssues", beadId: bead.id })}
       >
         <ListTodo size={13} strokeWidth={2} />
       </button>
       <button
-        className="icon-btn header-icon-btn"
-        title="Show in Tree"
+        className="icon-btn header-icon-btn fb-tip fb-tip-end"
+        data-tip="Show in Tree"
         aria-label="Show in Tree"
         onClick={() => vscode.postMessage({ type: "viewInTree", beadId: bead.id })}
       >
         <Icon name="sitemap" size={13} />
       </button>
       <button
-        className="icon-btn header-icon-btn"
-        title="Show in Kanban"
+        className="icon-btn header-icon-btn fb-tip fb-tip-end"
+        data-tip="Show in Kanban"
         aria-label="Show in Kanban"
         onClick={() => vscode.postMessage({ type: "viewInKanban", beadId: bead.id })}
       >
         <Kanban size={13} strokeWidth={2} />
       </button>
       <button
-        className="icon-btn header-icon-btn"
-        title="Show in Graph"
+        className="icon-btn header-icon-btn fb-tip fb-tip-end"
+        data-tip="Show in Graph"
         aria-label="Show in Graph"
         onClick={() => vscode.postMessage({ type: "viewInGraph", beadId: bead.id })}
       >
@@ -457,8 +457,8 @@ export function DetailsView({
 
   const createBtn = (
     <button
-      className="icon-btn header-icon-btn"
-      title="New issue"
+      className="icon-btn header-icon-btn fb-tip fb-tip-end"
+      data-tip="New issue"
       aria-label="New issue"
       onClick={() => vscode.postMessage({ type: "startCreate" })}
     >
@@ -487,8 +487,8 @@ export function DetailsView({
 
   const openInTabBtn = (
     <button
-      className="icon-btn header-icon-btn"
-      title="Open in editor tab"
+      className="icon-btn header-icon-btn fb-tip fb-tip-end"
+      data-tip="Open in editor tab"
       aria-label="Open in editor tab"
       onClick={() => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id })}
     >
@@ -499,8 +499,8 @@ export function DetailsView({
   const backForwardBtns = (
     <>
       <button
-        className="icon-btn header-icon-btn"
-        title={`Back (${navMod}←)`}
+        className="icon-btn header-icon-btn fb-tip fb-tip-end"
+        data-tip={`Back (${navMod}←)`}
         aria-label="Back"
         disabled={!canNavigateBack}
         onClick={() => onNavigateBack?.()}
@@ -510,8 +510,8 @@ export function DetailsView({
         </svg>
       </button>
       <button
-        className="icon-btn header-icon-btn"
-        title={`Forward (${navMod}→)`}
+        className="icon-btn header-icon-btn fb-tip fb-tip-end"
+        data-tip={`Forward (${navMod}→)`}
         aria-label="Forward"
         disabled={!canNavigateForward}
         onClick={() => onNavigateForward?.()}
@@ -555,8 +555,8 @@ export function DetailsView({
           </span>
         ) : (
           <button
-            className="btn btn-sm details-back-btn"
-            title="Back to the project view"
+            className="btn btn-sm details-back-btn fb-tip"
+            data-tip="Back to the project view"
             aria-label="Back to the project view"
             onClick={() => vscode.postMessage({ type: "backToProject" })}
           >
@@ -591,7 +591,7 @@ export function DetailsView({
       <div className="details-header">
         <TypeIcon type={(displayBead.type || "task") as BeadType} size={20} />
         <span
-          className="bead-id-badge clickable"
+          className="bead-id-badge clickable fb-tip"
           onClick={() => {
             if (onCopyId) {
               onCopyId(bead.id);
@@ -600,7 +600,7 @@ export function DetailsView({
               navigator.clipboard.writeText(bead.id);
             }
           }}
-          title="Click to copy ID"
+          data-tip="Click to copy ID"
         >
           {bead.id}
         </span>
