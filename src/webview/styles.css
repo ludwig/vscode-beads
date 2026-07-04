@@ -1630,6 +1630,49 @@ textarea {
   border-radius: var(--border-radius);
 }
 
+/* Fast CSS tooltip for filter-bar controls — the native `title` has a
+   browser-fixed ~1.5s delay we can't shorten. Shows the `data-tip` text below
+   the control after a short 0.35s hover. `.fb-tip-end` right-anchors it (for
+   the rightmost control) so a wide tip doesn't overflow the panel edge. */
+.fb-tip {
+  position: relative;
+}
+.fb-tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 50;
+  width: max-content;
+  max-width: 240px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--vscode-editorHoverWidget-background, var(--vscode-editorWidget-background));
+  color: var(--vscode-editorHoverWidget-foreground, var(--vscode-foreground));
+  border: 1px solid var(--vscode-editorHoverWidget-border, var(--vscode-widget-border, transparent));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.4;
+  white-space: normal;
+  text-align: left;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 0.1s ease, transform 0.1s ease;
+  transition-delay: 0s;
+}
+.fb-tip-end::after {
+  left: auto;
+  right: 0;
+}
+.fb-tip:hover::after,
+.fb-tip:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.35s;
+}
+
 /* Preset dropdown - extends generic .dropdown */
 .preset-dropdown-btn {
   gap: 4px;

@@ -211,17 +211,21 @@ export function FilterBar({
   // (funnel icon + label, same active treatment). Filled when the upstream
   // Issues filter is applied to this view; click to drop it (show all) or
   // re-apply.
+  const inheritedTip = inherited
+    ? inheritedApplied
+      ? `Showing ${inherited.filteredCount} of ${inherited.totalCount} from the Issues filter — click to show all`
+      : `Inherited Issues filter dropped — click to re-apply (${inherited.filteredCount} of ${inherited.totalCount})`
+    : "";
   const inheritedPill = inherited && (
     <button
       type="button"
-      className={`ready-toggle filtered-toggle ${inheritedApplied ? "active" : ""}`}
+      className={`ready-toggle filtered-toggle fb-tip fb-tip-end ${inheritedApplied ? "active" : ""}`}
       onClick={inherited.onToggle}
       aria-pressed={inheritedApplied}
-      title={
-        inheritedApplied
-          ? `Showing ${inherited.filteredCount} of ${inherited.totalCount} from the Issues filter — click to show all`
-          : `Inherited Issues filter dropped — click to re-apply (${inherited.filteredCount} of ${inherited.totalCount})`
-      }
+      // Fast CSS tooltip (data-tip) instead of the native `title`, whose ~1.5s
+      // browser-fixed delay is unshortenable; aria-label keeps it accessible.
+      data-tip={inheritedTip}
+      aria-label={inheritedTip}
     >
       <Filter size={12} strokeWidth={2.25} />
       <span>Filtered</span>
