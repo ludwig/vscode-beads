@@ -132,6 +132,19 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     this.flushFocusGraph();
   }
 
+  /**
+   * Reveal/scroll to a bead in whichever tab is currently active (the Details
+   * "focus" toggle turning on). The shell resolves the active tab. Unlike the
+   * focus*Tab helpers this does NOT queue for later or open the panel: it
+   * reveals only when the panel is already visible, so a closed panel is a true
+   * no-op — the focus-mode Show buttons handle that case on the next click.
+   */
+  public revealBeadInActiveTab(beadId: string): void {
+    if (this._host?.visible) {
+      this.postMessage({ type: "revealActiveTabBead", beadId });
+    }
+  }
+
   private flushFilter(): void {
     if (this.pendingFilter !== undefined && this._host?.visible) {
       this.postMessage({ type: "applyIssuesFilter", filter: this.pendingFilter });

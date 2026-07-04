@@ -124,6 +124,17 @@ export function registerCommands(
       shellProvider.focusGraphTab();
     }),
 
+    // Locate a bead in the panel's currently-active tab (the Details "focus"
+    // toggle turning on). Deliberately does NOT open the panel: it reveals only
+    // when the panel is already showing, else it's a no-op and the focus-mode
+    // Show buttons reveal on the next click. The shell resolves the active tab.
+    vscode.commands.registerCommand("beads.focusBeadInActiveTab", (beadId?: string) => {
+      if (!beadId) {
+        return;
+      }
+      shellProvider.revealBeadInActiveTab(beadId);
+    }),
+
     // Open the Issues panel pre-filtered to a slice (empty filter = all).
     // Used by the Dashboard summary cards and breakdown badges. Focus first so
     // a closed panel resolves its webview, then hand the filter to the provider

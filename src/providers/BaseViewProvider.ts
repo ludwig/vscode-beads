@@ -408,6 +408,12 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         vscode.commands.executeCommand("beads.viewInIssues", message.beadId);
         break;
 
+      case "focusBeadInActiveTab":
+        // Reveal this bead in whatever panel tab is already showing — no tab
+        // switch, and a no-op if the panel is closed (the Details focus toggle).
+        vscode.commands.executeCommand("beads.focusBeadInActiveTab", message.beadId);
+        break;
+
       case "copyBeadId":
         if (message.beadId) {
           await vscode.env.clipboard.writeText(message.beadId);

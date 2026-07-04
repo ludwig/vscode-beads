@@ -143,6 +143,7 @@ import { Icon } from "../common/Icon";
 import { Markdown } from "../common/Markdown";
 import { useToast } from "../common/Toast";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
+import { usePersistedBoolean } from "../hooks/usePersistedBoolean";
 import { ListTodo, Kanban, Workflow, ArrowLeft, Crosshair } from "lucide-react";
 
 interface DetailsViewProps {
@@ -219,7 +220,9 @@ export function DetailsView({
   // Focus mode (vs-filterbar): a toggle that changes what the tab-shortcut
   // buttons do. Off → they just open the tab; On → they open the tab AND reveal
   // this bead there (the viewIn* deep-links). A "locate this issue" modifier.
-  const [focusMode, setFocusMode] = useState(false);
+  // Persisted so the mode survives across Details mounts (screen swaps, id
+  // changes, reloads) — you set it once and it stays.
+  const [focusMode, setFocusMode] = usePersistedBoolean("details.focusMode", false);
   const [newDependency, setNewDependency] = useState("");
   const [newDepOptionIndex, setNewDepOptionIndex] = useState(0); // Index into DEPENDENCY_TYPE_OPTIONS
   const [newComment, setNewComment] = useState("");
@@ -465,7 +468,16 @@ export function DetailsView({
       }
       aria-label="Toggle focus mode"
       aria-pressed={focusMode}
-      onClick={() => setFocusMode((v) => !v)}
+      onClick={() => {
+        const next = !focusMode;
+        setFocusMode(next);
+        // Turning focus ON acts on the active view right away: reveal this bead
+        // in whatever panel tab is already open. It's a no-op if nothing's open
+        // — then the (now focus-mode) Show buttons reveal it on the next click.
+        if (next && bead) {
+          vscode.postMessage({ type: "focusBeadInActiveTab", beadId: bead.id });
+        }
+      }}
     >
       <Crosshair size={13} strokeWidth={2} />
     </button>
