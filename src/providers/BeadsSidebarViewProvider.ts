@@ -79,14 +79,14 @@ export class BeadsSidebarViewProvider extends BeadDetailsViewProvider {
 
   /**
    * Drive the sidebar view's header label from the current SCREEN (not from
-   * every renderBead): the bead id on the Details screen, "Repository" on the
-   * Project screen. Because it's screen-driven, a passive selection on the
-   * Project screen re-sets the same "Repository" string → no oscillation.
+   * every renderBead): a categorical "Issue Details" on the Details screen,
+   * "Repository" on the Project screen (VS Code uppercases both in the view
+   * header). Screen-driven, so a passive selection just re-sets the same string
+   * → no oscillation.
    */
   private applyTitle(): void {
     if (!this.sidebarView) return;
-    this.sidebarView.title =
-      this.screen === "details" ? this.getCurrentBeadId() ?? "Details" : "Repository";
+    this.sidebarView.title = this.screen === "details" ? "Issue Details" : "Repository";
   }
 
   public resolveWebviewView(
@@ -117,10 +117,6 @@ export class BeadsSidebarViewProvider extends BeadDetailsViewProvider {
       this.setScreen("details");
     }
     await super.showBead(beadId, opts);
-    // renderBead has now set the current bead id; refresh the header label so
-    // the Details screen shows this bead (super's setTitle already fired, but
-    // re-assert in case the screen didn't change and setScreen wasn't called).
-    this.applyTitle();
   }
 
   /** Entering create mode is an explicit open — flip to the Details screen,
