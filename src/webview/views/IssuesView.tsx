@@ -763,18 +763,6 @@ export function IssuesView({
         onToggleCollapsed={() => setFilterBarOpen((v) => !v)}
         searchTerm={globalFilter}
         onClearSearch={() => setGlobalFilter("")}
-        trailing={
-          /* Row density: OFF (default) = compact, ON = comfortable. Right-aligned
-             on the second row, out of the search row's way. */
-          <button
-            className={`compact-toggle ${!compact ? "active" : ""}`}
-            onClick={() => setCompact((c) => !c)}
-            title={compact ? "Comfortable rows" : "Compact rows"}
-            aria-pressed={!compact}
-          >
-            {compact ? <Rows3 size={14} /> : <Rows2 size={14} />}
-          </button>
-        }
         search={
           <>
             <input
@@ -784,6 +772,17 @@ export function IssuesView({
               value={globalFilter}
               onChange={(e) => setGlobalFilter(e.target.value)}
             />
+            {/* Row density toggle — sits right of the search box (mirrors the
+                Tree's fold toggle placement). OFF (default) = compact, ON =
+                comfortable. */}
+            <button
+              className={`compact-toggle ${!compact ? "active" : ""}`}
+              onClick={() => setCompact((c) => !c)}
+              title={compact ? "Comfortable rows" : "Compact rows"}
+              aria-pressed={!compact}
+            >
+              {compact ? <Rows3 size={14} /> : <Rows2 size={14} />}
+            </button>
             {isEditorTab && (
               <button
                 className="apply-all-btn"
