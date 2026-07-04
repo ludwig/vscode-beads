@@ -11,12 +11,13 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, X, Rocket, ListTodo, ListTree, Copy, FolderPlus, Star } from "lucide-react";
+import { ChevronDown, ChevronRight, X, Rocket, ListTodo, ListTree, Copy, ExternalLink, FolderPlus, Star } from "lucide-react";
 import { Bead, BeadsProject, FavoriteBead, statusColor, isClosedStatus } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem, DropdownSeparator } from "../common/Dropdown";
 import { formatBytes } from "../common/formatBytes";
 import { TypeIcon } from "../common/TypeIcon";
+import { BeadSummaryCard } from "../common/BeadSummaryCard";
 import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
 import { EndFlourish } from "../common/EndFlourish";
 import { FilterGroup } from "../common/FilterGroup";
@@ -117,7 +118,6 @@ export function ProjectSwitcherView({
 }: ProjectSwitcherViewProps): React.ReactElement {
   const backendState = activeProject?.backendStatus ?? "unknown";
   const [projectCollapsed, setProjectCollapsed] = useState(false);
-  const [beadCollapsed, setBeadCollapsed] = useState(false);
   const [favoritesCollapsed, setFavoritesCollapsed] = useState(false);
   // Optimistic star: `favoritesFilterOn` reflects the host round-trip (star →
   // command → scope flip → broadcast back), which reads as lag. Flip the star
@@ -128,13 +128,6 @@ export function ProjectSwitcherView({
   useEffect(() => {
     if (favStarOptimistic != null && favoritesFilterOn === favStarOptimistic) setFavStarOptimistic(null);
   }, [favoritesFilterOn, favStarOptimistic]);
-
-  // We're rearranging the Repository panel (vs-beads visibility work). The
-  // Selection card is pulled from the *view* only — the section JSX and its
-  // handlers stay intact below so we can relocate it later. Flip to `true` to
-  // bring it back. Keep the guarded branch referencing its state/handlers so
-  // esbuild/tsc/lint don't flag them as unused while the card is dark.
-  const SHOW_SELECTION_CARD = false;
 
   // Right-click menu for a bead card/row (vs-sd5.5). `isFavorite` is captured at
   // open time so the toggle label reads correctly for the menu's bead.
@@ -359,64 +352,60 @@ export function ProjectSwitcherView({
         </button>
       </div>
 
-      {SHOW_SELECTION_CARD && (
-      <section className="context-section">
+      {/* Details section — a styled header line (no twistie) whose right-aligned
+          actions mirror the bead chrome; the body renders the current selection
+          at medium LOD. The FULL bead (description, deps, comments, edit,
+          create) lives in the Details view on the Secondary Side Bar. */}
+      <section className="context-section context-details-section">
         <div className="context-section-head">
-          <button
-            type="button"
-            className="context-heading context-heading-toggle"
-            aria-expanded={!beadCollapsed}
-            onClick={() => setBeadCollapsed((v) => !v)}
-          >
-            {beadCollapsed ? (
-              <ChevronRight size={13} strokeWidth={2} className="context-heading-chevron" />
-            ) : (
-              <ChevronDown size={13} strokeWidth={2} className="context-heading-chevron" />
-            )}
-            <span>Selection</span>
-          </button>
+          <span className="context-heading">Details</span>
+          {activeBead && (
+            <div className="context-heading-actions">
+              <button
+                type="button"
+                className="context-heading-action fb-tip fb-tip-end"
+                data-tip="Open in editor tab"
+                aria-label="Open in editor tab"
+                onClick={() => onOpenBeadInTab(activeBead.id)}
+              >
+                <ExternalLink size={13} strokeWidth={2} />
+              </button>
+              <button
+                type="button"
+                className="context-heading-action fb-tip fb-tip-end"
+                data-tip="Copy ID"
+                aria-label="Copy ID"
+                onClick={() => onCopyId(activeBead.id)}
+              >
+                <Copy size={13} strokeWidth={2} />
+              </button>
+              <button
+                type="button"
+                className="context-heading-action fb-tip fb-tip-end"
+                data-tip="Clear selection"
+                aria-label="Clear selection"
+                onClick={onClearBead}
+              >
+                <X size={13} strokeWidth={2} />
+              </button>
+            </div>
+          )}
         </div>
-        {!beadCollapsed && (activeBead ? (
-          <div className="context-card-row">
-            <button
-              type="button"
-              className="active-bead context-card-open"
-              title={`${activeBead.id} — ${activeBead.title}\nClick to open in Details · triple-click to open in an editor tab`}
-              onClick={() => activateBead(activeBead.id)}
-              onContextMenu={(e) =>
-                openCardMenu(e, activeBead.id, favorites.some((f) => f.id === activeBead.id))
-              }
-            >
-              <div className="active-bead-main">
-                <div className="active-bead-head">
-                  {activeBead.type && <TypeIcon type={activeBead.type} size={13} />}
-                  <span className="active-bead-id">{activeBead.id}</span>
-                  <span
-                    className="active-bead-status"
-                    style={{ backgroundColor: statusColor(activeBead.status) }}
-                    title={activeBead.status}
-                  />
-                </div>
-                <span className={`active-bead-title${muteClosedIssues && isClosedStatus(activeBead.status) ? " muted-closed" : ""}`}>{activeBead.title}</span>
-              </div>
-            </button>
-            <button
-              type="button"
-              className="context-card-x"
-              title="Clear the selection"
-              aria-label="Clear selection"
-              onClick={onClearBead}
-            >
-              <X size={13} strokeWidth={2} />
-            </button>
-          </div>
+        {activeBead ? (
+          <BeadSummaryCard
+            bead={activeBead}
+            muteClosed={muteClosedIssues}
+            onOpen={activateBead}
+            onContextMenu={(e) =>
+              openCardMenu(e, activeBead.id, favorites.some((f) => f.id === activeBead.id))
+            }
+          />
         ) : (
           <div className="context-empty">
-            <p>No bead selected — click one in the Issues list to show it here.</p>
+            <p>No bead selected — click one to see it here.</p>
           </div>
-        ))}
+        )}
       </section>
-      )}
 
       {/* Favorites is a seed-based FilterGroup: the seed list (starred beads)
           expands into relatives in the Issues view, and each seed's eye masks it

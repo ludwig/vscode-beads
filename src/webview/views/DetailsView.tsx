@@ -358,13 +358,18 @@ export function DetailsView({
     }
   }, [newDependency, newDepOptionIndex, bead, onAddDependency]);
 
+  // In the Secondary Side Bar the Details view shares the sidebar background,
+  // making it blend into the IDE; a distinct surface class sets it apart (the
+  // editor-tab instance keeps the editor background).
+  const surfaceClass = isEditorTab ? "" : " details-surface";
+
   if (loading && !bead) {
-    return <div className="details-loading">Loading...</div>;
+    return <div className={`details-loading${surfaceClass}`}>Loading...</div>;
   }
 
   if (!bead) {
     return (
-      <div className="details-empty">
+      <div className={`details-empty${surfaceClass}`}>
         <p>Select a bead to view details</p>
       </div>
     );
@@ -526,7 +531,7 @@ export function DetailsView({
   );
 
   return (
-    <div className="bead-details">
+    <div className={`bead-details${surfaceClass}`}>
       {/* Header block — the ID/actions row, title anchor, and metadata
           chiclets, grouped and delimited from the body as one header unit. */}
       <div className="details-headerblock">
