@@ -20,10 +20,9 @@ interface BeadSummaryProps {
   bead: Bead;
   /** Gray the title when the bead is closed (beads.muteClosedIssues). */
   muteClosed?: boolean;
-  /** Double-click the readout to open the full Details takeover. */
+  /** When provided, the title becomes a link that opens the full Details view.
+   *  Kept off the card body so the readout text stays selectable. */
   onOpen?: (beadId: string) => void;
-  /** Single-click to (passively) select. Makes the readout interactive. */
-  onSelect?: (beadId: string) => void;
   /** Right-click (e.g. the shared bead context menu). */
   onContextMenu?: (e: React.MouseEvent) => void;
   /** Max label chips before collapsing the rest into a "+N". */
@@ -78,11 +77,9 @@ export function BeadSummary({
   bead,
   muteClosed = false,
   onOpen,
-  onSelect,
   onContextMenu,
   maxLabels = 6,
 }: BeadSummaryProps): React.ReactElement {
-  const interactive = !!(onOpen || onSelect);
   const labels = bead.labels ?? [];
   const shownLabels = labels.slice(0, maxLabels);
   const extraLabels = labels.length - shownLabels.length;
@@ -93,15 +90,7 @@ export function BeadSummary({
   const commentCount = bead.comments?.length ?? 0;
 
   return (
-    <div
-      className={`bead-readout${interactive ? " bead-readout-clickable" : ""}`}
-      onClick={onSelect ? () => onSelect(bead.id) : undefined}
-      onDoubleClick={onOpen ? () => onOpen(bead.id) : undefined}
-      onContextMenu={onContextMenu}
-      role={interactive ? "button" : undefined}
-      tabIndex={interactive ? 0 : undefined}
-      title={onOpen ? "Click to select · double-click to open details" : undefined}
-    >
+    <div className="bead-readout" onContextMenu={onContextMenu}>
       <div className="bead-readout-head">
         <TypeIcon type={bead.type || "task"} size={14} />
         <span className="bead-readout-id">{bead.id}</span>
@@ -113,7 +102,27 @@ export function BeadSummary({
         />
       </div>
 
-      <div className={`bead-readout-title${closedMuted ? " muted-closed" : ""}`}>{bead.title}</div>
+      <div className={`bead-readout-title${closedMuted ? " muted-closed" : ""}`}>
+        {onOpen ? (
+          <span
+            className="bead-readout-title-link"
+            role="button"
+            tabIndex={0}
+            title="Open details"
+            onClick={() => onOpen(bead.id)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onOpen(bead.id);
+              }
+            }}
+          >
+            {bead.title}
+          </span>
+        ) : (
+          bead.title
+        )}
+      </div>
 
       <dl className="bead-readout-meta">
         {bead.assignee && (
@@ -147,18 +156,6 @@ export function BeadSummary({
             <dd>{bead.externalRef}</dd>
           </div>
         )}
-        {relationships.length > 0 && (
-          <div className="bead-readout-row">
-            <dt>Links</dt>
-            <dd>{relationships.join(" · ")}</dd>
-          </div>
-        )}
-        {commentCount > 0 && (
-          <div className="bead-readout-row">
-            <dt>Comments</dt>
-            <dd>{commentCount}</dd>
-          </div>
-        )}
       </dl>
 
       {desc && (
@@ -173,6 +170,25 @@ export function BeadSummary({
           <span className="bead-readout-section-label">Acceptance Criteria</span>
           <p className="bead-readout-desc">{acceptance}</p>
         </div>
+      )}
+
+      {/* Relationships + comments live below the content, mirroring the full
+          Details view (deps/comments follow the body). */}
+      {(relationships.length > 0 || commentCount > 0) && (
+        <dl className="bead-readout-meta">
+          {relationships.length > 0 && (
+            <div className="bead-readout-row">
+              <dt>Links</dt>
+              <dd>{relationships.join(" · ")}</dd>
+            </div>
+          )}
+          {commentCount > 0 && (
+            <div className="bead-readout-row">
+              <dt>Comments</dt>
+              <dd>{commentCount}</dd>
+            </div>
+          )}
+        </dl>
       )}
 
       {(bead.createdAt || bead.updatedAt) && (

@@ -182,6 +182,8 @@ interface DetailsViewProps {
   userId?: string;
   /** True when this view is already an editor tab — hides the Open-in-tab action. */
   isEditorTab?: boolean;
+  /** Editor tab only: the active project's display path, for the chrome label. */
+  projectLabel?: string;
   knownAssignees?: string[];
   onUpdateBead: (beadId: string, updates: Partial<Bead>) => void;
   onAddDependency: (beadId: string, targetId: string, dependencyType: DependencyType, reverse: boolean) => void;
@@ -217,6 +219,7 @@ export function DetailsView({
   renderMarkdown = true,
   userId = "",
   isEditorTab = false,
+  projectLabel,
   knownAssignees = [],
   onUpdateBead,
   onAddDependency,
@@ -520,16 +523,37 @@ export function DetailsView({
     </>
   );
 
+  // The merged type|status|priority pill — shown in display mode only (the
+  // editable selects take over the badges row while editing).
+  const pills = !editMode ? (
+    <StatusPriorityPill
+      type={(displayBead.type || "task") as BeadType}
+      status={displayBead.status}
+      priority={displayBead.priority ?? 4}
+    />
+  ) : null;
+
   return (
     <div className="bead-details">
       {/* Header block — the ID/actions row, title anchor, and metadata
           chiclets, grouped and delimited from the body as one header unit. */}
       <div className="details-headerblock">
-      {/* Toolbar row: the action cluster on its own line — led (in the sidebar
-          takeover) by a labeled "← Project" button that pops back to the
-          Project screen. */}
-      <div className="details-toolbar">
-        {!isEditorTab && (
+      {/* Leading line: context on the left — the sidebar takeover shows a
+          labeled "← Project" back button; an editor tab shows an "Issue view
+          for <project>" chrome label. On the right: the merged
+          type|status|priority pill (sidebar) or the back/forward history nav
+          (editor tab). */}
+      <div className="details-lead">
+        {isEditorTab ? (
+          <span
+            className="details-lead-chrome"
+            title={projectLabel ? `Issue view for ${projectLabel}` : "Issue view"}
+          >
+            <span className="details-lead-chrome-view">Issue view</span>
+            {projectLabel && <span className="details-lead-chrome-for">for</span>}
+            {projectLabel && <span className="details-lead-chrome-project">{projectLabel}</span>}
+          </span>
+        ) : (
           <button
             className="btn btn-sm details-back-btn"
             title="Back to the project view"
@@ -540,37 +564,13 @@ export function DetailsView({
             <span>Project</span>
           </button>
         )}
-        <span className="details-toolbar-spacer" />
-        <div className="header-actions">
-          {isEditorTab ? (
-            // [favorite] [llm] [show] [edit] | < >  (one separator)
-            <>
-              {favoriteBtn}
-              {llmToggle}
-              {showTabBtns}
-              {editControls}
-              <span className="header-actions-sep" />
-              {backForwardBtns}
-            </>
-          ) : (
-            // [favorite] [refresh] | [+] [edit] | [show] [open-in-tab]
-            <>
-              {favoriteBtn}
-              {refreshBtn}
-              <span className="header-actions-sep" />
-              {createBtn}
-              {editControls}
-              <span className="header-actions-sep" />
-              {showTabBtns}
-              {openInTabBtn}
-            </>
-          )}
-        </div>
+        <span className="details-lead-spacer" />
+        {isEditorTab ? backForwardBtns : pills}
       </div>
 
-      {/* Identity row: type icon + ID on the left, the merged
-          type|status|priority pill right-aligned (display mode; the editable
-          selects live in the badges row while editing). */}
+      {/* Identity + actions row: type icon + ID on the left, the action cluster
+          on the right (plus the pill, in an editor tab, where the leading line
+          is taken by the nav). */}
       <div className="details-header">
         <TypeIcon type={(displayBead.type || "task") as BeadType} size={20} />
         <span
@@ -587,16 +587,31 @@ export function DetailsView({
         >
           {bead.id}
         </span>
-        {!editMode && (
-          <>
-            <span className="details-header-spacer" />
-            <StatusPriorityPill
-              type={(displayBead.type || "task") as BeadType}
-              status={displayBead.status}
-              priority={displayBead.priority ?? 4}
-            />
-          </>
-        )}
+        <span className="details-header-spacer" />
+        <div className="header-actions">
+          {isEditorTab ? (
+            // [favorite] [llm] [show] [edit]  (nav moved to the leading line)
+            <>
+              {favoriteBtn}
+              {llmToggle}
+              {showTabBtns}
+              {editControls}
+            </>
+          ) : (
+            // [favorite] [refresh] | [+] [edit] | [show] [open-in-tab]
+            <>
+              {favoriteBtn}
+              {refreshBtn}
+              <span className="header-actions-sep" />
+              {createBtn}
+              {editControls}
+              <span className="header-actions-sep" />
+              {showTabBtns}
+              {openInTabBtn}
+            </>
+          )}
+        </div>
+        {isEditorTab && pills}
       </div>
 
       {/* Title - full width */}

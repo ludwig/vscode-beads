@@ -3393,16 +3393,44 @@ textarea {
   border-bottom: 1px solid var(--vscode-panel-border);
 }
 
-/* Toolbar row: the action cluster on its own line, back-to-Project button on
-   the left and the actions pushed to the right. */
-.details-toolbar {
+/* Leading line: context on the left (← Project button in the sidebar, or an
+   "Issue view for <project>" chrome label in an editor tab), pill or nav on the
+   right. */
+.details-lead {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
+  min-height: 24px;
 }
 
-.details-toolbar-spacer {
+.details-lead-spacer {
   flex: 1 1 auto;
+}
+
+/* Editor-tab chrome label — mirrors the other editor-tab views' "<view> view
+   for <project>" heading. */
+.details-lead-chrome {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.details-lead-chrome-view {
+  font-weight: 600;
+  color: var(--vscode-foreground);
+}
+.details-lead-chrome-for {
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.8;
+}
+.details-lead-chrome-project {
+  font-family: var(--vscode-editor-font-family, monospace);
+  color: var(--vscode-textLink-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* The "← Project" back button — a labeled button (icon + word) rather than a
@@ -6210,13 +6238,12 @@ textarea {
   flex-direction: column;
   gap: 6px;
 }
-/* Clickable variant (the Project view's Selection card): the whole readout
- * opens the full Details takeover. */
-.bead-readout-clickable {
+/* The title is the only interactive element — a link that opens the full
+ * Details takeover — so the rest of the readout text stays selectable. */
+.bead-readout-title-link {
   cursor: pointer;
-  border-radius: var(--border-radius);
 }
-.bead-readout-clickable:hover .bead-readout-title {
+.bead-readout-title-link:hover {
   text-decoration: underline;
   text-underline-offset: 2px;
 }

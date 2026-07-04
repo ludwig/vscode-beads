@@ -518,6 +518,7 @@ export function App(): React.ReactElement {
         renderMarkdown={state.settings.renderMarkdown}
         userId={state.settings.userId}
         isEditorTab={state.settings.isEditorTab}
+        projectLabel={state.project?.displayPath ?? state.project?.name}
         knownAssignees={knownAssignees}
         onUpdateBead={(beadId, updates) =>
           vscode.postMessage({ type: "updateBead", beadId, updates })
