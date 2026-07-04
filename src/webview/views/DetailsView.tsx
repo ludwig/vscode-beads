@@ -553,7 +553,15 @@ export function DetailsView({
           </button>
         )}
         {isEditorTab ? (
+          // Editor-tab Lead: chrome label (left), the {llm · tab group · focus}
+          // cluster centered between two spacers, and the back/forward nav right.
           <>
+            <span className="details-lead-spacer" />
+            <div className="header-actions">
+              {llmToggle}
+              {showTabBtns}
+              {focusBtn}
+            </div>
             <span className="details-lead-spacer" />
             <div className="header-actions">{backForwardBtns}</div>
           </>
@@ -580,9 +588,9 @@ export function DetailsView({
       <hr className="details-rule" />
 
       {/* Ident row: type icon + ID + favorite star on the left; the merged
-          type|status|priority pill right-aligned. In the sidebar, refresh +
-          open-in-tab follow the pill (separated by a rule); in an editor tab the
-          action cluster rides here instead (the Lead there is taken by the nav). */}
+          type|status|priority pill right-aligned. The editor tab also keeps its
+          Edit control here (after the star) since its Lead carries the centered
+          {llm · tab group · focus} cluster + the back/forward nav. */}
       <div className="details-header">
         <TypeIcon type={(displayBead.type || "task") as BeadType} size={20} />
         <span
@@ -600,22 +608,11 @@ export function DetailsView({
           {bead.id}
         </span>
         {favoriteBtn}
+        {/* Editor tab keeps Edit down here, right after the star (its Lead is
+            taken by the centered action cluster + nav). */}
+        {isEditorTab && editControls}
         <span className="details-header-spacer" />
-        {isEditorTab ? (
-          <>
-            <div className="header-actions">
-              {llmToggle}
-              {showTabBtns}
-              {focusBtn}
-              {editControls}
-            </div>
-            {pills}
-          </>
-        ) : (
-          // Ident carries only the merged pill, right-aligned. (The action
-          // cluster — refresh + open-in-tab — rides on the Lead line.)
-          pills
-        )}
+        {pills}
       </div>
 
       {/* Title - full width */}
