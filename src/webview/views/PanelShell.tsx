@@ -336,8 +336,8 @@ export function PanelShell({
   const tabs: { id: PanelTab; label: string; Icon: LucideIcon }[] = [
     { id: "dashboard", label: "Dashboard", Icon: LayoutDashboard },
     { id: "issues", label: "Issues", Icon: ListTodo },
-    { id: "kanban", label: "Kanban", Icon: Kanban },
     { id: "tree", label: "Tree", Icon: ListTree },
+    { id: "kanban", label: "Kanban", Icon: Kanban },
     { id: "graph", label: "Graph", Icon: Workflow },
   ];
 
