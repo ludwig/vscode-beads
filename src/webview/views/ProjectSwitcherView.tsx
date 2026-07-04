@@ -127,16 +127,28 @@ export function ProjectSwitcherView({
     [],
   );
   const cardMenuItems = useCallback(
-    (id: string, isFavorite: boolean): ContextMenuItem[] => [
-      { label: "Show Details", onSelect: () => onOpenBead(id) },
-      { label: "Open in editor tab", onSelect: () => onOpenBeadInTab(id) },
-      {
+    (id: string, isFavorite: boolean): ContextMenuItem[] => {
+      const items: ContextMenuItem[] = [
+        { label: "Show Details", onSelect: () => onOpenBead(id) },
+        { label: "Open in editor tab", onSelect: () => onOpenBeadInTab(id) },
+      ];
+      // A hidden (masked) favorite can be un-hidden straight from its card menu —
+      // handy when the muted card makes the eye toggle easy to miss (vs-sd5).
+      if (isFavorite && favorites.some((f) => f.id === id && f.masked)) {
+        items.push({
+          label: "Reset visibility",
+          separatorBefore: true,
+          onSelect: () => onToggleMask(id),
+        });
+      }
+      items.push({
         label: isFavorite ? "Remove from Favorites" : "Add to Favorites",
         separatorBefore: true,
         onSelect: () => onToggleFavorite(id),
-      },
-    ],
-    [onOpenBead, onOpenBeadInTab, onToggleFavorite],
+      });
+      return items;
+    },
+    [onOpenBead, onOpenBeadInTab, onToggleFavorite, onToggleMask, favorites],
   );
 
   // Click-count router on the Selection card (mirrors the Graph/Tree): 1/2
