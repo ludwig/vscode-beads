@@ -113,6 +113,16 @@ interface IssuesViewProps {
    */
   applySnapshotRequest?: { snapshot: FilterSnapshot; seq: number } | null;
   /**
+   * Panel only: the broadcast shared filter spec (`null` until the host reports
+   * one). As the shared-filter LEADER, the panel Issues view seeds its structured
+   * filter from this ONCE at (re)mount — so an edit made in another panel view
+   * (Kanban/Tree/Graph) while Issues was unmounted is picked up on tab-return.
+   * It is NOT a running controlled input (that dual-ownership caused a feedback
+   * race); Issues owns its state and publishes edits via `setSharedFilter`.
+   * Free-text search stays local. Omitted / null in an editor tab (divergent).
+   */
+  sharedSpec?: FilterSnapshot | null;
+  /**
    * A "show in issues" deep-link target (vs-wbrz): select the bead's row and
    * scroll it into view. `seq` re-fires for a repeat of the same bead. If the
    * bead is filtered out of the current view, selection still applies but the
@@ -176,6 +186,7 @@ export function IssuesView({
   tooltipHoverDelay,
   issuesFilterRequest,
   applySnapshotRequest,
+  sharedSpec,
   revealRequest,
   isEditorTab = false,
   graph,
@@ -212,8 +223,18 @@ export function IssuesView({
   // forget them). Merged into the same shared vscode state blob as the column
   // layout / readyOnly so we don't clobber the Tree's persisted sort (vs-1q1).
   const persisted = (vscode.getState() as PersistedIssuesState | undefined) ?? {};
+  // Shared-filter LEADER seed (panel only). If the host already holds a spec at
+  // mount — i.e. this is a tab-return after another panel view (Kanban/Tree/
+  // Graph) edited the common surface — seed our structured filter from it so we
+  // stay linked. A `null` sharedSpec (cold-load first render, before the host
+  // has reported) falls through to our own persisted default, which the publish
+  // effect below then asserts to the host as canonical. Read ONCE at mount via
+  // the useState initializers — deliberately NOT a running controlled input, so
+  // there's no publish↔echo feedback loop. Free-text search is never seeded here.
+  const sharedSeed = !isEditorTab && sharedSpec ? sharedSpec : null;
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
     () =>
+      (sharedSeed?.columnFilters as ColumnFiltersState | undefined) ??
       persisted.issuesColumnFilters ?? [
         { id: "status", value: [NOT_CLOSED] }, // Default: ¬closed (symbolic)
       ],
@@ -245,7 +266,7 @@ export function IssuesView({
   // active, so plain state would forget it). Merged into the shared state blob so
   // we don't clobber the Tree's persisted sort.
   const [readyOnly, setReadyOnly] = useState<boolean>(
-    () => (vscode.getState() as { issuesReadyOnly?: boolean } | undefined)?.issuesReadyOnly ?? false,
+    () => sharedSeed?.readyOnly ?? (vscode.getState() as { issuesReadyOnly?: boolean } | undefined)?.issuesReadyOnly ?? false,
   );
   useEffect(() => {
     const prev = (vscode.getState() as Record<string, unknown>) ?? {};
@@ -257,7 +278,10 @@ export function IssuesView({
   // graph (fetched lazily on first enable, like Ready). Persisted like readyOnly
   // and composes with it + the column filters/search.
   const [favoritesOnly, setFavoritesOnly] = useState<boolean>(
-    () => (vscode.getState() as { issuesFavoritesOnly?: boolean } | undefined)?.issuesFavoritesOnly ?? false,
+    () =>
+      sharedSeed?.favoritesOnly ??
+      (vscode.getState() as { issuesFavoritesOnly?: boolean } | undefined)?.issuesFavoritesOnly ??
+      false,
   );
   useEffect(() => {
     const prev = (vscode.getState() as Record<string, unknown>) ?? {};
@@ -300,7 +324,9 @@ export function IssuesView({
     if (favoritesScope) rows = rows.filter((b) => favoritesScope.has(b.id));
     return rows;
   }, [readyOnly, readySet, favoritesScope, beads]);
-  const [activePreset, setActivePreset] = useState<string>(() => persisted.issuesActivePreset ?? "not-closed");
+  const [activePreset, setActivePreset] = useState<string>(
+    () => sharedSeed?.activePreset ?? persisted.issuesActivePreset ?? "not-closed",
+  );
   // Persist filters + search + preset whenever they change (merge, don't clobber).
   useEffect(() => {
     const prev = (vscode.getState() as Record<string, unknown>) ?? {};

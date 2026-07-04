@@ -319,6 +319,12 @@ export type ExtensionToWebviewMessage =
   // Favorites-card star can reflect the Issues favorites filter (full-duplex
   // probe: the star reports this and drives it via `setFavoritesFilter`).
   | { type: "setSharedFavoritesOnly"; on: boolean }
+  // The full shared (panel) filter spec, broadcast so EVERY panel view renders
+  // its common FilterBar surface (preset · Ready · Favorites · structured chips)
+  // in sync. Any panel view edits it via `setSharedFilter`; the host echoes the
+  // new spec back here. Followers (Kanban/Tree/Graph) render it live; the leader
+  // (Issues) seeds from it on (re)mount. Per-view free-text search stays local.
+  | { type: "setSharedFilterSpec"; snapshot: FilterSnapshot }
   // Per-tab Back/Forward enablement for an editor-tab Details view (vs-9u8).
   | { type: "setTabNavState"; canBack: boolean; canForward: boolean }
   // A one-time snapshot of the Issues filter (the matching bead ids), pushed to

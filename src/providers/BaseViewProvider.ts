@@ -193,6 +193,7 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     if (this.scope) {
       this.publishParentScope(this.scope.current());
       this.publishSharedFavoritesOnly(this.scope.currentSpec().favoritesOnly);
+      this.publishSharedFilterSpec(this.scope.currentSpec());
     }
 
     // Load view-specific data only for visible views.
@@ -227,6 +228,12 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
   /** Report the shared filter's Favorites-only bit (for the dashboard star). */
   public publishSharedFavoritesOnly(on: boolean): void {
     this.postMessage({ type: "setSharedFavoritesOnly", on });
+  }
+
+  /** Broadcast the full shared filter spec so every panel view renders its
+   *  common FilterBar surface in sync (followers live; the leader on remount). */
+  public publishSharedFilterSpec(snapshot: FilterSnapshot): void {
+    this.postMessage({ type: "setSharedFilterSpec", snapshot });
   }
 
   /**
