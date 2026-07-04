@@ -221,11 +221,6 @@
           "command": "beads.navigateForward",
           "when": "view == beadsProjectSwitcher && beads.detailScreen",
           "group": "navigation@1"
-        },
-        {
-          "command": "beads.copyBeadId",
-          "when": "view == beadsProjectSwitcher && beads.detailScreen",
-          "group": "navigation@2"
         }
       ]
     },

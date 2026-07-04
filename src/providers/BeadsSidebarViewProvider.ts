@@ -188,6 +188,17 @@ export class BeadsSidebarViewProvider extends BeadDetailsViewProvider {
       await vscode.commands.executeCommand("beads.setIssuesFavoritesFilter", message.on);
       return;
     }
+    // Forward nav from the Project screen re-opens the current selection's
+    // Details — so "← Active Project" then "→" returns to the issue you backed
+    // out of (the selection card still shows it), keeping the flow predictable.
+    // With no current selection, fall through to the global history.
+    if (message.type === "historyForward" && this.screen === "project") {
+      const current = this.getCurrentBeadId();
+      if (current) {
+        await this.showBead(current, { reveal: true });
+        return;
+      }
+    }
     // Cancelling New Issue: let the inherited handler exit create mode + restore
     // the prior bead, then return to the screen we launched create from (so
     // Cancel "goes back" to the Project screen when that's where "+" was hit).
