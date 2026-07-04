@@ -3979,6 +3979,15 @@ textarea {
   opacity: 0.7;
 }
 
+/* Placeholder when a bead has no labels — keeps the tag icon's region legible
+   as intentionally empty rather than a lone floating icon. */
+.labels-empty {
+  font-size: var(--text-label);
+  font-style: italic;
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.7;
+}
+
 .assignee-trigger:hover .person-icon {
   opacity: 1;
 }

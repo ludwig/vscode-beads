@@ -728,15 +728,15 @@ export function DetailsView({
                   </DropdownItem>
                 ))}
             </Dropdown>
-            {/* Labels inline in display mode - pushed to right */}
-            {displayBead.labels && displayBead.labels.length > 0 && (
-              <>
-                <span className="badges-spacer" />
-                <Icon name="tag" size={10} className="labels-icon" title="Labels" />
-                {sortLabels(displayBead.labels).map((label) => (
-                  <LabelBadge key={label} label={label} />
-                ))}
-              </>
+            {/* Labels inline in display mode — pushed right. The tag icon always
+                shows (even with none) to mark the labels region; a muted
+                placeholder stands in when there are no labels. */}
+            <span className="badges-spacer" />
+            <Icon name="tag" size={10} className="labels-icon" title="Labels" />
+            {displayBead.labels && displayBead.labels.length > 0 ? (
+              sortLabels(displayBead.labels).map((label) => <LabelBadge key={label} label={label} />)
+            ) : (
+              <span className="labels-empty">No labels</span>
             )}
           </>
         )}
