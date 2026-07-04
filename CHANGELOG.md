@@ -16,12 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Tree column show/hide menu moved into the table header** (right edge, like the Issues table); the Tree's expand/collapse-all is now a single toggle button
 - **Refresh icon spins while data loads** — the panel + editor-tab refresh reflects load progress (e.g. after toggling a favorite's eye/mask)
 - **Right-click a panel tab to open it in an editor tab** — the Issues/Kanban/Tree/Graph tabs now have a context menu mirroring the toolbar's open-in-tab action, seeded with the panel's active filter
-- **Drag-resize Tree columns** — the Tree's fixed columns are drag-resizable (persisted); the Title column absorbs the delta. Double-click a divider to reset that column to its default width
+- **Drag-resize Tree columns** — the Tree's fixed columns are drag-resizable (persisted); the Title column absorbs the delta. Double-click a divider to reset both adjacent columns to their default widths
 - **Editor-tab view heading** — a standalone editor-tab view shows a "<View> view for <project>" heading in its toolbar
 - **Keyboard navigation in the Tree** — ↑/↓ move a roving row selection (without scrolling the pane), →/← expand/collapse the focused row (⇧ = whole subtree) or step to first-child/parent, Home/End jump to ends, Enter selects
 
 ### Changed
 
+- **Graph "Filtered" toggle leads the graph controls row** — in views with an extra controls row (Graph), the inherited-scope "Filtered" pill now leads that third row instead of the trailing group; other views keep it trailing
+- **Collapsed-ribbon filter pills restyled** — active-filter pills in the collapsed ribbon are now a muted pastel blue (echoing the funnel's active-filter glow) with a hover outline; the Favorites pill shows its ★ icon
 - **Issues filter/density toggles moved to the left** of the search input (far less pointer travel than the old far-right placement)
 - **Filter icon shows a blue glow instead of a count badge** — the funnel/filter icon glows when filters are set (we care *that* it's set, not how many); the old count badge and its aggressive blue are gone
 - **Compact rows are the default; the toggle is inverted** — OFF (default) = compact, ON = comfortable; the toggle's active blue is softened

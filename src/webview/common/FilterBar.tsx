@@ -246,7 +246,12 @@ export function FilterBar({
             <span className="filter-bar-summary-tokens">
               {searchChip}
               {filterTokens.map((t) => (
-                <span key={t} className="filter-bar-token-pill">{t}</span>
+                <span key={t} className="filter-bar-token-pill">
+                  {t === "Favorites" ? (
+                    <Star size={9} strokeWidth={2.5} className="filter-bar-token-icon" />
+                  ) : null}
+                  {t}
+                </span>
               ))}
             </span>
           ) : !inheritedApplied ? (
@@ -468,15 +473,22 @@ export function FilterBar({
         </button>
       )}
 
-      {(trailing || countEl || inheritedPill) && (
+      {(trailing || countEl || (inheritedPill && !extraRow)) && (
         <span className="filter-bar-trailing">
           {trailing}
           {countEl}
-          {inheritedPill}
+          {/* With an extra row (Graph), the "Filtered" toggle leads that row
+              instead of crowding the trailing group. */}
+          {!extraRow && inheritedPill}
         </span>
       )}
     </div>
-    {extraRow && <div className="filter-bar-extra-row">{extraRow}</div>}
+    {extraRow && (
+      <div className="filter-bar-extra-row">
+        {inheritedPill}
+        {extraRow}
+      </div>
+    )}
     </>
   );
 }

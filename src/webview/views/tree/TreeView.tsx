@@ -775,12 +775,17 @@ export function TreeView({
                   }}
                   onClick={(e) => e.stopPropagation()}
                   onDoubleClick={(e) => {
-                    // Reset this column to its declared default width.
+                    // Reset BOTH columns adjacent to this divider to their default
+                    // widths. Title is the flexible column — it has no stored width
+                    // (it absorbs the delta), so there's nothing to reset there.
                     e.stopPropagation();
                     const key = colKey as ColKey;
+                    const shownIdx = shownColumns.findIndex((c) => c.key === key);
+                    const prevKey = shownIdx > 0 ? shownColumns[shownIdx - 1].key : null;
                     setColWidths((prev) => {
                       const next = { ...prev };
                       delete next[key];
+                      if (prevKey) delete next[prevKey];
                       return next;
                     });
                   }}
