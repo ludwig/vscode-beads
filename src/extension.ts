@@ -13,8 +13,7 @@ import { BeadsProjectManager } from "./backend/BeadsProjectManager";
 import { FavoritesService } from "./backend/FavoritesService";
 import { ScopeService } from "./backend/ScopeService";
 import { PanelShellViewProvider } from "./providers/PanelShellViewProvider";
-import { BeadDetailsViewProvider } from "./providers/BeadDetailsViewProvider";
-import { BeadsProjectSwitcherViewProvider } from "./providers/BeadsProjectSwitcherViewProvider";
+import { BeadsSidebarViewProvider } from "./providers/BeadsSidebarViewProvider";
 import { BeadPanelManager } from "./providers/BeadPanelManager";
 import { BeadCompanionController } from "./providers/BeadCompanionController";
 import { BeadDocumentProvider, BEAD_SCHEME } from "./providers/BeadDocumentProvider";
@@ -30,8 +29,10 @@ let projectManager: BeadsProjectManager;
 // list once to feed both. The slimmed sidebar holds the project switcher and
 // Details.
 let shellProvider: PanelShellViewProvider;
-let detailsProvider: BeadDetailsViewProvider;
-let switcherProvider: BeadsProjectSwitcherViewProvider;
+// The unified left-sidebar view: Project switcher + full-height Details takeover
+// in one webview (screen-swapped client-side). It IS the sidebar's Details
+// provider — editor-tab Details panels are owned separately by panelManager.
+let switcherProvider: BeadsSidebarViewProvider;
 let panelManager: BeadPanelManager;
 let favorites: FavoritesService;
 let statusBar: vscode.StatusBarItem;
@@ -128,14 +129,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     scope
   );
 
-  switcherProvider = new BeadsProjectSwitcherViewProvider(
-    context.extensionUri,
-    projectManager,
-    log,
-    favorites,
-    scope
-  );
-
   // Virtual `bead:` documents so a bead can be opened as a real TextEditor that
   // Claude Code's IDE integration can seed on focus (spike vs-ab3 / epic vs-fkb).
   const beadDocumentProvider = new BeadDocumentProvider(projectManager, log);
@@ -150,7 +143,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const companionController = new BeadCompanionController(log);
   context.subscriptions.push(companionController);
 
-  detailsProvider = new BeadDetailsViewProvider(
+  // The unified sidebar: Project switcher + Details takeover in one view. It
+  // extends the Details provider (so it needs the companion controller) and
+  // serves the sidebar's Details screen directly — there's no separate
+  // beadsDetails view anymore.
+  switcherProvider = new BeadsSidebarViewProvider(
     context.extensionUri,
     projectManager,
     log,
@@ -170,9 +167,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
     vscode.window.registerWebviewViewProvider("beadsPanelShell", shellProvider, {
       webviewOptions: { retainContextWhenHidden: true },
-    }),
-    vscode.window.registerWebviewViewProvider("beadsDetails", detailsProvider, {
-      webviewOptions: { retainContextWhenHidden: true },
     })
   );
 
@@ -189,7 +183,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   registerCommands(context, {
     projectManager,
     shellProvider,
-    detailsProvider,
     switcherProvider,
     panelManager,
     log,
@@ -209,7 +202,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       shellProvider.flashLoading();
       panelManager.flashLoading();
       shellProvider.publishFavorites(ids);
-      detailsProvider.publishFavorites(ids);
       switcherProvider.publishFavorites(ids);
       panelManager.publishFavorites(ids);
       // Favorites/mask are inputs to the shared scope — recompute + rebroadcast.
@@ -223,7 +215,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     scope.onDidChange((ids) => {
       const spec = scope.currentSpec();
       shellProvider.publishParentScope(ids);
-      detailsProvider.publishParentScope(ids);
       switcherProvider.publishParentScope(ids);
       panelManager.publishParentScope(ids);
       switcherProvider.publishSharedFavoritesOnly(spec.favoritesOnly);
@@ -250,14 +241,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     projectManager.onBeadsCached(() => {
       const ids = favorites.list();
       shellProvider.publishFavorites(ids);
-      detailsProvider.publishFavorites(ids);
       switcherProvider.publishFavorites(ids);
       panelManager.publishFavorites(ids);
     }),
 
     projectManager.onDataChanged(() => {
       shellProvider.refresh();
-      detailsProvider.refresh();
       switcherProvider.refresh();
       // Beads (and possibly edges) changed → refresh the edges cache and
       // recompute the parent scope so all views re-scope live.
@@ -272,9 +261,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       scope.setActiveProject();
       void primeScope();
       shellProvider.setSelectedBead(null); // Clear selection on project switch
-      switcherProvider.setActiveBead(null);
+      switcherProvider.clearBead(); // clear the pinned bead + return to the Project screen
       shellProvider.refreshForProjectChange();
-      detailsProvider.refreshForProjectChange();
       switcherProvider.refreshForProjectChange();
       updateStatusBar();
     }),
@@ -305,7 +293,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
       // Refresh all views
       shellProvider.refresh();
-      detailsProvider.refresh();
       switcherProvider.refresh();
     }),
 
@@ -331,7 +318,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
 
       shellProvider.refresh();
-      detailsProvider.refresh();
       switcherProvider.refresh();
     })
   );

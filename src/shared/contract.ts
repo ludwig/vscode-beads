@@ -295,6 +295,11 @@ export type ExtensionToWebviewMessage =
   | { type: "setError"; error: string | null }
   | { type: "setSettings"; settings: WebviewSettings }
   | { type: "setCreateMode"; value: boolean }
+  // Sidebar only: which screen the merged sidebar view shows — the Project
+  // switcher or the full-height Details takeover. Flipping this is a client-side
+  // React swap (instant, no view/context-key churn), replacing the old two-view
+  // `beads.detailScreen` context-key swap.
+  | { type: "setScreen"; screen: "project" | "details" }
   | { type: "applyIssuesFilter"; filter: IssuesFilter }
   | { type: "showGraph"; beadId: string }
   // Switch the panel to the Tree tab and reveal/scroll-to the bead (vs-kp67).

@@ -47,6 +47,11 @@ interface AppState {
   error: string | null;
   settings: WebviewSettings;
   createMode: boolean;
+  // Sidebar only: which screen the unified sidebar view shows — the Project
+  // switcher or the full-height Details takeover. Flipped by the host's
+  // `setScreen` message; a pure client-side React swap (instant, no flash),
+  // replacing the old two-view context-key swap.
+  screen: "project" | "details";
   // Drill-in filter pushed from another view (e.g. a Dashboard card/badge).
   // `seq` changes on every request so the Issues view re-applies even if the
   // filter is identical to last time.
@@ -145,6 +150,7 @@ const initialState: AppState = {
     bundleBytes: 0,
   },
   createMode: false,
+  screen: "project",
   issuesFilterRequest: null,
   showGraphRequest: null,
   showTreeRequest: null,
@@ -235,6 +241,9 @@ export function App(): React.ReactElement {
         break;
       case "setCreateMode":
         setState((prev) => ({ ...prev, createMode: message.value }));
+        break;
+      case "setScreen":
+        setState((prev) => ({ ...prev, screen: message.screen }));
         break;
       case "applyIssuesFilter":
         setState((prev) => ({
@@ -453,6 +462,102 @@ export function App(): React.ReactElement {
     );
   };
 
+  // The Details screen — shared by the sidebar's Details takeover (viewType
+  // beadsProjectSwitcher, screen === "details") and the standalone editor-tab
+  // Details view (viewType beadsDetails).
+  const renderDetails = (): React.ReactElement => {
+    if (state.createMode) {
+      return (
+        <CreateBeadForm
+          userId={state.settings.userId}
+          onCreate={(fields) => vscode.postMessage({ type: "createBead", fields })}
+          onCancel={() => vscode.postMessage({ type: "cancelCreate" })}
+        />
+      );
+    }
+    if (!state.selectedBead && !state.loading) {
+      return (
+        <div className="empty-state">
+          <div className="empty-state-icon">🔖</div>
+          <h3>No issue selected</h3>
+          <p>
+            Pick an issue from the <strong>Issues</strong> list in the panel
+            below to see its details here.
+          </p>
+          <div className="empty-state-actions">
+            <button
+              type="button"
+              className="empty-state-action"
+              onClick={() => vscode.postMessage({ type: "startCreate" })}
+            >
+              <span className="empty-state-action-icon">+</span>
+              New Issue
+            </button>
+            <button
+              type="button"
+              className="empty-state-action secondary"
+              onClick={() => vscode.postMessage({ type: "showKanban" })}
+            >
+              Show Kanban
+            </button>
+          </div>
+        </div>
+      );
+    }
+    if (!state.selectedBead) {
+      return <Loading />;
+    }
+    // Extract unique assignees from beads list
+    const knownAssignees = Array.from(
+      new Set(state.beads.map((b) => b.assignee).filter((a): a is string => !!a))
+    ).sort();
+    return (
+      <DetailsView
+        bead={state.selectedBead}
+        loading={state.loading}
+        renderMarkdown={state.settings.renderMarkdown}
+        userId={state.settings.userId}
+        isEditorTab={state.settings.isEditorTab}
+        knownAssignees={knownAssignees}
+        onUpdateBead={(beadId, updates) =>
+          vscode.postMessage({ type: "updateBead", beadId, updates })
+        }
+        onAddDependency={(beadId, targetId, dependencyType, reverse) =>
+          vscode.postMessage({ type: "addDependency", beadId, targetId, dependencyType, reverse })
+        }
+        onRemoveDependency={(beadId, dependsOnId) =>
+          vscode.postMessage({ type: "removeDependency", beadId, dependsOnId })
+        }
+        onAddComment={(beadId, text) =>
+          vscode.postMessage({ type: "addComment", beadId, text })
+        }
+        onViewInGraph={(beadId) =>
+          vscode.postMessage({ type: "viewInGraph", beadId })
+        }
+        onSelectBead={(beadId) =>
+          vscode.postMessage({ type: "selectBead", beadId })
+        }
+        onCopyId={(beadId) =>
+          vscode.postMessage({ type: "copyBeadId", beadId, toast: true })
+        }
+        isFavorite={state.favorites.some((f) => f.id === state.selectedBead?.id)}
+        onToggleFavorite={(beadId) =>
+          vscode.postMessage({ type: "toggleFavorite", beadId })
+        }
+        canNavigateBack={state.tabNav.canBack}
+        canNavigateForward={state.tabNav.canForward}
+        onNavigateBack={() => vscode.postMessage({ type: "navigateBack" })}
+        onNavigateForward={() => vscode.postMessage({ type: "navigateForward" })}
+        companionOpen={
+          state.companion?.beadId === state.selectedBead.id && state.companion.open
+        }
+        onToggleCompanion={(beadId) =>
+          vscode.postMessage({ type: "toggleBeadCompanion", beadId })
+        }
+      />
+    );
+  };
+
   // Render the appropriate view
   const renderView = () => {
       if (state.viewType === "beadsPanel" && state.loading && state.beads.length === 0) {
@@ -627,6 +732,12 @@ export function App(): React.ReactElement {
         );
 
       case "beadsProjectSwitcher":
+        // The unified sidebar: the Details takeover (or create form) when the
+        // host has flipped to the Details screen, otherwise the Project switcher.
+        // A client-side swap — instant, no view/context-key churn.
+        if (state.screen === "details" || state.createMode) {
+          return renderDetails();
+        }
         return (
           <ProjectSwitcherView
             projects={state.projects}
@@ -691,98 +802,9 @@ export function App(): React.ReactElement {
           />
         );
 
-      case "beadsDetails": {
-        if (state.createMode) {
-          return (
-            <CreateBeadForm
-              userId={state.settings.userId}
-              onCreate={(fields) => vscode.postMessage({ type: "createBead", fields })}
-              onCancel={() => vscode.postMessage({ type: "cancelCreate" })}
-            />
-          );
-        }
-        if (!state.selectedBead && !state.loading) {
-          return (
-            <div className="empty-state">
-              <div className="empty-state-icon">🔖</div>
-              <h3>No issue selected</h3>
-              <p>
-                Pick an issue from the <strong>Issues</strong> list in the panel
-                below to see its details here.
-              </p>
-              <div className="empty-state-actions">
-                <button
-                  type="button"
-                  className="empty-state-action"
-                  onClick={() => vscode.postMessage({ type: "startCreate" })}
-                >
-                  <span className="empty-state-action-icon">+</span>
-                  New Issue
-                </button>
-                <button
-                  type="button"
-                  className="empty-state-action secondary"
-                  onClick={() => vscode.postMessage({ type: "showKanban" })}
-                >
-                  Show Kanban
-                </button>
-              </div>
-            </div>
-          );
-        }
-        if (!state.selectedBead) {
-          return <Loading />;
-        }
-        // Extract unique assignees from beads list
-        const knownAssignees = Array.from(
-          new Set(state.beads.map((b) => b.assignee).filter((a): a is string => !!a))
-        ).sort();
-        return (
-          <DetailsView
-            bead={state.selectedBead}
-            loading={state.loading}
-            renderMarkdown={state.settings.renderMarkdown}
-            userId={state.settings.userId}
-            isEditorTab={state.settings.isEditorTab}
-            knownAssignees={knownAssignees}
-            onUpdateBead={(beadId, updates) =>
-              vscode.postMessage({ type: "updateBead", beadId, updates })
-            }
-            onAddDependency={(beadId, targetId, dependencyType, reverse) =>
-              vscode.postMessage({ type: "addDependency", beadId, targetId, dependencyType, reverse })
-            }
-            onRemoveDependency={(beadId, dependsOnId) =>
-              vscode.postMessage({ type: "removeDependency", beadId, dependsOnId })
-            }
-            onAddComment={(beadId, text) =>
-              vscode.postMessage({ type: "addComment", beadId, text })
-            }
-            onViewInGraph={(beadId) =>
-              vscode.postMessage({ type: "viewInGraph", beadId })
-            }
-            onSelectBead={(beadId) =>
-              vscode.postMessage({ type: "selectBead", beadId })
-            }
-            onCopyId={(beadId) =>
-              vscode.postMessage({ type: "copyBeadId", beadId, toast: true })
-            }
-            isFavorite={state.favorites.some((f) => f.id === state.selectedBead?.id)}
-            onToggleFavorite={(beadId) =>
-              vscode.postMessage({ type: "toggleFavorite", beadId })
-            }
-            canNavigateBack={state.tabNav.canBack}
-            canNavigateForward={state.tabNav.canForward}
-            onNavigateBack={() => vscode.postMessage({ type: "navigateBack" })}
-            onNavigateForward={() => vscode.postMessage({ type: "navigateForward" })}
-            companionOpen={
-              state.companion?.beadId === state.selectedBead.id && state.companion.open
-            }
-            onToggleCompanion={(beadId) =>
-              vscode.postMessage({ type: "toggleBeadCompanion", beadId })
-            }
-          />
-        );
-      }
+      case "beadsDetails":
+        // Standalone editor-tab Details view.
+        return renderDetails();
 
       default:
         return (

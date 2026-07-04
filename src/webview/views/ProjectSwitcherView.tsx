@@ -359,35 +359,6 @@ export function ProjectSwitcherView({
         </button>
       </div>
 
-      {/* Selection card — the current selection captured in the Project view at
-          medium LOD, so it's reachable even after navigating away from the
-          Issues tab. Sits under the action buttons. Clicking it loads the full
-          Details takeover. */}
-      {activeBead && (
-        <section className="context-section context-selection-section">
-          <div className="context-section-head">
-            <span className="context-heading">Selection</span>
-            <button
-              type="button"
-              className="context-heading-action fb-tip fb-tip-end"
-              data-tip="Clear selection"
-              aria-label="Clear selection"
-              onClick={onClearBead}
-            >
-              <X size={13} strokeWidth={2} />
-            </button>
-          </div>
-          <BeadSummary
-            bead={activeBead}
-            muteClosed={muteClosedIssues}
-            onOpen={onOpenBead}
-            onContextMenu={(e) =>
-              openCardMenu(e, activeBead.id, favorites.some((f) => f.id === activeBead.id))
-            }
-          />
-        </section>
-      )}
-
       {/* Favorites is a seed-based FilterGroup: the seed list (starred beads)
           expands into relatives in the Issues view, and each seed's eye masks it
           out of that expansion. The mask is owned by the group, not the card. */}
@@ -482,6 +453,36 @@ export function ProjectSwitcherView({
           </button>
         )}
       />
+
+      {/* Selection card — the current selection captured in the Project view at
+          medium LOD, so it's reachable even after navigating away from the
+          Issues tab. Sits below the Favorites (and above the end marquee) so a
+          selection refresh never shifts the Favorites list. Clicking it loads
+          the full Details takeover. */}
+      {activeBead && (
+        <section className="context-section context-selection-section">
+          <div className="context-section-head">
+            <span className="context-heading">Selection</span>
+            <button
+              type="button"
+              className="context-heading-action fb-tip fb-tip-end"
+              data-tip="Clear selection"
+              aria-label="Clear selection"
+              onClick={onClearBead}
+            >
+              <X size={13} strokeWidth={2} />
+            </button>
+          </div>
+          <BeadSummary
+            bead={activeBead}
+            muteClosed={muteClosedIssues}
+            onOpen={onOpenBead}
+            onContextMenu={(e) =>
+              openCardMenu(e, activeBead.id, favorites.some((f) => f.id === activeBead.id))
+            }
+          />
+        </section>
+      )}
 
       {/* End-of-view flourish. */}
       <div className="view-end" aria-hidden="true">

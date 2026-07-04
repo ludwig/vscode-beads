@@ -57,15 +57,7 @@
           "type": "webview",
           "id": "beadsProjectSwitcher",
           "name": "Repository",
-          "visibility": "visible",
-          "when": "!beads.detailScreen"
-        },
-        {
-          "type": "webview",
-          "id": "beadsDetails",
-          "name": "Details",
-          "visibility": "visible",
-          "when": "beads.detailScreen"
+          "visibility": "visible"
         }
       ],
       "beadsBottomPanel": [
@@ -201,37 +193,37 @@
       "view/title": [
         {
           "command": "beads.createIssue",
-          "when": "view == beadsProjectSwitcher",
+          "when": "view == beadsProjectSwitcher && !beads.detailScreen",
           "group": "navigation@0"
         },
         {
           "command": "beads.initRepository",
-          "when": "view == beadsProjectSwitcher",
+          "when": "view == beadsProjectSwitcher && !beads.detailScreen",
           "group": "navigation@2"
         },
         {
           "command": "beads.refresh",
-          "when": "view == beadsProjectSwitcher",
+          "when": "view == beadsProjectSwitcher && !beads.detailScreen",
           "group": "navigation@3"
         },
         {
           "command": "beads.openSettings",
-          "when": "view == beadsProjectSwitcher",
+          "when": "view == beadsProjectSwitcher && !beads.detailScreen",
           "group": "navigation@4"
         },
         {
           "command": "beads.navigateBack",
-          "when": "view == beadsDetails",
+          "when": "view == beadsProjectSwitcher && beads.detailScreen",
           "group": "navigation@0"
         },
         {
           "command": "beads.navigateForward",
-          "when": "view == beadsDetails",
+          "when": "view == beadsProjectSwitcher && beads.detailScreen",
           "group": "navigation@1"
         },
         {
           "command": "beads.copyBeadId",
-          "when": "view == beadsDetails",
+          "when": "view == beadsProjectSwitcher && beads.detailScreen",
           "group": "navigation@2"
         }
       ]

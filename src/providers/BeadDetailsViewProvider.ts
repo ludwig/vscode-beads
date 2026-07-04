@@ -21,7 +21,9 @@ import { NavigationHistory } from "./NavigationHistory";
 import { pulseOnReveal } from "./pulseOnReveal";
 
 export class BeadDetailsViewProvider extends BaseViewProvider {
-  protected readonly viewType = "beadsDetails";
+  // Typed as `string` (not the literal) so the merged sidebar subclass can
+  // override it with its own view id (vs-filterbar unified sidebar).
+  protected readonly viewType: string = "beadsDetails";
   private currentBeadId: string | null = null;
   private currentProjectId: string | null = null;
   private loadSequence = 0; // Tracks request order to prevent stale responses
