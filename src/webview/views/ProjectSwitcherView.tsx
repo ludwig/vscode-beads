@@ -413,7 +413,7 @@ export function ProjectSwitcherView({
                 title={
                   favoritesFilterOn
                     ? "Favorites filter is ON in Issues — click to turn it off"
-                    : "Filter the Issues list to favorites (and their relatives)"
+                    : "Favorites filter is OFF — click to show only favorites (and their relatives) in Issues"
                 }
                 aria-label="Toggle the Issues favorites filter"
                 aria-pressed={favoritesFilterOn}
