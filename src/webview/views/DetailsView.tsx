@@ -535,9 +535,9 @@ export function DetailsView({
         {isEditorTab ? (
           <span
             className="details-lead-chrome"
-            title={projectLabel ? `Issue view for ${projectLabel}` : "Issue view"}
+            title={projectLabel ? `Issue details view for ${projectLabel}` : "Issue details view"}
           >
-            <span className="details-lead-chrome-view">Issue view</span>
+            <span className="details-lead-chrome-view">Issue details view</span>
             {projectLabel && <span className="details-lead-chrome-for">for</span>}
             {projectLabel && <span className="details-lead-chrome-project">{projectLabel}</span>}
           </span>
@@ -566,17 +566,19 @@ export function DetailsView({
             <div className="header-actions">{backForwardBtns}</div>
           </>
         ) : (
-          // Sidebar Lead: [+] [Edit] on the left, the segmented tab-shortcut
-          // group centered between two flex spacers, and the utility cluster
-          // (focus, refresh, open-in-tab) on the right.
+          // Sidebar Lead: [+] [Edit] on the left, the centered cluster (the
+          // segmented tab-shortcut group + focus) between two flex spacers, and
+          // the utility cluster (refresh, open-in-tab) on the right.
           <>
             {createBtn}
             {editControls}
             <span className="details-lead-spacer" />
-            {showTabBtns}
+            <div className="header-actions">
+              {showTabBtns}
+              {focusBtn}
+            </div>
             <span className="details-lead-spacer" />
             <div className="header-actions">
-              {focusBtn}
               {refreshBtn}
               {openInTabBtn}
             </div>
