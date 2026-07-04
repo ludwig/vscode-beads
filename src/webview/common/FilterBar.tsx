@@ -162,8 +162,8 @@ export function FilterBar({
   for (const t of type) filterTokens.push(TYPE_LABELS[t as BeadType] || t);
   for (const a of assignee) filterTokens.push(a === "__unassigned__" ? "Unassigned" : a);
   for (const l of label) filterTokens.push(l === "__unlabeled__" ? "Unlabeled" : l);
-  if (snapshot.readyOnly) filterTokens.push("Ready");
   if (snapshot.favoritesOnly) filterTokens.push("Favorites");
+  if (snapshot.readyOnly) filterTokens.push("Ready");
 
   // Label autocomplete options: distinct labels (minus already-selected), plus
   // the Unlabeled bucket when present and not already selected.
@@ -248,7 +248,7 @@ export function FilterBar({
               {filterTokens.map((t) => (
                 <span key={t} className="filter-bar-token-pill">
                   {t === "Favorites" ? (
-                    <Star size={9} strokeWidth={2.5} className="filter-bar-token-icon" />
+                    <Star size={9} strokeWidth={2.5} fill="currentColor" className="filter-bar-token-icon" />
                   ) : null}
                   {t}
                 </span>
@@ -299,6 +299,17 @@ export function FilterBar({
 
       <button
         type="button"
+        className={`ready-toggle favorites-toggle ${snapshot.favoritesOnly ? "active" : ""}`}
+        aria-pressed={snapshot.favoritesOnly}
+        onClick={ops.toggleFavoritesOnly}
+        title="Show favorited (starred) beads and their relatives (direct dependency neighbors). Composes with the other filters."
+      >
+        <Star size={12} strokeWidth={2.25} />
+        <span>Favorites</span>
+      </button>
+
+      <button
+        type="button"
         className={`ready-toggle ${snapshot.readyOnly ? "active" : ""}`}
         aria-pressed={snapshot.readyOnly}
         onClick={ops.toggleReady}
@@ -310,17 +321,6 @@ export function FilterBar({
           <Rocket size={12} strokeWidth={2.25} className="ready-toggle-glyph" />
         )}
         <span>Ready</span>
-      </button>
-
-      <button
-        type="button"
-        className={`ready-toggle favorites-toggle ${snapshot.favoritesOnly ? "active" : ""}`}
-        aria-pressed={snapshot.favoritesOnly}
-        onClick={ops.toggleFavoritesOnly}
-        title="Show favorited (starred) beads and their relatives (direct dependency neighbors). Composes with the other filters."
-      >
-        <Star size={12} strokeWidth={2.25} />
-        <span>Favorites</span>
       </button>
 
       {/* Active filter chips */}
