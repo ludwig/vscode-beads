@@ -566,12 +566,11 @@ export function DetailsView({
             <div className="header-actions">{backForwardBtns}</div>
           </>
         ) : (
-          // Sidebar Lead: [+] [Edit] on the left, the centered cluster (the
+          // Sidebar Lead: ← Project on the left, the centered cluster (the
           // segmented tab-shortcut group + focus) between two flex spacers, and
-          // the utility cluster (refresh, open-in-tab) on the right.
+          // the utility cluster (refresh, open-in-tab) on the right. (+/Edit
+          // ride on the Ident row, where the pill used to sit.)
           <>
-            {createBtn}
-            {editControls}
             <span className="details-lead-spacer" />
             <div className="header-actions">
               {showTabBtns}
@@ -613,6 +612,17 @@ export function DetailsView({
         {/* Editor tab keeps Edit down here, right after the star (its Lead is
             taken by the centered action cluster + nav). */}
         {isEditorTab && editControls}
+        {/* Sidebar: +/Edit ride on the right of the Ident, where the pill used
+            to sit (the pill now leads the badges row under the title). */}
+        {!isEditorTab && (
+          <>
+            <span className="details-header-spacer" />
+            <div className="header-actions">
+              {createBtn}
+              {editControls}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Title - full width */}
