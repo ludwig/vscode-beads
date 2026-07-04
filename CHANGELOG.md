@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Issues density toggle sits right of the search box** — the compact/comfortable toggle moved from the trailing group into the search row (right of the textbox), mirroring the Tree's fold-toggle placement
-- **Graph "Filtered" toggle leads the graph controls row** — in views with an extra controls row (Graph), the inherited-scope "Filtered" pill now leads that third row instead of the trailing group; other views keep it trailing
+- **"Filtered" toggle placement is consistent across views** — the inherited-scope "Filtered" toggle sits rightmost on the second row in every view (Kanban/Tree/Graph), styled as a peer of the Ready/Favorites toggles (funnel icon + label)
 - **Collapsed-ribbon filter pills restyled** — active-filter pills in the collapsed ribbon are now a muted pastel blue (echoing the funnel's active-filter glow) with a hover outline; the Favorites pill shows its ★ icon
 - **Issues filter/density toggles moved to the left** of the search input (far less pointer travel than the old far-right placement)
 - **Filter icon shows a blue glow instead of a count badge** — the funnel/filter icon glows when filters are set (we care *that* it's set, not how many); the old count badge and its aggressive blue are gone

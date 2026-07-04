@@ -478,22 +478,18 @@ export function FilterBar({
         </button>
       )}
 
-      {(trailing || countEl || (inheritedPill && !extraRow)) && (
+      {(trailing || countEl || inheritedPill) && (
         <span className="filter-bar-trailing">
           {trailing}
           {countEl}
-          {/* With an extra row (Graph), the "Filtered" toggle leads that row
-              instead of crowding the trailing group. */}
-          {!extraRow && inheritedPill}
+          {/* The "Filtered" toggle sits rightmost on the second row in EVERY
+              view (Kanban/Tree/Graph) for consistency — not leading Graph's
+              extra controls row. */}
+          {inheritedPill}
         </span>
       )}
     </div>
-    {extraRow && (
-      <div className="filter-bar-extra-row">
-        {inheritedPill}
-        {extraRow}
-      </div>
-    )}
+    {extraRow && <div className="filter-bar-extra-row">{extraRow}</div>}
     </>
   );
 }
