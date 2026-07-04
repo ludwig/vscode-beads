@@ -315,10 +315,6 @@ export type ExtensionToWebviewMessage =
   // Switch the panel to the Graph tab (no bead focus — the "Show Graph Tab"
   // shortcut, mirroring focusIssues/Kanban/TreeTab).
   | { type: "focusGraphTab" }
-  // Reveal/scroll to this bead in whichever panel tab is currently active
-  // (the Details "focus" button — locate-in-active-tab). The shell routes it to
-  // the active tab without switching tabs.
-  | { type: "revealActiveTabBead"; beadId: string }
   | { type: "pulse" }
   | { type: "setMemoryUsage"; bytes: number }
   // The active project's favorites, in curated order, resolved to lightweight
@@ -421,9 +417,6 @@ export type WebviewToExtensionMessage =
   // Reveal the Beads panel shell with the Graph tab focused (no bead) — the
   // "Show Graph Tab" shortcut.
   | { type: "showGraphPanel" }
-  // Reveal/scroll to this bead in the panel's currently-active tab (the Details
-  // "focus" button). Distinct from viewIn* (which each target a specific tab).
-  | { type: "focusBeadInActiveTab"; beadId: string }
   // Leaving Details-edit or New-Issue with unsaved input: prompt to discard
   // (native modal), then run the exit action if confirmed. Posted only when the
   // form is dirty; the clean case posts backToProject/cancelCreate directly.
