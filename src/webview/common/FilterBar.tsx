@@ -261,7 +261,7 @@ export function FilterBar({
                   {t === "Favorites" ? (
                     <Star size={9} strokeWidth={2.5} fill="currentColor" className="filter-bar-token-icon" />
                   ) : t === "Ready" ? (
-                    <span className="filter-bar-token-icon filter-bar-token-emoji" aria-hidden="true">🚀</span>
+                    <Rocket size={9} strokeWidth={2.5} className="filter-bar-token-icon" />
                   ) : null}
                   {t}
                 </span>

@@ -434,7 +434,7 @@ body {
   gap: 3px;
   padding: 1px 7px;
   border-radius: var(--badge-radius-pill, 10px);
-  font-size: 11px;
+  font-size: var(--text-label);
   line-height: 1.5;
   color: var(--vscode-foreground);
   background: color-mix(in srgb, var(--vscode-charts-blue, #4aa3ff) 16%, transparent);
@@ -453,12 +453,6 @@ body {
 .filter-bar-token-icon {
   flex: 0 0 auto;
   opacity: 0.9;
-}
-/* Emoji glyph (🚀 for Ready) sized down to sit with the 9px lucide icons. */
-.filter-bar-token-emoji {
-  font-size: 8px;
-  line-height: 1;
-  opacity: 1;
 }
 
 /* Empty-state affordance: a muted, inviting "Add a filter…" that expands the bar. */
@@ -4909,9 +4903,8 @@ textarea {
 .kanban-card-priority {
   margin-left: auto;
   flex: 0 0 auto;
-  font-size: 9px;
   padding: 0 5px;
-  height: 14px;
+  height: 16px;
   font-weight: 600;
 }
 
@@ -6181,11 +6174,11 @@ textarea {
 }
 .bead-readout-id {
   font-family: var(--vscode-editor-font-family);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--vscode-descriptionForeground);
 }
 .bead-readout-title {
-  font-size: 13px;
+  font-size: var(--text-body);
   font-weight: 600;
   color: var(--vscode-foreground);
   line-height: 1.35;
@@ -6204,7 +6197,7 @@ textarea {
 .bead-readout-row {
   display: flex;
   gap: 8px;
-  font-size: 11px;
+  font-size: var(--text-sm);
   align-items: baseline;
 }
 .bead-readout-row dt {
@@ -6212,7 +6205,7 @@ textarea {
   color: var(--vscode-descriptionForeground);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  font-size: 9.5px;
+  font-size: var(--text-label);
 }
 .bead-readout-row dd {
   margin: 0;
@@ -6225,7 +6218,7 @@ textarea {
   gap: 4px;
 }
 .bead-readout-label {
-  font-size: 10px;
+  font-size: var(--text-label);
   line-height: 1.4;
   padding: 0 6px;
   border-radius: var(--badge-radius-pill, 10px);
@@ -6235,12 +6228,12 @@ textarea {
   text-overflow: ellipsis;
 }
 .bead-readout-label-more {
-  font-size: 10px;
+  font-size: var(--text-label);
   color: var(--vscode-descriptionForeground);
 }
 .bead-readout-desc {
   margin: 2px 0 0;
-  font-size: 11px;
+  font-size: var(--text-sm);
   line-height: 1.5;
   color: var(--vscode-descriptionForeground);
   display: -webkit-box;
