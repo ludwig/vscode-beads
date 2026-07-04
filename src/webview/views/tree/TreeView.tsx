@@ -64,8 +64,8 @@ const TREE_COLUMNS: TreeColumn[] = [
   { key: "status", label: "Status", width: "84px", sortKey: "status" },
   { key: "type", label: "Type", width: "56px", sortKey: "type" },
   { key: "priority", label: "Priority", headerLabel: "P", width: "38px", sortKey: "priority" },
-  { key: "updated", label: "Updated", width: "104px", sortKey: "updated" },
-  { key: "created", label: "Created", width: "104px", sortKey: "created" },
+  { key: "updated", label: "Updated", width: "92px", sortKey: "updated" },
+  { key: "created", label: "Created", width: "92px", sortKey: "created" },
 ];
 // Default visibility: Updated shown, Created hidden, to keep the tree narrow by
 // default (mirrors the Issues table hiding some columns).
@@ -1038,13 +1038,13 @@ function TreeRow({
             case "updated":
               return (
                 <span key="updated" className="beads-tree-time">
-                  <Timestamp value={bead.updatedAt} format="auto" />
+                  <Timestamp value={bead.updatedAt} format="date" />
                 </span>
               );
             case "created":
               return (
                 <span key="created" className="beads-tree-time">
-                  <Timestamp value={bead.createdAt} format="auto" />
+                  <Timestamp value={bead.createdAt} format="date" />
                 </span>
               );
             default:
