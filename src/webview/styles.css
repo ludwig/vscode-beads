@@ -6177,6 +6177,23 @@ textarea {
   background: var(--vscode-list-hoverBackground);
   box-shadow: 0 0 0 1px var(--vscode-focusBorder);
 }
+/* Flat variant: the host section is the frame, so drop our own border/bg/shadow
+ * and keep only the status-colored left rule + padding. Still clickable. */
+.bead-summary-card.bsc-flat {
+  border: none;
+  border-left: 3px solid var(--vscode-textLink-foreground, var(--vscode-focusBorder));
+  border-radius: 0;
+  background: transparent;
+  padding: 2px 0 2px 10px;
+}
+.bead-summary-card.bsc-flat:hover {
+  background: transparent;
+  box-shadow: none;
+}
+.bead-summary-card.bsc-flat:hover .bsc-title {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 .bsc-top {
   display: flex;
   align-items: center;

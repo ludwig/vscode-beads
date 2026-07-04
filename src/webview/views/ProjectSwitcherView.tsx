@@ -352,61 +352,6 @@ export function ProjectSwitcherView({
         </button>
       </div>
 
-      {/* Details section — a styled header line (no twistie) whose right-aligned
-          actions mirror the bead chrome; the body renders the current selection
-          at medium LOD. The FULL bead (description, deps, comments, edit,
-          create) lives in the Details view on the Secondary Side Bar. */}
-      <section className="context-section context-details-section">
-        <div className="context-section-head">
-          <span className="context-heading">Details</span>
-          {activeBead && (
-            <div className="context-heading-actions">
-              <button
-                type="button"
-                className="context-heading-action fb-tip fb-tip-end"
-                data-tip="Open in editor tab"
-                aria-label="Open in editor tab"
-                onClick={() => onOpenBeadInTab(activeBead.id)}
-              >
-                <ExternalLink size={13} strokeWidth={2} />
-              </button>
-              <button
-                type="button"
-                className="context-heading-action fb-tip fb-tip-end"
-                data-tip="Copy ID"
-                aria-label="Copy ID"
-                onClick={() => onCopyId(activeBead.id)}
-              >
-                <Copy size={13} strokeWidth={2} />
-              </button>
-              <button
-                type="button"
-                className="context-heading-action fb-tip fb-tip-end"
-                data-tip="Clear selection"
-                aria-label="Clear selection"
-                onClick={onClearBead}
-              >
-                <X size={13} strokeWidth={2} />
-              </button>
-            </div>
-          )}
-        </div>
-        {activeBead ? (
-          <BeadSummaryCard
-            bead={activeBead}
-            muteClosed={muteClosedIssues}
-            onOpen={activateBead}
-            onContextMenu={(e) =>
-              openCardMenu(e, activeBead.id, favorites.some((f) => f.id === activeBead.id))
-            }
-          />
-        ) : (
-          <div className="context-empty">
-            <p>No bead selected — click one to see it here.</p>
-          </div>
-        )}
-      </section>
-
       {/* Favorites is a seed-based FilterGroup: the seed list (starred beads)
           expands into relatives in the Issues view, and each seed's eye masks it
           out of that expansion. The mask is owned by the group, not the card. */}
@@ -502,8 +447,72 @@ export function ProjectSwitcherView({
         )}
       />
 
+      {/* Marquee (band) divides Favorites from the Details section below it. */}
       <div className="view-end" aria-hidden="true">
         <EndFlourish />
+      </div>
+
+      {/* Details section — a normal section (styled header line, no twistie;
+          right-aligned actions mirror the bead chrome). The body renders the
+          current selection at medium LOD as a FLAT summary (the section is the
+          frame). The FULL bead (description, deps, comments, edit, create)
+          lives in the Details view on the Secondary Side Bar. */}
+      <section className="context-section context-details-section">
+        <div className="context-section-head">
+          <span className="context-heading">Details</span>
+          {activeBead && (
+            <div className="context-heading-actions">
+              <button
+                type="button"
+                className="context-heading-action fb-tip fb-tip-end"
+                data-tip="Open in editor tab"
+                aria-label="Open in editor tab"
+                onClick={() => onOpenBeadInTab(activeBead.id)}
+              >
+                <ExternalLink size={13} strokeWidth={2} />
+              </button>
+              <button
+                type="button"
+                className="context-heading-action fb-tip fb-tip-end"
+                data-tip="Copy ID"
+                aria-label="Copy ID"
+                onClick={() => onCopyId(activeBead.id)}
+              >
+                <Copy size={13} strokeWidth={2} />
+              </button>
+              <button
+                type="button"
+                className="context-heading-action fb-tip fb-tip-end"
+                data-tip="Clear selection"
+                aria-label="Clear selection"
+                onClick={onClearBead}
+              >
+                <X size={13} strokeWidth={2} />
+              </button>
+            </div>
+          )}
+        </div>
+        {activeBead ? (
+          <BeadSummaryCard
+            bead={activeBead}
+            flat
+            muteClosed={muteClosedIssues}
+            onOpen={activateBead}
+            onContextMenu={(e) =>
+              openCardMenu(e, activeBead.id, favorites.some((f) => f.id === activeBead.id))
+            }
+          />
+        ) : (
+          <div className="context-empty">
+            <p>No bead selected — click one to see it here.</p>
+          </div>
+        )}
+      </section>
+
+      {/* Cap the sidebar with the Details page's own "rule & bead" tailpiece —
+          a decorative end mark so scrolling breathes without blank space. */}
+      <div className="view-end" aria-hidden="true">
+        <EndFlourish variant="rulebead" />
       </div>
 
       {cardMenu && (

@@ -30,6 +30,13 @@ interface BeadSummaryCardProps {
   onContextMenu?: (e: React.MouseEvent) => void;
   /** Max label chips before collapsing the rest into a "+N". */
   maxLabels?: number;
+  /**
+   * Drop the card's own frame (border / background / shadow) so the content
+   * flows directly into a host that already provides the frame — e.g. the
+   * sidebar "Details" section. Still clickable; the status accent moves to a
+   * thin left rule on the title block.
+   */
+  flat?: boolean;
 }
 
 /** Collapse a markdown-ish description to a short single-paragraph excerpt. */
@@ -48,6 +55,7 @@ export function BeadSummaryCard({
   onOpen,
   onContextMenu,
   maxLabels = 3,
+  flat = false,
 }: BeadSummaryCardProps): React.ReactElement {
   const labels = bead.labels ?? [];
   const shownLabels = labels.slice(0, maxLabels);
@@ -58,7 +66,7 @@ export function BeadSummaryCard({
   return (
     <button
       type="button"
-      className="bead-summary-card"
+      className={`bead-summary-card${flat ? " bsc-flat" : ""}`}
       style={{ borderLeftColor: statusColor(bead.status) }}
       title={`${bead.id} — ${bead.title}\nClick to open the full Details view`}
       onClick={() => onOpen?.(bead.id)}
