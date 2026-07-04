@@ -6286,7 +6286,28 @@ textarea {
   line-height: 1.5;
   color: var(--vscode-descriptionForeground);
   display: -webkit-box;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 12;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+/* Content sections (Description, Acceptance Criteria) — a labeled block of
+   text, one notch richer than the meta rows but still a flat readout. */
+.bead-readout-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.bead-readout-section-label {
+  font-size: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--vscode-descriptionForeground);
+}
+/* Created/updated footer — the quietest line in the readout. */
+.bead-readout-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: var(--text-label);
+  color: var(--vscode-descriptionForeground);
 }

@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Selection card is a fuller medium-LOD readout** — `BeadSummary` now shows estimate, external ref, a relationship summary (blocked by / blocks / parent / children / related counts), a comment count, and **Description + Acceptance Criteria** sections, with a created/updated footer and more generous text (was a short id/title/status sketch)
+- **Cancelling New Issue returns to where you launched it** — cancel from the create form pops back to the Project screen (when "+" was hit there) or the bead's Details, instead of stranding you on the Details screen
 - **Details header reworked** — the action cluster now sits on its own toolbar line, led (in the sidebar takeover) by a labeled **← Project** button that pops back to the Project screen. The identity row (type icon + ID) now carries the **type · status · priority** as a single merged pill, right-aligned — the same joined-pill style used in the dependency lists. In display mode it's a compact read-only pill; the inline-editable selects appear in the badges row when editing
 - **Selection card pills right-aligned + merged** — the Project view's Selection card (medium-LOD `BeadSummary`) renders type/status/priority as the same right-aligned merged pill and drops the now-redundant "Type" metadata row
 - **Context-menu order: "Show Details" before "Show in editor tab"** in the Issues, Tree, and Kanban right-click menus (was reversed)

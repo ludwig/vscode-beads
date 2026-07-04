@@ -41,6 +41,10 @@ export class BeadsSidebarViewProvider extends BeadDetailsViewProvider {
 
   /** Which screen the webview is currently showing. */
   private screen: SidebarScreen = "project";
+  // The screen we were on when create mode began, so cancelling New Issue
+  // returns there (Project when launched from the Project screen's "+", or the
+  // bead's Details when launched from the Details header's "+").
+  private screenBeforeCreate: SidebarScreen = "project";
 
   // Low-frequency memory sampler (vs-f50): posts the extension-host RSS to the
   // Project card while the view is visible on the Project screen.
@@ -90,8 +94,10 @@ export class BeadsSidebarViewProvider extends BeadDetailsViewProvider {
     await super.showBead(beadId, opts);
   }
 
-  /** Entering create mode is an explicit open — flip to the Details screen. */
+  /** Entering create mode is an explicit open — flip to the Details screen,
+   *  remembering where we came from so Cancel can return there. */
   public startCreate(): void {
+    this.screenBeforeCreate = this.screen;
     this.setScreen("details");
     super.startCreate();
   }
@@ -148,6 +154,14 @@ export class BeadsSidebarViewProvider extends BeadDetailsViewProvider {
     }
     if (message.type === "setFavoritesFilter") {
       await vscode.commands.executeCommand("beads.setIssuesFavoritesFilter", message.on);
+      return;
+    }
+    // Cancelling New Issue: let the inherited handler exit create mode + restore
+    // the prior bead, then return to the screen we launched create from (so
+    // Cancel "goes back" to the Project screen when that's where "+" was hit).
+    if (message.type === "cancelCreate") {
+      await super.handleMessage(message);
+      this.setScreen(this.screenBeforeCreate);
       return;
     }
     await super.handleMessage(message);
