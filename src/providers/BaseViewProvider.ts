@@ -598,6 +598,18 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * Briefly show the loading spinner, then clear it after the min-hold. Used when
+   * an out-of-band input change (e.g. toggling a favorite's visibility mask)
+   * re-scopes this view's data without a full reload — so the refresh icon spins
+   * to signal "working" during the round-trip (vs-sd5).
+   */
+  public flashLoading(): void {
+    const startedAt = Date.now();
+    this.setLoading(true);
+    void this.waitForMinimumLoading(startedAt).then(() => this.setLoading(false));
+  }
+
+  /**
    * Sets an error message in the webview
    */
   protected setError(error: string | null): void {

@@ -246,6 +246,11 @@ export class BeadPanelManager implements vscode.Disposable {
     this.forEachProvider((p) => p.publishParentScope(beadIds));
   }
 
+  /** Briefly spin the refresh in every open editor-tab panel (vs-sd5). */
+  public flashLoading(): void {
+    this.forEachProvider((p) => p.flashLoading());
+  }
+
   /**
    * Fan out an "Apply to all" broadcast to every open editor tab (vs-dzm):
    * id-driven views (Kanban/Tree/Graph) get reseeded with the matching bead

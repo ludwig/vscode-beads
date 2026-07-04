@@ -203,6 +203,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Fan the favorites set (with each favorite's mask state) out to every live
     // view whenever the set OR the mask changes, or on a project switch.
     favorites.onDidChange((ids) => {
+      // A star/unstar or visibility-mask toggle re-scopes the data views without
+      // a full reload; flash their refresh spinners so the change reads as
+      // "working" during the round-trip (vs-sd5).
+      shellProvider.flashLoading();
+      panelManager.flashLoading();
       shellProvider.publishFavorites(ids);
       detailsProvider.publishFavorites(ids);
       switcherProvider.publishFavorites(ids);
