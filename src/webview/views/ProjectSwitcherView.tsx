@@ -327,16 +327,6 @@ export function ProjectSwitcherView({
       <div className="context-actions">
         <button
           type="button"
-          className="btn context-action-btn pick-ready"
-          onClick={onPickReady}
-          disabled={!activeProject}
-          title="Pick a ready-to-work bead (open, no open blocker) and show it as the selection"
-        >
-          <Rocket size={14} strokeWidth={2} />
-          <span>Pick Ready Bead</span>
-        </button>
-        <button
-          type="button"
           className="btn context-action-btn show-issues"
           onClick={onShowIssues}
           title="Show the Issues panel"
@@ -352,6 +342,16 @@ export function ProjectSwitcherView({
         >
           <ListTree size={14} strokeWidth={2} />
           <span>Show Tree</span>
+        </button>
+        <button
+          type="button"
+          className="btn context-action-btn pick-ready"
+          onClick={onPickReady}
+          disabled={!activeProject}
+          title="Pick a ready-to-work bead (open, no open blocker) and show it as the selection"
+        >
+          <Rocket size={14} strokeWidth={2} />
+          <span>Pick Ready Bead</span>
         </button>
       </div>
 

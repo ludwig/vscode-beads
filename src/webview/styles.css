@@ -3609,13 +3609,15 @@ textarea {
   transition: box-shadow 0.15s ease, filter 0.15s ease;
 }
 
-/* Show Issues — muted (desaturated) steel blue accent, easier on the eyes than
-   the vivid #2563eb. */
-.context-action-btn.show-issues {
+/* Show Issues / Show Tree — muted (desaturated) steel blue accent, easier on
+   the eyes than the vivid #2563eb. Both open a panel view, so they share it. */
+.context-action-btn.show-issues,
+.context-action-btn.show-tree {
   background: var(--beads-accent);
   color: #fff;
 }
-.context-action-btn.show-issues:hover {
+.context-action-btn.show-issues:hover,
+.context-action-btn.show-tree:hover {
   background: var(--beads-accent-hover);
 }
 
@@ -3627,17 +3629,6 @@ textarea {
 }
 .context-action-btn.pick-ready:hover:not(:disabled) {
   background: #494380;
-}
-
-/* Show Tree — outlined steel-blue: the same accent family as Show Issues (they
-   both open a panel view) but secondary weight, so Show Issues stays primary. */
-.context-action-btn.show-tree {
-  background: transparent;
-  color: var(--beads-accent);
-  box-shadow: inset 0 0 0 1px var(--beads-accent);
-}
-.context-action-btn.show-tree:hover {
-  background: color-mix(in srgb, var(--beads-accent) 14%, transparent);
 }
 
 .btn:hover {
