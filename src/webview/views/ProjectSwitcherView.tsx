@@ -12,7 +12,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, X, Rocket, ListTodo, ListTree, Copy, FolderPlus, Star } from "lucide-react";
-import { Bead, BeadsProject, FavoriteBead, statusColor, isClosedStatus } from "../types";
+import { Bead, BeadsProject, FavoriteBead, statusColor, isClosedStatus, vscode } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem, DropdownSeparator } from "../common/Dropdown";
 import { formatBytes } from "../common/formatBytes";
@@ -134,6 +134,25 @@ export function ProjectSwitcherView({
   useEffect(() => {
     if (favStarOptimistic != null && favoritesFilterOn === favStarOptimistic) setFavStarOptimistic(null);
   }, [favoritesFilterOn, favStarOptimistic]);
+
+  // Cmd/Ctrl+← / Cmd/Ctrl+→ (and Alt+←/→) walk the GLOBAL Details history from
+  // the Repository screen too — mirroring the Details view's own shortcut, but
+  // routed through historyBack/historyForward since DetailsView (which owns the
+  // in-Details shortcut) isn't mounted here. Ignored while typing in a field.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const navModifier = e.metaKey || e.ctrlKey || e.altKey;
+      if (!navModifier || (e.key !== "ArrowLeft" && e.key !== "ArrowRight")) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+        return;
+      }
+      e.preventDefault();
+      vscode.postMessage({ type: e.key === "ArrowLeft" ? "historyBack" : "historyForward" });
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   // Right-click menu for a bead card/row (vs-sd5.5). `isFavorite` is captured at
   // open time so the toggle label reads correctly for the menu's bead.
@@ -481,6 +500,9 @@ export function ProjectSwitcherView({
             muteClosed={muteClosedIssues}
             onOpen={onOpenBead}
             onFieldChange={(patch) => onUpdateBead(activeBead.id, patch)}
+            onCopyId={onCopyId}
+            isFavorite={favorites.some((f) => f.id === activeBead.id)}
+            onToggleFavorite={onToggleFavorite}
             onContextMenu={(e) =>
               openCardMenu(e, activeBead.id, favorites.some((f) => f.id === activeBead.id))
             }

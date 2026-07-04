@@ -12,6 +12,7 @@
 import React from "react";
 import { Bead, BeadDependency, isClosedStatus, BeadType } from "../types";
 import { TypeIcon } from "./TypeIcon";
+import { Icon } from "./Icon";
 import { StatusPriorityPill, PillFieldPatch } from "./StatusPriorityPill";
 import { Timestamp } from "./Timestamp";
 import { getLabelColorStyle } from "../utils/label-colors";
@@ -28,6 +29,12 @@ interface BeadSummaryProps {
   /** When provided, the type/status/priority pill becomes inline click-to-edit;
    *  a pick commits the patch immediately. */
   onFieldChange?: (patch: PillFieldPatch) => void;
+  /** When provided, the ID renders as a clickable chip that copies the ID. */
+  onCopyId?: (beadId: string) => void;
+  /** Current favorite state — drives the star fill (with onToggleFavorite). */
+  isFavorite?: boolean;
+  /** When provided, a star toggle rides after the ID chip to (un)favorite. */
+  onToggleFavorite?: (beadId: string) => void;
   /** Max label chips before collapsing the rest into a "+N". */
   maxLabels?: number;
 }
@@ -82,6 +89,9 @@ export function BeadSummary({
   onOpen,
   onContextMenu,
   onFieldChange,
+  onCopyId,
+  isFavorite,
+  onToggleFavorite,
   maxLabels = 6,
 }: BeadSummaryProps): React.ReactElement {
   const labels = bead.labels ?? [];
@@ -97,7 +107,36 @@ export function BeadSummary({
     <div className="bead-readout" onContextMenu={onContextMenu}>
       <div className="bead-readout-head">
         <TypeIcon type={bead.type || "task"} size={14} />
-        <span className="bead-readout-id">{bead.id}</span>
+        {onCopyId ? (
+          <span
+            className="bead-id-badge clickable fb-tip"
+            role="button"
+            tabIndex={0}
+            data-tip="Click to copy ID"
+            onClick={() => onCopyId(bead.id)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onCopyId(bead.id);
+              }
+            }}
+          >
+            {bead.id}
+          </span>
+        ) : (
+          <span className="bead-readout-id">{bead.id}</span>
+        )}
+        {onToggleFavorite && (
+          <button
+            className={`icon-btn header-icon-btn fb-tip${isFavorite ? " is-favorite" : ""}`}
+            data-tip={isFavorite ? "Unstar (remove from Favorites)" : "Star (add to Favorites)"}
+            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+            aria-pressed={isFavorite}
+            onClick={() => onToggleFavorite(bead.id)}
+          >
+            <Icon name={isFavorite ? "star" : "star-outline"} size={12} />
+          </button>
+        )}
         <span className="bead-readout-head-spacer" />
         <StatusPriorityPill
           type={(bead.type || "task") as BeadType}
