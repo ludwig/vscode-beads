@@ -650,6 +650,7 @@ export function App(): React.ReactElement {
             onOpenProjectFolder={() => vscode.postMessage({ type: "openProjectFolder" })}
             onOpenBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onOpenBeadInTab={(beadId) => vscode.postMessage({ type: "openBeadInTab", beadId })}
+            onSelectBead={(beadId) => vscode.postMessage({ type: "selectBead", beadId })}
             onClearBead={() => vscode.postMessage({ type: "clearActiveBead" })}
             onUnfavorite={(beadId) => vscode.postMessage({ type: "removeFavorite", beadId })}
             onCopyFavorites={() =>

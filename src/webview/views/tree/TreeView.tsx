@@ -186,6 +186,13 @@ interface TreeViewProps {
    * with every other panel view. Omitted in an editor tab (self-owned filter).
    */
   sharedFilter?: SharedFilterControl;
+  /**
+   * Panel only: shared collapse state for the FilterBar, so collapsing in one
+   * panel tab is reflected in all of them. When provided, overrides the view's
+   * own local collapse. Omitted in an editor tab.
+   */
+  filterBarCollapsed?: boolean;
+  onToggleFilterBar?: () => void;
   totalCount?: number;
   /**
    * A "show in tree" deep-link target (vs-kp67): expand the bead's collapsed
@@ -211,6 +218,8 @@ export function TreeView({
   parentCleared,
   onToggleParentScope,
   sharedFilter,
+  filterBarCollapsed,
+  onToggleFilterBar,
   totalCount,
   revealRequest,
   onSelectBead,
@@ -664,8 +673,8 @@ export function TreeView({
         facets={lf.facets}
         ops={lf.ops}
         count={{ shown: scopeCount, total, unit: "beads" }}
-        collapsed={lf.collapsed}
-        onToggleCollapsed={lf.toggleCollapsed}
+        collapsed={filterBarCollapsed ?? lf.collapsed}
+        onToggleCollapsed={onToggleFilterBar ?? lf.toggleCollapsed}
         searchTerm={query}
         onClearSearch={() => setQuery("")}
         search={

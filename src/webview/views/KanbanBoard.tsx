@@ -48,6 +48,13 @@ interface KanbanBoardProps {
    * linked with every other panel view. Omitted in an editor tab.
    */
   sharedFilter?: SharedFilterControl;
+  /**
+   * Panel only: shared collapse state for the FilterBar, so collapsing in one
+   * panel tab is reflected in all of them (matching the synced filters). When
+   * provided, overrides the view's own local collapse. Omitted in an editor tab.
+   */
+  filterBarCollapsed?: boolean;
+  onToggleFilterBar?: () => void;
   totalCount?: number;
   /**
    * A "show in kanban" deep-link target (vs-wbrz): select the bead's card and
@@ -73,7 +80,7 @@ const COLUMNS: BuiltInStatus[] = [
   "pinned", // standing / persistent (frozen) — outside the flow
 ];
 
-export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], maskedIds = [], muteClosedIssues = true, graph, onRequestGraph, onSelectBead, onUpdateBead, hasActiveFilters, unfilteredCounts, filteredBeadIds, parentCleared, onToggleParentScope, sharedFilter, totalCount, revealRequest }: KanbanBoardProps): React.ReactElement {
+export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], maskedIds = [], muteClosedIssues = true, graph, onRequestGraph, onSelectBead, onUpdateBead, hasActiveFilters, unfilteredCounts, filteredBeadIds, parentCleared, onToggleParentScope, sharedFilter, filterBarCollapsed, onToggleFilterBar, totalCount, revealRequest }: KanbanBoardProps): React.ReactElement {
   const boardRef = useRef<HTMLDivElement>(null);
   // Track which columns are collapsed. The quiet lanes (closed + the frozen
   // deferred/pinned) start collapsed; good per-lane defaults + persistence are
@@ -245,8 +252,8 @@ export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], maskedIds
         facets={lf.facets}
         ops={lf.ops}
         count={{ shown: scopeCount, total, unit: "cards" }}
-        collapsed={lf.collapsed}
-        onToggleCollapsed={lf.toggleCollapsed}
+        collapsed={filterBarCollapsed ?? lf.collapsed}
+        onToggleCollapsed={onToggleFilterBar ?? lf.toggleCollapsed}
         searchTerm={query}
         onClearSearch={() => setQuery("")}
         search={

@@ -70,6 +70,13 @@ interface GraphViewProps {
    * linked with every other panel view. Omitted in an editor tab.
    */
   sharedFilter?: SharedFilterControl;
+  /**
+   * Panel only: shared collapse state for the FilterBar, so collapsing in one
+   * panel tab is reflected in all of them. When provided, overrides the view's
+   * own local collapse. Omitted in an editor tab.
+   */
+  filterBarCollapsed?: boolean;
+  onToggleFilterBar?: () => void;
   onOpenBead: (beadId: string) => void;
   /**
    * Lazily ask the provider for graph data on mount. Used by the multi-tab
@@ -94,6 +101,8 @@ function GraphCanvas({
   parentCleared,
   onToggleParentScope,
   sharedFilter,
+  filterBarCollapsed,
+  onToggleFilterBar,
   onOpenBead,
 }: Omit<GraphViewProps, "loading" | "error" | "onRequestGraph" | "onRetry">): React.ReactElement {
   const [mode, setMode] = useState<LayoutMode>("layered");
@@ -468,8 +477,8 @@ function GraphCanvas({
         facets={lf.facets}
         ops={lf.ops}
         count={{ shown: scopeCount, total, unit: "nodes" }}
-        collapsed={lf.collapsed}
-        onToggleCollapsed={lf.toggleCollapsed}
+        collapsed={filterBarCollapsed ?? lf.collapsed}
+        onToggleCollapsed={onToggleFilterBar ?? lf.toggleCollapsed}
         searchTerm={query}
         onClearSearch={() => setQuery("")}
         search={searchRow}
@@ -665,6 +674,8 @@ export function GraphView(props: GraphViewProps): React.ReactElement {
         parentCleared={props.parentCleared}
         onToggleParentScope={props.onToggleParentScope}
         sharedFilter={props.sharedFilter}
+        filterBarCollapsed={props.filterBarCollapsed}
+        onToggleFilterBar={props.onToggleFilterBar}
         onOpenBead={props.onOpenBead}
       />
     </ReactFlowProvider>

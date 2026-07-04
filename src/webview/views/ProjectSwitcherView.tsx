@@ -33,6 +33,8 @@ interface ProjectSwitcherViewProps {
   onOpenProjectFolder: () => void;
   onOpenBead: (beadId: string) => void;
   onOpenBeadInTab: (beadId: string) => void;
+  /** Passive-select a bead (update the Selection card) WITHOUT opening Details. */
+  onSelectBead: (beadId: string) => void;
   onClearBead: () => void;
   /** Unstar a favorite from the section's per-row control. */
   onUnfavorite: (beadId: string) => void;
@@ -90,6 +92,7 @@ export function ProjectSwitcherView({
   onOpenProjectFolder,
   onOpenBead,
   onOpenBeadInTab,
+  onSelectBead,
   onClearBead,
   onUnfavorite,
   onCopyFavorites,
@@ -165,26 +168,30 @@ export function ProjectSwitcherView({
     [onCopyId, onOpenBead, onOpenBeadInTab, onToggleFavorite, onToggleMask, favorites],
   );
 
-  // Click-count router on the Selection card (mirrors the Graph/Tree): 1/2
-  // clicks open it in the sidebar Details, 3 clicks open it in an editor tab.
+  // Click-count router on a favorite card (mirrors the Graph/Tree): 1 click
+  // passively selects it (updating the Selection card, no takeover), 2 clicks
+  // open the Details takeover, 3 clicks open it in an editor tab. The select
+  // fires immediately on the first click so the primary action feels instant;
+  // a second/third click within the window escalates.
   const clickRef = useRef<{ count: number; timer: ReturnType<typeof setTimeout> | null }>({
     count: 0,
     timer: null,
   });
   const activateBead = useCallback(
     (id: string) => {
-      onOpenBead(id);
       const c = clickRef.current;
       c.count += 1;
+      if (c.count === 1) onSelectBead(id);
       if (c.timer) clearTimeout(c.timer);
       c.timer = setTimeout(() => {
         const n = c.count;
         c.count = 0;
         c.timer = null;
-        if (n >= 3) onOpenBeadInTab(id);
+        if (n === 2) onOpenBead(id);
+        else if (n >= 3) onOpenBeadInTab(id);
       }, 320);
     },
-    [onOpenBead, onOpenBeadInTab],
+    [onSelectBead, onOpenBead, onOpenBeadInTab],
   );
   useEffect(
     () => () => {
@@ -321,34 +328,6 @@ export function ProjectSwitcherView({
         )}
       </section>
 
-      {/* Selection card — the current selection captured in the Project view at
-          medium LOD, so it's reachable even after navigating away from the
-          Issues tab. Clicking it loads the full Details takeover. */}
-      {activeBead && (
-        <section className="context-section context-selection-section">
-          <div className="context-section-head">
-            <span className="context-heading">Selection</span>
-            <button
-              type="button"
-              className="context-heading-action fb-tip fb-tip-end"
-              data-tip="Clear selection"
-              aria-label="Clear selection"
-              onClick={onClearBead}
-            >
-              <X size={13} strokeWidth={2} />
-            </button>
-          </div>
-          <BeadSummary
-            bead={activeBead}
-            muteClosed={muteClosedIssues}
-            onOpen={onOpenBead}
-            onContextMenu={(e) =>
-              openCardMenu(e, activeBead.id, favorites.some((f) => f.id === activeBead.id))
-            }
-          />
-        </section>
-      )}
-
       <div className="context-actions">
         <button
           type="button"
@@ -379,6 +358,35 @@ export function ProjectSwitcherView({
           <span>Show Tree</span>
         </button>
       </div>
+
+      {/* Selection card — the current selection captured in the Project view at
+          medium LOD, so it's reachable even after navigating away from the
+          Issues tab. Sits under the action buttons. Clicking it loads the full
+          Details takeover. */}
+      {activeBead && (
+        <section className="context-section context-selection-section">
+          <div className="context-section-head">
+            <span className="context-heading">Selection</span>
+            <button
+              type="button"
+              className="context-heading-action fb-tip fb-tip-end"
+              data-tip="Clear selection"
+              aria-label="Clear selection"
+              onClick={onClearBead}
+            >
+              <X size={13} strokeWidth={2} />
+            </button>
+          </div>
+          <BeadSummary
+            bead={activeBead}
+            muteClosed={muteClosedIssues}
+            onOpen={onOpenBead}
+            onContextMenu={(e) =>
+              openCardMenu(e, activeBead.id, favorites.some((f) => f.id === activeBead.id))
+            }
+          />
+        </section>
+      )}
 
       {/* Favorites is a seed-based FilterGroup: the seed list (starred beads)
           expands into relatives in the Issues view, and each seed's eye masks it
@@ -438,7 +446,7 @@ export function ProjectSwitcherView({
           <button
             type="button"
             className="active-bead context-card-open"
-            title={`${fav.id}${fav.title ? ` — ${fav.title}` : ""}\nClick to open in Details · triple-click to open in an editor tab`}
+            title={`${fav.id}${fav.title ? ` — ${fav.title}` : ""}\nClick to select · double-click to open Details · triple-click for an editor tab`}
             onClick={() => activateBead(fav.id)}
             onContextMenu={(e) => openCardMenu(e, fav.id, true)}
           >

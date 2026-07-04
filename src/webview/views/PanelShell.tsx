@@ -102,6 +102,12 @@ export function PanelShell({
 }: PanelShellProps): React.ReactElement {
   // Issues is the default view when the panel first opens.
   const [active, setActive] = useState<PanelTab>("issues");
+  // Shared FilterBar collapse across the panel tabs: collapsing in one tab
+  // collapses it in all of them, matching the synced filters (it's confusing to
+  // collapse in one and find it open in the next). Default open. Session-scoped;
+  // each standalone editor-tab view keeps its own local collapse instead.
+  const [filterBarCollapsed, setFilterBarCollapsed] = useState(false);
+  const toggleFilterBar = useCallback(() => setFilterBarCollapsed((v) => !v), []);
   // A Dashboard card click flips to Issues and carries its filter in-shell.
   const [localFilter, setLocalFilter] = useState<{ filter: IssuesFilter; seq: number } | null>(null);
   // Bead to focus on the Graph tab, set by a "View in graph" deep-link. Carried
@@ -360,6 +366,8 @@ export function PanelShell({
             filteredBeadIds={filteredBeadIds}
             {...parentScopeProps("kanban")}
             sharedFilter={sharedFilter}
+            filterBarCollapsed={filterBarCollapsed}
+            onToggleFilterBar={toggleFilterBar}
             totalCount={totalCount}
             selectedBeadId={selectedBeadId}
             favoriteIds={favoriteIds}
@@ -382,6 +390,8 @@ export function PanelShell({
             filteredBeadIds={filteredBeadIds}
             {...parentScopeProps("tree")}
             sharedFilter={sharedFilter}
+            filterBarCollapsed={filterBarCollapsed}
+            onToggleFilterBar={toggleFilterBar}
             totalCount={totalCount}
             revealRequest={treeRevealRequest}
             onSelectBead={(beadId) => vscode.postMessage({ type: "selectBead", beadId })}
@@ -400,6 +410,8 @@ export function PanelShell({
             filteredBeadIds={filteredBeadIds}
             {...parentScopeProps("graph")}
             sharedFilter={sharedFilter}
+            filterBarCollapsed={filterBarCollapsed}
+            onToggleFilterBar={toggleFilterBar}
             onOpenBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onRequestGraph={requestGraph}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
@@ -433,6 +445,8 @@ export function PanelShell({
             issuesFilterRequest={localFilter ?? issuesFilterRequest}
             applySnapshotRequest={applySnapshotRequest}
             sharedSpec={sharedSpec}
+            filterBarCollapsed={filterBarCollapsed}
+            onToggleFilterBar={toggleFilterBar}
             revealRequest={issuesRevealRequest}
             graph={graph}
             onRequestGraph={requestGraph}

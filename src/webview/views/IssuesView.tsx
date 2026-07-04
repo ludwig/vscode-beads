@@ -123,6 +123,13 @@ interface IssuesViewProps {
    */
   sharedSpec?: FilterSnapshot | null;
   /**
+   * Panel only: shared collapse state for the FilterBar, so collapsing in one
+   * panel tab is reflected in all of them. When provided, overrides this view's
+   * own local collapse. Omitted in an editor tab.
+   */
+  filterBarCollapsed?: boolean;
+  onToggleFilterBar?: () => void;
+  /**
    * A "show in issues" deep-link target (vs-wbrz): select the bead's row and
    * scroll it into view. `seq` re-fires for a repeat of the same bead. If the
    * bead is filtered out of the current view, selection still applies but the
@@ -187,6 +194,8 @@ export function IssuesView({
   issuesFilterRequest,
   applySnapshotRequest,
   sharedSpec,
+  filterBarCollapsed,
+  onToggleFilterBar,
   revealRequest,
   isEditorTab = false,
   graph,
@@ -785,8 +794,8 @@ export function IssuesView({
         facets={facets}
         ops={filterOps}
         count={{ shown: filteredCount, total: totalCount, unit: "issues" }}
-        collapsed={!filterBarOpen}
-        onToggleCollapsed={() => setFilterBarOpen((v) => !v)}
+        collapsed={filterBarCollapsed ?? !filterBarOpen}
+        onToggleCollapsed={onToggleFilterBar ?? (() => setFilterBarOpen((v) => !v))}
         searchTerm={globalFilter}
         onClearSearch={() => setGlobalFilter("")}
         search={

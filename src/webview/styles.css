@@ -6199,7 +6199,6 @@ textarea {
 }
 .bead-readout-title.muted-closed {
   color: var(--vscode-descriptionForeground);
-  text-decoration: line-through;
   opacity: 0.75;
 }
 .bead-readout-meta {
