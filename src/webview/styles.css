@@ -875,13 +875,18 @@ textarea {
    small-caps for the menu text. */
 .status-priority-pill .pill-seg-menu {
   top: calc(100% + 3px);
-  /* Right-anchored: the editable pill is right-aligned in both the Details
-     Ident row and the Selection card, so opening leftward keeps the menu inside
-     the narrow sidebar's right edge. */
-  right: 0;
-  left: auto;
+  /* Default: left-anchored, opens rightward — correct for a left-aligned pill
+     (the Details badges row, where the pill leads the row). */
+  left: 0;
+  right: auto;
   min-width: max-content;
   font-variant: normal;
+}
+/* Right-anchored, opens leftward — for a right-aligned pill (the Selection
+   card), so a wide menu isn't clipped by the sidebar's right edge. */
+.status-priority-pill .pill-seg-menu.pill-seg-menu-end {
+  left: auto;
+  right: 0;
 }
 
 /* Small badges - used in list view and detail panel */

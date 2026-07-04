@@ -44,6 +44,10 @@ interface StatusPriorityPillProps {
   priority?: BeadPriority;
   /** When set, each present segment becomes an inline click-to-edit dropdown. */
   onChange?: (patch: PillFieldPatch) => void;
+  /** Which edge the segment menus anchor to. "start" (default) opens rightward
+   *  — right for a left-aligned pill (Details badges). "end" opens leftward —
+   *  right for a right-aligned pill (the Selection card), so it isn't clipped. */
+  menuAlign?: "start" | "end";
 }
 
 /**
@@ -60,6 +64,7 @@ function EditablePillSegment<T extends string | number>({
   value,
   options,
   onSelect,
+  menuAlign,
 }: {
   className: string;
   label: string;
@@ -68,6 +73,7 @@ function EditablePillSegment<T extends string | number>({
   value: T;
   options: ColoredSelectOption<T>[];
   onSelect: (value: T) => void;
+  menuAlign: "start" | "end";
 }): React.ReactElement {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
@@ -94,7 +100,10 @@ function EditablePillSegment<T extends string | number>({
     >
       {label}
       {open && (
-        <div className="colored-select-menu dropdown-menu pill-seg-menu" role="listbox">
+        <div
+          className={`colored-select-menu dropdown-menu pill-seg-menu${menuAlign === "end" ? " pill-seg-menu-end" : ""}`}
+          role="listbox"
+        >
           {options.map((o) => (
             <button
               key={String(o.value)}
@@ -125,6 +134,7 @@ export function StatusPriorityPill({
   status,
   priority,
   onChange,
+  menuAlign = "start",
 }: StatusPriorityPillProps): React.ReactElement | null {
   // Need at least one value to render
   if (!type && !status && priority === undefined) return null;
@@ -151,6 +161,7 @@ export function StatusPriorityPill({
             value={type}
             options={TYPE_OPTIONS}
             onSelect={(v) => onChange!({ type: v })}
+            menuAlign={menuAlign}
           />
         ) : (
           <span className="pill-type" style={{ backgroundColor: TYPE_COLORS[type] }}>
@@ -167,6 +178,7 @@ export function StatusPriorityPill({
             value={status}
             options={STATUS_OPTIONS}
             onSelect={(v) => onChange!({ status: v })}
+            menuAlign={menuAlign}
           />
         ) : (
           <span className="pill-status" style={{ backgroundColor: statusBg || undefined }}>
@@ -183,6 +195,7 @@ export function StatusPriorityPill({
             value={priority}
             options={PRIORITY_OPTIONS}
             onSelect={(v) => onChange!({ priority: v })}
+            menuAlign={menuAlign}
           />
         ) : (
           <span

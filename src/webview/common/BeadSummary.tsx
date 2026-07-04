@@ -143,6 +143,7 @@ export function BeadSummary({
           status={bead.status}
           priority={bead.priority}
           onChange={onFieldChange}
+          menuAlign="end"
         />
       </div>
 
