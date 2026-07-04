@@ -11,7 +11,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, X, Rocket, ListTodo, ListTree, Copy, FolderPlus, Star } from "lucide-react";
+import { ChevronDown, ChevronRight, X, Rocket, ListTodo, ListTree, Copy, FolderPlus, Star, Plus, RefreshCw, Settings } from "lucide-react";
 import { Bead, BeadsProject, FavoriteBead, statusColor, isClosedStatus, vscode } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem, DropdownSeparator } from "../common/Dropdown";
@@ -228,6 +228,46 @@ export function ProjectSwitcherView({
             <span>Active Project</span>
           </button>
           {activeProject && (
+            <>
+            {/* Quick actions (relocated from the native view-title bar so they
+                can sit on the card): init · new issue · reload · settings, right
+                of the ⋮ overflow. */}
+            <button
+              type="button"
+              className="context-heading-action fb-tip fb-tip-end"
+              data-tip="Initialize repository"
+              aria-label="Initialize repository"
+              onClick={onCreateBoard}
+            >
+              <FolderPlus size={13} strokeWidth={2} />
+            </button>
+            <button
+              type="button"
+              className="context-heading-action fb-tip fb-tip-end"
+              data-tip="New issue"
+              aria-label="New issue"
+              onClick={() => vscode.postMessage({ type: "startCreate" })}
+            >
+              <Plus size={13} strokeWidth={2} />
+            </button>
+            <button
+              type="button"
+              className="context-heading-action fb-tip fb-tip-end"
+              data-tip="Reload beads from db"
+              aria-label="Reload beads from db"
+              onClick={() => vscode.postMessage({ type: "refresh" })}
+            >
+              <RefreshCw size={13} strokeWidth={2} />
+            </button>
+            <button
+              type="button"
+              className="context-heading-action fb-tip fb-tip-end"
+              data-tip="Extension settings"
+              aria-label="Extension settings"
+              onClick={onOpenSettings}
+            >
+              <Settings size={13} strokeWidth={2} />
+            </button>
             <Dropdown
               trigger={<span className="context-menu-trigger">⋮</span>}
               className="context-actions-dropdown"
@@ -250,6 +290,7 @@ export function ProjectSwitcherView({
               <DropdownSeparator />
               <DropdownItem onClick={onOpenSettings}>Extension Settings</DropdownItem>
             </Dropdown>
+            </>
           )}
         </div>
 

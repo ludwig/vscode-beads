@@ -193,26 +193,6 @@
     "menus": {
       "view/title": [
         {
-          "command": "beads.initRepository",
-          "when": "view == beadsProjectSwitcher && !beads.detailScreen",
-          "group": "navigation@0"
-        },
-        {
-          "command": "beads.createIssue",
-          "when": "view == beadsProjectSwitcher && !beads.detailScreen",
-          "group": "navigation@2"
-        },
-        {
-          "command": "beads.refresh",
-          "when": "view == beadsProjectSwitcher && !beads.detailScreen",
-          "group": "navigation@3"
-        },
-        {
-          "command": "beads.openSettings",
-          "when": "view == beadsProjectSwitcher && !beads.detailScreen",
-          "group": "navigation@4"
-        },
-        {
           "command": "beads.navigateBack",
           "when": "view == beadsProjectSwitcher && beads.detailScreen",
           "group": "navigation@0"
