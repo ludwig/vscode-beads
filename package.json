@@ -191,18 +191,7 @@
       }
     ],
     "menus": {
-      "view/title": [
-        {
-          "command": "beads.navigateBack",
-          "when": "view == beadsProjectSwitcher && beads.detailScreen",
-          "group": "navigation@0"
-        },
-        {
-          "command": "beads.navigateForward",
-          "when": "view == beadsProjectSwitcher && beads.detailScreen",
-          "group": "navigation@1"
-        }
-      ]
+      "view/title": []
     },
     "configuration": [
       {
