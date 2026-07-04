@@ -274,20 +274,24 @@ export function TreeView({
   );
   // Drag-to-resize a fixed column: the handle on a column's right edge widens/
   // narrows THAT column; the flexible Title track absorbs the delta.
-  const resizeRef = useRef<{ key: ColKey; startX: number; startW: number } | null>(null);
+  const resizeRef = useRef<{ key: ColKey; startX: number; startW: number; dir: 1 | -1 } | null>(null);
   // Set while (and just after) a resize so the header's sort onClick — which
   // fires on mouseup inside the button — doesn't also toggle the sort.
   const didResizeRef = useRef(false);
+  // The handles live on each fixed column's LEFT edge (its boundary with the
+  // previous track), so the Title|Status divider is grabbable. Because the
+  // flexible Title track absorbs the delta, dragging a left-edge handle toward
+  // Title (mouse left) WIDENS the column — hence dir = -1.
   const startColResize = useCallback(
-    (e: React.MouseEvent, c: TreeColumn) => {
+    (e: React.MouseEvent, c: TreeColumn, dir: 1 | -1 = -1) => {
       e.preventDefault();
       e.stopPropagation();
       didResizeRef.current = true;
-      resizeRef.current = { key: c.key, startX: e.clientX, startW: colWidthPx(c) };
+      resizeRef.current = { key: c.key, startX: e.clientX, startW: colWidthPx(c), dir };
       const onMove = (ev: MouseEvent) => {
         const st = resizeRef.current;
         if (!st) return;
-        const next = Math.max(32, Math.min(400, st.startW + (ev.clientX - st.startX)));
+        const next = Math.max(32, Math.min(400, st.startW + st.dir * (ev.clientX - st.startX)));
         setColWidths((prev) => ({ ...prev, [st.key]: next }));
       };
       const onUp = () => {
@@ -330,6 +334,7 @@ export function TreeView({
   const handleActivate = useCallback(
     (id: string) => {
       setLocalSelectedId(id); // instant highlight, before the extension echoes back
+      bodyRef.current?.focus({ preventScroll: true }); // so arrow-key nav works after a click
       onSelectBead(id);
       const c = clickRef.current;
       if (c.id !== id) {
@@ -391,6 +396,22 @@ export function TreeView({
   // scope must not, so the user can still collapse/expand within it.
   const filtering = query.trim().length > 0;
   const favoriteIdSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
+
+  // Flattened visible rows in display order, honoring collapse state — the basis
+  // for keyboard row navigation (↑↓ step, ←→ collapse/expand).
+  const flatVisible = useMemo(() => {
+    const out: { id: string; hasChildren: boolean; isCollapsed: boolean }[] = [];
+    const walk = (nodes: TreeNode[]) => {
+      for (const n of nodes) {
+        const hasChildren = n.children.length > 0;
+        const isCollapsed = !filtering && collapsed.has(n.bead.id);
+        out.push({ id: n.bead.id, hasChildren, isCollapsed });
+        if (hasChildren && !isCollapsed) walk(n.children);
+      }
+    };
+    walk(visible);
+    return out;
+  }, [visible, collapsed, filtering]);
 
   // "Show in tree" deep-link (vs-kp67): expand the target's collapsed ancestors,
   // select it, and scroll it into view. Held as pending state and retried as
@@ -476,6 +497,71 @@ export function TreeView({
     }
     return m;
   }, [graph]);
+
+  // Keyboard row navigation (roving selection). ArrowUp/Down move the cursor and
+  // never scroll the pane; ArrowRight/Left collapse/expand the focused row
+  // (⇧ = whole subtree) or step to first-child / parent; Enter selects.
+  const focusRowId = useCallback((id: string | undefined) => {
+    if (!id) return;
+    setLocalSelectedId(id);
+    requestAnimationFrame(() => {
+      bodyRef.current
+        ?.querySelector(`[data-bead-id="${id}"]`)
+        ?.scrollIntoView({ block: "nearest" });
+    });
+  }, []);
+  const onTreeKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (flatVisible.length === 0) return;
+      const idx = flatVisible.findIndex((r) => r.id === activeSelectedId);
+      const cur = idx >= 0 ? flatVisible[idx] : null;
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          focusRowId(flatVisible[idx < 0 ? 0 : Math.min(flatVisible.length - 1, idx + 1)].id);
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          focusRowId(flatVisible[idx < 0 ? 0 : Math.max(0, idx - 1)].id);
+          break;
+        case "ArrowRight":
+          e.preventDefault();
+          if (!cur) {
+            focusRowId(flatVisible[0].id);
+          } else if (cur.hasChildren && cur.isCollapsed) {
+            toggle(cur.id, e.shiftKey);
+          } else if (cur.hasChildren) {
+            focusRowId(flatVisible[idx + 1]?.id);
+          }
+          break;
+        case "ArrowLeft":
+          e.preventDefault();
+          if (!cur) {
+            focusRowId(flatVisible[0].id);
+          } else if (cur.hasChildren && !cur.isCollapsed) {
+            toggle(cur.id, e.shiftKey);
+          } else {
+            focusRowId(parentOf.get(cur.id));
+          }
+          break;
+        case "Enter":
+          e.preventDefault();
+          if (cur) onSelectBead(cur.id);
+          break;
+        case "Home":
+          e.preventDefault();
+          focusRowId(flatVisible[0].id);
+          break;
+        case "End":
+          e.preventDefault();
+          focusRowId(flatVisible[flatVisible.length - 1].id);
+          break;
+        default:
+          break;
+      }
+    },
+    [flatVisible, activeSelectedId, focusRowId, toggle, parentOf, onSelectBead],
+  );
 
   // Drag-to-reparent (vs-jb6): drop A onto B = make B the parent of A. Illegal
   // if B is A itself, A's current parent (no-op), or in A's subtree (cycle).
@@ -715,6 +801,8 @@ export function TreeView({
         ref={bodyRef}
         className={`beads-tree-body${canDetach ? " can-detach" : ""}`}
         role="tree"
+        tabIndex={0}
+        onKeyDown={onTreeKeyDown}
         onDragOver={onBodyDragOver}
         onDrop={onBodyDrop}
       >
