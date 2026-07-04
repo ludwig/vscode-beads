@@ -71,6 +71,12 @@ export class BeadsSidebarViewProvider extends BeadDetailsViewProvider {
    * key is toggled only to gate the view-title menu items per screen.
    */
   private setScreen(screen: SidebarScreen): void {
+    // No-op when the screen isn't actually changing. showBead(reveal) fires on
+    // every selection (incl. clicking child/dep links while already on the
+    // Details screen); without this guard each one re-posts setScreen and
+    // re-writes view.title to the same string, churning the header label on
+    // every id selection. Content still updates via super.showBead → renderBead.
+    if (this.screen === screen) return;
     this.screen = screen;
     this.postMessage({ type: "setScreen", screen });
     vscode.commands.executeCommand("setContext", "beads.detailScreen", screen === "details");
