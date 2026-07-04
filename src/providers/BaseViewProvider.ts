@@ -188,9 +188,11 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     }
 
     // Seed the live parent scope so a freshly-(re)mounted view scopes correctly
-    // immediately, without waiting for the next recompute.
+    // immediately, without waiting for the next recompute. Also seed the shared
+    // Favorites-only bit so the dashboard star reflects state on (re)mount.
     if (this.scope) {
       this.publishParentScope(this.scope.current());
+      this.publishSharedFavoritesOnly(this.scope.currentSpec().favoritesOnly);
     }
 
     // Load view-specific data only for visible views.
@@ -220,6 +222,21 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
   /** Push the live parent scope (shared-filter id set, or null = all) to this view. */
   public publishParentScope(beadIds: string[] | null): void {
     this.postMessage({ type: "setParentScope", beadIds });
+  }
+
+  /** Report the shared filter's Favorites-only bit (for the dashboard star). */
+  public publishSharedFavoritesOnly(on: boolean): void {
+    this.postMessage({ type: "setSharedFavoritesOnly", on });
+  }
+
+  /**
+   * Apply a full Issues-filter snapshot LIVE — like {@link pushFilter} but does
+   * NOT retain it as a reload seed. Used to sync the panel Issues to a host-side
+   * filter change (e.g. the dashboard star) where the view persists its own
+   * state and a retained seed would later clobber the user's edits.
+   */
+  public applyIssuesFilterSnapshotLive(snapshot: FilterSnapshot): void {
+    this.postMessage({ type: "applyIssuesFilterSnapshot", snapshot });
   }
 
   /**

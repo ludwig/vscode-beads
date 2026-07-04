@@ -96,6 +96,11 @@ export class BeadsProjectSwitcherViewProvider extends BaseViewProvider {
       // Clear every selection surface (Details + table highlight + pin), not
       // just this view's pin.
       await vscode.commands.executeCommand("beads.clearSelection");
+    } else if (message.type === "setFavoritesFilter") {
+      // The Favorites-card star drives the panel Issues favorites filter. Route
+      // through the host command (which owns the shared scope + the panel
+      // provider) so the dashboard never reaches into another view directly.
+      await vscode.commands.executeCommand("beads.setIssuesFavoritesFilter", message.on);
     }
   }
 }

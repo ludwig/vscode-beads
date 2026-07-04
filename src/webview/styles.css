@@ -2507,6 +2507,13 @@ textarea {
   opacity: 1;
 }
 
+/* Favorites-filter star: lit (full opacity + favorites accent) when the Issues
+   Favorites filter is on, so the card broadcasts the live state. */
+.favorites-filter-star.active {
+  opacity: 1;
+  color: var(--vscode-charts-yellow, var(--vscode-terminal-ansiYellow, #dcc173));
+}
+
 .context-menu-btn {
   display: inline-flex;
   align-items: center;

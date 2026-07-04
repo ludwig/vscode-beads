@@ -218,11 +218,24 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // Broadcast the live parent scope to every view whenever it changes (a
     // filter edit, a favorites/mask toggle, a data change, or a project switch).
+    // Also report the shared Favorites-only bit to the dashboard so its
+    // Favorites-card star reflects the Issues favorites filter (full-duplex).
     scope.onDidChange((ids) => {
       shellProvider.publishParentScope(ids);
       detailsProvider.publishParentScope(ids);
       switcherProvider.publishParentScope(ids);
       panelManager.publishParentScope(ids);
+      switcherProvider.publishSharedFavoritesOnly(scope.currentSpec().favoritesOnly);
+    }),
+
+    // The dashboard Favorites-card star drives the panel Issues favorites filter
+    // (vs-sd5). Flip it on the host-authoritative shared spec (→ re-scope + star
+    // report broadcast) AND sync the panel Issues list to match, so both
+    // converge without the dashboard ever touching the Issues view directly.
+    vscode.commands.registerCommand("beads.setIssuesFavoritesFilter", (on: boolean) => {
+      const next = { ...scope.currentSpec(), favoritesOnly: on };
+      scope.setSharedFilter(next);
+      shellProvider.applyIssuesFilterSnapshotLive(next);
     }),
 
     // When a project's bead list (re)caches, re-publish favorites so their

@@ -315,6 +315,10 @@ export type ExtensionToWebviewMessage =
   // spec). null = no active filter (all beads). Replaces the frozen one-time
   // seedFilter as the way other views inherit the panel's scope.
   | { type: "setParentScope"; beadIds: string[] | null }
+  // The shared filter's Favorites-only bit, broadcast to the dashboard so its
+  // Favorites-card star can reflect the Issues favorites filter (full-duplex
+  // probe: the star reports this and drives it via `setFavoritesFilter`).
+  | { type: "setSharedFavoritesOnly"; on: boolean }
   // Per-tab Back/Forward enablement for an editor-tab Details view (vs-9u8).
   | { type: "setTabNavState"; canBack: boolean; canForward: boolean }
   // A one-time snapshot of the Issues filter (the matching bead ids), pushed to
@@ -426,6 +430,10 @@ export type WebviewToExtensionMessage =
   // The panel Issues view publishes its current filter snapshot so the host can
   // recompute the shared parent scope authoritatively (live, for all views).
   | { type: "setSharedFilter"; snapshot: FilterSnapshot }
+  // From the dashboard's Favorites-card star: set the shared (panel Issues)
+  // Favorites-only filter. The host flips it on the shared spec + syncs the
+  // panel Issues, closing the full-duplex loop back to `setSharedFavoritesOnly`.
+  | { type: "setFavoritesFilter"; on: boolean }
   // Toggle the companion `bead:` document for `beadId`: open it beside the view
   // (so Claude Code seeds it) if closed, close it if open (vs-nr3d).
   | { type: "toggleBeadCompanion"; beadId: string }

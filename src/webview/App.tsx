@@ -88,6 +88,9 @@ interface AppState {
   // active filter (all beads). Replaces the frozen one-time seed — an editor-tab
   // Kanban/Tree/Graph inherits the panel's scope and now tracks it live.
   parentScope: string[] | null;
+  // The shared (panel Issues) Favorites-only filter bit, reported by the host so
+  // the dashboard's Favorites-card star reflects it (full-duplex probe).
+  sharedFavoritesOnly: boolean;
   // True when the user has temporarily dropped the inherited scope via the
   // ribbon's "Show all" (vs-zq2). The scope itself is retained so they can flip
   // back to "Show filtered". Local to this webview (the "Filtered" toggle).
@@ -148,6 +151,7 @@ const initialState: AppState = {
   favorites: [],
   companion: null,
   parentScope: null,
+  sharedFavoritesOnly: false,
   seedFilterCleared: false,
   applySnapshotRequest: null,
   initWizard: { projectsRoot: "", phase: "form" },
@@ -301,6 +305,10 @@ export function App(): React.ReactElement {
         // reset the local "Filtered"/cleared toggle here (that would fight the
         // user's choice); the toggle only flips on explicit user action.
         setState((prev) => ({ ...prev, parentScope: message.beadIds }));
+        break;
+
+      case "setSharedFavoritesOnly":
+        setState((prev) => ({ ...prev, sharedFavoritesOnly: message.on }));
         break;
       case "applyIssuesFilterSnapshot":
         setState((prev) => ({
@@ -606,6 +614,8 @@ export function App(): React.ReactElement {
             projects={state.projects}
             activeProject={state.project}
             activeBead={state.selectedBead}
+            favoritesFilterOn={state.sharedFavoritesOnly}
+            onToggleFavoritesFilter={(on) => vscode.postMessage({ type: "setFavoritesFilter", on })}
             favorites={state.favorites}
             version={state.settings.extensionVersion}
             buildSha={state.settings.buildSha}

@@ -11,7 +11,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, X, Rocket, ListTodo, Copy, FolderPlus } from "lucide-react";
+import { ChevronDown, ChevronRight, X, Rocket, ListTodo, Copy, FolderPlus, Star } from "lucide-react";
 import { Bead, BeadsProject, FavoriteBead, statusColor, isClosedStatus } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem, DropdownSeparator } from "../common/Dropdown";
@@ -41,6 +41,10 @@ interface ProjectSwitcherViewProps {
   onToggleFavorite: (beadId: string) => void;
   /** Toggle a favorite's mask (eye-off) in the Favorites filter group. */
   onToggleMask: (beadId: string) => void;
+  /** Whether the panel Issues Favorites filter is on (full-duplex star state). */
+  favoritesFilterOn: boolean;
+  /** Drive the panel Issues Favorites filter from the Favorites-card star. */
+  onToggleFavoritesFilter: (on: boolean) => void;
   onPickReady: () => void;
   onShowIssues: () => void;
   /** Launch the "Initialize Repository" flow (empty-state CTA, vs-r6a1.5). */
@@ -87,6 +91,8 @@ export function ProjectSwitcherView({
   onCopyFavorites,
   onToggleFavorite,
   onToggleMask,
+  favoritesFilterOn,
+  onToggleFavoritesFilter,
   onPickReady,
   onShowIssues,
   onCreateBoard,
@@ -398,15 +404,33 @@ export function ProjectSwitcherView({
         count={favorites.length}
         headerAction={
           favorites.length > 0 ? (
-            <button
-              type="button"
-              className="context-heading-action"
-              title="Copy favorite IDs as CSV"
-              aria-label="Copy favorite IDs as CSV"
-              onClick={onCopyFavorites}
-            >
-              <Copy size={13} strokeWidth={2} />
-            </button>
+            <>
+              {/* Full-duplex star: reflects the panel Issues Favorites filter
+                  (filled = on) and toggles it (vs-sd5). */}
+              <button
+                type="button"
+                className={`context-heading-action favorites-filter-star${favoritesFilterOn ? " active" : ""}`}
+                title={
+                  favoritesFilterOn
+                    ? "Favorites filter is ON in Issues — click to turn it off"
+                    : "Filter the Issues list to favorites (and their relatives)"
+                }
+                aria-label="Toggle the Issues favorites filter"
+                aria-pressed={favoritesFilterOn}
+                onClick={() => onToggleFavoritesFilter(!favoritesFilterOn)}
+              >
+                <Star size={13} strokeWidth={2} fill={favoritesFilterOn ? "currentColor" : "none"} />
+              </button>
+              <button
+                type="button"
+                className="context-heading-action"
+                title="Copy favorite IDs as CSV"
+                aria-label="Copy favorite IDs as CSV"
+                onClick={onCopyFavorites}
+              >
+                <Copy size={13} strokeWidth={2} />
+              </button>
+            </>
           ) : undefined
         }
         items={favorites}
