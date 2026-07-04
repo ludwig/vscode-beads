@@ -850,6 +850,29 @@ textarea {
   margin-left: auto;
 }
 
+/* Inline-editable pill segments (click-to-edit). Each segment stays a direct
+   <span> child so the outer-corner rounding still applies; its option menu is
+   an absolutely-positioned child that escapes the 20px band without a wrapper
+   (which would break the sibling-based rounding). */
+.status-priority-pill.editable .pill-seg {
+  position: relative;
+  cursor: pointer;
+  outline: none;
+}
+.status-priority-pill.editable .pill-seg:hover,
+.status-priority-pill.editable .pill-seg:focus-visible {
+  filter: brightness(1.15);
+}
+/* Higher specificity than .colored-select-menu so these win regardless of
+   source order: widen to fit the option badges and undo the segment's
+   small-caps for the menu text. */
+.status-priority-pill .pill-seg-menu {
+  top: calc(100% + 3px);
+  left: 0;
+  min-width: max-content;
+  font-variant: normal;
+}
+
 /* Small badges - used in list view and detail panel */
 .status-badge-small,
 .priority-badge-small {

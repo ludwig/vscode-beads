@@ -12,16 +12,9 @@ import {
   Bead,
   BeadStatus,
   BuiltInStatus,
-  BeadPriority,
   BeadDependency,
   DependencyType,
   BeadType,
-  STATUS_LABELS,
-  PRIORITY_COLORS,
-  STATUS_COLORS,
-  TYPE_COLORS,
-  TYPE_LABELS,
-  getTypeSortOrder,
   sortLabels,
   isBuiltInStatus,
   vscode,
@@ -149,31 +142,10 @@ import { TypeIcon } from "../common/TypeIcon";
 import { Icon } from "../common/Icon";
 import { Markdown } from "../common/Markdown";
 import { useToast } from "../common/Toast";
-import { ColoredSelect, ColoredSelectOption } from "../common/ColoredSelect";
+import { ColoredSelect } from "../common/ColoredSelect";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
+import { TYPE_OPTIONS, STATUS_OPTIONS, PRIORITY_OPTIONS } from "../common/field-options";
 import { ListTodo, Kanban, Workflow, ArrowLeft } from "lucide-react";
-
-// Build options for ColoredSelect dropdowns (sorted by TYPE_SORT_ORDER)
-const TYPE_OPTIONS: ColoredSelectOption<BeadType>[] = (Object.keys(TYPE_LABELS) as BeadType[])
-  .sort((a, b) => getTypeSortOrder(a) - getTypeSortOrder(b))
-  .map((t) => ({
-    value: t,
-    label: TYPE_LABELS[t],
-    color: TYPE_COLORS[t],
-  }));
-
-const STATUS_OPTIONS: ColoredSelectOption<BeadStatus>[] = (Object.keys(STATUS_LABELS) as BuiltInStatus[]).map((s) => ({
-  value: s,
-  label: STATUS_LABELS[s],
-  color: STATUS_COLORS[s],
-}));
-
-const PRIORITY_OPTIONS: ColoredSelectOption<BeadPriority>[] = ([0, 1, 2, 3, 4] as BeadPriority[]).map((p) => ({
-  value: p,
-  label: `P${p}`,
-  color: PRIORITY_COLORS[p],
-  textColor: p === 2 ? "#1a1a1a" : "#ffffff", // dark text on yellow
-}));
 
 interface DetailsViewProps {
   bead: Bead | null;
