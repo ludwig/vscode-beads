@@ -246,6 +246,22 @@ export function registerCommands(
       }
     }),
 
+    // The sidebar Details "Back" is its own trigger, distinct from the pure
+    // history nav above: the sidebar's back stack conceptually bottoms out at
+    // the Active Project screen, so Back steps through the issue trail and,
+    // once it's empty, leaves the Details takeover for the Project screen.
+    // (beads.navigateBack stays pure — it's shared with the editor-tab nav,
+    // which has no project screen to fall back to.) Always enabled.
+    vscode.commands.registerCommand("beads.sidebarNavigateBack", () => {
+      const id = navHistory.back();
+      if (id) {
+        selectBead(id);
+        updateNavContext();
+      } else {
+        vscode.commands.executeCommand("beads.backToProject");
+      }
+    }),
+
     // Pick a ready-to-work bead (open, no open blocker) and make it the active
     // bead. Repeated invocations cycle through the ready set. (vs-ih1)
     vscode.commands.registerCommand("beads.pickReadyBead", async () => {

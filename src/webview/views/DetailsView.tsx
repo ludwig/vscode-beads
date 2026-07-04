@@ -232,17 +232,6 @@ export function DetailsView({
     setTimeout(() => setRefreshing(false), 800);
   }, []);
 
-  // Return to the Active Project screen (sidebar only). Warns first if there
-  // are unsaved edits in flight. Shared by the "← Active Project" button and
-  // the Back arrow's no-history fallback (see backForwardBtns).
-  const goBackToProject = useCallback(() => {
-    vscode.postMessage(
-      editMode && Object.keys(editedBead).length > 0
-        ? { type: "confirmDiscard", action: "backToProject" }
-        : { type: "backToProject" }
-    );
-  }, [editMode, editedBead]);
-
   // Reset edit state when bead ID changes
   useEffect(() => {
     setEditMode(false);
@@ -272,9 +261,11 @@ export function DetailsView({
         (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable));
       if (typing) return;
       e.preventDefault();
-      // On the sidebar, Back with no earlier issue in the trail falls back to
-      // the Active Project screen (mirrors the Back arrow). editMode is false
-      // here (the typing guard bailed above), so a plain backToProject is safe.
+      // On the sidebar, ← at the start of the trail returns to the Active
+      // Project screen — matching the title-bar Back button (beads.sidebar-
+      // NavigateBack). editMode is false here (the typing guard bailed), so a
+      // plain backToProject is safe. Editor tabs have no project screen, so
+      // they just no-op at the start of their own per-tab trail.
       if (e.key === "ArrowLeft" && !isEditorTab && !canNavigateBack) {
         vscode.postMessage({ type: "backToProject" });
         return;
@@ -521,19 +512,14 @@ export function DetailsView({
     </button>
   );
 
-  // On the sidebar, Back is never a dead end: with an earlier issue in the
-  // trail it steps back through history; with none it returns to the Active
-  // Project screen. On an editor tab there's no project screen to fall back
-  // to, so Back simply disables at the start of the trail.
-  const backFallsBackToProject = !isEditorTab && !canNavigateBack;
   const backForwardBtns = (
     <>
       <button
         className="icon-btn header-icon-btn fb-tip fb-tip-end"
-        data-tip={backFallsBackToProject ? "Back to the project view" : `Back (${navMod}←)`}
-        aria-label={backFallsBackToProject ? "Back to the project view" : "Back"}
-        disabled={!canNavigateBack && isEditorTab}
-        onClick={() => (backFallsBackToProject ? goBackToProject() : onNavigateBack?.())}
+        data-tip={`Back (${navMod}←)`}
+        aria-label="Back"
+        disabled={!canNavigateBack}
+        onClick={() => onNavigateBack?.()}
       >
         <svg width={13} height={13} viewBox="0 0 16 16" aria-hidden="true">
           <path fill="currentColor" d="M10.5 3L5.5 8l5 5L9 14.5 2.5 8 9 1.5z" />
@@ -586,18 +572,21 @@ export function DetailsView({
             {projectLabel && <span className="details-lead-chrome-project">{projectLabel}</span>}
           </span>
         ) : (
-          <div className="header-actions">
-            <button
-              className="btn btn-sm details-back-btn fb-tip"
-              data-tip="Back to the project view"
-              aria-label="Back to the project view"
-              onClick={goBackToProject}
-            >
-              <ArrowLeft size={14} strokeWidth={2} />
-              <span>Active Project</span>
-            </button>
-            {backForwardBtns}
-          </div>
+          <button
+            className="btn btn-sm details-back-btn fb-tip"
+            data-tip="Back to the project view"
+            aria-label="Back to the project view"
+            onClick={() =>
+              vscode.postMessage(
+                editMode && Object.keys(editedBead).length > 0
+                  ? { type: "confirmDiscard", action: "backToProject" }
+                  : { type: "backToProject" }
+              )
+            }
+          >
+            <ArrowLeft size={14} strokeWidth={2} />
+            <span>Active Project</span>
+          </button>
         )}
         {isEditorTab ? (
           // Editor-tab Lead: chrome label (left), the {tab group · focus}

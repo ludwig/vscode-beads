@@ -15,9 +15,8 @@
  *     the `beads.detailScreen` context key), whose viewlet re-layout made every
  *     Project↔Details flip visibly slow in BOTH directions.
  *
- * (The `beads.detailScreen` context key is gone: the Details prev/next history
- * nav that it used to gate on the native view-title bar now renders in the
- * webview Lead, where the sidebar Back can fall back to the project screen.)
+ * The `beads.detailScreen` context key is still toggled here, but now ONLY to
+ * gate the view-title menu items per screen (cheap — it drives no view `when`).
  *
  * The Project screen reads the same `selectedBead` the Details screen renders:
  * a passive select (single-click) calls `showBead(reveal:false)` — it updates
@@ -80,6 +79,7 @@ export class BeadsSidebarViewProvider extends BeadDetailsViewProvider {
     if (this.screen === screen) return;
     this.screen = screen;
     this.postMessage({ type: "setScreen", screen });
+    vscode.commands.executeCommand("setContext", "beads.detailScreen", screen === "details");
     this.applyTitle();
   }
 
@@ -144,6 +144,7 @@ export class BeadsSidebarViewProvider extends BeadDetailsViewProvider {
     // Re-assert the current screen after a (re)resolve so a webview that was
     // disposed while hidden comes back showing the right screen.
     this.postMessage({ type: "setScreen", screen: this.screen });
+    vscode.commands.executeCommand("setContext", "beads.detailScreen", this.screen === "details");
     this.applyTitle();
     this.startMemorySampler();
   }

@@ -97,6 +97,11 @@
         "enablement": "beads.canNavigateBack"
       },
       {
+        "command": "beads.sidebarNavigateBack",
+        "title": "Beads: Back",
+        "icon": "$(arrow-left)"
+      },
+      {
         "command": "beads.navigateForward",
         "title": "Beads: Forward",
         "icon": "$(arrow-right)",
@@ -191,7 +196,18 @@
       }
     ],
     "menus": {
-      "view/title": []
+      "view/title": [
+        {
+          "command": "beads.sidebarNavigateBack",
+          "when": "view == beadsProjectSwitcher && beads.detailScreen",
+          "group": "navigation@0"
+        },
+        {
+          "command": "beads.navigateForward",
+          "when": "view == beadsProjectSwitcher && beads.detailScreen",
+          "group": "navigation@1"
+        }
+      ]
     },
     "configuration": [
       {
