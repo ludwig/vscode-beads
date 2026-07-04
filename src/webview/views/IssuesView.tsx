@@ -1240,7 +1240,11 @@ export function IssuesView({
       {/* Table */}
       {!error && (
         <div className="beads-table-wrapper">
-          {loading && (
+          {/* Only show the full loading block on the INITIAL load (no rows yet).
+              A refresh/re-scope with existing content would otherwise split the
+              wrapper's height and shove the table down — a jarring hop. With rows
+              present, the spinning refresh icon carries the feedback. */}
+          {loading && beads.length === 0 && (
             <div className="issues-loading-state">
               <Loading />
             </div>
