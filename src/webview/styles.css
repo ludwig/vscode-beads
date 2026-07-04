@@ -65,6 +65,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* The left-sidebar view matches the native sidebars' shade
+   (--vscode-sideBar-background), a different tone from the editor background;
+   the bottom panel and editor-tab views keep the editor background. */
+body.view-sidebar {
+  background-color: var(--vscode-sideBar-background);
+}
+
 /* Numbers that sit in columns or get scanned/compared — IDs, timestamps,
    counts — use tabular (monospaced) figures so they don't shift width. */
 .bead-id-badge,

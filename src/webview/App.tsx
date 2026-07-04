@@ -394,6 +394,15 @@ export function App(): React.ReactElement {
     return () => clearTimeout(t);
   }, [state.pulseSeq]);
 
+  // Match the native left-sidebar background: our sidebar view lives beside the
+  // Explorer/SCM sidebars, which use --vscode-sideBar-background — a different
+  // shade from the editor background the body defaults to. Flag the sidebar
+  // view on <body> so its base surface follows suit; the bottom panel and
+  // editor-tab views keep the editor background.
+  useEffect(() => {
+    document.body.classList.toggle("view-sidebar", state.viewType === "beadsProjectSwitcher");
+  }, [state.viewType]);
+
   // Drive the favorites-highlight accent from the setting (vs-bvk7): publish it
   // as a CSS var on :root so every favorite style (Issues row, Tree row) picks
   // it up. Empty falls back to the theme chart-yellow via the var's CSS default.
