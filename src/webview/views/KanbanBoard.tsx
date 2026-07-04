@@ -240,6 +240,8 @@ export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], maskedIds
         count={{ shown: scopeCount, total }}
         collapsed={lf.collapsed}
         onToggleCollapsed={lf.toggleCollapsed}
+        searchTerm={query}
+        onClearSearch={() => setQuery("")}
         search={
           <input
             type="text"

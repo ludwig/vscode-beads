@@ -568,6 +568,8 @@ export function TreeView({
         count={{ shown: scopeCount, total }}
         collapsed={lf.collapsed}
         onToggleCollapsed={lf.toggleCollapsed}
+        searchTerm={query}
+        onClearSearch={() => setQuery("")}
         search={
           <>
             <input

@@ -82,6 +82,13 @@ interface FilterBarProps {
    * the structure when collapsed — the funnel is the single master toggle.
    */
   search?: React.ReactNode;
+  /**
+   * The current free-text search value + a clearer. Surfaced as an x-able chip
+   * (expanded bar + collapsed ribbon) so an active term stays visible — and
+   * clearable — even when the search input is folded away.
+   */
+  searchTerm?: string;
+  onClearSearch?: () => void;
   /** View-specific controls rendered on the trailing edge (e.g. Tree fold/column). */
   trailing?: React.ReactNode;
   /** A second, view-specific row under the main bar (e.g. Graph's graph-only filters). */
@@ -99,6 +106,8 @@ export function FilterBar({
   collapsed = false,
   onToggleCollapsed,
   search,
+  searchTerm,
+  onClearSearch,
   trailing,
   extraRow,
 }: FilterBarProps): React.ReactElement {
@@ -120,15 +129,29 @@ export function FilterBar({
   const unassignedCount = countIn(facets.assignees, "__unassigned__");
   const unlabeledCount = countIn(facets.labels, "__unlabeled__");
 
+  const trimmedSearch = (searchTerm ?? snapshot.globalFilter).trim();
+  const hasSearch = trimmedSearch.length > 0;
+
   const hasActiveFilters =
     status.length + priority.length + type.length + assignee.length + label.length > 0 ||
     snapshot.readyOnly ||
     snapshot.favoritesOnly ||
-    snapshot.globalFilter.trim().length > 0;
+    hasSearch;
 
   // Is the inherited (upstream Issues) scope currently applied to this view? Used
   // to glow the funnel and to drive the demure "Filtered" toggle pill.
   const inheritedApplied = !!inherited && !inherited.cleared;
+
+  // The active search term as an x-able chip — keeps a folded-away search term
+  // visible AND clearable in both the expanded bar and the collapsed ribbon.
+  const searchChip = hasSearch && onClearSearch && (
+    <FilterChip
+      key="search"
+      label={`“${trimmedSearch}”`}
+      accentColor="var(--vscode-charts-blue, #4aa3ff)"
+      onRemove={onClearSearch}
+    />
+  );
 
   // A concise, human-readable list of the active filters, for the collapsed
   // ribbon (e.g. "not closed, p0, ui, Ready"). Mirrors the chip labels.
@@ -215,11 +238,12 @@ export function FilterBar({
         {twistie}
         <span className="filter-bar-summary">
           {inheritedText && <span className="filter-bar-summary-inherited">{inheritedText}</span>}
-          {inheritedText && filterTokens.length > 0 && (
+          {inheritedText && (filterTokens.length > 0 || hasSearch) && (
             <span className="filter-bar-summary-sep" aria-hidden="true">·</span>
           )}
-          {filterTokens.length > 0 ? (
+          {(filterTokens.length > 0 || hasSearch) ? (
             <span className="filter-bar-summary-tokens">
+              {searchChip}
               {filterTokens.map((t) => (
                 <span key={t} className="filter-bar-token-pill">{t}</span>
               ))}
@@ -294,6 +318,7 @@ export function FilterBar({
       </button>
 
       {/* Active filter chips */}
+      {searchChip}
       {status.includes(NOT_CLOSED as BeadStatus) ? (
         <FilterChip
           key="status-not-closed"
