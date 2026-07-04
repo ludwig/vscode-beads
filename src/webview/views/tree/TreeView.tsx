@@ -604,6 +604,7 @@ export function TreeView({
         e.stopPropagation();
         if (isLegalTarget(id)) {
           e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
           setDropTargetId(id);
         }
       },
@@ -974,6 +975,13 @@ function TreeRow({
         draggable
         onDragStart={(e) => {
           e.stopPropagation();
+          // Explicitly seed the drag payload + allowed effect. Without this,
+          // Chromium can silently refuse to START the drag (no dragstart →
+          // draggedId never set → no drop-target outline, no reparent) — which
+          // regressed once the surrounding DOM changed (sticky header / a
+          // focusable, keyboard-navigable body).
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", bead.id);
           drag.onStart(bead.id);
         }}
         onDragOver={(e) => drag.onOver(bead.id, e)}
