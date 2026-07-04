@@ -35,6 +35,8 @@ interface ProjectSwitcherViewProps {
   onOpenBeadInTab: (beadId: string) => void;
   /** Passive-select a bead (update the Selection card) WITHOUT opening Details. */
   onSelectBead: (beadId: string) => void;
+  /** Commit a field patch from the Selection card's inline-editable pill. */
+  onUpdateBead: (beadId: string, updates: Partial<Bead>) => void;
   onClearBead: () => void;
   /** Unstar a favorite from the section's per-row control. */
   onUnfavorite: (beadId: string) => void;
@@ -93,6 +95,7 @@ export function ProjectSwitcherView({
   onOpenBead,
   onOpenBeadInTab,
   onSelectBead,
+  onUpdateBead,
   onClearBead,
   onUnfavorite,
   onCopyFavorites,
@@ -477,6 +480,7 @@ export function ProjectSwitcherView({
             bead={activeBead}
             muteClosed={muteClosedIssues}
             onOpen={onOpenBead}
+            onFieldChange={(patch) => onUpdateBead(activeBead.id, patch)}
             onContextMenu={(e) =>
               openCardMenu(e, activeBead.id, favorites.some((f) => f.id === activeBead.id))
             }

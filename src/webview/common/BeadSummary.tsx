@@ -12,7 +12,7 @@
 import React from "react";
 import { Bead, BeadDependency, isClosedStatus, BeadType } from "../types";
 import { TypeIcon } from "./TypeIcon";
-import { StatusPriorityPill } from "./StatusPriorityPill";
+import { StatusPriorityPill, PillFieldPatch } from "./StatusPriorityPill";
 import { Timestamp } from "./Timestamp";
 import { getLabelColorStyle } from "../utils/label-colors";
 
@@ -25,6 +25,9 @@ interface BeadSummaryProps {
   onOpen?: (beadId: string) => void;
   /** Right-click (e.g. the shared bead context menu). */
   onContextMenu?: (e: React.MouseEvent) => void;
+  /** When provided, the type/status/priority pill becomes inline click-to-edit;
+   *  a pick commits the patch immediately. */
+  onFieldChange?: (patch: PillFieldPatch) => void;
   /** Max label chips before collapsing the rest into a "+N". */
   maxLabels?: number;
 }
@@ -78,6 +81,7 @@ export function BeadSummary({
   muteClosed = false,
   onOpen,
   onContextMenu,
+  onFieldChange,
   maxLabels = 6,
 }: BeadSummaryProps): React.ReactElement {
   const labels = bead.labels ?? [];
@@ -99,6 +103,7 @@ export function BeadSummary({
           type={(bead.type || "task") as BeadType}
           status={bead.status}
           priority={bead.priority}
+          onChange={onFieldChange}
         />
       </div>
 

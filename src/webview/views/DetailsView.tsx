@@ -142,9 +142,7 @@ import { TypeIcon } from "../common/TypeIcon";
 import { Icon } from "../common/Icon";
 import { Markdown } from "../common/Markdown";
 import { useToast } from "../common/Toast";
-import { ColoredSelect } from "../common/ColoredSelect";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
-import { TYPE_OPTIONS, STATUS_OPTIONS, PRIORITY_OPTIONS } from "../common/field-options";
 import { ListTodo, Kanban, Workflow, ArrowLeft, Crosshair } from "lucide-react";
 
 interface DetailsViewProps {
@@ -511,15 +509,17 @@ export function DetailsView({
     </>
   );
 
-  // The merged type|status|priority pill — shown in display mode only (the
-  // editable selects take over the badges row while editing).
-  const pills = !editMode ? (
+  // The merged type|status|priority pill — always shown and always inline
+  // click-to-edit (each segment opens its picker in place; a pick commits
+  // immediately, independent of the title/description Save/Cancel edit flow).
+  const pills = (
     <StatusPriorityPill
       type={(displayBead.type || "task") as BeadType}
       status={displayBead.status}
       priority={displayBead.priority ?? 4}
+      onChange={(patch) => onUpdateBead(bead.id, patch)}
     />
-  ) : null;
+  );
 
   return (
     <div className="bead-details">
@@ -632,25 +632,12 @@ export function DetailsView({
         )}
       </div>
 
-      {/* Type/Status/Priority/Assignee chiclets + Labels */}
+      {/* Assignee chiclet + Labels. (Type/Status/Priority live in the merged
+          pill on the Ident row, which is inline-editable in both modes — so the
+          editable badges row only carries assignee + labels now.) */}
       <div className="details-badges">
         {editMode ? (
           <>
-            <ColoredSelect
-              value={(displayBead.type || "task") as BeadType}
-              options={TYPE_OPTIONS}
-              onChange={(v) => handleFieldChange("type", v)}
-            />
-            <ColoredSelect
-              value={displayBead.status}
-              options={STATUS_OPTIONS}
-              onChange={(v) => handleFieldChange("status", v)}
-            />
-            <ColoredSelect
-              value={displayBead.priority ?? 4}
-              options={PRIORITY_OPTIONS}
-              onChange={(v) => handleFieldChange("priority", v)}
-            />
             <Dropdown
               trigger={
                 <span className="assignee-trigger">

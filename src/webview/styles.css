@@ -868,7 +868,11 @@ textarea {
    small-caps for the menu text. */
 .status-priority-pill .pill-seg-menu {
   top: calc(100% + 3px);
-  left: 0;
+  /* Right-anchored: the editable pill is right-aligned in both the Details
+     Ident row and the Selection card, so opening leftward keeps the menu inside
+     the narrow sidebar's right edge. */
+  right: 0;
+  left: auto;
   min-width: max-content;
   font-variant: normal;
 }
