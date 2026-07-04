@@ -47,11 +47,10 @@ export function hostFromView(view: vscode.WebviewView): WebviewHost {
     reveal(preserveFocus?: boolean) {
       view.show(preserveFocus);
     },
-    setTitle(title: string) {
-      // Overrides the contributed view name so the sidebar header can track
-      // context (e.g. the bead id on the Details screen, "Repository" on the
-      // Project screen). Setting "" restores the contributed name.
-      view.title = title;
+    setTitle() {
+      // No-op: the sidebar view's title must NOT track every renderBead call
+      // (that flips it on passive selection). The merged sidebar provider owns
+      // its title directly, screen-aware (see BeadsSidebarViewProvider).
     },
     close() {
       // Sidebar views can't be closed programmatically — no-op.

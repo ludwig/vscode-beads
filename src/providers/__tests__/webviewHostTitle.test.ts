@@ -44,14 +44,15 @@ describe("WebviewHost.setTitle (vs-q0e2)", () => {
     expect(panel.title).toBe("vs-other");
   });
 
-  it("retitles a sidebar view so its header tracks the screen/bead (vs-filterbar)", () => {
+  it("is a no-op for a sidebar view (the provider owns the title, screen-aware)", () => {
     const view = fakeView();
     const host = hostFromView(view);
     expect(host.isEditorTab).toBe(false);
 
-    // The merged sidebar view drives its title from the current screen (bead id
-    // on Details, "Repository" on the Project screen), so setTitle must apply.
+    // renderBead's unconditional setTitle(beadId) must NOT flip the sidebar
+    // header on passive selection — the sidebar provider sets view.title itself,
+    // only when the screen changes. So the host adapter no-ops it.
     host.setTitle("vs-other");
-    expect(view.title).toBe("vs-other");
+    expect(view.title).toBe("fixed");
   });
 });

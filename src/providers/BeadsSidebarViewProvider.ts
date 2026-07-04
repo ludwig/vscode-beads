@@ -39,6 +39,8 @@ type SidebarScreen = "project" | "details";
 export class BeadsSidebarViewProvider extends BeadDetailsViewProvider {
   protected readonly viewType = "beadsProjectSwitcher";
 
+  /** The resolved sidebar view, so we can own its title bar directly. */
+  private sidebarView?: vscode.WebviewView;
   /** Which screen the webview is currently showing. */
   private screen: SidebarScreen = "project";
   // The screen we were on when create mode began, so cancelling New Issue
@@ -76,14 +78,25 @@ export class BeadsSidebarViewProvider extends BeadDetailsViewProvider {
   }
 
   /**
-   * Drive the sidebar view's header label from the current screen: the bead id
-   * on the Details screen, "Repository" on the Project screen — so it stops
-   * reading "Repository" while a bead's details are showing.
+   * Drive the sidebar view's header label from the current SCREEN (not from
+   * every renderBead): the bead id on the Details screen, "Repository" on the
+   * Project screen. Because it's screen-driven, a passive selection on the
+   * Project screen re-sets the same "Repository" string → no oscillation.
    */
   private applyTitle(): void {
-    this._host?.setTitle(
-      this.screen === "details" ? this.getCurrentBeadId() ?? "Details" : "Repository"
-    );
+    if (!this.sidebarView) return;
+    this.sidebarView.title =
+      this.screen === "details" ? this.getCurrentBeadId() ?? "Details" : "Repository";
+  }
+
+  public resolveWebviewView(
+    webviewView: vscode.WebviewView,
+    context: vscode.WebviewViewResolveContext,
+    token: vscode.CancellationToken
+  ): void {
+    this.sidebarView = webviewView;
+    super.resolveWebviewView(webviewView, context, token);
+    this.applyTitle();
   }
 
   /** The Details "← Back" button (and project changes) return to the Project screen. */
