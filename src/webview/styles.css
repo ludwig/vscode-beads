@@ -3418,6 +3418,15 @@ textarea {
   min-height: 0;
 }
 
+/* When the issue is short, let the whitespace ABOVE the end flourish flex so
+   the flourish settles at the bottom of the pane as a decorative margin
+   (rather than floating right under the created/updated footer). When the
+   content is tall there's no free space to absorb, so it just scrolls. Scoped
+   to the Details pane so the Project screen's flourish is unaffected. */
+.bead-details > .view-end {
+  margin-top: auto;
+}
+
 /* Spinning indicator for Refresh icons — a short rotation on click so the
    reload reads as registered even when the data swap is instant. */
 @keyframes beads-spin {
