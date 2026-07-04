@@ -376,8 +376,9 @@ export function DetailsView({
 
   // Header action controls, composed into two layouts below. The sidebar and
   // the editor tab order their action groups differently (vs-hskp):
-  //   sidebar:    [favorite] [refresh] | [+] [edit] | [show] [open-in-tab]
-  //   editor tab: [favorite] [llm] [show] [edit] | [back] [forward]
+  //   sidebar Lead:  [+] [edit] | [show group] | [refresh] [open-in-tab]
+  //   sidebar Ident: <type> [id] [favorite] … [pill]
+  //   editor tab:    [favorite] [llm] [show] [edit] | [back] [forward]
   const favoriteBtn = (
     <button
       className={`icon-btn header-icon-btn fb-tip${isFavorite ? " is-favorite" : ""}`}
@@ -569,13 +570,16 @@ export function DetailsView({
           {isEditorTab ? (
             backForwardBtns
           ) : (
-            // Lead with [+] [edit], then the show-in-tab group. (refresh +
-            // open-in-tab ride on the Ident row after the pill.)
+            // Lead with [+] [edit], then the show-in-tab group, then the
+            // utility cluster (refresh + open-in-tab) after another rule.
             <>
               {createBtn}
               {editControls}
               <span className="header-actions-sep" />
               {showTabBtns}
+              <span className="header-actions-sep" />
+              {refreshBtn}
+              {openInTabBtn}
             </>
           )}
         </div>
@@ -616,14 +620,9 @@ export function DetailsView({
             {pills}
           </>
         ) : (
-          <>
-            {pills}
-            <span className="header-actions-sep" />
-            <div className="header-actions">
-              {refreshBtn}
-              {openInTabBtn}
-            </div>
-          </>
+          // Ident carries only the merged pill, right-aligned. (The action
+          // cluster — refresh + open-in-tab — rides on the Lead line.)
+          pills
         )}
       </div>
 
