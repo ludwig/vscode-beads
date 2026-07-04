@@ -3593,6 +3593,14 @@ textarea {
   color: var(--vscode-charts-yellow, #d7ba7d);
 }
 
+/* Toggled-on state for a header icon button (e.g. the focus mode toggle) — an
+   accent tint + subtle fill so an active mode reads at a glance. */
+.header-icon-btn.is-on,
+.header-icon-btn.is-on:hover:not(:disabled) {
+  color: var(--vscode-focusBorder, var(--vscode-button-background));
+  background: color-mix(in srgb, var(--vscode-focusBorder) 16%, transparent);
+}
+
 /* "Seed to Claude" companion toggle (vs-nr3d). A small pill in the Details
    header: quiet when off, lit with an accent glow when this bead's companion
    `bead:` document is open (so its content is in Claude Code's session). Set

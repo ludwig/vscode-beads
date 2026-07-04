@@ -216,6 +216,10 @@ export function DetailsView({
   const [editMode, setEditMode] = useState(false);
   const [editedBead, setEditedBead] = useState<Partial<Bead>>({});
   const [newLabel, setNewLabel] = useState("");
+  // Focus mode (vs-filterbar): a toggle that changes what the tab-shortcut
+  // buttons do. Off → they just open the tab; On → they open the tab AND reveal
+  // this bead there (the viewIn* deep-links). A "locate this issue" modifier.
+  const [focusMode, setFocusMode] = useState(false);
   const [newDependency, setNewDependency] = useState("");
   const [newDepOptionIndex, setNewDepOptionIndex] = useState(0); // Index into DEPENDENCY_TYPE_OPTIONS
   const [newComment, setNewComment] = useState("");
@@ -387,55 +391,72 @@ export function DetailsView({
     </button>
   ) : null;
 
-  // Panel-tab shortcuts (vs-wbrz): a segmented group of one trigger per tab
-  // that simply OPENS that tab in the Beads panel — quick access to each view,
-  // not "find this bead there" (that's the focus button's job). Rendered as a
-  // unified segmented control (joined, still separate triggers).
+  // Panel-tab shortcuts (vs-wbrz): a segmented group of one trigger per tab.
+  // Their behavior is informed by the focus toggle (which leads the group):
+  // focus OFF → just open the tab; focus ON → open the tab AND reveal this bead
+  // there (the viewIn* deep-links). Rendered as a unified segmented control.
   const showTabBtns = (
-    <div className="header-show-tabs" role="group" aria-label="Open a panel tab">
+    <div
+      className="header-show-tabs"
+      role="group"
+      aria-label={focusMode ? "Show this issue in a panel tab" : "Open a panel tab"}
+    >
       <button
         className="icon-btn header-icon-btn fb-tip"
-        data-tip="Show Issues Tab"
-        aria-label="Show Issues Tab"
-        onClick={() => vscode.postMessage({ type: "showIssues" })}
+        data-tip={focusMode ? "Reveal this issue in the Issues tab" : "Show Issues Tab"}
+        aria-label={focusMode ? "Reveal this issue in the Issues tab" : "Show Issues Tab"}
+        onClick={() =>
+          vscode.postMessage(focusMode ? { type: "viewInIssues", beadId: bead.id } : { type: "showIssues" })
+        }
       >
         <ListTodo size={13} strokeWidth={2} />
       </button>
       <button
         className="icon-btn header-icon-btn fb-tip"
-        data-tip="Show Tree Tab"
-        aria-label="Show Tree Tab"
-        onClick={() => vscode.postMessage({ type: "showTreePanel" })}
+        data-tip={focusMode ? "Reveal this issue in the Tree tab" : "Show Tree Tab"}
+        aria-label={focusMode ? "Reveal this issue in the Tree tab" : "Show Tree Tab"}
+        onClick={() =>
+          vscode.postMessage(focusMode ? { type: "viewInTree", beadId: bead.id } : { type: "showTreePanel" })
+        }
       >
         <Icon name="sitemap" size={13} />
       </button>
       <button
         className="icon-btn header-icon-btn fb-tip"
-        data-tip="Show Kanban Tab"
-        aria-label="Show Kanban Tab"
-        onClick={() => vscode.postMessage({ type: "showKanban" })}
+        data-tip={focusMode ? "Reveal this issue in the Kanban tab" : "Show Kanban Tab"}
+        aria-label={focusMode ? "Reveal this issue in the Kanban tab" : "Show Kanban Tab"}
+        onClick={() =>
+          vscode.postMessage(focusMode ? { type: "viewInKanban", beadId: bead.id } : { type: "showKanban" })
+        }
       >
         <Kanban size={13} strokeWidth={2} />
       </button>
       <button
         className="icon-btn header-icon-btn fb-tip"
-        data-tip="Show Graph Tab"
-        aria-label="Show Graph Tab"
-        onClick={() => vscode.postMessage({ type: "showGraphPanel" })}
+        data-tip={focusMode ? "Reveal this issue in the Graph tab" : "Show Graph Tab"}
+        aria-label={focusMode ? "Reveal this issue in the Graph tab" : "Show Graph Tab"}
+        onClick={() =>
+          vscode.postMessage(focusMode ? { type: "viewInGraph", beadId: bead.id } : { type: "showGraphPanel" })
+        }
       >
         <Workflow size={13} strokeWidth={2} />
       </button>
     </div>
   );
 
-  // "Focus" — locate THIS bead in whichever panel tab is currently active
-  // (analogous to the Graph view's Focus). Rides just before refresh.
+  // "Focus" toggle — leads the tab-shortcut group. When on, the Show buttons
+  // reveal THIS bead in the tab they open (rather than just switching to it).
   const focusBtn = (
     <button
-      className="icon-btn header-icon-btn fb-tip fb-tip-end"
-      data-tip="Focus this issue in the active tab"
-      aria-label="Focus this issue in the active tab"
-      onClick={() => vscode.postMessage({ type: "focusBeadInActiveTab", beadId: bead.id })}
+      className={`icon-btn header-icon-btn fb-tip${focusMode ? " is-on" : ""}`}
+      data-tip={
+        focusMode
+          ? "Focus on — tab buttons reveal this issue in the tab. Click to turn off."
+          : "Focus off — tab buttons just open the tab. Click to reveal this issue in them."
+      }
+      aria-label="Toggle focus mode"
+      aria-pressed={focusMode}
+      onClick={() => setFocusMode((v) => !v)}
     >
       <Crosshair size={13} strokeWidth={2} />
     </button>
@@ -553,14 +574,14 @@ export function DetailsView({
           </button>
         )}
         {isEditorTab ? (
-          // Editor-tab Lead: chrome label (left), the {llm · tab group · focus}
+          // Editor-tab Lead: chrome label (left), the {tab group · focus}
           // cluster centered between two spacers, and the back/forward nav right.
+          // (LLM rides on the Ident row, right-aligned.)
           <>
             <span className="details-lead-spacer" />
             <div className="header-actions">
-              {llmToggle}
-              {showTabBtns}
               {focusBtn}
+              {showTabBtns}
             </div>
             <span className="details-lead-spacer" />
             <div className="header-actions">{backForwardBtns}</div>
@@ -573,8 +594,8 @@ export function DetailsView({
           <>
             <span className="details-lead-spacer" />
             <div className="header-actions">
-              {showTabBtns}
               {focusBtn}
+              {showTabBtns}
             </div>
             <span className="details-lead-spacer" />
             <div className="header-actions">
@@ -612,6 +633,13 @@ export function DetailsView({
         {/* Editor tab keeps Edit down here, right after the star (its Lead is
             taken by the centered action cluster + nav). */}
         {isEditorTab && editControls}
+        {/* Editor tab: LLM toggle right-aligned on the Ident row. */}
+        {isEditorTab && (
+          <>
+            <span className="details-header-spacer" />
+            <div className="header-actions">{llmToggle}</div>
+          </>
+        )}
         {/* Sidebar: +/Edit ride on the right of the Ident, where the pill used
             to sit (the pill now leads the badges row under the title). */}
         {!isEditorTab && (
