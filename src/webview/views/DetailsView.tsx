@@ -155,7 +155,7 @@ import { useToast } from "../common/Toast";
 import { ColoredSelect, ColoredSelectOption } from "../common/ColoredSelect";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
 import { SplitButton } from "../common/SplitButton";
-import { ListTodo, Kanban, Workflow } from "lucide-react";
+import { ListTodo, Kanban, Workflow, ArrowLeft } from "lucide-react";
 
 // Build options for ColoredSelect dropdowns (sorted by TYPE_SORT_ORDER)
 const TYPE_OPTIONS: ColoredSelectOption<BeadType>[] = (Object.keys(TYPE_LABELS) as BeadType[])
@@ -358,18 +358,13 @@ export function DetailsView({
     }
   }, [newDependency, newDepOptionIndex, bead, onAddDependency]);
 
-  // In the Secondary Side Bar the Details view shares the sidebar background,
-  // making it blend into the IDE; a distinct surface class sets it apart (the
-  // editor-tab instance keeps the editor background).
-  const surfaceClass = isEditorTab ? "" : " details-surface";
-
   if (loading && !bead) {
-    return <div className={`details-loading${surfaceClass}`}>Loading...</div>;
+    return <div className="details-loading">Loading...</div>;
   }
 
   if (!bead) {
     return (
-      <div className={`details-empty${surfaceClass}`}>
+      <div className="details-empty">
         <p>Select a bead to view details</p>
       </div>
     );
@@ -531,12 +526,23 @@ export function DetailsView({
   );
 
   return (
-    <div className={`bead-details${surfaceClass}`}>
+    <div className="bead-details">
       {/* Header block — the ID/actions row, title anchor, and metadata
           chiclets, grouped and delimited from the body as one header unit. */}
       <div className="details-headerblock">
       {/* Header row: type icon, ID chip, action cluster */}
       <div className="details-header">
+        {/* Sidebar takeover only: pop back to the Project view. */}
+        {!isEditorTab && (
+          <button
+            className="icon-btn header-icon-btn details-back-btn"
+            title="Back to the project view"
+            aria-label="Back to the project view"
+            onClick={() => vscode.postMessage({ type: "backToProject" })}
+          >
+            <ArrowLeft size={15} strokeWidth={2} />
+          </button>
+        )}
         <TypeIcon type={(displayBead.type || "task") as BeadType} size={20} />
         <span
           className="bead-id-badge clickable"

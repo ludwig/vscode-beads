@@ -6157,23 +6157,21 @@ textarea {
   flex: 0 0 auto;
 }
 
-/* Strip the .context-section box chrome — this section is not a card. The
- * negative top margin pulls it up under the band flourish above it (which
- * carries a generous end-of-view bottom padding meant for a true end), so the
- * Favorites → marquee → Details rhythm isn't gappy. */
-.context-details-section {
-  background: none;
-  border: none;
-  box-shadow: none;
-  margin-top: -18px;
-  padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-md);
-}
-
 /* Flat bead readout: the bead's fields laid out as flowing content. */
 .bead-readout {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+/* Clickable variant (the Project view's Selection card): the whole readout
+ * opens the full Details takeover. */
+.bead-readout-clickable {
+  cursor: pointer;
+  border-radius: var(--border-radius);
+}
+.bead-readout-clickable:hover .bead-readout-title {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 .bead-readout-head {
   display: flex;
@@ -6249,12 +6247,4 @@ textarea {
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-/* Details view on the Secondary Side Bar — a distinct surface so it reads as
- * separate from the IDE chrome (the editor-tab instance keeps the editor
- * background via the isEditorTab-gated class). */
-.details-surface {
-  background: var(--vscode-editorWidget-background, var(--vscode-editor-background));
-  min-height: 100vh;
 }

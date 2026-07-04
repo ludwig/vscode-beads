@@ -18,7 +18,7 @@
     "url": "https://github.com/ludwig/vscode-beads-pm"
   },
   "engines": {
-    "vscode": "^1.106.0"
+    "vscode": "^1.85.0"
   },
   "categories": [
     "Other",
@@ -49,13 +49,6 @@
           "title": "Beads",
           "icon": "resources/beads-icon.svg"
         }
-      ],
-      "secondarySidebar": [
-        {
-          "id": "beadsSecondary",
-          "title": "Beads",
-          "icon": "resources/beads-icon.svg"
-        }
       ]
     },
     "views": {
@@ -64,15 +57,15 @@
           "type": "webview",
           "id": "beadsProjectSwitcher",
           "name": "Repository",
-          "visibility": "visible"
-        }
-      ],
-      "beadsSecondary": [
+          "visibility": "visible",
+          "when": "!beads.detailScreen"
+        },
         {
           "type": "webview",
           "id": "beadsDetails",
           "name": "Details",
-          "visibility": "visible"
+          "visibility": "visible",
+          "when": "beads.detailScreen"
         }
       ],
       "beadsBottomPanel": [
@@ -333,7 +326,7 @@
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
-    "@types/vscode": "^1.106.0",
+    "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
     "@vscode/vsce": "^3.9.2",

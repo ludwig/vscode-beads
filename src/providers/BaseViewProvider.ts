@@ -341,6 +341,10 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         vscode.commands.executeCommand("beads.navigateForward");
         break;
 
+      case "backToProject":
+        vscode.commands.executeCommand("beads.backToProject");
+        break;
+
       case "showDoltStatus":
         vscode.commands.executeCommand("beads.showDoltStatus");
         break;

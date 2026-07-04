@@ -410,6 +410,9 @@ export type WebviewToExtensionMessage =
   // (the Details editor tab's per-tab history) so they don't double-fire.
   | { type: "historyBack" }
   | { type: "historyForward" }
+  // Pop the left sidebar's Details takeover back to the Project view (the
+  // Details view's "← Back" button).
+  | { type: "backToProject" }
   | { type: "requestGraph" }
   | {
       type: "openViewInTab";

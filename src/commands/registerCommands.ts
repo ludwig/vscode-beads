@@ -68,6 +68,20 @@ export function registerCommands(
     vscode.commands.executeCommand("setContext", "beads.canNavigateForward", navHistory.canForward());
   };
 
+  // The left "beads" sidebar swaps between two mutually-exclusive views via the
+  // `beads.detailScreen` context key (see package.json `when` clauses): the
+  // Repository/Project view (false) and the full-height Details takeover (true).
+  // `focus` reveals the newly-visible view (opening the sidebar if needed) — an
+  // explicit Show-Details / Back does this; the activation reset does not, so we
+  // never pop the sidebar open on startup.
+  const setDetailScreen = (on: boolean, focus = true): void => {
+    vscode.commands.executeCommand("setContext", "beads.detailScreen", on);
+    if (focus) {
+      vscode.commands.executeCommand(on ? "beadsDetails.focus" : "beadsProjectSwitcher.focus");
+    }
+  };
+  setDetailScreen(false, false); // default to the Project view without stealing focus
+
   // Drive every selection surface from one place: the sidebar Details view, the
   // Issues table highlight, and the Active Bead pin — so traversal keeps them in
   // sync (the Active Bead follows where the user actually is).
@@ -84,6 +98,7 @@ export function registerCommands(
       navHistory.reset();
       lastReadyId = null;
       updateNavContext();
+      setDetailScreen(false, false); // back to the Project view for the new board
     })
   );
 
@@ -193,10 +208,20 @@ export function registerCommands(
         // A user navigation: record it (truncating any forward branch) and
         // drive all selection surfaces. Pulse the Details view so "Show Details"
         // gives visible feedback even when it's already showing (vs-1vxq).
+        // Swap the sidebar to the Details takeover FIRST (so the view is
+        // contributed + focused before showBead reveals it), then select.
+        setDetailScreen(true);
         navHistory.record(beadId);
         selectBead(beadId, { pulse: true });
         updateNavContext();
       }
+    }),
+
+    // Pop the sidebar takeover back to the Project view (the Details view's
+    // "← Back" button). Selection is preserved — the Selection card still
+    // reflects it, and re-opening returns to the same bead.
+    vscode.commands.registerCommand("beads.backToProject", () => {
+      setDetailScreen(false);
     }),
 
     // Passive selection (single-click a row/card/node): drive all selection
@@ -266,6 +291,7 @@ export function registerCommands(
       switcherProvider.setActiveBead(null);
       navHistory.reset();
       updateNavContext();
+      setDetailScreen(false, false); // nothing to detail — return to the Project view
     }),
 
     // vs-ask: open a bead's Details as an editor tab. With no argument, use the

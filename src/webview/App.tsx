@@ -661,8 +661,6 @@ export function App(): React.ReactElement {
               })
             }
             onCopyId={(beadId) => vscode.postMessage({ type: "copyBeadId", beadId, toast: true })}
-            onHistoryBack={() => vscode.postMessage({ type: "historyBack" })}
-            onHistoryForward={() => vscode.postMessage({ type: "historyForward" })}
             onToggleFavorite={(beadId) => vscode.postMessage({ type: "toggleFavorite", beadId })}
             onToggleMask={(beadId) => {
               // Optimistic: flip the mask locally so the eye + muted card (and the

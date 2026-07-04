@@ -20,6 +20,8 @@ interface BeadSummaryProps {
   bead: Bead;
   /** Gray the title when the bead is closed (beads.muteClosedIssues). */
   muteClosed?: boolean;
+  /** Click the readout (e.g. open the full Details takeover). Makes it clickable. */
+  onOpen?: (beadId: string) => void;
   /** Right-click (e.g. the shared bead context menu). */
   onContextMenu?: (e: React.MouseEvent) => void;
   /** Max label chips before collapsing the rest into a "+N". */
@@ -39,6 +41,7 @@ function excerpt(text: string, max = 200): string {
 export function BeadSummary({
   bead,
   muteClosed = false,
+  onOpen,
   onContextMenu,
   maxLabels = 6,
 }: BeadSummaryProps): React.ReactElement {
@@ -50,7 +53,14 @@ export function BeadSummary({
   const typeLabel = bead.type ? TYPE_LABELS[bead.type as BeadType] ?? bead.type : null;
 
   return (
-    <div className="bead-readout" onContextMenu={onContextMenu}>
+    <div
+      className={`bead-readout${onOpen ? " bead-readout-clickable" : ""}`}
+      onClick={onOpen ? () => onOpen(bead.id) : undefined}
+      onContextMenu={onContextMenu}
+      role={onOpen ? "button" : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      title={onOpen ? "Show full details" : undefined}
+    >
       <div className="bead-readout-head">
         <TypeIcon type={bead.type || "task"} size={14} />
         <span className="bead-readout-id">{bead.id}</span>
