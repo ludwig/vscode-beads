@@ -45,7 +45,6 @@ import { StatusBadge } from "./StatusBadge";
 import { PriorityBadge } from "./PriorityBadge";
 import { TypeBadge } from "./TypeBadge";
 import { AutocompleteInput, AutocompleteOption } from "./AutocompleteInput";
-import { FilterSnapshotRibbon } from "./FilterSnapshotRibbon";
 import { getLabelColorStyle } from "../utils/label-colors";
 import { useClickOutside } from "../hooks/useClickOutside";
 
@@ -127,6 +126,10 @@ export function FilterBar({
     snapshot.favoritesOnly ||
     snapshot.globalFilter.trim().length > 0;
 
+  // Is the inherited (upstream Issues) scope currently applied to this view? Used
+  // to glow the funnel and to drive the demure "Filtered" toggle pill.
+  const inheritedApplied = !!inherited && !inherited.cleared;
+
   // A concise, human-readable list of the active filters, for the collapsed
   // ribbon (e.g. "not closed, p0, ui, Ready"). Mirrors the chip labels.
   const filterTokens: string[] = [];
@@ -158,7 +161,7 @@ export function FilterBar({
   const twistie = onToggleCollapsed && (
     <button
       type="button"
-      className={`filter-bar-funnel ${hasActiveFilters ? "has-filters" : ""} ${collapsed ? "is-collapsed" : ""}`}
+      className={`filter-bar-funnel ${hasActiveFilters || inheritedApplied ? "has-filters" : ""} ${collapsed ? "is-collapsed" : ""}`}
       onClick={onToggleCollapsed}
       title={collapsed ? "Expand filters" : "Collapse filters"}
       aria-label={collapsed ? "Expand filters" : "Collapse filters"}
@@ -176,42 +179,50 @@ export function FilterBar({
     </span>
   );
 
-  // Collapsed (ribbon) form: a concise readout of the active filters + the
-  // inherited Show-all/Show-filtered toggle + the twistie to expand. When
-  // nothing is set, an inviting muted "Add a filter…" affordance (expands on
-  // click). No editing surface here.
+  // Demure "Filtered" toggle pill — the compact replacement for the long
+  // inherited-scope ribbon. Lives in the right/trailing group (never the packed
+  // left button cluster). Filled when the upstream Issues filter is applied,
+  // outline when the user has dropped it ("show all"); click flips.
+  const inheritedPill = inherited && (
+    <button
+      type="button"
+      className={`filter-bar-filtered-pill ${inheritedApplied ? "active" : ""}`}
+      onClick={inherited.onToggle}
+      aria-pressed={inheritedApplied}
+      title={
+        inheritedApplied
+          ? `Showing ${inherited.filteredCount} of ${inherited.totalCount} from the Issues filter — click to show all`
+          : `Inherited Issues filter dropped — click to re-apply (${inherited.filteredCount} of ${inherited.totalCount})`
+      }
+    >
+      Filtered
+    </button>
+  );
+
+  // Collapsed (ribbon) form: local filter pills on the left; the count + the
+  // demure "Filtered" toggle right-aligned. "Add a filter…" is the EMPTY state
+  // ONLY — shown when nothing is filtering (no local pills AND no inherited
+  // scope applied), never when filters are active. No editing surface here.
   if (onToggleCollapsed && collapsed) {
-    const inheritedText = inherited
-      ? inherited.cleared
-        ? `Showing all ${inherited.totalCount}`
-        : `Filtered · ${inherited.filteredCount} of ${inherited.totalCount}`
-      : null;
+    const showAddHint = filterTokens.length === 0 && !inheritedApplied;
     return (
       <div className="filter-bar filter-bar-collapsed" role="status">
         {twistie}
-        <span className="filter-bar-summary">
-          {inheritedText && <span className="filter-bar-summary-inherited">{inheritedText}</span>}
-          {inheritedText && filterTokens.length > 0 && (
-            <span className="filter-bar-summary-sep" aria-hidden="true">·</span>
-          )}
-          {filterTokens.length > 0 ? (
-            <span className="filter-bar-summary-tokens">
-              {filterTokens.map((t) => (
-                <span key={t} className="filter-bar-token-pill">{t}</span>
-              ))}
-            </span>
-          ) : (
-            <button type="button" className="filter-bar-add-hint" onClick={onToggleCollapsed}>
-              Add a filter…
-            </button>
-          )}
-        </span>
-        {countEl}
-        {inherited && (
-          <button type="button" className="filter-snapshot-ribbon-btn" onClick={inherited.onToggle}>
-            {inherited.cleared ? `Show filtered (${inherited.filteredCount})` : "Show all"}
+        {filterTokens.length > 0 ? (
+          <span className="filter-bar-summary-tokens">
+            {filterTokens.map((t) => (
+              <span key={t} className="filter-bar-token-pill">{t}</span>
+            ))}
+          </span>
+        ) : showAddHint ? (
+          <button type="button" className="filter-bar-add-hint" onClick={onToggleCollapsed}>
+            Add a filter…
           </button>
-        )}
+        ) : null}
+        <span className="filter-bar-collapsed-right">
+          {countEl}
+          {inheritedPill}
+        </span>
       </div>
     );
   }
@@ -225,15 +236,6 @@ export function FilterBar({
       </div>
     )}
     <div className="filter-bar">
-      {inherited && (
-        <FilterSnapshotRibbon
-          filteredCount={inherited.filteredCount}
-          totalCount={inherited.totalCount}
-          cleared={inherited.cleared}
-          onToggle={inherited.onToggle}
-        />
-      )}
-
       <Dropdown
         trigger={FILTER_PRESETS.find((p) => p.id === snapshot.activePreset)?.label || "Custom"}
         className="preset-dropdown"
@@ -427,10 +429,11 @@ export function FilterBar({
         </button>
       )}
 
-      {(trailing || countEl) && (
+      {(trailing || countEl || inheritedPill) && (
         <span className="filter-bar-trailing">
           {trailing}
           {countEl}
+          {inheritedPill}
         </span>
       )}
     </div>
