@@ -646,6 +646,58 @@ export function IssuesView({
     enableColumnResizing: true,
   });
 
+  // Keyboard row navigation (roving selection), mirroring the Tree: ArrowUp/Down
+  // move a highlight through the visible (sorted + filtered) rows without
+  // scrolling the page; Enter commits the selection; Home/End jump to the ends.
+  const focusRowId = useCallback((id: string | undefined) => {
+    if (!id) return;
+    setLocalSelectedId(id);
+    requestAnimationFrame(() => {
+      tableContainerRef.current
+        ?.querySelector(`[data-bead-id="${id}"]`)
+        ?.scrollIntoView({ block: "nearest" });
+    });
+  }, []);
+  const onTableKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (!["ArrowDown", "ArrowUp", "Enter", "Home", "End"].includes(e.key)) return;
+      // Don't hijack typing in the filter inputs / search box within the table.
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
+      ) {
+        return;
+      }
+      const ids = table.getRowModel().rows.map((r) => r.original.id);
+      if (ids.length === 0) return;
+      const idx = ids.indexOf(activeSelectedId ?? "");
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          focusRowId(ids[idx < 0 ? 0 : Math.min(ids.length - 1, idx + 1)]);
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          focusRowId(ids[idx < 0 ? 0 : Math.max(0, idx - 1)]);
+          break;
+        case "Home":
+          e.preventDefault();
+          focusRowId(ids[0]);
+          break;
+        case "End":
+          e.preventDefault();
+          focusRowId(ids[ids.length - 1]);
+          break;
+        case "Enter":
+          e.preventDefault();
+          if (idx >= 0) selectRow(ids[idx]);
+          break;
+      }
+    },
+    [table, activeSelectedId, focusRowId, selectRow],
+  );
+
   const handleCopyId = useCallback((beadId: string) => {
     vscode.postMessage({ type: "copyBeadId", beadId });
     setCopiedId(beadId);
@@ -852,7 +904,12 @@ export function IssuesView({
               <Loading />
             </div>
           )}
-          <div ref={tableContainerRef} className={`beads-table-container ${table.getState().columnSizingInfo.isResizingColumn ? "resizing" : ""}`}>
+          <div
+            ref={tableContainerRef}
+            className={`beads-table-container ${table.getState().columnSizingInfo.isResizingColumn ? "resizing" : ""}`}
+            tabIndex={0}
+            onKeyDown={onTableKeyDown}
+          >
             <table
               className={`beads-table ${compact ? "compact" : ""}`}
               style={{ minWidth: table.getCenterTotalSize() }}

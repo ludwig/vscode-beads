@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Drag-resize Tree columns** — the Tree's fixed columns are drag-resizable (persisted); the Title column absorbs the delta. Double-click a divider to reset both adjacent columns to their default widths
 - **Editor-tab view heading** — a standalone editor-tab view shows a "<View> view for <project>" heading in its toolbar
 - **Keyboard navigation in the Tree** — ↑/↓ move a roving row selection (without scrolling the pane), →/← expand/collapse the focused row (⇧ = whole subtree) or step to first-child/parent, Home/End jump to ends, Enter selects
+- **Keyboard navigation in the Issues table** — ↑/↓ move a roving row selection through the sorted/filtered rows (scrolling it into view), Home/End jump to the ends, Enter selects; mirrors the Tree's row navigation
 
 ### Changed
 
