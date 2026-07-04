@@ -569,23 +569,25 @@ export function DetailsView({
           {isEditorTab ? (
             backForwardBtns
           ) : (
-            // [refresh] | [+] [edit] | [show] [open-in-tab]  (star is on the Ident row)
+            // Lead with [+] [edit], then the show-in-tab group. (refresh +
+            // open-in-tab ride on the Ident row after the pill.)
             <>
-              {refreshBtn}
-              <span className="header-actions-sep" />
               {createBtn}
               {editControls}
               <span className="header-actions-sep" />
               {showTabBtns}
-              {openInTabBtn}
             </>
           )}
         </div>
       </div>
 
+      {/* Rule between the Lead and the Ident row. */}
+      <hr className="details-rule" />
+
       {/* Ident row: type icon + ID + favorite star on the left; the merged
-          type|status|priority pill right-aligned (plus, in an editor tab, its
-          action cluster — the Lead there is taken by the nav). */}
+          type|status|priority pill right-aligned. In the sidebar, refresh +
+          open-in-tab follow the pill (separated by a rule); in an editor tab the
+          action cluster rides here instead (the Lead there is taken by the nav). */}
       <div className="details-header">
         <TypeIcon type={(displayBead.type || "task") as BeadType} size={20} />
         <span
@@ -604,14 +606,25 @@ export function DetailsView({
         </span>
         {favoriteBtn}
         <span className="details-header-spacer" />
-        {isEditorTab && (
-          <div className="header-actions">
-            {llmToggle}
-            {showTabBtns}
-            {editControls}
-          </div>
+        {isEditorTab ? (
+          <>
+            <div className="header-actions">
+              {llmToggle}
+              {showTabBtns}
+              {editControls}
+            </div>
+            {pills}
+          </>
+        ) : (
+          <>
+            {pills}
+            <span className="header-actions-sep" />
+            <div className="header-actions">
+              {refreshBtn}
+              {openInTabBtn}
+            </div>
+          </>
         )}
-        {pills}
       </div>
 
       {/* Title - full width */}

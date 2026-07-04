@@ -3441,6 +3441,13 @@ textarea {
   gap: 4px;
 }
 
+/* Rule between the Lead and the Ident row. */
+.details-rule {
+  margin: 0;
+  border: none;
+  border-top: 1px solid var(--vscode-panel-border);
+}
+
 .details-header {
   display: flex;
   align-items: center;
