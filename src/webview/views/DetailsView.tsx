@@ -589,10 +589,10 @@ export function DetailsView({
       {/* Rule between the Lead and the Ident row. */}
       <hr className="details-rule" />
 
-      {/* Ident row: type icon + ID + favorite star on the left; the merged
-          type|status|priority pill right-aligned. The editor tab also keeps its
-          Edit control here (after the star) since its Lead carries the centered
-          {llm · tab group · focus} cluster + the back/forward nav. */}
+      {/* Ident row: type icon + ID + favorite star. The editor tab also keeps
+          its Edit control here (after the star) since its Lead carries the
+          centered {llm · tab group · focus} cluster + the back/forward nav. The
+          merged pill now lives in the badges row, under the title. */}
       <div className="details-header">
         <TypeIcon type={(displayBead.type || "task") as BeadType} size={20} />
         <span
@@ -613,8 +613,6 @@ export function DetailsView({
         {/* Editor tab keeps Edit down here, right after the star (its Lead is
             taken by the centered action cluster + nav). */}
         {isEditorTab && editControls}
-        <span className="details-header-spacer" />
-        {pills}
       </div>
 
       {/* Title - full width */}
@@ -635,6 +633,9 @@ export function DetailsView({
           pill on the Ident row, which is inline-editable in both modes — so the
           editable badges row only carries assignee + labels now.) */}
       <div className="details-badges">
+        {/* The merged type|status|priority pill leads the row, under the title
+            and before the assignee — inline click-to-edit in both modes. */}
+        {pills}
         {editMode ? (
           <>
             <Dropdown
@@ -692,8 +693,8 @@ export function DetailsView({
           </>
         ) : (
           <>
-            {/* type/status/priority moved to the header pill; the badges row
-                keeps the inline-editable assignee + labels. */}
+            {/* Assignee is inline-editable via this dropdown (commits on pick);
+                the chevron signals it's editable. Labels follow. */}
             <Dropdown
               trigger={
                 <span className="assignee-trigger">
@@ -705,7 +706,6 @@ export function DetailsView({
               }
               className="assignee-menu"
               triggerClassName="assignee-menu-trigger"
-              showChevron={false}
             >
               {userId && displayBead.assignee !== userId && (
                 <DropdownItem onClick={() => handleInlineUpdate("assignee", userId)}>
