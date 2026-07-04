@@ -114,6 +114,15 @@ export function ProjectSwitcherView({
   const [projectCollapsed, setProjectCollapsed] = useState(false);
   const [beadCollapsed, setBeadCollapsed] = useState(false);
   const [favoritesCollapsed, setFavoritesCollapsed] = useState(false);
+  // Optimistic star: `favoritesFilterOn` reflects the host round-trip (star →
+  // command → scope flip → broadcast back), which reads as lag. Flip the star
+  // instantly on click and reconcile the override away once the authoritative
+  // bit catches up. Null = no pending optimism.
+  const [favStarOptimistic, setFavStarOptimistic] = useState<boolean | null>(null);
+  const favStarOn = favStarOptimistic ?? favoritesFilterOn;
+  useEffect(() => {
+    if (favStarOptimistic != null && favoritesFilterOn === favStarOptimistic) setFavStarOptimistic(null);
+  }, [favoritesFilterOn, favStarOptimistic]);
 
   // We're rearranging the Repository panel (vs-beads visibility work). The
   // Selection card is pulled from the *view* only — the section JSX and its
@@ -409,28 +418,32 @@ export function ProjectSwitcherView({
                   the corner (rightmost) as the comfy, reach-for-it default. */}
               <button
                 type="button"
-                className="context-heading-action"
-                title="Copy favorite IDs as CSV"
+                className="context-heading-action fb-tip fb-tip-end"
+                data-tip="Copy favorite IDs as CSV"
                 aria-label="Copy favorite IDs as CSV"
                 onClick={onCopyFavorites}
               >
                 <Copy size={13} strokeWidth={2} />
               </button>
               {/* Full-duplex star: reflects the panel Issues Favorites filter
-                  (filled = on) and toggles it (vs-sd5). */}
+                  (filled = on) and toggles it (vs-sd5). Optimistic: flips
+                  instantly, reconciled to the host bit. */}
               <button
                 type="button"
-                className={`context-heading-action favorites-filter-star${favoritesFilterOn ? " active" : ""}`}
-                title={
-                  favoritesFilterOn
+                className={`context-heading-action favorites-filter-star fb-tip fb-tip-end${favStarOn ? " active" : ""}`}
+                data-tip={
+                  favStarOn
                     ? "Favorites filter is ON in Issues — click to turn it off"
                     : "Favorites filter is OFF — click to show only favorites (and their relatives) in Issues"
                 }
                 aria-label="Toggle the Issues favorites filter"
-                aria-pressed={favoritesFilterOn}
-                onClick={() => onToggleFavoritesFilter(!favoritesFilterOn)}
+                aria-pressed={favStarOn}
+                onClick={() => {
+                  setFavStarOptimistic(!favStarOn);
+                  onToggleFavoritesFilter(!favStarOn);
+                }}
               >
-                <Star size={13} strokeWidth={2} fill={favoritesFilterOn ? "currentColor" : "none"} />
+                <Star size={13} strokeWidth={2} fill={favStarOn ? "currentColor" : "none"} />
               </button>
             </>
           ) : undefined

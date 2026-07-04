@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Favorites/Ready toggles feel instant** — in the linked follower views (Kanban/Tree/Graph) and the dashboard Favorites-card star, a Favorites/Ready/preset/chip toggle now flips optimistically the moment it's clicked instead of waiting for the host round-trip to echo back, then reconciles to the authoritative broadcast. Also swapped the fast CSS tooltip in for the native `title` on the Favorites card's copy/star buttons (the native tooltip's ~1.5s delay is unshortenable)
 - **Tree header/column misalignment fixed** — the header sat outside the scrolling body, so a vertical scrollbar narrowed the rows but not the header, shifting every value column left by ~a scrollbar width. The header is now a sticky header inside the scroll container (with a reserved scrollbar gutter), so header and cells line up exactly
 - **Tree expand/collapse-all toggle icons are now distinct** — the near-identical `FoldVertical`/`UnfoldVertical` pair became `ChevronsDownUp` (collapse) / `ChevronsUpDown` (expand), so the two states read unambiguously
 - **Tree column-menu icon matches the Issues list** — the Tree's show/hide-columns button now uses the same `⋮` glyph the Issues table uses (was a `Columns3` icon); the default Updated/Created column width widened (88→104px) so dates no longer truncate

@@ -11,7 +11,7 @@
  * inherit. The component itself stays presentational; this hook is the state.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Bead, FilterSnapshot } from "../types";
 import { vscode } from "../types";
 import type { Edge } from "../../backend/resolveScope";
@@ -36,6 +36,19 @@ import {
   clearAll,
   type FilterOps,
 } from "../filterSnapshotOps";
+
+/** Value equality for two filter snapshots (used to reconcile the optimistic
+ *  overlay against the authoritative broadcast). Field-wise so it's robust to
+ *  top-level key order; columnFilters compare structurally. */
+function sameSnapshot(a: FilterSnapshot, b: FilterSnapshot): boolean {
+  return (
+    a.activePreset === b.activePreset &&
+    a.readyOnly === b.readyOnly &&
+    a.favoritesOnly === b.favoritesOnly &&
+    a.globalFilter === b.globalFilter &&
+    JSON.stringify(a.columnFilters) === JSON.stringify(b.columnFilters)
+  );
+}
 
 /**
  * Controls for the shared (panel) filter surface: the broadcast snapshot to
@@ -94,9 +107,35 @@ export function useLocalFilter({
     const saved = (vscode.getState() as Record<string, FilterSnapshot | undefined> | undefined)?.[persistKey];
     return saved ?? emptyFilterSnapshot();
   });
-  // In shared mode the snapshot is the broadcast shared spec (controlled);
-  // otherwise it's this surface's own persisted local snapshot.
-  const snapshot = shared ? shared.snapshot : localSnapshot;
+  // Optimistic overlay for shared (controlled) mode: an edit is applied to this
+  // local overlay INSTANTLY so the toggle/chip flips without waiting for the
+  // host round-trip, then reconciled away once the authoritative broadcast
+  // catches up (see the reconcile effect below). Null = no pending optimism.
+  const [optimistic, setOptimistic] = useState<FilterSnapshot | null>(null);
+  const optimisticRef = useRef<FilterSnapshot | null>(null);
+  optimisticRef.current = optimistic;
+  // What we last published, so we can tell "the echo of my own edit arrived"
+  // (→ drop the overlay) from an unrelated broadcast.
+  const lastPublishedRef = useRef<FilterSnapshot | null>(null);
+
+  // In shared mode the snapshot is the optimistic overlay if one is pending,
+  // else the broadcast shared spec (controlled). Otherwise it's this surface's
+  // own persisted local snapshot.
+  const snapshot = shared ? (optimistic ?? shared.snapshot) : localSnapshot;
+
+  // Reconcile the optimistic overlay: once the authoritative broadcast matches
+  // what we optimistically applied (or what we last published), drop the overlay
+  // so the host stays the single source of truth. Guarding on lastPublished as
+  // well means a rapid double-toggle won't briefly revert when the FIRST echo
+  // (an older value) arrives — we keep the overlay until the latest echo lands.
+  useEffect(() => {
+    if (!shared || optimistic == null) return;
+    const auth = shared.snapshot;
+    if (sameSnapshot(auth, optimistic) || (lastPublishedRef.current && sameSnapshot(auth, lastPublishedRef.current))) {
+      setOptimistic(null);
+    }
+  }, [shared, optimistic]);
+
   useEffect(() => {
     if (shared) return; // shared surface is owned host-side, not persisted here
     const prev = (vscode.getState() as Record<string, unknown> | undefined) ?? {};
@@ -117,11 +156,23 @@ export function useLocalFilter({
   }, [collapsedKey]);
 
   const ops: FilterOps = useMemo(() => {
-    // Shared mode: publish the edited snapshot upstream (the host recomputes the
-    // scope + echoes the new spec to every panel view). Local mode: mutate our
-    // own state.
-    const edit = (fn: (s: FilterSnapshot) => FilterSnapshot) =>
-      shared ? shared.onPublish(fn(shared.snapshot)) : setLocalSnapshot((s) => fn(s));
+    // Shared mode: apply the edit to the optimistic overlay INSTANTLY (so the
+    // control flips with no perceived lag), remember it as last-published, and
+    // publish upstream (the host recomputes the scope + echoes the new spec to
+    // every panel view, which then reconciles the overlay away). Local mode:
+    // mutate our own state. The base for the edit is the pending overlay if one
+    // exists, else the current broadcast — so consecutive edits compose.
+    const edit = (fn: (s: FilterSnapshot) => FilterSnapshot) => {
+      if (shared) {
+        const next = fn(optimisticRef.current ?? shared.snapshot);
+        optimisticRef.current = next;
+        lastPublishedRef.current = next;
+        setOptimistic(next);
+        shared.onPublish(next);
+      } else {
+        setLocalSnapshot((s) => fn(s));
+      }
+    };
     return {
       applyPreset: (id) => edit((s) => applyPreset(s, id)),
       addStatus: (v) => edit((s) => addStatus(s, v)),
