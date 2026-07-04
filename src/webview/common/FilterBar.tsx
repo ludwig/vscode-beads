@@ -200,29 +200,42 @@ export function FilterBar({
   );
 
   // Collapsed (ribbon) form: local filter pills on the left; the count + the
-  // demure "Filtered" toggle right-aligned. "Add a filter…" is the EMPTY state
-  // ONLY — shown when nothing is filtering (no local pills AND no inherited
-  // scope applied), never when filters are active. No editing surface here.
+  // inherited scope readout + the Show-all/Show-filtered toggle + the twistie to
+  // expand. "Add a filter…" is the EMPTY state ONLY — shown when nothing is
+  // filtering (no local pills AND no inherited scope applied), never when filters
+  // are active. No editing surface here.
   if (onToggleCollapsed && collapsed) {
-    const showAddHint = filterTokens.length === 0 && !inheritedApplied;
+    const inheritedText = inherited
+      ? inherited.cleared
+        ? `Showing all ${inherited.totalCount}`
+        : `Filtered · ${inherited.filteredCount} of ${inherited.totalCount}`
+      : null;
     return (
       <div className="filter-bar filter-bar-collapsed" role="status">
         {twistie}
-        {filterTokens.length > 0 ? (
-          <span className="filter-bar-summary-tokens">
-            {filterTokens.map((t) => (
-              <span key={t} className="filter-bar-token-pill">{t}</span>
-            ))}
-          </span>
-        ) : showAddHint ? (
-          <button type="button" className="filter-bar-add-hint" onClick={onToggleCollapsed}>
-            Add a filter…
-          </button>
-        ) : null}
-        <span className="filter-bar-collapsed-right">
-          {countEl}
-          {inheritedPill}
+        <span className="filter-bar-summary">
+          {inheritedText && <span className="filter-bar-summary-inherited">{inheritedText}</span>}
+          {inheritedText && filterTokens.length > 0 && (
+            <span className="filter-bar-summary-sep" aria-hidden="true">·</span>
+          )}
+          {filterTokens.length > 0 ? (
+            <span className="filter-bar-summary-tokens">
+              {filterTokens.map((t) => (
+                <span key={t} className="filter-bar-token-pill">{t}</span>
+              ))}
+            </span>
+          ) : !inheritedApplied ? (
+            <button type="button" className="filter-bar-add-hint" onClick={onToggleCollapsed}>
+              Add a filter…
+            </button>
+          ) : null}
         </span>
+        {countEl}
+        {inherited && (
+          <button type="button" className="filter-snapshot-ribbon-btn" onClick={inherited.onToggle}>
+            {inherited.cleared ? `Show filtered (${inherited.filteredCount})` : "Show all"}
+          </button>
+        )}
       </div>
     );
   }

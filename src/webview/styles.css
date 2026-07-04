@@ -375,23 +375,11 @@ body {
   gap: 8px;
 }
 
-/* Right-aligned group in the collapsed ribbon: count + the demure Filtered pill,
-   pushed away from the left pills / empty-state hint. */
-.filter-bar-collapsed-right {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-.filter-bar-collapsed-right .filter-bar-count {
-  margin-left: 0;
-}
-
 /* Demure "Filtered" toggle pill — the compact replacement for the long inherited
-   ribbon. Outline when the upstream filter is dropped; filled (the belle of the
-   ball) when it's applied. Sits in the right/trailing group, never the packed
-   left button cluster. */
+   banner that used to lead the EXPANDED filter bar. Outline when the upstream
+   filter is dropped; filled (the belle of the ball) when it's applied. Sits in
+   the right/trailing group, never the packed left button cluster. (The collapsed
+   ribbon keeps its own richer summary + Show-all/Show-filtered toggle.) */
 .filter-bar-filtered-pill {
   flex: 0 0 auto;
   padding: 1px 9px;
