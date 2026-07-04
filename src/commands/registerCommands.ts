@@ -262,6 +262,20 @@ export function registerCommands(
       }
     }),
 
+    // The Project screen's title-bar "Forward": re-open the current selection's
+    // Details (the issue you backed out of), else walk the global history
+    // forward. The re-open half is shared with the Project screen's ⌘→ via the
+    // provider; only the fallback lives here. (Back on the Project screen reuses
+    // the plain beads.navigateBack — there's no project-specific twist to it.)
+    vscode.commands.registerCommand("beads.sidebarProjectForward", async () => {
+      if (await switcherProvider.forwardToSelection()) return;
+      const id = navHistory.forward();
+      if (id) {
+        selectBead(id);
+        updateNavContext();
+      }
+    }),
+
     // Pick a ready-to-work bead (open, no open blocker) and make it the active
     // bead. Repeated invocations cycle through the ready set. (vs-ih1)
     vscode.commands.registerCommand("beads.pickReadyBead", async () => {

@@ -11,7 +11,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, ChevronLeft, X, Rocket, ListTodo, ListTree, Copy, FolderPlus, Star, Plus, RefreshCw, Settings } from "lucide-react";
+import { ChevronDown, ChevronRight, X, Rocket, ListTodo, ListTree, Copy, FolderPlus, Star, Plus, RefreshCw, Settings } from "lucide-react";
 import { Bead, BeadsProject, FavoriteBead, statusColor, isClosedStatus, vscode } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem, DropdownSeparator } from "../common/Dropdown";
@@ -492,27 +492,8 @@ export function ProjectSwitcherView({
         <section className="context-section context-selection-section">
           <div className="context-section-head">
             <span className="context-heading">Selection</span>
-            {/* History nav — the clickable twin of Cmd+←/→ on this screen.
-                Walks the GLOBAL Details history (historyBack/historyForward);
-                forward from the Project screen re-opens the backed-out issue. */}
-            <button
-              type="button"
-              className="context-heading-action fb-tip fb-tip-end"
-              data-tip="Previous issue (⌘←)"
-              aria-label="Previous issue"
-              onClick={() => vscode.postMessage({ type: "historyBack" })}
-            >
-              <ChevronLeft size={13} strokeWidth={2} />
-            </button>
-            <button
-              type="button"
-              className="context-heading-action fb-tip fb-tip-end"
-              data-tip="Next issue (⌘→)"
-              aria-label="Next issue"
-              onClick={() => vscode.postMessage({ type: "historyForward" })}
-            >
-              <ChevronRight size={13} strokeWidth={2} />
-            </button>
+            {/* History nav (◂ ▸) lives on the view-title bar for both screens;
+                the card head keeps just Clear. */}
             <button
               type="button"
               className="context-heading-action fb-tip fb-tip-end"

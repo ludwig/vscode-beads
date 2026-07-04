@@ -111,6 +111,23 @@ export class BeadsSidebarViewProvider extends BeadDetailsViewProvider {
   }
 
   /**
+   * Project-screen "Forward": re-open the current selection's Details — the
+   * issue you backed out of, still shown on the Selection card. Returns true
+   * when it handled the nav (there was a selection to re-open), false when the
+   * caller should fall through to the global history. Shared by the Project
+   * screen's ⌘→ (historyForward message) and the title-bar Forward button
+   * (beads.sidebarProjectForward).
+   */
+  public async forwardToSelection(): Promise<boolean> {
+    const current = this.getCurrentBeadId();
+    if (current) {
+      await this.showBead(current, { reveal: true });
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * Open a bead's Details. A reveal (the default) flips to the Details screen;
    * a passive selection (reveal:false, single-click) only updates the content +
    * the Selection card and stays on whatever screen is showing.
@@ -190,14 +207,10 @@ export class BeadsSidebarViewProvider extends BeadDetailsViewProvider {
     }
     // Forward nav from the Project screen re-opens the current selection's
     // Details — so "← Active Project" then "→" returns to the issue you backed
-    // out of (the selection card still shows it), keeping the flow predictable.
-    // With no current selection, fall through to the global history.
+    // out of. With no current selection, fall through to the global history.
+    // Same logic backs the title-bar Forward button (beads.sidebarProjectForward).
     if (message.type === "historyForward" && this.screen === "project") {
-      const current = this.getCurrentBeadId();
-      if (current) {
-        await this.showBead(current, { reveal: true });
-        return;
-      }
+      if (await this.forwardToSelection()) return;
     }
     // Cancelling New Issue: let the inherited handler exit create mode + restore
     // the prior bead, then return to the screen we launched create from (so

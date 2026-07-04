@@ -108,6 +108,12 @@
         "enablement": "beads.canNavigateForward"
       },
       {
+        "command": "beads.sidebarProjectForward",
+        "title": "Beads: Forward",
+        "icon": "$(arrow-right)",
+        "enablement": "beads.hasSelectedBead || beads.canNavigateForward"
+      },
+      {
         "command": "beads.refresh",
         "title": "Reload beads from db",
         "category": "Beads",
@@ -205,6 +211,16 @@
         {
           "command": "beads.navigateForward",
           "when": "view == beadsProjectSwitcher && beads.detailScreen",
+          "group": "navigation@1"
+        },
+        {
+          "command": "beads.navigateBack",
+          "when": "view == beadsProjectSwitcher && !beads.detailScreen",
+          "group": "navigation@0"
+        },
+        {
+          "command": "beads.sidebarProjectForward",
+          "when": "view == beadsProjectSwitcher && !beads.detailScreen",
           "group": "navigation@1"
         }
       ]
