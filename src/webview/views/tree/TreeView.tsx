@@ -464,9 +464,9 @@ export function TreeView({
     },
     [forest],
   );
-  // Disable the control that's already a no-op (everything open / everything shut).
+  // Drives the single fold toggle: when everything's expanded the button
+  // collapses all, otherwise it expands all.
   const allExpanded = [...parentIds].every((id) => !collapsed.has(id));
-  const allCollapsed = parentIds.size > 0 && [...parentIds].every((id) => collapsed.has(id));
 
   // Current parent per bead (first parent-child edge from=child wins).
   const parentOf = useMemo(() => {
@@ -579,28 +579,26 @@ export function TreeView({
               spellCheck={false}
             />
             {parentIds.size > 0 && (
-              <div className="beads-tree-foldctl" role="group" aria-label="Expand or collapse the tree">
-                <button
-                  type="button"
-                  className="beads-tree-foldbtn"
-                  title="Expand all (⇧-click a row's chevron to expand just its subtree)"
-                  aria-label="Expand all"
-                  disabled={allExpanded || filtering}
-                  onClick={expandAll}
-                >
-                  <UnfoldVertical size={14} strokeWidth={2} />
-                </button>
-                <button
-                  type="button"
-                  className="beads-tree-foldbtn"
-                  title="Collapse all (⇧-click a row's chevron to collapse just its subtree)"
-                  aria-label="Collapse all"
-                  disabled={allCollapsed || filtering}
-                  onClick={collapseAll}
-                >
+              // One toggle: collapse-all when everything's expanded, else
+              // expand-all. The icon reflects the action it will perform.
+              <button
+                type="button"
+                className="beads-tree-foldbtn"
+                title={
+                  allExpanded
+                    ? "Collapse all (⇧-click a row's chevron to collapse just its subtree)"
+                    : "Expand all (⇧-click a row's chevron to expand just its subtree)"
+                }
+                aria-label={allExpanded ? "Collapse all" : "Expand all"}
+                disabled={filtering}
+                onClick={allExpanded ? collapseAll : expandAll}
+              >
+                {allExpanded ? (
                   <FoldVertical size={14} strokeWidth={2} />
-                </button>
-              </div>
+                ) : (
+                  <UnfoldVertical size={14} strokeWidth={2} />
+                )}
+              </button>
             )}
           </>
         }
