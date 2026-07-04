@@ -76,6 +76,10 @@ interface PanelShellProps {
   focusIssuesSeq: number;
   focusKanbanSeq: number;
   focusTreeSeq: number;
+  focusGraphSeq: number;
+  // Details "focus" button: reveal this bead in whatever tab is currently
+  // active (no tab switch). `seq` re-fires for a repeat of the same bead.
+  revealActiveRequest: { beadId: string; seq: number } | null;
 }
 
 export function PanelShell({
@@ -99,6 +103,8 @@ export function PanelShell({
   focusIssuesSeq,
   focusKanbanSeq,
   focusTreeSeq,
+  focusGraphSeq,
+  revealActiveRequest,
 }: PanelShellProps): React.ReactElement {
   // Issues is the default view when the panel first opens.
   const [active, setActive] = useState<PanelTab>("issues");
@@ -238,6 +244,50 @@ export function PanelShell({
     const t = setTimeout(() => setPulsing(false), 1600);
     return () => clearTimeout(t);
   }, [focusTreeSeq]);
+
+  // "Show Graph Tab" (Details shortcut): flip to the Graph tab and pulse the
+  // same confirmation ring. No bead focus (that's the "focus" button's job).
+  const lastFocusGraphSeq = useRef(0);
+  useEffect(() => {
+    if (focusGraphSeq === 0 || lastFocusGraphSeq.current === focusGraphSeq) {
+      return;
+    }
+    lastFocusGraphSeq.current = focusGraphSeq;
+    setActive("graph");
+    setPulsing(true);
+    const t = setTimeout(() => setPulsing(false), 1600);
+    return () => clearTimeout(t);
+  }, [focusGraphSeq]);
+
+  // Details "focus" button: reveal the bead in whichever tab is currently
+  // active — route the request to that tab's own reveal channel WITHOUT
+  // switching tabs. Dashboard has no per-bead reveal, so fall back to Issues.
+  const lastRevealActiveSeq = useRef<number | null>(null);
+  useEffect(() => {
+    if (!revealActiveRequest || lastRevealActiveSeq.current === revealActiveRequest.seq) {
+      return;
+    }
+    lastRevealActiveSeq.current = revealActiveRequest.seq;
+    const { beadId, seq } = revealActiveRequest;
+    switch (active) {
+      case "kanban":
+        setKanbanRevealRequest({ beadId, seq });
+        break;
+      case "tree":
+        setTreeRevealRequest({ beadId, seq });
+        break;
+      case "graph":
+        setGraphFocusId(beadId);
+        break;
+      case "issues":
+      case "dashboard":
+      default:
+        // Issues is the sensible landing for the non-bead Dashboard.
+        if (active === "dashboard") setActive("issues");
+        setIssuesRevealRequest({ beadId, seq });
+        break;
+    }
+  }, [revealActiveRequest, active]);
 
   const flipToIssues = (filter: IssuesFilter) => {
     setLocalFilter((prev) => ({ filter, seq: (prev?.seq ?? 0) + 1 }));

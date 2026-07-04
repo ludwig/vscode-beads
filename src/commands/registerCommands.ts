@@ -117,6 +117,24 @@ export function registerCommands(
       shellProvider.focusTreeTab();
     }),
 
+    // Reveal the Beads panel with the Graph tab focused, no bead — the Details
+    // "Show Graph Tab" shortcut.
+    vscode.commands.registerCommand("beads.openGraphPanel", async () => {
+      await vscode.commands.executeCommand("beadsPanelShell.focus");
+      shellProvider.focusGraphTab();
+    }),
+
+    // Locate a bead in the panel's currently-active tab (the Details "focus"
+    // button): reveal the panel, then have the shell scroll to the bead in
+    // whatever tab is showing (no tab switch).
+    vscode.commands.registerCommand("beads.focusBeadInActiveTab", async (beadId?: string) => {
+      if (!beadId) {
+        return;
+      }
+      await vscode.commands.executeCommand("beadsPanelShell.focus");
+      shellProvider.revealBeadInActiveTab(beadId);
+    }),
+
     // Open the Issues panel pre-filtered to a slice (empty filter = all).
     // Used by the Dashboard summary cards and breakdown badges. Focus first so
     // a closed panel resolves its webview, then hand the filter to the provider

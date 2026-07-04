@@ -37,6 +37,8 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
   private pendingFocusIssues = false;
   private pendingFocusKanban = false;
   private pendingFocusTree = false;
+  private pendingFocusGraph = false;
+  private pendingRevealActiveBead: string | undefined;
   // Set once the Graph/Tree tab asks for the dependency graph, so a project
   // switch / refresh knows to re-push fresh graph data (not just the bead list).
   // A dedicated graph view (GraphViewProvider) opts in at construction so the
@@ -122,6 +124,25 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     this.flushFocusTree();
   }
 
+  /**
+   * Switch the panel to the Graph tab (no bead focus). Posts immediately when
+   * the webview is live; otherwise flushed once it signals ready.
+   */
+  public focusGraphTab(): void {
+    this.pendingFocusGraph = true;
+    this.flushFocusGraph();
+  }
+
+  /**
+   * Reveal/scroll to a bead in whichever tab is currently active (the Details
+   * "focus" button). The shell resolves the active tab; here we just carry the
+   * target, posting when the webview is live or flushing once it's ready.
+   */
+  public revealBeadInActiveTab(beadId: string): void {
+    this.pendingRevealActiveBead = beadId;
+    this.flushRevealActiveBead();
+  }
+
   private flushFilter(): void {
     if (this.pendingFilter !== undefined && this._host?.visible) {
       this.postMessage({ type: "applyIssuesFilter", filter: this.pendingFilter });
@@ -178,6 +199,20 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     }
   }
 
+  private flushFocusGraph(): void {
+    if (this.pendingFocusGraph && this._host?.visible) {
+      this.postMessage({ type: "focusGraphTab" });
+      this.pendingFocusGraph = false;
+    }
+  }
+
+  private flushRevealActiveBead(): void {
+    if (this.pendingRevealActiveBead !== undefined && this._host?.visible) {
+      this.postMessage({ type: "revealActiveTabBead", beadId: this.pendingRevealActiveBead });
+      this.pendingRevealActiveBead = undefined;
+    }
+  }
+
   protected async initializeView(): Promise<void> {
     await super.initializeView();
     this.flushFilter();
@@ -188,6 +223,8 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     this.flushFocusIssues();
     this.flushFocusKanban();
     this.flushFocusTree();
+    this.flushFocusGraph();
+    this.flushRevealActiveBead();
   }
 
   constructor(

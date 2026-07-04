@@ -311,6 +311,13 @@ export type ExtensionToWebviewMessage =
   | { type: "focusIssuesTab" }
   | { type: "focusKanbanTab" }
   | { type: "focusTreeTab" }
+  // Switch the panel to the Graph tab (no bead focus — the "Show Graph Tab"
+  // shortcut, mirroring focusIssues/Kanban/TreeTab).
+  | { type: "focusGraphTab" }
+  // Reveal/scroll to this bead in whichever panel tab is currently active
+  // (the Details "focus" button — locate-in-active-tab). The shell routes it to
+  // the active tab without switching tabs.
+  | { type: "revealActiveTabBead"; beadId: string }
   | { type: "pulse" }
   | { type: "setMemoryUsage"; bytes: number }
   // The active project's favorites, in curated order, resolved to lightweight
@@ -410,6 +417,12 @@ export type WebviewToExtensionMessage =
   | { type: "showKanban" }
   // Reveal the Beads panel shell with the Tree tab focused.
   | { type: "showTreePanel" }
+  // Reveal the Beads panel shell with the Graph tab focused (no bead) — the
+  // "Show Graph Tab" shortcut.
+  | { type: "showGraphPanel" }
+  // Reveal/scroll to this bead in the panel's currently-active tab (the Details
+  // "focus" button). Distinct from viewIn* (which each target a specific tab).
+  | { type: "focusBeadInActiveTab"; beadId: string }
   // Walk the GLOBAL Details navigation history from a non-Details view (the
   // Repository sidebar's Details section). Distinct from navigateBack/Forward
   // (the Details editor tab's per-tab history) so they don't double-fire.

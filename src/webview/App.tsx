@@ -74,6 +74,11 @@ interface AppState {
   // Bumped to switch the panel to the Kanban tab (vs-6xf).
   focusKanbanSeq: number;
   focusTreeSeq: number;
+  // Bumped to switch the panel to the Graph tab (no bead) — "Show Graph Tab".
+  focusGraphSeq: number;
+  // The Details "focus" button: reveal this bead in whatever tab is active.
+  // `seq` re-fires for a repeat of the same bead.
+  revealActiveRequest: { beadId: string; seq: number } | null;
   // Bumped when this (editor-tab) webview is revealed/opened, to flash a
   // confirmation ring so the tab is easy to spot (vs-c59).
   pulseSeq: number;
@@ -159,6 +164,8 @@ const initialState: AppState = {
   focusIssuesSeq: 0,
   focusKanbanSeq: 0,
   focusTreeSeq: 0,
+  focusGraphSeq: 0,
+  revealActiveRequest: null,
   pulseSeq: 0,
   memoryBytes: 0,
   tabNav: { canBack: false, canForward: false },
@@ -298,6 +305,18 @@ export function App(): React.ReactElement {
         break;
       case "focusTreeTab":
         setState((prev) => ({ ...prev, focusTreeSeq: prev.focusTreeSeq + 1 }));
+        break;
+      case "focusGraphTab":
+        setState((prev) => ({ ...prev, focusGraphSeq: prev.focusGraphSeq + 1 }));
+        break;
+      case "revealActiveTabBead":
+        setState((prev) => ({
+          ...prev,
+          revealActiveRequest: {
+            beadId: message.beadId,
+            seq: (prev.revealActiveRequest?.seq ?? 0) + 1,
+          },
+        }));
         break;
       case "pulse":
         setState((prev) => ({ ...prev, pulseSeq: prev.pulseSeq + 1 }));
@@ -666,6 +685,8 @@ export function App(): React.ReactElement {
             focusIssuesSeq={state.focusIssuesSeq}
             focusKanbanSeq={state.focusKanbanSeq}
             focusTreeSeq={state.focusTreeSeq}
+            focusGraphSeq={state.focusGraphSeq}
+            revealActiveRequest={state.revealActiveRequest}
           />
         );
 
