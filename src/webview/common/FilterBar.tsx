@@ -132,6 +132,15 @@ export function FilterBar({
   const trimmedSearch = (searchTerm ?? snapshot.globalFilter).trim();
   const hasSearch = trimmedSearch.length > 0;
 
+  // Preset dropdown label + which menu item reads as active. The stored
+  // `activePreset` is "" once an add/remove op marks the filter custom — but if
+  // no column filters remain (e.g. the user just removed the last status chip),
+  // the filter is effectively "All", so resolve to the "all" preset rather than
+  // showing a stale "Custom". A non-empty custom column set stays "Custom".
+  const effectivePresetId =
+    snapshot.activePreset || (snapshot.columnFilters.length === 0 ? "all" : "");
+  const presetLabel = FILTER_PRESETS.find((p) => p.id === effectivePresetId)?.label ?? "Custom";
+
   const hasActiveFilters =
     status.length + priority.length + type.length + assignee.length + label.length > 0 ||
     snapshot.readyOnly ||
@@ -289,7 +298,7 @@ export function FilterBar({
     )}
     <div className="filter-bar">
       <Dropdown
-        trigger={FILTER_PRESETS.find((p) => p.id === snapshot.activePreset)?.label || "Custom"}
+        trigger={presetLabel}
         className="preset-dropdown"
         triggerClassName="preset-dropdown-btn"
         menuClassName="preset-dropdown-menu"
@@ -298,7 +307,7 @@ export function FilterBar({
           <DropdownItem
             key={preset.id}
             className="preset-option"
-            active={snapshot.activePreset === preset.id}
+            active={effectivePresetId === preset.id}
             onClick={() => ops.applyPreset(preset.id)}
           >
             {preset.label}
