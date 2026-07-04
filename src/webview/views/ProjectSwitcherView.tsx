@@ -21,6 +21,7 @@ import { BeadSummary } from "../common/BeadSummary";
 import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
 import { EndFlourish } from "../common/EndFlourish";
 import { FilterGroup } from "../common/FilterGroup";
+import { usePersistedBoolean } from "../hooks/usePersistedBoolean";
 
 interface ProjectSwitcherViewProps {
   projects: BeadsProject[];
@@ -111,8 +112,10 @@ export function ProjectSwitcherView({
   muteClosedIssues = true,
 }: ProjectSwitcherViewProps): React.ReactElement {
   const backendState = activeProject?.backendStatus ?? "unknown";
-  const [projectCollapsed, setProjectCollapsed] = useState(false);
-  const [favoritesCollapsed, setFavoritesCollapsed] = useState(false);
+  // Persisted so collapse survives the Project↔Details screen swap (which
+  // unmounts this view) and webview disposal (vs-filterbar).
+  const [projectCollapsed, setProjectCollapsed] = usePersistedBoolean("sidebar.projectCollapsed", false);
+  const [favoritesCollapsed, setFavoritesCollapsed] = usePersistedBoolean("sidebar.favoritesCollapsed", false);
   // Optimistic star: `favoritesFilterOn` reflects the host round-trip (star →
   // command → scope flip → broadcast back), which reads as lag. Flip the star
   // instantly on click and reconcile the override away once the authoritative
