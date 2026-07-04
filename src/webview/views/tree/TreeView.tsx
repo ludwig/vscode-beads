@@ -565,7 +565,7 @@ export function TreeView({
         snapshot={lf.snapshot}
         facets={lf.facets}
         ops={lf.ops}
-        count={{ shown: scopeCount, total }}
+        count={{ shown: scopeCount, total, unit: "beads" }}
         collapsed={lf.collapsed}
         onToggleCollapsed={lf.toggleCollapsed}
         searchTerm={query}

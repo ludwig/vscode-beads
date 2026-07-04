@@ -67,8 +67,8 @@ interface FilterBarProps {
   facets: FacetData;
   ops: FilterOps;
   inherited?: InheritedScope;
-  /** Result count shown right-aligned in the bar (both forms): "N of M". */
-  count?: { shown: number; total: number };
+  /** Result count shown right-aligned in the bar (both forms): "N of M unit". */
+  count?: { shown: number; total: number; unit?: string };
   /** When `true`, render the compact ribbon (minimized) form. */
   collapsed?: boolean;
   /**
@@ -199,6 +199,7 @@ export function FilterBar({
   const countEl = count && (
     <span className="filter-bar-count">
       {count.shown < count.total ? `${count.shown} of ${count.total}` : `${count.total}`}
+      {count.unit ? ` ${count.unit}` : ""}
     </span>
   );
 

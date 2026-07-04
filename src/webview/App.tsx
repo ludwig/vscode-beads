@@ -400,15 +400,15 @@ export function App(): React.ReactElement {
     return (
       <div className="editor-tab-shell">
         <div className="editor-tab-toolbar">
+          {viewLabel && projectName && (
+            <span className="editor-tab-title" title={`${viewLabel} view · ${projectName}`}>
+              <span className="editor-tab-title-view">{viewLabel} view</span>
+              <span className="editor-tab-title-for">for</span>
+              <span className="editor-tab-title-project">{projectName}</span>
+            </span>
+          )}
           <span className="editor-tab-toolbar-spacer" />
           <div className="editor-tab-toolbar-actions">
-            {viewLabel && projectName && (
-              <span className="editor-tab-title" title={`${viewLabel} view · ${projectName}`}>
-                <span className="editor-tab-title-view">{viewLabel} view</span>
-                <span className="editor-tab-title-for">for</span>
-                <span className="editor-tab-title-project">{projectName}</span>
-              </span>
-            )}
             <button
               type="button"
               className="panel-shell-action"

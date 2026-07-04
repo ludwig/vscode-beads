@@ -758,22 +758,25 @@ export function IssuesView({
         snapshot={snapshot}
         facets={facets}
         ops={filterOps}
-        count={{ shown: filteredCount, total: totalCount }}
+        count={{ shown: filteredCount, total: totalCount, unit: "issues" }}
         collapsed={!filterBarOpen}
         onToggleCollapsed={() => setFilterBarOpen((v) => !v)}
         searchTerm={globalFilter}
         onClearSearch={() => setGlobalFilter("")}
+        trailing={
+          /* Row density: OFF (default) = compact, ON = comfortable. Right-aligned
+             on the second row, out of the search row's way. */
+          <button
+            className={`compact-toggle ${!compact ? "active" : ""}`}
+            onClick={() => setCompact((c) => !c)}
+            title={compact ? "Comfortable rows" : "Compact rows"}
+            aria-pressed={!compact}
+          >
+            {compact ? <Rows3 size={14} /> : <Rows2 size={14} />}
+          </button>
+        }
         search={
           <>
-            {/* Density toggle: OFF (default) = compact, ON = comfortable. */}
-            <button
-              className={`compact-toggle ${!compact ? "active" : ""}`}
-              onClick={() => setCompact((c) => !c)}
-              title={compact ? "Comfortable rows" : "Compact rows"}
-              aria-pressed={!compact}
-            >
-              {compact ? <Rows3 size={14} /> : <Rows2 size={14} />}
-            </button>
             <input
               type="text"
               className="filter-bar-search-input"
