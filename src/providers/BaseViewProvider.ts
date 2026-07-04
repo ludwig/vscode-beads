@@ -285,7 +285,10 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
       }
 
       case "selectBead":
-        vscode.commands.executeCommand("beads.openBeadDetails", message.beadId);
+        // Passive selection — updates content + selection surfaces without
+        // revealing the Details view (single-click). Distinct from
+        // "openBeadDetails" (double-click / "Show Details"), which reveals.
+        vscode.commands.executeCommand("beads.selectBead", message.beadId);
         break;
 
       case "openViewInTab": {

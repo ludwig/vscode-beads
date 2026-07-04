@@ -86,7 +86,11 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
    * {@link renderBead} reveals the view so a freshly-resolved webview's "ready"
    * signal consumes it without racing the bead load.
    */
-  public async showBead(beadId: string, opts?: { pulse?: boolean }): Promise<void> {
+  public async showBead(
+    beadId: string,
+    opts?: { pulse?: boolean; reveal?: boolean },
+  ): Promise<void> {
+    const reveal = opts?.reveal ?? true;
     if (this._host?.isEditorTab) {
       this.history.record(beadId);
       this.postNavState();
@@ -98,7 +102,7 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
         pulseWhenReady: () => this.pulseWhenReady(),
       });
     }
-    await this.renderBead(beadId);
+    await this.renderBead(beadId, reveal);
   }
 
   /**
@@ -115,8 +119,13 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
     });
   }
 
-  /** Render a bead without touching the navigation trail. */
-  private async renderBead(beadId: string): Promise<void> {
+  /**
+   * Render a bead without touching the navigation trail. `reveal` controls
+   * whether the view is brought to the foreground: an explicit "Show Details"
+   * (double-click / menu) reveals; a passive selection (single-click) updates
+   * the content silently so it never pops the Secondary Side Bar open.
+   */
+  private async renderBead(beadId: string, reveal = true): Promise<void> {
     if (this.createMode) {
       this.createMode = false;
       this.postMessage({ type: "setCreateMode", value: false });
@@ -132,8 +141,9 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
     // Update context for conditional menu items
     vscode.commands.executeCommand("setContext", "beads.hasSelectedBead", true);
 
-    // Auto-expand the details panel
-    if (this._host) {
+    // Auto-expand the details panel — only on an explicit reveal, so a passive
+    // single-click selection updates the content without popping the sidebar.
+    if (reveal && this._host) {
       this._host.reveal(true); // true = preserve focus
     }
 

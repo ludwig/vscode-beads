@@ -648,7 +648,7 @@ export function IssuesView({
   const rowMenuItems = useCallback(
     (bead: Bead): ContextMenuItem[] => [
       {
-        label: "Open Details (editor tab)",
+        label: "Show in editor tab",
         onSelect: () => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id }),
       },
       {
@@ -1020,7 +1020,13 @@ export function IssuesView({
                       key={row.id}
                       data-bead-id={row.original.id}
                       onClick={() => selectRow(row.original.id)}
-                      onDoubleClick={() => vscode.postMessage({ type: "openBeadInTab", beadId: row.original.id })}
+                      onDoubleClick={(e) =>
+                        vscode.postMessage(
+                          e.metaKey || e.ctrlKey
+                            ? { type: "openBeadInTab", beadId: row.original.id }
+                            : { type: "openBeadDetails", beadId: row.original.id },
+                        )
+                      }
                       onContextMenu={(e) => {
                         e.preventDefault();
                         setRowMenu({ x: e.clientX, y: e.clientY, bead: row.original });

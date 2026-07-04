@@ -483,7 +483,7 @@ export function App(): React.ReactElement {
             buildSha={state.settings.buildSha}
             buildDirty={state.settings.buildDirty}
             onSelectBead={(beadId) =>
-              vscode.postMessage({ type: "openBeadDetails", beadId })
+              vscode.postMessage({ type: "selectBead", beadId })
             }
             onOpenIssues={(filter) =>
               vscode.postMessage({ type: "openIssuesWithFilter", filter })
@@ -524,7 +524,7 @@ export function App(): React.ReactElement {
             graph={state.graph}
             onRequestGraph={() => vscode.postMessage({ type: "requestGraph" })}
             onSelectBead={(beadId) =>
-              vscode.postMessage({ type: "openBeadDetails", beadId })
+              vscode.postMessage({ type: "selectBead", beadId })
             }
             onRetry={() =>
               vscode.postMessage({ type: "refresh" })
@@ -595,7 +595,7 @@ export function App(): React.ReactElement {
             parentCleared={state.seedFilterCleared}
             onToggleParentScope={toggleSeedFilter}
             totalCount={state.beads.length}
-            onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
+            onSelectBead={(beadId) => vscode.postMessage({ type: "selectBead", beadId })}
             onUpdateBead={(beadId, updates) =>
               vscode.postMessage({ type: "updateBead", beadId, updates })
             }
@@ -620,7 +620,7 @@ export function App(): React.ReactElement {
             parentCleared={state.seedFilterCleared}
             onToggleParentScope={toggleSeedFilter}
             totalCount={state.beads.length}
-            onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
+            onSelectBead={(beadId) => vscode.postMessage({ type: "selectBead", beadId })}
             onRequestGraph={() => vscode.postMessage({ type: "requestGraph" })}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
           />,
@@ -762,7 +762,7 @@ export function App(): React.ReactElement {
               vscode.postMessage({ type: "viewInGraph", beadId })
             }
             onSelectBead={(beadId) =>
-              vscode.postMessage({ type: "openBeadDetails", beadId })
+              vscode.postMessage({ type: "selectBead", beadId })
             }
             onCopyId={(beadId) =>
               vscode.postMessage({ type: "copyBeadId", beadId, toast: true })

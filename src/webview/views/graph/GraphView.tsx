@@ -302,6 +302,9 @@ function GraphCanvas({
         c.timer = null;
         if (n >= 3) vscode.postMessage({ type: "openBeadInTab", beadId: id });
         else if (n === 2) onOpenBead(id);
+        // Single click: passive select — sync the selection surfaces + Details
+        // content without revealing the Details view.
+        else if (n === 1) vscode.postMessage({ type: "selectBead", beadId: id });
       }, 320);
     },
     [onOpenBead],

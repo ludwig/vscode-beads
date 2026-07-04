@@ -150,7 +150,7 @@ export function ProjectSwitcherView({
       const items: ContextMenuItem[] = [
         { label: "Copy ID", onSelect: () => onCopyId(id) },
         { label: "Show Details", onSelect: () => onOpenBead(id) },
-        { label: "Open in editor tab", onSelect: () => onOpenBeadInTab(id) },
+        { label: "Show in editor tab", onSelect: () => onOpenBeadInTab(id) },
       ];
       // A hidden (masked) favorite can be un-hidden straight from its card menu —
       // handy when the muted card makes the eye toggle easy to miss (vs-sd5).

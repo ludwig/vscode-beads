@@ -306,6 +306,13 @@ export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], maskedIds
                     draggable={!!onUpdateBead}
                     onDragStart={(e) => handleDragStart(e, bead.id)}
                     onClick={() => selectCard(bead.id)}
+                    onDoubleClick={(e) =>
+                      vscode.postMessage(
+                        e.metaKey || e.ctrlKey
+                          ? { type: "openBeadInTab", beadId: bead.id }
+                          : { type: "openBeadDetails", beadId: bead.id },
+                      )
+                    }
                     onContextMenu={(e) => {
                       e.preventDefault();
                       setMenu({ x: e.clientX, y: e.clientY, bead });
@@ -369,7 +376,7 @@ export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], maskedIds
 function cardMenuItems(bead: Bead, isFavorite: boolean): ContextMenuItem[] {
   return [
     {
-      label: "Open Details (editor tab)",
+      label: "Show in editor tab",
       onSelect: () => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id }),
     },
     {

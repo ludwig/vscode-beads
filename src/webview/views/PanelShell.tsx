@@ -366,7 +366,7 @@ export function PanelShell({
             maskedIds={maskedIds}
             muteClosedIssues={settings.muteClosedIssues}
             revealRequest={kanbanRevealRequest}
-            onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
+            onSelectBead={(beadId) => vscode.postMessage({ type: "selectBead", beadId })}
             onUpdateBead={(beadId, updates) => vscode.postMessage({ type: "updateBead", beadId, updates })}
           />
         ) : active === "tree" ? (
@@ -384,7 +384,7 @@ export function PanelShell({
             sharedFilter={sharedFilter}
             totalCount={totalCount}
             revealRequest={treeRevealRequest}
-            onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
+            onSelectBead={(beadId) => vscode.postMessage({ type: "selectBead", beadId })}
             onRequestGraph={requestGraph}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
           />
@@ -413,7 +413,7 @@ export function PanelShell({
             version={settings.extensionVersion}
             buildSha={settings.buildSha}
             buildDirty={settings.buildDirty}
-            onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
+            onSelectBead={(beadId) => vscode.postMessage({ type: "selectBead", beadId })}
             onOpenIssues={(filter) => flipToIssues(filter)}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
           />
@@ -436,7 +436,7 @@ export function PanelShell({
             revealRequest={issuesRevealRequest}
             graph={graph}
             onRequestGraph={requestGraph}
-            onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
+            onSelectBead={(beadId) => vscode.postMessage({ type: "selectBead", beadId })}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
           />
         )}

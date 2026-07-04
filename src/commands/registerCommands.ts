@@ -71,7 +71,7 @@ export function registerCommands(
   // Drive every selection surface from one place: the sidebar Details view, the
   // Issues table highlight, and the Active Bead pin — so traversal keeps them in
   // sync (the Active Bead follows where the user actually is).
-  const selectBead = (beadId: string, opts?: { pulse?: boolean }): void => {
+  const selectBead = (beadId: string, opts?: { pulse?: boolean; reveal?: boolean }): void => {
     detailsProvider.showBead(beadId, opts);
     shellProvider.setSelectedBead(beadId);
     switcherProvider.setActiveBead(beadId);
@@ -197,6 +197,15 @@ export function registerCommands(
         selectBead(beadId, { pulse: true });
         updateNavContext();
       }
+    }),
+
+    // Passive selection (single-click a row/card/node): drive all selection
+    // surfaces and update the Details content, but DON'T reveal the Details
+    // view — so selecting never pops the Secondary Side Bar open (revealing is
+    // the explicit "Show Details" / double-click job). No history record: only
+    // explicit opens grow the Back/Forward trail.
+    vscode.commands.registerCommand("beads.selectBead", (beadId?: string) => {
+      if (beadId) selectBead(beadId, { reveal: false });
     }),
 
     // Back/Forward through the Details navigation history (vs-xzq). These move

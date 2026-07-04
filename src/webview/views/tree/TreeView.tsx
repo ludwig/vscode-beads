@@ -355,7 +355,10 @@ export function TreeView({
         c.count = 0;
         c.id = "";
         c.timer = null;
+        // Single-click already selected (passive) above. Double-click reveals
+        // the Details view; triple opens an editor tab.
         if (n >= 3) vscode.postMessage({ type: "openBeadInTab", beadId: id });
+        else if (n === 2) vscode.postMessage({ type: "openBeadDetails", beadId: id });
       }, 320);
     },
     [onSelectBead],
@@ -880,7 +883,7 @@ function rowMenuItems(
 ): ContextMenuItem[] {
   return [
     {
-      label: "Open Details (editor tab)",
+      label: "Show in editor tab",
       onSelect: () => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id }),
     },
     {
