@@ -44,12 +44,14 @@ describe("WebviewHost.setTitle (vs-q0e2)", () => {
     expect(panel.title).toBe("vs-other");
   });
 
-  it("is a no-op for a sidebar view (title is fixed by contribution)", () => {
+  it("retitles a sidebar view so its header tracks the screen/bead (vs-filterbar)", () => {
     const view = fakeView();
     const host = hostFromView(view);
     expect(host.isEditorTab).toBe(false);
 
+    // The merged sidebar view drives its title from the current screen (bead id
+    // on Details, "Repository" on the Project screen), so setTitle must apply.
     host.setTitle("vs-other");
-    expect(view.title).toBe("fixed");
+    expect(view.title).toBe("vs-other");
   });
 });

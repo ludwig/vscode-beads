@@ -47,8 +47,11 @@ export function hostFromView(view: vscode.WebviewView): WebviewHost {
     reveal(preserveFocus?: boolean) {
       view.show(preserveFocus);
     },
-    setTitle() {
-      // Sidebar view titles are fixed by the view contribution — no-op.
+    setTitle(title: string) {
+      // Overrides the contributed view name so the sidebar header can track
+      // context (e.g. the bead id on the Details screen, "Repository" on the
+      // Project screen). Setting "" restores the contributed name.
+      view.title = title;
     },
     close() {
       // Sidebar views can't be closed programmatically — no-op.

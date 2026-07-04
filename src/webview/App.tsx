@@ -536,7 +536,11 @@ export function App(): React.ReactElement {
           vscode.postMessage({ type: "viewInGraph", beadId })
         }
         onSelectBead={(beadId) =>
-          vscode.postMessage({ type: "selectBead", beadId })
+          // Clicking a child/dependency link is a navigation, not a passive
+          // select — route through openBeadDetails so it records history (the
+          // sidebar's global trail; an editor tab's per-tab trail), making the
+          // back/forward nav meaningful as you click around relatives.
+          vscode.postMessage({ type: "openBeadDetails", beadId })
         }
         onCopyId={(beadId) =>
           vscode.postMessage({ type: "copyBeadId", beadId, toast: true })

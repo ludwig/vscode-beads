@@ -538,11 +538,11 @@ export function DetailsView({
       {/* Header block — the ID/actions row, title anchor, and metadata
           chiclets, grouped and delimited from the body as one header unit. */}
       <div className="details-headerblock">
-      {/* Leading line: context on the left — the sidebar takeover shows a
-          labeled "← Project" back button; an editor tab shows an "Issue view
-          for <project>" chrome label. On the right: the merged
-          type|status|priority pill (sidebar) or the back/forward history nav
-          (editor tab). */}
+      {/* Lead line: context on the left — the sidebar takeover shows a labeled
+          "← Project" back button; an editor tab shows an "Issue view for
+          <project>" chrome label. On the right, the action cluster (sidebar) or
+          the back/forward history nav (editor tab, which has no view-title bar
+          to host it). */}
       <div className="details-lead">
         {isEditorTab ? (
           <span
@@ -565,12 +565,27 @@ export function DetailsView({
           </button>
         )}
         <span className="details-lead-spacer" />
-        {isEditorTab ? backForwardBtns : pills}
+        <div className="header-actions">
+          {isEditorTab ? (
+            backForwardBtns
+          ) : (
+            // [refresh] | [+] [edit] | [show] [open-in-tab]  (star is on the Ident row)
+            <>
+              {refreshBtn}
+              <span className="header-actions-sep" />
+              {createBtn}
+              {editControls}
+              <span className="header-actions-sep" />
+              {showTabBtns}
+              {openInTabBtn}
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Identity + actions row: type icon + ID on the left, the action cluster
-          on the right (plus the pill, in an editor tab, where the leading line
-          is taken by the nav). */}
+      {/* Ident row: type icon + ID + favorite star on the left; the merged
+          type|status|priority pill right-aligned (plus, in an editor tab, its
+          action cluster — the Lead there is taken by the nav). */}
       <div className="details-header">
         <TypeIcon type={(displayBead.type || "task") as BeadType} size={20} />
         <span
@@ -587,31 +602,16 @@ export function DetailsView({
         >
           {bead.id}
         </span>
+        {favoriteBtn}
         <span className="details-header-spacer" />
-        <div className="header-actions">
-          {isEditorTab ? (
-            // [favorite] [llm] [show] [edit]  (nav moved to the leading line)
-            <>
-              {favoriteBtn}
-              {llmToggle}
-              {showTabBtns}
-              {editControls}
-            </>
-          ) : (
-            // [favorite] [refresh] | [+] [edit] | [show] [open-in-tab]
-            <>
-              {favoriteBtn}
-              {refreshBtn}
-              <span className="header-actions-sep" />
-              {createBtn}
-              {editControls}
-              <span className="header-actions-sep" />
-              {showTabBtns}
-              {openInTabBtn}
-            </>
-          )}
-        </div>
-        {isEditorTab && pills}
+        {isEditorTab && (
+          <div className="header-actions">
+            {llmToggle}
+            {showTabBtns}
+            {editControls}
+          </div>
+        )}
+        {pills}
       </div>
 
       {/* Title - full width */}

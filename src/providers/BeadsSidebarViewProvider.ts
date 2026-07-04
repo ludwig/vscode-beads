@@ -72,6 +72,18 @@ export class BeadsSidebarViewProvider extends BeadDetailsViewProvider {
     this.screen = screen;
     this.postMessage({ type: "setScreen", screen });
     vscode.commands.executeCommand("setContext", "beads.detailScreen", screen === "details");
+    this.applyTitle();
+  }
+
+  /**
+   * Drive the sidebar view's header label from the current screen: the bead id
+   * on the Details screen, "Repository" on the Project screen — so it stops
+   * reading "Repository" while a bead's details are showing.
+   */
+  private applyTitle(): void {
+    this._host?.setTitle(
+      this.screen === "details" ? this.getCurrentBeadId() ?? "Details" : "Repository"
+    );
   }
 
   /** The Details "← Back" button (and project changes) return to the Project screen. */
@@ -92,6 +104,10 @@ export class BeadsSidebarViewProvider extends BeadDetailsViewProvider {
       this.setScreen("details");
     }
     await super.showBead(beadId, opts);
+    // renderBead has now set the current bead id; refresh the header label so
+    // the Details screen shows this bead (super's setTitle already fired, but
+    // re-assert in case the screen didn't change and setScreen wasn't called).
+    this.applyTitle();
   }
 
   /** Entering create mode is an explicit open — flip to the Details screen,
@@ -114,6 +130,7 @@ export class BeadsSidebarViewProvider extends BeadDetailsViewProvider {
     // disposed while hidden comes back showing the right screen.
     this.postMessage({ type: "setScreen", screen: this.screen });
     vscode.commands.executeCommand("setContext", "beads.detailScreen", this.screen === "details");
+    this.applyTitle();
     this.startMemorySampler();
   }
 
