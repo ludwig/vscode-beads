@@ -234,6 +234,13 @@ body {
   background: transparent;
 }
 
+/* The editor-tab bar is fully borderless (no bottom rule), so the search row
+   must be too — otherwise the reserved 1px would re-introduce the funnel nudge
+   here in the opposite direction. */
+.editor-tab-toolbar .filter-bar-search-row {
+  border-bottom: none;
+}
+
 /* Inherited-scope ribbon as an INLINE segment of the bar (not a full-width
    banner): a compact pill with no divider of its own. Applies wherever a
    FilterBar hosts the ribbon (editor-tab chrome + the Tree's own FilterBar).
@@ -341,6 +348,11 @@ body {
   padding: 6px 8px;
   height: 36px;
   box-sizing: border-box;
+  /* Reserve the same 1px the collapsed ribbon's border-bottom occupies, so the
+     funnel's centered vertical position is IDENTICAL in both states and it
+     doesn't nudge when you toggle collapse. Transparent → invisible; editor
+     tabs have a borderless bar and opt out below. */
+  border-bottom: 1px solid transparent;
 }
 
 /* Shared search field: one look across Kanban / Tree / Graph. The funnel leads
