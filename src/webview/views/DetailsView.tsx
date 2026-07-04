@@ -549,7 +549,7 @@ export function DetailsView({
             onClick={() => vscode.postMessage({ type: "backToProject" })}
           >
             <ArrowLeft size={14} strokeWidth={2} />
-            <span>Project</span>
+            <span>Active Project</span>
           </button>
         )}
         {isEditorTab ? (
