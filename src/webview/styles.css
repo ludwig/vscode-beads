@@ -4884,6 +4884,17 @@ textarea {
   margin-bottom: 2px;
 }
 
+/* Priority chip pinned to the card's top-right corner — a small color-coded
+   Pn badge (mirrors the graph node's priority dot, but keeps the label). */
+.kanban-card-priority {
+  margin-left: auto;
+  flex: 0 0 auto;
+  font-size: 9px;
+  padding: 0 5px;
+  height: 14px;
+  font-weight: 600;
+}
+
 .kanban-card-id {
   font-size: 10px;
   font-family: var(--vscode-editor-font-family), monospace;

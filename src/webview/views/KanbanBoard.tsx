@@ -314,10 +314,12 @@ export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], maskedIds
                     <div className="kanban-card-header">
                       <TypeIcon type={(bead.type || "task") as BeadType} size={12} />
                       <span className="kanban-card-id">{bead.id}</span>
+                      {bead.priority !== undefined && (
+                        <PriorityBadge priority={bead.priority} size="small" className="kanban-card-priority" />
+                      )}
                     </div>
                     <div className={`kanban-card-title${muteClosedIssues && isClosedStatus(bead.status) ? " muted-closed" : ""}`}>{bead.title}</div>
                     <div className="kanban-card-meta">
-                      {bead.priority !== undefined && <PriorityBadge priority={bead.priority} size="small" />}
                       {bead.assignee && (
                         <>
                           <Icon name="user" size={10} className="kanban-card-icon" />
