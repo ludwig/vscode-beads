@@ -233,17 +233,8 @@ export function ProjectSwitcherView({
           {activeProject && (
             <>
             {/* Quick actions (relocated from the native view-title bar so they
-                can sit on the card): init · new issue · reload · settings, right
+                can sit on the card): new issue · reload · init · settings, right
                 of the ⋮ overflow. */}
-            <button
-              type="button"
-              className="context-heading-action fb-tip fb-tip-end"
-              data-tip="Initialize repository"
-              aria-label="Initialize repository"
-              onClick={onCreateBoard}
-            >
-              <FolderPlus size={13} strokeWidth={2} />
-            </button>
             <button
               type="button"
               className="context-heading-action fb-tip fb-tip-end"
@@ -261,6 +252,15 @@ export function ProjectSwitcherView({
               onClick={() => vscode.postMessage({ type: "refresh" })}
             >
               <RefreshCw size={13} strokeWidth={2} />
+            </button>
+            <button
+              type="button"
+              className="context-heading-action fb-tip fb-tip-end"
+              data-tip="Initialize new repository"
+              aria-label="Initialize new repository"
+              onClick={onCreateBoard}
+            >
+              <FolderPlus size={13} strokeWidth={2} />
             </button>
             <button
               type="button"
