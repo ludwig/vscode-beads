@@ -405,6 +405,17 @@ export function ProjectSwitcherView({
         headerAction={
           favorites.length > 0 ? (
             <>
+              {/* Secondary action leads; the primary full-duplex star sits in
+                  the corner (rightmost) as the comfy, reach-for-it default. */}
+              <button
+                type="button"
+                className="context-heading-action"
+                title="Copy favorite IDs as CSV"
+                aria-label="Copy favorite IDs as CSV"
+                onClick={onCopyFavorites}
+              >
+                <Copy size={13} strokeWidth={2} />
+              </button>
               {/* Full-duplex star: reflects the panel Issues Favorites filter
                   (filled = on) and toggles it (vs-sd5). */}
               <button
@@ -420,15 +431,6 @@ export function ProjectSwitcherView({
                 onClick={() => onToggleFavoritesFilter(!favoritesFilterOn)}
               >
                 <Star size={13} strokeWidth={2} fill={favoritesFilterOn ? "currentColor" : "none"} />
-              </button>
-              <button
-                type="button"
-                className="context-heading-action"
-                title="Copy favorite IDs as CSV"
-                aria-label="Copy favorite IDs as CSV"
-                onClick={onCopyFavorites}
-              >
-                <Copy size={13} strokeWidth={2} />
               </button>
             </>
           ) : undefined
