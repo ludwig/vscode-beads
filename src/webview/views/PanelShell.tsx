@@ -207,6 +207,32 @@ export function PanelShell({
     setTimeout(() => setRefreshing(false), 800);
   }, []);
 
+  // Each downstream subtab (Kanban/Tree/Graph) can independently opt out of the
+  // inherited Issues filter via its FilterBar's Show-all/Show-filtered toggle —
+  // the common "Filtered" capability lives in the base bar, but each instance
+  // carries its own opt-out state. Issues is the source, so it has none.
+  const [clearedViews, setClearedViews] = useState<Set<PanelTab>>(new Set());
+  const toggleCleared = useCallback(
+    (view: PanelTab) =>
+      setClearedViews((prev) => {
+        const next = new Set(prev);
+        if (next.has(view)) next.delete(view);
+        else next.add(view);
+        return next;
+      }),
+    [],
+  );
+  // The toggle is only meaningful when there's an active upstream filter to drop
+  // — otherwise the ribbon would misleadingly read "0 of M". A helper builds the
+  // per-view props, omitting the toggle (→ no ribbon) when nothing is inherited.
+  const parentScopeProps = useCallback(
+    (view: PanelTab) =>
+      filteredBeadIds != null
+        ? { parentCleared: clearedViews.has(view), onToggleParentScope: () => toggleCleared(view) }
+        : {},
+    [filteredBeadIds, clearedViews, toggleCleared],
+  );
+
   const tabs: { id: PanelTab; label: string; Icon: LucideIcon }[] = [
     { id: "dashboard", label: "Dashboard", Icon: LayoutDashboard },
     { id: "issues", label: "Issues", Icon: ListTodo },
@@ -288,6 +314,7 @@ export function PanelShell({
             graph={graph}
             onRequestGraph={requestGraph}
             filteredBeadIds={filteredBeadIds}
+            {...parentScopeProps("kanban")}
             totalCount={totalCount}
             selectedBeadId={selectedBeadId}
             favoriteIds={favoriteIds}
@@ -308,6 +335,7 @@ export function PanelShell({
             highlightFavorites={settings.highlightFavorites}
             muteClosedIssues={settings.muteClosedIssues}
             filteredBeadIds={filteredBeadIds}
+            {...parentScopeProps("tree")}
             totalCount={totalCount}
             revealRequest={treeRevealRequest}
             onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
@@ -324,6 +352,7 @@ export function PanelShell({
             maskedIds={maskedIds}
             focusBeadId={graphFocusId}
             filteredBeadIds={filteredBeadIds}
+            {...parentScopeProps("graph")}
             onOpenBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onRequestGraph={requestGraph}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
