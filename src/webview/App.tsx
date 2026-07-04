@@ -68,6 +68,7 @@ interface AppState {
   focusIssuesSeq: number;
   // Bumped to switch the panel to the Kanban tab (vs-6xf).
   focusKanbanSeq: number;
+  focusTreeSeq: number;
   // Bumped when this (editor-tab) webview is revealed/opened, to flash a
   // confirmation ring so the tab is easy to spot (vs-c59).
   pulseSeq: number;
@@ -151,6 +152,7 @@ const initialState: AppState = {
   showIssuesBeadRequest: null,
   focusIssuesSeq: 0,
   focusKanbanSeq: 0,
+  focusTreeSeq: 0,
   pulseSeq: 0,
   memoryBytes: 0,
   tabNav: { canBack: false, canForward: false },
@@ -284,6 +286,9 @@ export function App(): React.ReactElement {
         break;
       case "focusKanbanTab":
         setState((prev) => ({ ...prev, focusKanbanSeq: prev.focusKanbanSeq + 1 }));
+        break;
+      case "focusTreeTab":
+        setState((prev) => ({ ...prev, focusTreeSeq: prev.focusTreeSeq + 1 }));
         break;
       case "pulse":
         setState((prev) => ({ ...prev, pulseSeq: prev.pulseSeq + 1 }));
@@ -550,6 +555,7 @@ export function App(): React.ReactElement {
             showIssuesBeadRequest={state.showIssuesBeadRequest}
             focusIssuesSeq={state.focusIssuesSeq}
             focusKanbanSeq={state.focusKanbanSeq}
+            focusTreeSeq={state.focusTreeSeq}
           />
         );
 
@@ -670,6 +676,7 @@ export function App(): React.ReactElement {
             }}
             onPickReady={() => vscode.postMessage({ type: "pickReadyBead" })}
             onShowIssues={() => vscode.postMessage({ type: "showIssues" })}
+            onShowTree={() => vscode.postMessage({ type: "showTreePanel" })}
             onCreateBoard={() => vscode.postMessage({ type: "createBoard" })}
             onOpenRepositoryDetails={() => vscode.postMessage({ type: "openRepositoryDetails" })}
             onChangeRoot={() => vscode.postMessage({ type: "changeProjectsRoot" })}

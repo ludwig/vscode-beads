@@ -75,6 +75,7 @@ interface PanelShellProps {
   showIssuesBeadRequest: { beadId: string; seq: number } | null;
   focusIssuesSeq: number;
   focusKanbanSeq: number;
+  focusTreeSeq: number;
 }
 
 export function PanelShell({
@@ -97,6 +98,7 @@ export function PanelShell({
   showIssuesBeadRequest,
   focusIssuesSeq,
   focusKanbanSeq,
+  focusTreeSeq,
 }: PanelShellProps): React.ReactElement {
   // Issues is the default view when the panel first opens.
   const [active, setActive] = useState<PanelTab>("issues");
@@ -216,6 +218,20 @@ export function PanelShell({
     const t = setTimeout(() => setPulsing(false), 1600);
     return () => clearTimeout(t);
   }, [focusKanbanSeq]);
+
+  // "Show Tree" (sidebar action): flip to the Tree tab and pulse the same
+  // confirmation ring.
+  const lastFocusTreeSeq = useRef(0);
+  useEffect(() => {
+    if (focusTreeSeq === 0 || lastFocusTreeSeq.current === focusTreeSeq) {
+      return;
+    }
+    lastFocusTreeSeq.current = focusTreeSeq;
+    setActive("tree");
+    setPulsing(true);
+    const t = setTimeout(() => setPulsing(false), 1600);
+    return () => clearTimeout(t);
+  }, [focusTreeSeq]);
 
   const flipToIssues = (filter: IssuesFilter) => {
     setLocalFilter((prev) => ({ filter, seq: (prev?.seq ?? 0) + 1 }));

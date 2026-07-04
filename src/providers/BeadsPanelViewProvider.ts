@@ -36,6 +36,7 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
   private pendingShowIssuesBead: string | undefined;
   private pendingFocusIssues = false;
   private pendingFocusKanban = false;
+  private pendingFocusTree = false;
   // Set once the Graph/Tree tab asks for the dependency graph, so a project
   // switch / refresh knows to re-push fresh graph data (not just the bead list).
   // A dedicated graph view (GraphViewProvider) opts in at construction so the
@@ -112,6 +113,15 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     this.flushFocusKanban();
   }
 
+  /**
+   * Switch the panel to the Tree tab. Posts immediately when the webview is
+   * live; otherwise it's flushed once the webview signals ready.
+   */
+  public focusTreeTab(): void {
+    this.pendingFocusTree = true;
+    this.flushFocusTree();
+  }
+
   private flushFilter(): void {
     if (this.pendingFilter !== undefined && this._host?.visible) {
       this.postMessage({ type: "applyIssuesFilter", filter: this.pendingFilter });
@@ -161,6 +171,13 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     }
   }
 
+  private flushFocusTree(): void {
+    if (this.pendingFocusTree && this._host?.visible) {
+      this.postMessage({ type: "focusTreeTab" });
+      this.pendingFocusTree = false;
+    }
+  }
+
   protected async initializeView(): Promise<void> {
     await super.initializeView();
     this.flushFilter();
@@ -170,6 +187,7 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     this.flushShowIssuesBead();
     this.flushFocusIssues();
     this.flushFocusKanban();
+    this.flushFocusTree();
   }
 
   constructor(

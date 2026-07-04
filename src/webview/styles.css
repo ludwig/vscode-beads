@@ -3629,6 +3629,17 @@ textarea {
   background: #494380;
 }
 
+/* Show Tree — outlined steel-blue: the same accent family as Show Issues (they
+   both open a panel view) but secondary weight, so Show Issues stays primary. */
+.context-action-btn.show-tree {
+  background: transparent;
+  color: var(--beads-accent);
+  box-shadow: inset 0 0 0 1px var(--beads-accent);
+}
+.context-action-btn.show-tree:hover {
+  background: color-mix(in srgb, var(--beads-accent) 14%, transparent);
+}
+
 .btn:hover {
   background: var(--vscode-button-secondaryHoverBackground);
 }

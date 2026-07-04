@@ -11,7 +11,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, X, Rocket, ListTodo, Copy, FolderPlus, Star } from "lucide-react";
+import { ChevronDown, ChevronRight, X, Rocket, ListTodo, ListTree, Copy, FolderPlus, Star } from "lucide-react";
 import { Bead, BeadsProject, FavoriteBead, statusColor, isClosedStatus } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem, DropdownSeparator } from "../common/Dropdown";
@@ -47,6 +47,7 @@ interface ProjectSwitcherViewProps {
   onToggleFavoritesFilter: (on: boolean) => void;
   onPickReady: () => void;
   onShowIssues: () => void;
+  onShowTree: () => void;
   /** Launch the "Initialize Repository" flow (empty-state CTA, vs-r6a1.5). */
   onCreateBoard: () => void;
   /** Open the Repository Details editor-tab page (⋮ menu, vs-beoh). */
@@ -95,6 +96,7 @@ export function ProjectSwitcherView({
   onToggleFavoritesFilter,
   onPickReady,
   onShowIssues,
+  onShowTree,
   onCreateBoard,
   onOpenRepositoryDetails,
   onChangeRoot,
@@ -341,6 +343,15 @@ export function ProjectSwitcherView({
         >
           <ListTodo size={14} strokeWidth={2} />
           <span>Show Issues</span>
+        </button>
+        <button
+          type="button"
+          className="btn context-action-btn show-tree"
+          onClick={onShowTree}
+          title="Show the Tree panel"
+        >
+          <ListTree size={14} strokeWidth={2} />
+          <span>Show Tree</span>
         </button>
       </div>
 

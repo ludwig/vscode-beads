@@ -107,6 +107,12 @@ export function registerCommands(
       shellProvider.focusKanbanTab();
     }),
 
+    // Reveal the Beads panel with the Tree tab focused (sidebar "Show Tree").
+    vscode.commands.registerCommand("beads.openTreePanel", async () => {
+      await vscode.commands.executeCommand("beadsPanelShell.focus");
+      shellProvider.focusTreeTab();
+    }),
+
     // Open the Issues panel pre-filtered to a slice (empty filter = all).
     // Used by the Dashboard summary cards and breakdown badges. Focus first so
     // a closed panel resolves its webview, then hand the filter to the provider

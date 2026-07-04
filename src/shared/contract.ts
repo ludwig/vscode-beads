@@ -305,6 +305,7 @@ export type ExtensionToWebviewMessage =
   | { type: "showIssuesBead"; beadId: string }
   | { type: "focusIssuesTab" }
   | { type: "focusKanbanTab" }
+  | { type: "focusTreeTab" }
   | { type: "pulse" }
   | { type: "setMemoryUsage"; bytes: number }
   // The active project's favorites, in curated order, resolved to lightweight
@@ -402,6 +403,8 @@ export type WebviewToExtensionMessage =
   | { type: "showIssues" }
   // Reveal the Beads panel shell with the Kanban tab focused (vs-6xf).
   | { type: "showKanban" }
+  // Reveal the Beads panel shell with the Tree tab focused.
+  | { type: "showTreePanel" }
   | { type: "requestGraph" }
   | {
       type: "openViewInTab";
