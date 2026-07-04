@@ -3540,14 +3540,22 @@ textarea {
   gap: 0;
   border: 1px solid var(--vscode-panel-border);
   border-radius: var(--border-radius);
-  overflow: hidden;
+  /* No overflow:hidden here — it would clip each button's fb-tip tooltip (an
+     absolutely-positioned ::after below the button). Round the outer corners
+     explicitly instead so the segmented look survives without clipping. */
 }
 .header-show-tabs > .header-icon-btn {
   border-radius: 0;
   border-right: 1px solid var(--vscode-panel-border);
 }
+.header-show-tabs > .header-icon-btn:first-child {
+  border-top-left-radius: var(--border-radius);
+  border-bottom-left-radius: var(--border-radius);
+}
 .header-show-tabs > .header-icon-btn:last-child {
   border-right: none;
+  border-top-right-radius: var(--border-radius);
+  border-bottom-right-radius: var(--border-radius);
 }
 
 /* Utility icon buttons in the header (Open in tab, Refresh) — quiet until
