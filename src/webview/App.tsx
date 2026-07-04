@@ -91,10 +91,6 @@ interface AppState {
   // The shared (panel Issues) Favorites-only filter bit, reported by the host so
   // the dashboard's Favorites-card star reflects it (full-duplex probe).
   sharedFavoritesOnly: boolean;
-  // The full shared (panel) filter spec, broadcast by the host so every panel
-  // view renders its common FilterBar surface in sync (the shared base). Any
-  // panel view edits it via `setSharedFilter`; free-text search stays local.
-  sharedSpec: FilterSnapshot;
   // True when the user has temporarily dropped the inherited scope via the
   // ribbon's "Show all" (vs-zq2). The scope itself is retained so they can flip
   // back to "Show filtered". Local to this webview (the "Filtered" toggle).
@@ -156,7 +152,6 @@ const initialState: AppState = {
   companion: null,
   parentScope: null,
   sharedFavoritesOnly: false,
-  sharedSpec: { columnFilters: [], globalFilter: "", activePreset: "custom", readyOnly: false, favoritesOnly: false },
   seedFilterCleared: false,
   applySnapshotRequest: null,
   initWizard: { projectsRoot: "", phase: "form" },
@@ -314,10 +309,6 @@ export function App(): React.ReactElement {
 
       case "setSharedFavoritesOnly":
         setState((prev) => ({ ...prev, sharedFavoritesOnly: message.on }));
-        break;
-
-      case "setSharedFilterSpec":
-        setState((prev) => ({ ...prev, sharedSpec: message.snapshot }));
         break;
       case "applyIssuesFilterSnapshot":
         setState((prev) => ({
@@ -538,7 +529,6 @@ export function App(): React.ReactElement {
             favoriteIds={favoriteIds}
             maskedIds={maskedIds}
             parentScope={state.parentScope}
-            sharedSpec={state.sharedSpec}
             settings={state.settings}
             issuesFilterRequest={state.issuesFilterRequest}
             applySnapshotRequest={state.applySnapshotRequest}

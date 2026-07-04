@@ -246,11 +246,6 @@ export class BeadPanelManager implements vscode.Disposable {
     this.forEachProvider((p) => p.publishParentScope(beadIds));
   }
 
-  /** Broadcast the shared filter spec to every open editor-tab panel. */
-  public publishSharedFilterSpec(snapshot: FilterSnapshot): void {
-    this.forEachProvider((p) => p.publishSharedFilterSpec(snapshot));
-  }
-
   /** Briefly spin the refresh in every open editor-tab panel (vs-sd5). */
   public flashLoading(): void {
     this.forEachProvider((p) => p.flashLoading());

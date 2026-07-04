@@ -12,7 +12,7 @@ import { PriorityBadge } from "../common/PriorityBadge";
 import { LabelBadge } from "../common/LabelBadge";
 import { Icon } from "../common/Icon";
 import { FilterBar } from "../common/FilterBar";
-import { useLocalFilter, type SharedFilterControl } from "../hooks/useLocalFilter";
+import { useLocalFilter } from "../hooks/useLocalFilter";
 import { intersect } from "../composeScope";
 import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
 
@@ -42,12 +42,6 @@ interface KanbanBoardProps {
   /** Editor-tab inherited-scope ribbon controls (omitted in the panel subtab). */
   parentCleared?: boolean;
   onToggleParentScope?: () => void;
-  /**
-   * Panel only: controls for the shared filter surface. When provided, the
-   * board's FilterBar common controls read/write the shared (panel) spec —
-   * linked with every other panel view. Omitted in an editor tab.
-   */
-  sharedFilter?: SharedFilterControl;
   totalCount?: number;
   /**
    * A "show in kanban" deep-link target (vs-wbrz): select the bead's card and
@@ -73,7 +67,7 @@ const COLUMNS: BuiltInStatus[] = [
   "pinned", // standing / persistent (frozen) — outside the flow
 ];
 
-export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], maskedIds = [], muteClosedIssues = true, graph, onRequestGraph, onSelectBead, onUpdateBead, hasActiveFilters, unfilteredCounts, filteredBeadIds, parentCleared, onToggleParentScope, sharedFilter, totalCount, revealRequest }: KanbanBoardProps): React.ReactElement {
+export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], maskedIds = [], muteClosedIssues = true, graph, onRequestGraph, onSelectBead, onUpdateBead, hasActiveFilters, unfilteredCounts, filteredBeadIds, parentCleared, onToggleParentScope, totalCount, revealRequest }: KanbanBoardProps): React.ReactElement {
   const boardRef = useRef<HTMLDivElement>(null);
   // Track which columns are collapsed. The quiet lanes (closed + the frozen
   // deferred/pinned) start collapsed; good per-lane defaults + persistence are
@@ -174,7 +168,6 @@ export function KanbanBoard({ beads, selectedBeadId, favoriteIds = [], maskedIds
     maskedIds,
     hasGraph: !!graph,
     onRequestGraph,
-    shared: sharedFilter,
   });
   const inheritedScope = parentCleared ? null : (filteredBeadIds ?? null);
   const finalScope = useMemo(

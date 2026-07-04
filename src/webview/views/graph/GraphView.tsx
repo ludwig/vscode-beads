@@ -29,7 +29,7 @@ import { Bead, DependencyGraph, statusColor, vscode } from "../../types";
 import { Loading } from "../../common/Loading";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { FilterBar } from "../../common/FilterBar";
-import { useLocalFilter, type SharedFilterControl } from "../../hooks/useLocalFilter";
+import { useLocalFilter } from "../../hooks/useLocalFilter";
 import { intersect } from "../../composeScope";
 import { BeadNode, type BeadNodeData } from "./BeadNode";
 import { ContextMenu, type ContextMenuItem } from "../../common/ContextMenu";
@@ -64,12 +64,6 @@ interface GraphViewProps {
   /** Editor-tab inherited-scope ribbon controls (omitted in the panel subtab). */
   parentCleared?: boolean;
   onToggleParentScope?: () => void;
-  /**
-   * Panel only: controls for the shared filter surface. When provided, the
-   * graph's FilterBar common controls read/write the shared (panel) spec —
-   * linked with every other panel view. Omitted in an editor tab.
-   */
-  sharedFilter?: SharedFilterControl;
   onOpenBead: (beadId: string) => void;
   /**
    * Lazily ask the provider for graph data on mount. Used by the multi-tab
@@ -93,7 +87,6 @@ function GraphCanvas({
   filteredBeadIds,
   parentCleared,
   onToggleParentScope,
-  sharedFilter,
   onOpenBead,
 }: Omit<GraphViewProps, "loading" | "error" | "onRequestGraph" | "onRetry">): React.ReactElement {
   const [mode, setMode] = useState<LayoutMode>("layered");
@@ -107,7 +100,6 @@ function GraphCanvas({
     favoriteIds,
     maskedIds,
     hasGraph: !!graph,
-    shared: sharedFilter,
   });
   const inheritedScope = parentCleared ? null : filteredBeadIds;
   const finalScope = useMemo(
@@ -661,7 +653,6 @@ export function GraphView(props: GraphViewProps): React.ReactElement {
         filteredBeadIds={props.filteredBeadIds}
         parentCleared={props.parentCleared}
         onToggleParentScope={props.onToggleParentScope}
-        sharedFilter={props.sharedFilter}
         onOpenBead={props.onOpenBead}
       />
     </ReactFlowProvider>

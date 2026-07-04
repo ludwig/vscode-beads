@@ -221,16 +221,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Also report the shared Favorites-only bit to the dashboard so its
     // Favorites-card star reflects the Issues favorites filter (full-duplex).
     scope.onDidChange((ids) => {
-      const spec = scope.currentSpec();
       shellProvider.publishParentScope(ids);
       detailsProvider.publishParentScope(ids);
       switcherProvider.publishParentScope(ids);
       panelManager.publishParentScope(ids);
-      switcherProvider.publishSharedFavoritesOnly(spec.favoritesOnly);
-      // Broadcast the full spec so every panel view renders its common filter
-      // surface in sync (the shared base of "shared base + local overlay").
-      shellProvider.publishSharedFilterSpec(spec);
-      panelManager.publishSharedFilterSpec(spec);
+      switcherProvider.publishSharedFavoritesOnly(scope.currentSpec().favoritesOnly);
     }),
 
     // The dashboard Favorites-card star drives the panel Issues favorites filter

@@ -37,17 +37,6 @@ import {
   type FilterOps,
 } from "../filterSnapshotOps";
 
-/**
- * Controls for the shared (panel) filter surface: the broadcast snapshot to
- * render, and a publisher to push edits to the host. Passed to a panel view so
- * its FilterBar's common controls read/write the shared spec (linked across all
- * panel views). Omitted for editor tabs (self-owned local filter).
- */
-export interface SharedFilterControl {
-  snapshot: FilterSnapshot;
-  onPublish: (next: FilterSnapshot) => void;
-}
-
 interface UseLocalFilterArgs {
   /** State key for this surface's snapshot (collapse uses `${persistKey}Collapsed`). */
   persistKey: string;
@@ -58,15 +47,6 @@ interface UseLocalFilterArgs {
   /** Whether the dependency graph is loaded (Ready/Favorites need its edges). */
   hasGraph: boolean;
   onRequestGraph?: () => void;
-  /**
-   * When provided, the common filter surface is CONTROLLED by a shared snapshot
-   * (panel views): the snapshot comes from here and every edit publishes via
-   * `onPublish` instead of mutating local state, and `localScope` is `null` (the
-   * shared spec is already applied host-side as the parent scope, so the view
-   * must not re-apply it). Omit for a self-owned local filter (editor tabs),
-   * which resolve their own `localScope` and persist it.
-   */
-  shared?: SharedFilterControl;
 }
 
 interface UseLocalFilterResult {
@@ -87,20 +67,15 @@ export function useLocalFilter({
   maskedIds,
   hasGraph,
   onRequestGraph,
-  shared,
 }: UseLocalFilterArgs): UseLocalFilterResult {
-  const [localSnapshot, setLocalSnapshot] = useState<FilterSnapshot>(() => {
+  const [snapshot, setSnapshot] = useState<FilterSnapshot>(() => {
     const saved = (vscode.getState() as Record<string, FilterSnapshot | undefined> | undefined)?.[persistKey];
     return saved ?? emptyFilterSnapshot();
   });
-  // In shared mode the snapshot is the broadcast shared spec (controlled);
-  // otherwise it's this surface's own persisted local snapshot.
-  const snapshot = shared ? shared.snapshot : localSnapshot;
   useEffect(() => {
-    if (shared) return; // shared surface is owned host-side, not persisted here
     const prev = (vscode.getState() as Record<string, unknown> | undefined) ?? {};
-    vscode.setState({ ...prev, [persistKey]: localSnapshot });
-  }, [persistKey, localSnapshot, shared]);
+    vscode.setState({ ...prev, [persistKey]: snapshot });
+  }, [persistKey, snapshot]);
 
   const collapsedKey = `${persistKey}Collapsed`;
   const [collapsed, setCollapsed] = useState<boolean>(() =>
@@ -116,11 +91,7 @@ export function useLocalFilter({
   }, [collapsedKey]);
 
   const ops: FilterOps = useMemo(() => {
-    // Shared mode: publish the edited snapshot upstream (the host recomputes the
-    // scope + echoes the new spec to every panel view). Local mode: mutate our
-    // own state.
-    const edit = (fn: (s: FilterSnapshot) => FilterSnapshot) =>
-      shared ? shared.onPublish(fn(shared.snapshot)) : setLocalSnapshot((s) => fn(s));
+    const edit = (fn: (s: FilterSnapshot) => FilterSnapshot) => setSnapshot((s) => fn(s));
     return {
       applyPreset: (id) => edit((s) => applyPreset(s, id)),
       addStatus: (v) => edit((s) => addStatus(s, v)),
@@ -138,7 +109,7 @@ export function useLocalFilter({
       toggleFavoritesOnly: () => edit((s) => toggleFavoritesOnly(s)),
       clearAll: () => edit((s) => clearAll(s)),
     };
-  }, [shared]);
+  }, []);
 
   const facets = useMemo(() => computeFacets(beads), [beads]);
 
@@ -146,13 +117,9 @@ export function useLocalFilter({
     if ((snapshot.readyOnly || snapshot.favoritesOnly) && !hasGraph) onRequestGraph?.();
   }, [snapshot.readyOnly, snapshot.favoritesOnly, hasGraph, onRequestGraph]);
 
-  // Shared mode: the host already resolves the shared spec into the parent
-  // scope this view inherits, so return null (no extra local narrowing) — the
-  // view composes `inheritedScope ∩ null = inheritedScope`. Local mode: resolve
-  // our own snapshot.
   const localScope = useMemo(
-    () => (shared ? null : resolveScope({ beads, edges, favoriteIds, maskedIds, spec: localSnapshot })),
-    [shared, beads, edges, favoriteIds, maskedIds, localSnapshot],
+    () => resolveScope({ beads, edges, favoriteIds, maskedIds, spec: snapshot }),
+    [beads, edges, favoriteIds, maskedIds, snapshot],
   );
 
   return { snapshot, ops, facets, localScope, collapsed, toggleCollapsed };
