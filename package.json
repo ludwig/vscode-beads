@@ -104,7 +104,8 @@
       },
       {
         "command": "beads.refresh",
-        "title": "Beads: Refresh",
+        "title": "Reload beads from db",
+        "category": "Beads",
         "icon": "$(refresh)"
       },
       {
@@ -192,12 +193,12 @@
     "menus": {
       "view/title": [
         {
-          "command": "beads.createIssue",
+          "command": "beads.initRepository",
           "when": "view == beadsProjectSwitcher && !beads.detailScreen",
           "group": "navigation@0"
         },
         {
-          "command": "beads.initRepository",
+          "command": "beads.createIssue",
           "when": "view == beadsProjectSwitcher && !beads.detailScreen",
           "group": "navigation@2"
         },
