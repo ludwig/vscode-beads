@@ -781,11 +781,7 @@ export function App(): React.ReactElement {
             favoritesFilterOn={state.sharedFavoritesOnly}
             onToggleFavoritesFilter={(on) => vscode.postMessage({ type: "setFavoritesFilter", on })}
             favorites={state.favorites}
-            version={state.settings.extensionVersion}
-            buildSha={state.settings.buildSha}
-            buildDirty={state.settings.buildDirty}
             muteClosedIssues={state.settings.muteClosedIssues}
-            bundleBytes={state.settings.bundleBytes}
             onSelectProject={(project) =>
               vscode.postMessage({
                 type: "selectProject",

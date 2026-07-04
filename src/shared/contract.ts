@@ -193,6 +193,7 @@ export interface BeadsProject {
   backendPid?: number;
   doltMode?: DoltMode; // Detected on activation: "embedded" | "server"
   bdVersion?: string; // Detected `bd` CLI version (e.g. "1.0.5")
+  dbSizeBytes?: number; // On-disk size of the .beads directory, computed on activation
 }
 
 // Summary statistics for the dashboard.

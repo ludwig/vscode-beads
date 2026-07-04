@@ -67,13 +67,8 @@ interface ProjectSwitcherViewProps {
   onOpenDoltLog: () => void;
   /** Export the active project's issues to a JSONL file (vs-ln7e.1). */
   onExportIssues: () => void;
-  version?: string;
-  buildSha?: string;
-  buildDirty?: boolean;
   /** When true, gray out the titles of closed (done) favorites/active bead (beads.muteClosedIssues, vs-b0ga). */
   muteClosedIssues?: boolean;
-  /** On-disk size of our built bundle in bytes (0 = unknown). */
-  bundleBytes?: number;
 }
 
 /** Auto-scaled binary size, e.g. 248 MB / 1.5 GB. */
@@ -113,11 +108,7 @@ export function ProjectSwitcherView({
   onStopDolt,
   onOpenDoltLog,
   onExportIssues,
-  version,
-  buildSha,
-  buildDirty,
   muteClosedIssues = true,
-  bundleBytes = 0,
 }: ProjectSwitcherViewProps): React.ReactElement {
   const backendState = activeProject?.backendStatus ?? "unknown";
   const [projectCollapsed, setProjectCollapsed] = useState(false);
@@ -273,11 +264,20 @@ export function ProjectSwitcherView({
 
         {activeProject ? (
           <>
+            {/* Active-project metrics only — prefix, bd, backend, DB size. The
+                extension-global figures (version, bundle, project count) live in
+                the Repository Details page, not here. */}
             <dl className="project-switcher-meta">
               {activeProject.prefix && (
                 <div className="project-switcher-meta-row">
                   <dt>Prefix</dt>
                   <dd><code>{activeProject.prefix}-</code></dd>
+                </div>
+              )}
+              {activeProject.bdVersion && (
+                <div className="project-switcher-meta-row">
+                  <dt>bd</dt>
+                  <dd>{activeProject.bdVersion}</dd>
                 </div>
               )}
               <div className="project-switcher-meta-row">
@@ -289,37 +289,14 @@ export function ProjectSwitcherView({
                   </span>
                 </dd>
               </div>
-              {activeProject.bdVersion && (
+              {activeProject.dbSizeBytes != null && activeProject.dbSizeBytes > 0 && (
                 <div className="project-switcher-meta-row">
-                  <dt>bd</dt>
-                  <dd>{activeProject.bdVersion}</dd>
-                </div>
-              )}
-              {version && (
-                <div className="project-switcher-meta-row">
-                  <dt>Extension</dt>
-                  <dd
-                    title={`Beads v${version}${
-                      buildSha && buildSha !== "unknown" ? ` · commit ${buildSha}` : ""
-                    }${buildDirty ? " · built with uncommitted changes" : ""}`}
-                  >
-                    v{version}
-                    {buildDirty ? "✦" : ""}
-                  </dd>
-                </div>
-              )}
-              <div className="project-switcher-meta-row">
-                <dt>Projects</dt>
-                <dd>{projects.length}</dd>
-              </div>
-              {bundleBytes > 0 && (
-                <div className="project-switcher-meta-row">
-                  <dt>Bundle</dt>
+                  <dt>DB size</dt>
                   <dd
                     className="mono-figure"
-                    title="On-disk size of the Beads extension bundle (dist/extension.js + webview main.js/css) — an attributable 'this is Beads' figure (code on disk, not runtime RAM)."
+                    title="Total on-disk size of this board's .beads directory."
                   >
-                    {formatBytes(bundleBytes)}
+                    {formatBytes(activeProject.dbSizeBytes)}
                   </dd>
                 </div>
               )}

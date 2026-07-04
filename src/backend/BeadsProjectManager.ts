@@ -13,6 +13,7 @@ import { BeadsCommandRunner } from "./BeadsCommandRunner";
 import { CONFIG_NAMESPACE, PROJECTS_ROOT_SETTING, resolveProjectsRoot } from "../constants";
 import { backendKindForMode, createDoltModeProbe, detectDoltMode } from "./doltMode";
 import { parseConfiguredPrefix } from "./projectPrefix";
+import { dirSizeBytes } from "./dirSize";
 import { Bead, BeadsProject } from "./types";
 import type { GraphEdge } from "./graphDot";
 
@@ -632,6 +633,10 @@ export class BeadsProjectManager implements vscode.Disposable {
     const compatibility = await this.backend.checkCompatibility();
     project.backendStatus = compatibility.supported ? "running" : "stopped";
     project.bdVersion = compatibility.detectedVersion;
+    // On-disk size of the .beads directory, for the Active Project card's "DB
+    // size" row. Computed once per activation (a shallow dir walk) and carried
+    // on the project so it flows to every view via setProject, like bdVersion.
+    project.dbSizeBytes = await dirSizeBytes(project.beadsDir);
     if (compatibility.supported) {
       try {
         this.activePollToken = await this.backend.getChangeToken();
