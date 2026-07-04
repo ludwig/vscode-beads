@@ -4893,10 +4893,13 @@ textarea {
   border-bottom: 1px solid var(--vscode-panel-border);
   padding: 4px var(--spacing-sm);
 }
-/* The graph toolbar (layout/Focus/Auto) fills the extra row as its own row. */
+/* The graph toolbar (layout/Focus/Auto) fills the extra row as its own row. Its
+   own padding is dropped here so the first segment (Layered) is flush with the
+   left edge of the row above — the extra-row supplies the 8px inset. */
 .filter-bar-extra-row .graph-toolbar {
   flex: 1 1 auto;
   border-bottom: none;
+  padding: 0;
 }
 
 /* Tree view (vs-bw9) — file-explorer-style hierarchical bead tree */
