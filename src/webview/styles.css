@@ -5149,11 +5149,6 @@ textarea {
   color: var(--vscode-foreground);
   justify-content: flex-start;
 }
-/* Status / Type / Priority headers sit over fixed-width tracks; align each
-   header with its column's cell content. */
-.beads-tree-col-priority {
-  justify-content: flex-end;
-}
 
 /* Drag-to-resize handle straddling a fixed column's LEFT edge (into the
    column-gap with the previous track), so every boundary — including
@@ -5332,12 +5327,13 @@ textarea {
   color: var(--vscode-descriptionForeground);
 }
 
-/* Priority column cell — colored P0–P4 label (tabular for column alignment). */
+/* Priority column cell — colored P0–P4 label. Left-aligned like the other
+   columns (tabular figures keep the digit aligned). */
 .beads-tree-prio {
   font-size: 10px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  text-align: right;
+  text-align: left;
 }
 
 /* Updated/Created timestamp cells (vs-3ie). */
