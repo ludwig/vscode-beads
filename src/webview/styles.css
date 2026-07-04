@@ -3414,7 +3414,12 @@ textarea {
   gap: var(--spacing-sm);
   padding: var(--spacing-sm);
   overflow: auto;
-  flex: 1;
+  /* Fill the pane's height (like .panel-shell / .project-switcher-view). The
+     host — .app-content in the sidebar, .editor-tab-body in a tab — is a plain
+     block with a definite height, so height:100% fills it while `flex:1` would
+     no-op (no flex parent). Filling gives the whitespace above the flourish
+     free space to absorb (see .bead-details > .view-end). Tall issues scroll. */
+  height: 100%;
   min-height: 0;
 }
 
