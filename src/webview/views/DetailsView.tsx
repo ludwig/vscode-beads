@@ -567,7 +567,13 @@ export function DetailsView({
             className="btn btn-sm details-back-btn fb-tip"
             data-tip="Back to the project view"
             aria-label="Back to the project view"
-            onClick={() => vscode.postMessage({ type: "backToProject" })}
+            onClick={() =>
+              vscode.postMessage(
+                editMode && Object.keys(editedBead).length > 0
+                  ? { type: "confirmDiscard", action: "backToProject" }
+                  : { type: "backToProject" }
+              )
+            }
           >
             <ArrowLeft size={14} strokeWidth={2} />
             <span>Active Project</span>

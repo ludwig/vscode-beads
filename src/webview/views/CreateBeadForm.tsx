@@ -40,7 +40,8 @@ const PRIORITY_OPTIONS: ColoredSelectOption<BeadPriority>[] = ([0, 1, 2, 3, 4] a
 interface CreateBeadFormProps {
   userId?: string;
   onCreate: (fields: CreateBeadFields) => void;
-  onCancel: () => void;
+  /** `dirty` = the form has unsaved input, so the host can warn before discarding. */
+  onCancel: (dirty: boolean) => void;
 }
 
 export function CreateBeadForm({ userId = "", onCreate, onCancel }: CreateBeadFormProps): React.ReactElement {
@@ -55,6 +56,15 @@ export function CreateBeadForm({ userId = "", onCreate, onCancel }: CreateBeadFo
   const [newLabel, setNewLabel] = useState("");
 
   const canSubmit = title.trim().length > 0;
+  // Any entered content means discarding would lose work — the host warns first.
+  const dirty =
+    title.trim().length > 0 ||
+    description.trim().length > 0 ||
+    design.trim().length > 0 ||
+    acceptanceCriteria.trim().length > 0 ||
+    assignee.trim().length > 0 ||
+    labels.length > 0 ||
+    newLabel.trim().length > 0;
 
   const handleAddLabel = useCallback(() => {
     const value = newLabel.trim();
@@ -89,7 +99,7 @@ export function CreateBeadForm({ userId = "", onCreate, onCancel }: CreateBeadFo
           <h2 className="create-bead-title-text">New Issue</h2>
         </div>
         <div className="create-bead-actions">
-          <button type="button" className="btn btn-sm" onClick={onCancel}>
+          <button type="button" className="btn btn-sm" onClick={() => onCancel(dirty)}>
             Cancel
           </button>
           <button

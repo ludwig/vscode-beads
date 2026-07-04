@@ -481,6 +481,29 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
         }
         break;
 
+      case "confirmDiscard": {
+        // The webview posts this only when the edit/create form is dirty. Prompt
+        // to discard (native modal); on confirm, run the requested exit action.
+        const choice = await vscode.window.showWarningMessage(
+          message.action === "cancelCreate"
+            ? "Discard this new issue? Your input will be lost."
+            : "Discard unsaved changes to this issue?",
+          { modal: true },
+          "Discard"
+        );
+        if (choice !== "Discard") {
+          break;
+        }
+        if (message.action === "cancelCreate") {
+          // Route through the normal cancel path (the sidebar override also
+          // restores the prior screen).
+          await this.handleMessage({ type: "cancelCreate" });
+        } else {
+          await vscode.commands.executeCommand("beads.backToProject");
+        }
+        break;
+      }
+
       case "cancelCreate":
         this.createMode = false;
         if (this._host?.isEditorTab) {

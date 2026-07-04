@@ -499,7 +499,11 @@ export function App(): React.ReactElement {
         <CreateBeadForm
           userId={state.settings.userId}
           onCreate={(fields) => vscode.postMessage({ type: "createBead", fields })}
-          onCancel={() => vscode.postMessage({ type: "cancelCreate" })}
+          onCancel={(dirty) =>
+            vscode.postMessage(
+              dirty ? { type: "confirmDiscard", action: "cancelCreate" } : { type: "cancelCreate" }
+            )
+          }
         />
       );
     }

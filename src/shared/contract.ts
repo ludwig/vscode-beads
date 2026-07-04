@@ -424,6 +424,10 @@ export type WebviewToExtensionMessage =
   // Reveal/scroll to this bead in the panel's currently-active tab (the Details
   // "focus" button). Distinct from viewIn* (which each target a specific tab).
   | { type: "focusBeadInActiveTab"; beadId: string }
+  // Leaving Details-edit or New-Issue with unsaved input: prompt to discard
+  // (native modal), then run the exit action if confirmed. Posted only when the
+  // form is dirty; the clean case posts backToProject/cancelCreate directly.
+  | { type: "confirmDiscard"; action: "backToProject" | "cancelCreate" }
   // Walk the GLOBAL Details navigation history from a non-Details view (the
   // Repository sidebar's Details section). Distinct from navigateBack/Forward
   // (the Details editor tab's per-tab history) so they don't double-fire.
