@@ -477,6 +477,7 @@ export function ProjectSwitcherView({
             bead={activeBead}
             muteClosed={muteClosedIssues}
             onOpen={onOpenBead}
+            onSelect={onSelectBead}
             onContextMenu={(e) =>
               openCardMenu(e, activeBead.id, favorites.some((f) => f.id === activeBead.id))
             }

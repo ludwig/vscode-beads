@@ -151,7 +151,6 @@ import { Markdown } from "../common/Markdown";
 import { useToast } from "../common/Toast";
 import { ColoredSelect, ColoredSelectOption } from "../common/ColoredSelect";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
-import { SplitButton } from "../common/SplitButton";
 import { ListTodo, Kanban, Workflow, ArrowLeft } from "lucide-react";
 
 // Build options for ColoredSelect dropdowns (sorted by TYPE_SORT_ORDER)
@@ -414,44 +413,43 @@ export function DetailsView({
     </button>
   ) : null;
 
-  // Reveal THIS bead in the Beads panel's matching tab (vs-wbrz). Defaults to
-  // the last-used target (Tree preserves the prior single-button behavior) and
-  // remembers the choice.
-  const showSplitBtn = (
-    <SplitButton
-      persistKey="detailsReveal"
-      defaultOptionId="tree"
-      options={[
-        {
-          id: "issues",
-          label: "Show in Issues",
-          title: "Show in Issues",
-          icon: <ListTodo size={13} strokeWidth={2} />,
-          onSelect: () => vscode.postMessage({ type: "viewInIssues", beadId: bead.id }),
-        },
-        {
-          id: "tree",
-          label: "Show in Tree",
-          title: "Show in Tree",
-          icon: <Icon name="sitemap" size={13} />,
-          onSelect: () => vscode.postMessage({ type: "viewInTree", beadId: bead.id }),
-        },
-        {
-          id: "kanban",
-          label: "Show in Kanban",
-          title: "Show in Kanban",
-          icon: <Kanban size={13} strokeWidth={2} />,
-          onSelect: () => vscode.postMessage({ type: "viewInKanban", beadId: bead.id }),
-        },
-        {
-          id: "graph",
-          label: "Show in Graph",
-          title: "Show in Graph",
-          icon: <Workflow size={13} strokeWidth={2} />,
-          onSelect: () => vscode.postMessage({ type: "viewInGraph", beadId: bead.id }),
-        },
-      ]}
-    />
+  // Reveal THIS bead in the Beads panel's matching tab (vs-wbrz) — a grouped
+  // row of one button per tab, replacing the earlier awkward split-dropdown.
+  const showTabBtns = (
+    <div className="header-show-tabs" role="group" aria-label="Show this issue in a panel tab">
+      <button
+        className="icon-btn header-icon-btn"
+        title="Show in Issues"
+        aria-label="Show in Issues"
+        onClick={() => vscode.postMessage({ type: "viewInIssues", beadId: bead.id })}
+      >
+        <ListTodo size={13} strokeWidth={2} />
+      </button>
+      <button
+        className="icon-btn header-icon-btn"
+        title="Show in Tree"
+        aria-label="Show in Tree"
+        onClick={() => vscode.postMessage({ type: "viewInTree", beadId: bead.id })}
+      >
+        <Icon name="sitemap" size={13} />
+      </button>
+      <button
+        className="icon-btn header-icon-btn"
+        title="Show in Kanban"
+        aria-label="Show in Kanban"
+        onClick={() => vscode.postMessage({ type: "viewInKanban", beadId: bead.id })}
+      >
+        <Kanban size={13} strokeWidth={2} />
+      </button>
+      <button
+        className="icon-btn header-icon-btn"
+        title="Show in Graph"
+        aria-label="Show in Graph"
+        onClick={() => vscode.postMessage({ type: "viewInGraph", beadId: bead.id })}
+      >
+        <Workflow size={13} strokeWidth={2} />
+      </button>
+    </div>
   );
 
   const createBtn = (
@@ -549,7 +547,7 @@ export function DetailsView({
             <>
               {favoriteBtn}
               {llmToggle}
-              {showSplitBtn}
+              {showTabBtns}
               {editControls}
               <span className="header-actions-sep" />
               {backForwardBtns}
@@ -563,7 +561,7 @@ export function DetailsView({
               {createBtn}
               {editControls}
               <span className="header-actions-sep" />
-              {showSplitBtn}
+              {showTabBtns}
               {openInTabBtn}
             </>
           )}

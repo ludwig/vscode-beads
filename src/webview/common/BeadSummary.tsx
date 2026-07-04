@@ -20,8 +20,10 @@ interface BeadSummaryProps {
   bead: Bead;
   /** Gray the title when the bead is closed (beads.muteClosedIssues). */
   muteClosed?: boolean;
-  /** Click the readout (e.g. open the full Details takeover). Makes it clickable. */
+  /** Double-click the readout to open the full Details takeover. */
   onOpen?: (beadId: string) => void;
+  /** Single-click to (passively) select. Makes the readout interactive. */
+  onSelect?: (beadId: string) => void;
   /** Right-click (e.g. the shared bead context menu). */
   onContextMenu?: (e: React.MouseEvent) => void;
   /** Max label chips before collapsing the rest into a "+N". */
@@ -76,9 +78,11 @@ export function BeadSummary({
   bead,
   muteClosed = false,
   onOpen,
+  onSelect,
   onContextMenu,
   maxLabels = 6,
 }: BeadSummaryProps): React.ReactElement {
+  const interactive = !!(onOpen || onSelect);
   const labels = bead.labels ?? [];
   const shownLabels = labels.slice(0, maxLabels);
   const extraLabels = labels.length - shownLabels.length;
@@ -90,12 +94,13 @@ export function BeadSummary({
 
   return (
     <div
-      className={`bead-readout${onOpen ? " bead-readout-clickable" : ""}`}
-      onClick={onOpen ? () => onOpen(bead.id) : undefined}
+      className={`bead-readout${interactive ? " bead-readout-clickable" : ""}`}
+      onClick={onSelect ? () => onSelect(bead.id) : undefined}
+      onDoubleClick={onOpen ? () => onOpen(bead.id) : undefined}
       onContextMenu={onContextMenu}
-      role={onOpen ? "button" : undefined}
-      tabIndex={onOpen ? 0 : undefined}
-      title={onOpen ? "Show full details" : undefined}
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      title={onOpen ? "Click to select · double-click to open details" : undefined}
     >
       <div className="bead-readout-head">
         <TypeIcon type={bead.type || "task"} size={14} />
