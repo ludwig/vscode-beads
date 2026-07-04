@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Tree column show/hide menu moved into the table header** (right edge, like the Issues table); the Tree's expand/collapse-all is now a single toggle button
 - **Refresh icon spins while data loads** — the panel + editor-tab refresh reflects load progress (e.g. after toggling a favorite's eye/mask)
 - **Right-click a panel tab to open it in an editor tab** — the Issues/Kanban/Tree/Graph tabs now have a context menu mirroring the toolbar's open-in-tab action, seeded with the panel's active filter
-- **Drag-resize Tree columns** — the Tree's fixed columns are drag-resizable (persisted); the Title column absorbs the delta
+- **Drag-resize Tree columns** — the Tree's fixed columns are drag-resizable (persisted); the Title column absorbs the delta. Double-click a divider to reset that column to its default width
 - **Editor-tab view heading** — a standalone editor-tab view shows a "<View> view for <project>" heading in its toolbar
 - **Keyboard navigation in the Tree** — ↑/↓ move a roving row selection (without scrolling the pane), →/← expand/collapse the focused row (⇧ = whole subtree) or step to first-child/parent, Home/End jump to ends, Enter selects
 
@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Tree column-menu icon matches the Issues list** — the Tree's show/hide-columns button now uses the same `⋮` glyph the Issues table uses (was a `Columns3` icon); the default Updated/Created column width widened (88→104px) so dates no longer truncate
 - **Tree column resize divider is now grabbable at every boundary** — the resize handles moved to each fixed column's left edge, so the Title|Status divider (previously handle-less) can be dragged to widen Status; a faint rule appears on header hover for discoverability
 - **Filter scope propagates live to every view** — masking a favorite (or editing the panel filter) now updates Kanban/Tree/Graph instantly, on both the panel subtabs and standalone editor tabs, instead of leaving them on a frozen snapshot. The shared filter is resolved host-side by one pure `resolveScope` (shared with the Issues table so they can't diverge) and broadcast live, so a view no longer needs the Issues view mounted to re-scope. Refresh is no longer needed to pick up a filter change
 

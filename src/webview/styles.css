@@ -5347,6 +5347,10 @@ textarea {
   color: var(--vscode-foreground);
   background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
 }
+.beads-tree-colmenu-glyph {
+  font-size: 16px;
+  line-height: 1;
+}
 
 .beads-tree-empty {
   padding: 16px;

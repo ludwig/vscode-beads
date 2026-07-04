@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight, ChevronDown, ArrowUp, ArrowDown, CornerLeftUp, UnfoldVertical, FoldVertical, Columns3 } from "lucide-react";
+import { ChevronRight, ChevronDown, ArrowUp, ArrowDown, CornerLeftUp, UnfoldVertical, FoldVertical } from "lucide-react";
 import {
   Bead,
   BeadType,
@@ -64,8 +64,8 @@ const TREE_COLUMNS: TreeColumn[] = [
   { key: "status", label: "Status", width: "84px", sortKey: "status" },
   { key: "type", label: "Type", width: "56px", sortKey: "type" },
   { key: "priority", label: "Priority", headerLabel: "P", width: "38px", sortKey: "priority" },
-  { key: "updated", label: "Updated", width: "88px", sortKey: "updated" },
-  { key: "created", label: "Created", width: "88px", sortKey: "created" },
+  { key: "updated", label: "Updated", width: "104px", sortKey: "updated" },
+  { key: "created", label: "Created", width: "104px", sortKey: "created" },
 ];
 // Default visibility: Updated shown, Created hidden, to keep the tree narrow by
 // default (mirrors the Issues table hiding some columns).
@@ -738,12 +738,22 @@ export function TreeView({
                   className="beads-tree-col-resize"
                   role="separator"
                   aria-hidden="true"
-                  title="Drag to resize"
+                  title="Drag to resize · double-click to reset"
                   onMouseDown={(e) => {
                     const col = TREE_COLUMNS.find((tc) => tc.key === colKey);
                     if (col) startColResize(e, col);
                   }}
                   onClick={(e) => e.stopPropagation()}
+                  onDoubleClick={(e) => {
+                    // Reset this column to its declared default width.
+                    e.stopPropagation();
+                    const key = colKey as ColKey;
+                    setColWidths((prev) => {
+                      const next = { ...prev };
+                      delete next[key];
+                      return next;
+                    });
+                  }}
                 />
               )}
             </button>
@@ -760,7 +770,9 @@ export function TreeView({
             aria-expanded={colMenuOpen}
             onClick={() => setColMenuOpen((v) => !v)}
           >
-            <Columns3 size={14} strokeWidth={2} />
+            {/* Vertical ellipsis — same "show/hide columns" affordance the Issues
+                list uses (⋮), for consistency across the two tables. */}
+            <span className="beads-tree-colmenu-glyph" aria-hidden="true">⋮</span>
           </button>
           {colMenuOpen && (
             <div className="col-menu beads-tree-col-menu">
