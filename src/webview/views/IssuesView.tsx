@@ -76,6 +76,26 @@ import { triggerToast } from "../common/Toast";
 import { getLabelColorStyle } from "../utils/label-colors";
 import { useClickOutside } from "../hooks/useClickOutside";
 import { useColumnState } from "../hooks/useColumnState";
+import { FilterBar } from "../common/FilterBar";
+import { computeFacets } from "../facets";
+import {
+  applyPreset as snapApplyPreset,
+  addStatus as snapAddStatus,
+  removeStatus as snapRemoveStatus,
+  clearStatus as snapClearStatus,
+  addPriority as snapAddPriority,
+  removePriority as snapRemovePriority,
+  addType as snapAddType,
+  removeType as snapRemoveType,
+  addLabel as snapAddLabel,
+  removeLabel as snapRemoveLabel,
+  addAssignee as snapAddAssignee,
+  removeAssignee as snapRemoveAssignee,
+  toggleReady as snapToggleReady,
+  toggleFavoritesOnly as snapToggleFav,
+  clearAll as snapClearAll,
+  type FilterOps,
+} from "../filterSnapshotOps";
 
 interface IssuesViewProps {
   beads: Bead[];
@@ -836,6 +856,50 @@ export function IssuesView({
   const filteredCount = table.getFilteredRowModel().rows.length;
   const totalCount = beads.length;
 
+  // --- Unified FilterBar wiring -------------------------------------------
+  // IssuesView's filter state is already snapshot-shaped, so assemble it into a
+  // FilterSnapshot and bind the shared FilterBar's ops to the existing setters
+  // via the pure filterSnapshotOps (identical semantics to the old inline
+  // handlers). The tanstack table, publish path, and persistence are untouched.
+  const snapshot: FilterSnapshot = useMemo(
+    () => ({
+      columnFilters: columnFilters as FilterSnapshot["columnFilters"],
+      globalFilter,
+      activePreset,
+      readyOnly,
+      favoritesOnly,
+    }),
+    [columnFilters, globalFilter, activePreset, readyOnly, favoritesOnly],
+  );
+  const commitSnapshot = useCallback((next: FilterSnapshot) => {
+    setColumnFilters(next.columnFilters as ColumnFiltersState);
+    setGlobalFilter(next.globalFilter);
+    setActivePreset(next.activePreset);
+    setReadyOnly(next.readyOnly);
+    setFavoritesOnly(next.favoritesOnly);
+  }, []);
+  const filterOps: FilterOps = useMemo(
+    () => ({
+      applyPreset: (id) => commitSnapshot(snapApplyPreset(snapshot, id)),
+      addStatus: (v) => commitSnapshot(snapAddStatus(snapshot, v)),
+      removeStatus: (v) => commitSnapshot(snapRemoveStatus(snapshot, v)),
+      clearStatus: () => commitSnapshot(snapClearStatus(snapshot)),
+      addPriority: (v) => commitSnapshot(snapAddPriority(snapshot, v)),
+      removePriority: (v) => commitSnapshot(snapRemovePriority(snapshot, v)),
+      addType: (v) => commitSnapshot(snapAddType(snapshot, v)),
+      removeType: (v) => commitSnapshot(snapRemoveType(snapshot, v)),
+      addLabel: (v) => commitSnapshot(snapAddLabel(snapshot, v)),
+      removeLabel: (v) => commitSnapshot(snapRemoveLabel(snapshot, v)),
+      addAssignee: (v) => commitSnapshot(snapAddAssignee(snapshot, v)),
+      removeAssignee: (v) => commitSnapshot(snapRemoveAssignee(snapshot, v)),
+      toggleReady: () => commitSnapshot(snapToggleReady(snapshot)),
+      toggleFavoritesOnly: () => commitSnapshot(snapToggleFav(snapshot)),
+      clearAll: () => commitSnapshot(snapClearAll(snapshot)),
+    }),
+    [snapshot, commitSnapshot],
+  );
+  const facets = useMemo(() => computeFacets(beads), [beads]);
+
   // Get faceted counts for filters (counts based on OTHER active filters, not this column)
   const statusFacets = table.getColumn("status")?.getFacetedUniqueValues() ?? new Map();
   const priorityFacets = table.getColumn("priority")?.getFacetedUniqueValues() ?? new Map();
@@ -948,286 +1012,49 @@ export function IssuesView({
 
   return (
     <div className="beads-panel">
-      {/* Row 1: filter/density toggles (left, easy to reach) + search */}
-      <div className="panel-toolbar-compact">
-        <button
-          className={`filter-toggle ${filterBarOpen ? "open" : ""} ${
-            hasActiveFilters || readyOnly || favoritesOnly || globalFilter.trim() ? "has-filters" : ""
-          }`}
-          onClick={() => setFilterBarOpen(!filterBarOpen)}
-          title={activeFilterCount > 0 ? `Filters (${activeFilterCount} active)` : "Filters"}
-          aria-label={activeFilterCount > 0 ? `Filters, ${activeFilterCount} active` : "Filters"}
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M6 10.5v-1h4v1H6zm-2-3v-1h8v1H4zm-2-3v-1h12v1H2z" />
-          </svg>
-        </button>
-        {/* Toggle for "comfortable rows": OFF (default) = compact, ON = comfortable. */}
-        <button
-          className={`compact-toggle ${!compact ? "active" : ""}`}
-          onClick={() => setCompact((c) => !c)}
-          title={compact ? "Comfortable rows" : "Compact rows"}
-          aria-pressed={!compact}
-        >
-          {compact ? <Rows3 size={14} /> : <Rows2 size={14} />}
-        </button>
-        <div className="search-input-wrapper">
-          <input
-            type="text"
-            className="search-input-compact"
-            placeholder="Search..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-          />
-          {globalFilter && (
+      {/* Unified filter bar (shared FilterBar). The search input + density toggle
+          + editor-tab "Apply to all" ride in the search slot; the funnel is the
+          master collapse. Issues is the filter SOURCE, so no inherited ribbon. */}
+      <FilterBar
+        snapshot={snapshot}
+        facets={facets}
+        ops={filterOps}
+        count={{ shown: filteredCount, total: totalCount }}
+        collapsed={!filterBarOpen}
+        onToggleCollapsed={() => setFilterBarOpen((v) => !v)}
+        searchTerm={globalFilter}
+        onClearSearch={() => setGlobalFilter("")}
+        search={
+          <>
+            {/* Density toggle: OFF (default) = compact, ON = comfortable. */}
             <button
-              className="search-clear-btn"
-              onClick={() => setGlobalFilter("")}
-              title="Clear search"
+              className={`compact-toggle ${!compact ? "active" : ""}`}
+              onClick={() => setCompact((c) => !c)}
+              title={compact ? "Comfortable rows" : "Compact rows"}
+              aria-pressed={!compact}
             >
-              ×
+              {compact ? <Rows3 size={14} /> : <Rows2 size={14} />}
             </button>
-          )}
-        </div>
-        {isEditorTab && (
-          <button
-            className="apply-all-btn"
-            onClick={handleApplyToAll}
-            title="Apply this tab's filter to the panel and every open view"
-          >
-            <Share2 size={13} strokeWidth={2} />
-            <span>Apply to all</span>
-          </button>
-        )}
-      </div>
-
-      {/* Row 2: Filter bar. The funnel is the master toggle — it fully collapses
-          the bar even when filters are active (the funnel glows to signal that),
-          matching the unified FilterBar's collapse behavior. */}
-      {filterBarOpen && (
-        <div className="filter-bar">
-          <Dropdown
-            trigger={FILTER_PRESETS.find((p) => p.id === activePreset)?.label || "Custom"}
-            className="preset-dropdown"
-            triggerClassName="preset-dropdown-btn"
-            menuClassName="preset-dropdown-menu"
-          >
-            {FILTER_PRESETS.map((preset) => (
-              <DropdownItem
-                key={preset.id}
-                className="preset-option"
-                active={activePreset === preset.id}
-                onClick={() => applyPreset(preset.id)}
+            <input
+              type="text"
+              className="filter-bar-search-input"
+              placeholder="Search..."
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+            />
+            {isEditorTab && (
+              <button
+                className="apply-all-btn"
+                onClick={handleApplyToAll}
+                title="Apply this tab's filter to the panel and every open view"
               >
-                {preset.label}
-              </DropdownItem>
-            ))}
-          </Dropdown>
-
-          {/* Ready toggle (vs-bo9) — composes with the presets/filter chips. */}
-          <button
-            type="button"
-            className={`ready-toggle ${readyOnly ? "active" : ""}`}
-            aria-pressed={readyOnly}
-            onClick={toggleReady}
-            title="Show only ready-to-work beads (open, no open blocker). Composes with the other filters."
-          >
-            {readyOnly ? (
-              <span className="ready-toggle-glyph ready-toggle-emoji" aria-hidden="true">🚀</span>
-            ) : (
-              <Rocket size={12} strokeWidth={2.25} className="ready-toggle-glyph" />
+                <Share2 size={13} strokeWidth={2} />
+                <span>Apply to all</span>
+              </button>
             )}
-            <span>Ready</span>
-          </button>
-
-          {/* Favorites toggle (vs-sd5.6/.7) — favorites + their relatives. */}
-          <button
-            type="button"
-            className={`ready-toggle favorites-toggle ${favoritesOnly ? "active" : ""}`}
-            aria-pressed={favoritesOnly}
-            onClick={toggleFavoritesOnly}
-            title="Show favorited (starred) beads and their relatives (direct dependency neighbors). Composes with the other filters."
-          >
-            <Star size={12} strokeWidth={2.25} />
-            <span>Favorites</span>
-          </button>
-
-          {/* Active filter chips */}
-          {statusFilter.includes(NOT_CLOSED) ? (
-            <FilterChip
-              key="status-not-closed"
-              // Plain "not closed" copy (the ¬ logic-notation read poorly here),
-              // kept distinct via the negated styling: green ("open"/active palette
-              // color, not the gray of the closed state it excludes) + bold fill
-              // so it reads as the active working set (vs-th4z).
-              label="not closed"
-              accentColor={statusColor("open")}
-              negated
-              onRemove={clearStatusFilter}
-            />
-          ) : (
-            statusFilter.map((status) => (
-              <FilterChip
-                key={`status-${status}`}
-                label={statusLabel(status)}
-                accentColor={statusColor(status)}
-                onRemove={() => removeStatusFilter(status)}
-              />
-            ))
-          )}
-          {priorityFilter.map((priority) => (
-            <FilterChip
-              key={`priority-${priority}`}
-              label={`p${priority}`}
-              accentColor={PRIORITY_COLORS[priority]}
-              onRemove={() => removePriorityFilter(priority)}
-            />
-          ))}
-          {typeFilter.map((type) => (
-            <FilterChip
-              key={`type-${type}`}
-              label={TYPE_LABELS[type as BeadType] || type}
-              accentColor={TYPE_COLORS[type as BeadType]}
-              onRemove={() => removeTypeFilter(type)}
-            />
-          ))}
-          {assigneeFilter.map((assignee) => (
-            <FilterChip
-              key={`assignee-${assignee}`}
-              label={assignee === "__unassigned__" ? "Unassigned" : assignee}
-              accentColor="#6b7280"
-              onRemove={() => removeAssigneeFilter(assignee)}
-            />
-          ))}
-          {labelFilter.map((label) => (
-            <FilterChip
-              key={`label-${label}`}
-              label={label === "__unlabeled__" ? "Unlabeled" : label}
-              accentColor={label === "__unlabeled__" ? "#6b7280" : getLabelColorStyle(label).backgroundColor}
-              onRemove={() => removeLabelFilter(label)}
-            />
-          ))}
-
-          {/* Add filter dropdown with faceted counts */}
-          <div className="filter-add-wrapper" ref={filterMenuRef}>
-            <button
-              className="filter-add-btn"
-              onClick={() => setFilterMenuOpen(filterMenuOpen === "main" ? null : "main")}
-            >
-              + Filter
-            </button>
-
-            {filterMenuOpen === "main" && (
-              <div className="filter-menu">
-                <button onClick={() => setFilterMenuOpen("status")}>Status <span className="menu-chevron">›</span></button>
-                <button onClick={() => setFilterMenuOpen("priority")}>Priority <span className="menu-chevron">›</span></button>
-                <button onClick={() => setFilterMenuOpen("type")}>Type <span className="menu-chevron">›</span></button>
-                <button onClick={() => setFilterMenuOpen("assignee")}>Assignee <span className="menu-chevron">›</span></button>
-                <button onClick={() => setFilterMenuOpen("label")}>Label <span className="menu-chevron">›</span></button>
-              </div>
-            )}
-
-            {filterMenuOpen === "status" && (
-              <div className="filter-menu">
-                {(Object.keys(STATUS_LABELS) as BeadStatus[])
-                  .filter((s) => !statusFilter.includes(s))
-                  .map((status) => {
-                    const count = statusFacets.get(status) ?? 0;
-                    return (
-                      <button key={status} onClick={() => addStatusFilter(status)}>
-                        <StatusBadge status={status} size="small" />
-                        <span className="facet-count">({count})</span>
-                      </button>
-                    );
-                  })}
-                <button className="back-btn" onClick={() => setFilterMenuOpen("main")}>← Back</button>
-              </div>
-            )}
-
-            {filterMenuOpen === "priority" && (
-              <div className="filter-menu">
-                {([0, 1, 2, 3, 4] as BeadPriority[])
-                  .filter((p) => !priorityFilter.includes(p))
-                  .map((priority) => {
-                    const count = priorityFacets.get(priority) ?? 0;
-                    return (
-                      <button key={priority} onClick={() => addPriorityFilter(priority)}>
-                        <PriorityBadge priority={priority} size="small" />
-                        <span className="facet-count">({count})</span>
-                      </button>
-                    );
-                  })}
-                <button className="back-btn" onClick={() => setFilterMenuOpen("main")}>← Back</button>
-              </div>
-            )}
-
-            {filterMenuOpen === "type" && (
-              <div className="filter-menu">
-                {ISSUE_TYPES
-                  .filter((t) => !typeFilter.includes(t))
-                  .map((type) => {
-                    const count = typeFacets.get(type) ?? 0;
-                    return (
-                      <button key={type} onClick={() => addTypeFilter(type)}>
-                        <TypeBadge type={type as BeadType} size="small" />
-                        <span className="facet-count">({count})</span>
-                      </button>
-                    );
-                  })}
-                <button className="back-btn" onClick={() => setFilterMenuOpen("main")}>← Back</button>
-              </div>
-            )}
-
-            {filterMenuOpen === "assignee" && (
-              <div className="filter-menu">
-                {!assigneeFilter.includes("__unassigned__") && unassignedCount > 0 && (
-                  <button onClick={() => addAssigneeFilter("__unassigned__")}>
-                    <span className="assignee-name">Unassigned</span>
-                    <span className="facet-count">({unassignedCount})</span>
-                  </button>
-                )}
-                {uniqueAssignees
-                  .filter((a) => !assigneeFilter.includes(a))
-                  .map((assignee) => {
-                    const count = assigneeFacets.get(assignee) ?? 0;
-                    return (
-                      <button key={assignee} onClick={() => addAssigneeFilter(assignee)}>
-                        <span className="assignee-name">{assignee}</span>
-                        <span className="facet-count">({count})</span>
-                      </button>
-                    );
-                  })}
-                {uniqueAssignees.length === 0 && unassignedCount === 0 && (
-                  <span className="filter-menu-empty">No assignees</span>
-                )}
-                <button className="back-btn" onClick={() => setFilterMenuOpen("main")}>← Back</button>
-              </div>
-            )}
-
-            {filterMenuOpen === "label" && (
-              <div className="filter-menu filter-menu-label">
-                <AutocompleteInput
-                  placeholder="Search labels..."
-                  options={labelOptions}
-                  onSelect={(value) => {
-                    addLabelFilter(value);
-                    setFilterMenuOpen(null);
-                  }}
-                  autoFocus
-                  showAllOnFocus
-                />
-                <button className="back-btn" onClick={() => setFilterMenuOpen("main")}>← Back</button>
-              </div>
-            )}
-          </div>
-
-          {hasActiveFilters && (
-            <button className="filter-reset" onClick={clearAllFilters}>
-              Clear
-            </button>
-          )}
-        </div>
-      )}
+          </>
+        }
+      />
 
       {/* Error state */}
       {error && !loading && (

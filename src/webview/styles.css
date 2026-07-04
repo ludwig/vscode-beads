@@ -1129,6 +1129,20 @@ textarea {
   min-height: 0;
 }
 
+/* Issues self-hosts the shared FilterBar as its top strip: drop the standalone
+   card chrome so it reads as header rows above the table (mirrors Kanban/Tree/
+   Graph). The expanded bar keeps a bottom divider; the search row is chromeless. */
+.beads-panel > .filter-bar,
+.beads-panel > .filter-bar-search-row {
+  flex: 0 0 auto;
+}
+.beads-panel > .filter-bar {
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  background: transparent;
+}
+
 /* Compact single-row toolbar */
 .panel-toolbar-compact {
   display: flex;
