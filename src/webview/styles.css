@@ -369,10 +369,14 @@ body {
   padding: 4px 8px;
 }
 
-/* Collapsed (ribbon) form: a single non-wrapping summary line. */
+/* Collapsed (ribbon) form: a single non-wrapping summary line. Pin to the same
+   36px box as the expanded search row so the funnel doesn't drift vertically
+   when toggling. */
 .filter-bar-collapsed {
   flex-wrap: nowrap;
   gap: 8px;
+  min-height: 36px;
+  box-sizing: border-box;
 }
 
 /* Demure "Filtered" toggle pill — the compact replacement for the long inherited
