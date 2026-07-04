@@ -5075,7 +5075,12 @@ textarea {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
-  padding: 4px 0;
+  padding: 0 0 4px;
+  /* Reserve the scrollbar gutter always, so the grid width doesn't shift when
+     rows cross the scroll threshold. The sticky header lives in here too, so
+     header and rows share the identical (gutter-narrowed) width — columns line
+     up exactly (vs-tree). */
+  scrollbar-gutter: stable;
 }
 /* Keyboard focus lives on this container (roving row selection); the selected
    row's highlight is the visible cursor, so don't also draw a container ring. */
@@ -5095,7 +5100,15 @@ textarea {
   align-items: center;
   padding: 3px 8px 4px 4px;
   border-bottom: 1px solid var(--vscode-panel-border);
-  flex: 0 0 auto;
+  /* Sticky, and INSIDE the scrolling body (not a sibling above it): a header
+     outside the scroller keeps full width while the rows lose the scrollbar
+     width, shifting every fixed column left by ~a scrollbar. Sharing the scroll
+     box fixes that. Opaque bg (matches the webview backdrop) so rows scroll
+     under it cleanly. */
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--vscode-editor-background);
 }
 
 /* Matches the Issues table header (.beads-table th): Title-case, weight 600,

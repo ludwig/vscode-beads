@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Tree header/column misalignment fixed** — the header sat outside the scrolling body, so a vertical scrollbar narrowed the rows but not the header, shifting every value column left by ~a scrollbar width. The header is now a sticky header inside the scroll container (with a reserved scrollbar gutter), so header and cells line up exactly
+- **Tree expand/collapse-all toggle icons are now distinct** — the near-identical `FoldVertical`/`UnfoldVertical` pair became `ChevronsDownUp` (collapse) / `ChevronsUpDown` (expand), so the two states read unambiguously
 - **Tree column-menu icon matches the Issues list** — the Tree's show/hide-columns button now uses the same `⋮` glyph the Issues table uses (was a `Columns3` icon); the default Updated/Created column width widened (88→104px) so dates no longer truncate
 - **Tree column resize divider is now grabbable at every boundary** — the resize handles moved to each fixed column's left edge, so the Title|Status divider (previously handle-less) can be dragged to widen Status; a faint rule appears on header hover for discoverability
 - **Filter scope propagates live to every view** — masking a favorite (or editing the panel filter) now updates Kanban/Tree/Graph instantly, on both the panel subtabs and standalone editor tabs, instead of leaving them on a frozen snapshot. The shared filter is resolved host-side by one pure `resolveScope` (shared with the Issues table so they can't diverge) and broadcast live, so a view no longer needs the Issues view mounted to re-scope. Refresh is no longer needed to pick up a filter change

@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight, ChevronDown, ArrowUp, ArrowDown, CornerLeftUp, UnfoldVertical, FoldVertical } from "lucide-react";
+import { ChevronRight, ChevronDown, ArrowUp, ArrowDown, CornerLeftUp, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import {
   Bead,
   BeadType,
@@ -682,9 +682,9 @@ export function TreeView({
                 onClick={allExpanded ? collapseAll : expandAll}
               >
                 {allExpanded ? (
-                  <FoldVertical size={14} strokeWidth={2} />
+                  <ChevronsDownUp size={15} strokeWidth={2} />
                 ) : (
-                  <UnfoldVertical size={14} strokeWidth={2} />
+                  <ChevronsUpDown size={15} strokeWidth={2} />
                 )}
               </button>
             )}
@@ -701,6 +701,36 @@ export function TreeView({
             : undefined
         }
       />
+      {canDetach && (
+        <div
+          className={`beads-tree-rootzone${rootZoneOver ? " over" : ""}`}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setRootZoneOver(true);
+            setDropTargetId(null);
+          }}
+          onDragLeave={() => setRootZoneOver(false)}
+          onDrop={(e) => {
+            e.stopPropagation();
+            setRootZoneOver(false);
+            onBodyDrop();
+          }}
+        >
+          <CornerLeftUp size={13} strokeWidth={2} />
+          <span>Move to root</span>
+        </div>
+      )}
+      {/* Header lives INSIDE the scroll container (sticky) so it and the rows
+          share the same scrollbar-narrowed width and their columns stay aligned. */}
+      <div
+        ref={bodyRef}
+        className={`beads-tree-body${canDetach ? " can-detach" : ""}`}
+        role="tree"
+        tabIndex={0}
+        onKeyDown={onTreeKeyDown}
+        onDragOver={onBodyDragOver}
+        onDrop={onBodyDrop}
+      >
       <div className="beads-tree-colheader" role="row" style={{ gridTemplateColumns: gridTemplate }}>
         {[
           { sortKey: "title" as SortKey, label: "Title", headerLabel: undefined as string | undefined, colKey: "title" },
@@ -790,34 +820,6 @@ export function TreeView({
           )}
         </div>
       </div>
-      {canDetach && (
-        <div
-          className={`beads-tree-rootzone${rootZoneOver ? " over" : ""}`}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setRootZoneOver(true);
-            setDropTargetId(null);
-          }}
-          onDragLeave={() => setRootZoneOver(false)}
-          onDrop={(e) => {
-            e.stopPropagation();
-            setRootZoneOver(false);
-            onBodyDrop();
-          }}
-        >
-          <CornerLeftUp size={13} strokeWidth={2} />
-          <span>Move to root</span>
-        </div>
-      )}
-      <div
-        ref={bodyRef}
-        className={`beads-tree-body${canDetach ? " can-detach" : ""}`}
-        role="tree"
-        tabIndex={0}
-        onKeyDown={onTreeKeyDown}
-        onDragOver={onBodyDragOver}
-        onDrop={onBodyDrop}
-      >
         {visible.length === 0 ? (
           <div className="beads-tree-empty">{forest.length === 0 ? "No beads to show." : "No matches."}</div>
         ) : (
