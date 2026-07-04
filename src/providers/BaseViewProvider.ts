@@ -330,6 +330,14 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
         vscode.commands.executeCommand("beads.openTreePanel");
         break;
 
+      case "historyBack":
+        vscode.commands.executeCommand("beads.navigateBack");
+        break;
+
+      case "historyForward":
+        vscode.commands.executeCommand("beads.navigateForward");
+        break;
+
       case "showDoltStatus":
         vscode.commands.executeCommand("beads.showDoltStatus");
         break;

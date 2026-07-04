@@ -405,6 +405,11 @@ export type WebviewToExtensionMessage =
   | { type: "showKanban" }
   // Reveal the Beads panel shell with the Tree tab focused.
   | { type: "showTreePanel" }
+  // Walk the GLOBAL Details navigation history from a non-Details view (the
+  // Repository sidebar's Details section). Distinct from navigateBack/Forward
+  // (the Details editor tab's per-tab history) so they don't double-fire.
+  | { type: "historyBack" }
+  | { type: "historyForward" }
   | { type: "requestGraph" }
   | {
       type: "openViewInTab";

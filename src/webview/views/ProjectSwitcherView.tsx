@@ -11,13 +11,13 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, X, Rocket, ListTodo, ListTree, Copy, ExternalLink, FolderPlus, Star } from "lucide-react";
+import { ChevronDown, ChevronRight, X, Rocket, ListTodo, ListTree, Copy, ExternalLink, ArrowLeft, ArrowRight, FolderPlus, Star } from "lucide-react";
 import { Bead, BeadsProject, FavoriteBead, statusColor, isClosedStatus } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem, DropdownSeparator } from "../common/Dropdown";
 import { formatBytes } from "../common/formatBytes";
 import { TypeIcon } from "../common/TypeIcon";
-import { BeadSummaryCard } from "../common/BeadSummaryCard";
+import { BeadSummary } from "../common/BeadSummary";
 import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
 import { EndFlourish } from "../common/EndFlourish";
 import { FilterGroup } from "../common/FilterGroup";
@@ -51,6 +51,10 @@ interface ProjectSwitcherViewProps {
   onPickReady: () => void;
   onShowIssues: () => void;
   onShowTree: () => void;
+  /** Walk the global Details navigation history (back/forward) from the
+   *  Details section header — mirrors the Details view's old title-bar nav. */
+  onHistoryBack: () => void;
+  onHistoryForward: () => void;
   /** Launch the "Initialize Repository" flow (empty-state CTA, vs-r6a1.5). */
   onCreateBoard: () => void;
   /** Open the Repository Details editor-tab page (⋮ menu, vs-beoh). */
@@ -101,6 +105,8 @@ export function ProjectSwitcherView({
   onPickReady,
   onShowIssues,
   onShowTree,
+  onHistoryBack,
+  onHistoryForward,
   onCreateBoard,
   onOpenRepositoryDetails,
   onChangeRoot,
@@ -460,44 +466,66 @@ export function ProjectSwitcherView({
       <section className="context-section context-details-section">
         <div className="context-section-head">
           <span className="context-heading">Details</span>
-          {activeBead && (
-            <div className="context-heading-actions">
-              <button
-                type="button"
-                className="context-heading-action fb-tip fb-tip-end"
-                data-tip="Open in editor tab"
-                aria-label="Open in editor tab"
-                onClick={() => onOpenBeadInTab(activeBead.id)}
-              >
-                <ExternalLink size={13} strokeWidth={2} />
-              </button>
-              <button
-                type="button"
-                className="context-heading-action fb-tip fb-tip-end"
-                data-tip="Copy ID"
-                aria-label="Copy ID"
-                onClick={() => onCopyId(activeBead.id)}
-              >
-                <Copy size={13} strokeWidth={2} />
-              </button>
-              <button
-                type="button"
-                className="context-heading-action fb-tip fb-tip-end"
-                data-tip="Clear selection"
-                aria-label="Clear selection"
-                onClick={onClearBead}
-              >
-                <X size={13} strokeWidth={2} />
-              </button>
-            </div>
-          )}
+          <div className="context-heading-actions">
+            {/* Back/Forward walk the global Details navigation history — the
+                actions that lived on the Details view's native title bar
+                ("twistie") before it moved to the Secondary Side Bar. Safe to
+                call anytime (they no-op at the ends of the trail). */}
+            <button
+              type="button"
+              className="context-heading-action fb-tip fb-tip-end"
+              data-tip="Back"
+              aria-label="Navigate back"
+              onClick={onHistoryBack}
+            >
+              <ArrowLeft size={13} strokeWidth={2} />
+            </button>
+            <button
+              type="button"
+              className="context-heading-action fb-tip fb-tip-end"
+              data-tip="Forward"
+              aria-label="Navigate forward"
+              onClick={onHistoryForward}
+            >
+              <ArrowRight size={13} strokeWidth={2} />
+            </button>
+            {activeBead && (
+              <>
+                <button
+                  type="button"
+                  className="context-heading-action fb-tip fb-tip-end"
+                  data-tip="Open in editor tab"
+                  aria-label="Open in editor tab"
+                  onClick={() => onOpenBeadInTab(activeBead.id)}
+                >
+                  <ExternalLink size={13} strokeWidth={2} />
+                </button>
+                <button
+                  type="button"
+                  className="context-heading-action fb-tip fb-tip-end"
+                  data-tip="Copy ID"
+                  aria-label="Copy ID"
+                  onClick={() => onCopyId(activeBead.id)}
+                >
+                  <Copy size={13} strokeWidth={2} />
+                </button>
+                <button
+                  type="button"
+                  className="context-heading-action fb-tip fb-tip-end"
+                  data-tip="Clear selection"
+                  aria-label="Clear selection"
+                  onClick={onClearBead}
+                >
+                  <X size={13} strokeWidth={2} />
+                </button>
+              </>
+            )}
+          </div>
         </div>
         {activeBead ? (
-          <BeadSummaryCard
+          <BeadSummary
             bead={activeBead}
-            flat
             muteClosed={muteClosedIssues}
-            onOpen={activateBead}
             onContextMenu={(e) =>
               openCardMenu(e, activeBead.id, favorites.some((f) => f.id === activeBead.id))
             }
