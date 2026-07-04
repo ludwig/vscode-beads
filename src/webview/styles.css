@@ -34,7 +34,12 @@
   --beads-accent-hover: #354f80;
 
   /* Type scale — a small, deliberate set of sizes so text hierarchy is
-     consistent rather than ad-hoc per component. */
+     consistent rather than ad-hoc per component. ALWAYS use these tokens for
+     text font-size; never hardcode px. 11px (--text-label) is the FLOOR —
+     nothing text should go smaller. Hardcoded sub-floor px (8–10px) reads as
+     tiny AND doesn't scale with the user's --vscode-font-size. Compact badges
+     use the --badge-font-* scale above (which bottoms out at 10px) — that's the
+     only place below the text floor, and only for chips, not prose. */
   --text-label: 11px;   /* tracked-out uppercase section captions */
   --text-sm: 12px;      /* secondary / chrome text */
   --text-body: 13px;    /* descriptions, comments, prose */
