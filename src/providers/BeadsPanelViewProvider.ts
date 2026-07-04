@@ -336,8 +336,16 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
         nodes = issues.map(issueToWebviewBead).filter((b): b is Bead => b !== null);
         this.projectManager.cacheBeadList(nodes);
       }
-      const edges = await client.getDependencyGraph();
+      // Fetch through the project manager so the host's edge cache is warmed by
+      // the SAME graph the webview receives. Then recompute the shared scope:
+      // the host's favorites-with-relatives / ready resolution needs these edges,
+      // and a cold cache would drop relatives (and degenerate "ready"), so the
+      // follower views (Kanban/Tree/Graph) — which inherit the host scope —
+      // would show a smaller set than the Issues view, which resolves locally
+      // from this graph. Recomputing here keeps all views in agreement.
+      const edges = await this.projectManager.getDependencyEdges();
       this.postMessage({ type: "setGraph", graph: { nodes, edges } });
+      this.scope?.recompute();
     } catch (err) {
       this.handleBackendError("Failed to load dependency graph", err);
     }
