@@ -2905,8 +2905,8 @@ textarea {
 
 /* Variant: Rule & bead — twin hairlines flanking a center diamond. */
 .view-end-rulebead {
-  width: 440px;
-  max-width: 92%;
+  width: 300px;
+  max-width: 94%;
   height: auto;
 }
 
