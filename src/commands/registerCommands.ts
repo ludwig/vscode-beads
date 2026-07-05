@@ -10,6 +10,7 @@
 import * as vscode from "vscode";
 import { execFile } from "child_process";
 import * as util from "util";
+import * as path from "path";
 import { IssuesFilter, FilterSnapshot, Bead, issueToWebviewBead } from "../backend/types";
 import { nextReadyBead } from "../backend/readyBeads";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
@@ -448,6 +449,24 @@ export function registerCommands(
       });
       const chosen = picked?.[0]?.fsPath;
       if (!chosen) return; // cancelled
+      if (path.resolve(chosen) === path.resolve(current)) return; // unchanged — nothing to do
+
+      // Changing the root is disruptive: it unloads the current projects and
+      // loads whatever is under the chosen folder (which could be nothing).
+      // Confirm first, and flag when the folder has no .beads repos so the user
+      // isn't surprised by an empty view (vs-y1gn).
+      const found = await projectManager.discoverProjectsUnderRoot(chosen);
+      const detail =
+        found.length === 0
+          ? "No Beads repositories were found under this folder — your view will be empty until you initialize or add one."
+          : `Found ${found.length} Beads ${found.length === 1 ? "repository" : "repositories"} here. The currently loaded projects will be replaced.`;
+      const confirm = await vscode.window.showWarningMessage(
+        `Change the Beads projects root to:\n${chosen}`,
+        { modal: true, detail },
+        "Change Root"
+      );
+      if (confirm !== "Change Root") return;
+
       log.info(`Setting beads.projectsRoot to ${chosen}`);
       await vscode.workspace
         .getConfiguration("beads")

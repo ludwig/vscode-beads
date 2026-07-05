@@ -321,8 +321,9 @@ export function RepositoryView({
       <div className="repository-footer-actions">
         <button
           type="button"
-          className="repository-btn"
+          className="repository-btn change-root"
           onClick={() => vscode.postMessage({ type: "changeProjectsRoot" })}
+          title="Replace the currently loaded projects with those under a different folder"
         >
           <FolderOpen size={13} strokeWidth={2} />
           <span>Change Projects Root</span>

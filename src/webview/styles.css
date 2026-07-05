@@ -6332,6 +6332,20 @@ textarea {
   background: var(--vscode-button-secondaryHoverBackground, var(--vscode-toolbar-hoverBackground));
 }
 
+/* "Change Projects Root" is disruptive — it swaps the whole set of loaded repos
+   — so it's set apart from the neutral footer actions with a caution accent
+   (amber border + icon), keeping the label neutral so it stays readable. */
+.repository-btn.change-root {
+  border-color: color-mix(in srgb, var(--vscode-editorWarning-foreground, #cca700) 55%, var(--vscode-panel-border));
+}
+.repository-btn.change-root svg {
+  color: var(--vscode-editorWarning-foreground, #cca700);
+}
+.repository-btn.change-root:hover {
+  border-color: var(--vscode-editorWarning-foreground, #cca700);
+  background: color-mix(in srgb, var(--vscode-editorWarning-foreground, #cca700) 14%, transparent);
+}
+
 .repository-stat-tiles {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));

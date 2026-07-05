@@ -412,8 +412,11 @@ export class BeadsProjectManager implements vscode.Disposable {
    * Discover every immediate child of `root` that contains a `.beads`
    * directory, as a `default`-source project. Returns [] when the root is
    * missing/unreadable so a non-existent ~/beads is simply a no-op.
+   *
+   * Public so the "Change Projects Root" confirmation can preview how many
+   * Beads repos live under a candidate folder before committing the switch.
    */
-  private async discoverProjectsUnderRoot(root: string): Promise<BeadsProject[]> {
+  public async discoverProjectsUnderRoot(root: string): Promise<BeadsProject[]> {
     const resolvedRoot = path.resolve(root);
 
     let entries: fs.Dirent[];
