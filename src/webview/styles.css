@@ -1182,6 +1182,13 @@ textarea {
   .empty-state-action-label-short {
     display: inline;
   }
+  /* Too narrow to right-align labels beside the assignee — give them their own
+     full-width row below it, left-aligned. */
+  .bead-readout-labelset {
+    flex-basis: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+  }
 }
 
 .empty-state-action:hover {
@@ -6536,6 +6543,41 @@ textarea {
 .bead-readout-label-more {
   font-size: var(--text-label);
   color: var(--vscode-descriptionForeground);
+}
+
+/* Icon-keyed assignee + labels row (unifies with the Details badges row).
+   Assignee leads; labels are pushed to the right edge on a wide card. On a
+   narrow card the labelset flex-wraps onto its own full-width row (see the
+   @container selection-card rule) rather than crowding the assignee. */
+.bead-readout-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.bead-readout-assignee,
+.bead-readout-labelset {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+  font-size: var(--text-sm);
+}
+.bead-readout-labelset {
+  margin-left: auto; /* right-align beside the assignee on a wide card */
+  justify-content: flex-end;
+}
+.bead-readout-meta-icon {
+  flex: 0 0 auto;
+  color: var(--vscode-descriptionForeground);
+}
+.bead-readout-assignee-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--vscode-foreground);
 }
 .bead-readout-desc {
   margin: 2px 0 0;
