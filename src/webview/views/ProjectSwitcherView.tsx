@@ -377,7 +377,8 @@ export function ProjectSwitcherView({
           title="Pick a ready-to-work bead (open, no open blocker) and show it as the selection"
         >
           <Rocket size={14} strokeWidth={2} />
-          <span>Pick Ready Bead</span>
+          <span className="context-action-btn-label-full">Pick Ready Bead</span>
+          <span className="context-action-btn-label-short">Ready</span>
         </button>
         <button
           type="button"
@@ -386,7 +387,8 @@ export function ProjectSwitcherView({
           title="Show the Issues panel"
         >
           <ListTodo size={14} strokeWidth={2} />
-          <span>Show Issues</span>
+          <span className="context-action-btn-label-full">Show Issues</span>
+          <span className="context-action-btn-label-short">Issues</span>
         </button>
         <button
           type="button"
@@ -395,7 +397,8 @@ export function ProjectSwitcherView({
           title="Show the Tree panel"
         >
           <ListTree size={14} strokeWidth={2} />
-          <span>Show Tree</span>
+          <span className="context-action-btn-label-full">Show Tree</span>
+          <span className="context-action-btn-label-short">Tree</span>
         </button>
       </div>
 
