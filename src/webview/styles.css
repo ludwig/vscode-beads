@@ -33,6 +33,11 @@
   --beads-accent: #3f5e96;
   --beads-accent-hover: #354f80;
 
+  /* Closed-issue title in the Selection card — a light, cool blue-grey that
+     reads as muted (desaturated, cooler than the body) while implying closed,
+     tinted toward white rather than darkened. */
+  --beads-closed-title: #98a1b4;
+
   /* Type scale — a small, deliberate set of sizes so text hierarchy is
      consistent rather than ad-hoc per component. ALWAYS use these tokens for
      text font-size; never hardcode px. 11px (--text-label) is the FLOOR —
@@ -6445,13 +6450,11 @@ textarea {
 }
 /* Closed-issue title in the Selection card. The list/kanban/tree muted rule
    fades the title to descriptionForeground — but here the body excerpt is ALSO
-   descriptionForeground right below it, so that made the two uniform. Use the
-   theme's semantic "inactive/de-emphasized" grey instead: it reads as muted and
-   implies closed, and computes a notch DARKER than the descriptionForeground
-   body, so the title recedes (not brightens) below the body without vanishing
-   into it. */
+   descriptionForeground right below it, so that made the two uniform. Use a
+   light cool blue-grey instead: distinct in HUE from the neutral body (so it
+   contrasts) while still reading as muted + closed. */
 .bead-readout-title.muted-closed {
-  color: var(--vscode-disabledForeground);
+  color: var(--beads-closed-title);
   opacity: 1;
 }
 .bead-readout-meta {
