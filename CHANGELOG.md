@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Empty state for the Selection card** — when no issue is selected, the Project view's Selection slot now shows a stylish empty state (bead icon, "No issue selected", and two CTAs: **New Issue** + **Show Kanban**) instead of collapsing to nothing. Carried over from the old twisties-era Details empty state. Labels shorten responsively ("New" / "Kanban") on a narrow sidebar so the buttons stay on one row
+
 ## [0.26.0] - 2026-07-04
 
 ### Added

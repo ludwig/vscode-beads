@@ -11,7 +11,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, X, Rocket, ListTodo, ListTree, Copy, FolderPlus, Star, Plus, RefreshCw, Settings } from "lucide-react";
+import { ChevronDown, ChevronRight, X, Rocket, ListTodo, ListTree, Copy, FolderPlus, Star, Plus, RefreshCw, Settings, Kanban } from "lucide-react";
 import { Bead, BeadsProject, FavoriteBead, statusColor, isClosedStatus, vscode } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem, DropdownSeparator } from "../common/Dropdown";
@@ -488,7 +488,7 @@ export function ProjectSwitcherView({
           Issues tab. Sits below the Favorites (and above the end marquee) so a
           selection refresh never shifts the Favorites list. Clicking it loads
           the full Details takeover. */}
-      {activeBead && (
+      {activeBead ? (
         <section className="context-section context-selection-section">
           <div className="context-section-head">
             <span className="context-heading">Selection</span>
@@ -516,6 +516,40 @@ export function ProjectSwitcherView({
               openCardMenu(e, activeBead.id, favorites.some((f) => f.id === activeBead.id))
             }
           />
+        </section>
+      ) : (
+        // Empty state — the stylish no-selection card carried over from the old
+        // twisties-era Details view: icon, a friendly line, and the two CTAs
+        // (create a new issue · jump to the Kanban board).
+        <section className="context-section context-selection-section">
+          <div className="context-section-head">
+            <span className="context-heading">Selection</span>
+          </div>
+          <div className="empty-state compact">
+            <div className="empty-state-icon">🔖</div>
+            <h3>No issue selected</h3>
+            <p>Pick an issue to see its details here — or create a new one.</p>
+            <div className="empty-state-actions">
+              <button
+                type="button"
+                className="empty-state-action"
+                onClick={() => vscode.postMessage({ type: "startCreate" })}
+              >
+                <span className="empty-state-action-icon">+</span>
+                <span className="empty-state-action-label-full">New Issue</span>
+                <span className="empty-state-action-label-short">New</span>
+              </button>
+              <button
+                type="button"
+                className="empty-state-action secondary"
+                onClick={() => vscode.postMessage({ type: "showKanban" })}
+              >
+                <Kanban size={13} strokeWidth={2} />
+                <span className="empty-state-action-label-full">Show Kanban</span>
+                <span className="empty-state-action-label-short">Kanban</span>
+              </button>
+            </div>
+          </div>
         </section>
       )}
 

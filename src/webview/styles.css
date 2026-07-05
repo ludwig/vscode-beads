@@ -1140,8 +1140,29 @@ textarea {
   color: #fff;
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition: background 0.12s ease;
+}
+
+/* Responsive labels for the empty-state CTAs: at wide sidebar widths show the
+   full label ("New Issue" / "Show Kanban"); when the sidebar gets narrow, swap
+   to the short label so the two buttons stay on one row instead of wrapping to
+   multiple lines. The webview viewport width tracks the sidebar width. */
+.empty-state-action-label-short {
+  display: none;
+}
+
+@media (max-width: 260px) {
+  .empty-state-action {
+    padding: 6px 12px;
+  }
+  .empty-state-action-label-full {
+    display: none;
+  }
+  .empty-state-action-label-short {
+    display: inline;
+  }
 }
 
 .empty-state-action:hover {
