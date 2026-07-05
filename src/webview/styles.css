@@ -1145,15 +1145,16 @@ textarea {
   transition: background 0.12s ease;
 }
 
-/* Responsive labels for the empty-state CTAs: at wide sidebar widths show the
-   full label ("New Issue" / "Show Kanban"); when the sidebar gets narrow, swap
-   to the short label so the two buttons stay on one row instead of wrapping to
-   multiple lines. The webview viewport width tracks the sidebar width. */
+/* Responsive labels for the empty-state CTAs: full ("New Issue" / "Show Kanban")
+   when the Selection card is wide, short ("New" / "Kanban") when it's narrow, so
+   the two buttons stay on one row instead of wrapping. Driven by a container
+   query on the card (see .context-selection-section) — the two full-label
+   buttons need ~260px of card width, so swap a little above that. */
 .empty-state-action-label-short {
   display: none;
 }
 
-@media (max-width: 260px) {
+@container selection-card (max-width: 280px) {
   .empty-state-action {
     padding: 6px 12px;
   }
@@ -2573,6 +2574,10 @@ textarea {
 .context-selection-section {
   flex: 1 1 auto;
   min-height: 0;
+  /* A query container so the empty-state CTAs can shorten their labels based on
+     the card's real width (not the viewport, which ≠ this nested card). */
+  container-type: inline-size;
+  container-name: selection-card;
 }
 
 .context-section-head {
