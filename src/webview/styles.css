@@ -3822,21 +3822,35 @@ textarea {
   transition: box-shadow 0.15s ease, filter 0.15s ease;
 }
 
-/* Responsive action-button labels: full ("Pick Ready Bead" / "Show Issues" /
-   "Show Tree") when the row is wide, short ("Ready" / "Issues" / "Tree") when
-   it's narrow. The three buttons are equal-width (flex:1) and the longest label
-   ("Pick Ready Bead") is the binding constraint, so all three swap together
-   below ~440px of row width. */
+/* Responsive action-button labels degrade in three tiers as the row narrows:
+   full ("Pick Ready Bead" / "Show Issues" / "Show Tree") → short ("Ready" /
+   "Issues" / "Tree") → icon-only. The three buttons are equal-width (flex:1)
+   and the longest label ("Pick Ready Bead") is the binding constraint, so all
+   three swap together. Each button keeps its `title` tooltip, so the icon-only
+   tier stays understandable. */
 .context-action-btn-label-short {
   display: none;
 }
 
+/* Tier 2 — short text. */
 @container context-actions (max-width: 440px) {
   .context-action-btn-label-full {
     display: none;
   }
   .context-action-btn-label-short {
     display: inline;
+  }
+}
+
+/* Tier 3 — icon only: drop the text entirely and tighten to a compact button.
+   (This rule follows tier 2, so its display:none on the short label wins.) */
+@container context-actions (max-width: 300px) {
+  .context-action-btn-label-short {
+    display: none;
+  }
+  .context-action-btn {
+    gap: 0;
+    padding: 10px 8px;
   }
 }
 
