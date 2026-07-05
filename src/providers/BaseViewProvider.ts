@@ -188,9 +188,12 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     }
 
     // Seed the live parent scope so a freshly-(re)mounted view scopes correctly
-    // immediately, without waiting for the next recompute.
+    // immediately, without waiting for the next recompute. Also seed the shared
+    // Favorites-only bit so the dashboard star reflects state on (re)mount.
     if (this.scope) {
       this.publishParentScope(this.scope.current());
+      this.publishSharedFavoritesOnly(this.scope.currentSpec().favoritesOnly);
+      this.publishSharedFilterSpec(this.scope.currentSpec());
     }
 
     // Load view-specific data only for visible views.
@@ -220,6 +223,27 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
   /** Push the live parent scope (shared-filter id set, or null = all) to this view. */
   public publishParentScope(beadIds: string[] | null): void {
     this.postMessage({ type: "setParentScope", beadIds });
+  }
+
+  /** Report the shared filter's Favorites-only bit (for the dashboard star). */
+  public publishSharedFavoritesOnly(on: boolean): void {
+    this.postMessage({ type: "setSharedFavoritesOnly", on });
+  }
+
+  /** Broadcast the full shared filter spec so every panel view renders its
+   *  common FilterBar surface in sync (followers live; the leader on remount). */
+  public publishSharedFilterSpec(snapshot: FilterSnapshot): void {
+    this.postMessage({ type: "setSharedFilterSpec", snapshot });
+  }
+
+  /**
+   * Apply a full Issues-filter snapshot LIVE — like {@link pushFilter} but does
+   * NOT retain it as a reload seed. Used to sync the panel Issues to a host-side
+   * filter change (e.g. the dashboard star) where the view persists its own
+   * state and a retained seed would later clobber the user's edits.
+   */
+  public applyIssuesFilterSnapshotLive(snapshot: FilterSnapshot): void {
+    this.postMessage({ type: "applyIssuesFilterSnapshot", snapshot });
   }
 
   /**
@@ -261,7 +285,10 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
       }
 
       case "selectBead":
-        vscode.commands.executeCommand("beads.openBeadDetails", message.beadId);
+        // Passive selection — updates content + selection surfaces without
+        // revealing the Details view (single-click). Distinct from
+        // "openBeadDetails" (double-click / "Show Details"), which reveals.
+        vscode.commands.executeCommand("beads.selectBead", message.beadId);
         break;
 
       case "openViewInTab": {
@@ -300,6 +327,26 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
 
       case "showKanban":
         vscode.commands.executeCommand("beads.openKanbanPanel");
+        break;
+
+      case "showTreePanel":
+        vscode.commands.executeCommand("beads.openTreePanel");
+        break;
+
+      case "showGraphPanel":
+        vscode.commands.executeCommand("beads.openGraphPanel");
+        break;
+
+      case "historyBack":
+        vscode.commands.executeCommand("beads.navigateBack");
+        break;
+
+      case "historyForward":
+        vscode.commands.executeCommand("beads.navigateForward");
+        break;
+
+      case "backToProject":
+        vscode.commands.executeCommand("beads.backToProject");
         break;
 
       case "showDoltStatus":
@@ -359,6 +406,12 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
       case "viewInIssues":
         // Switch the panel to the Issues tab and reveal this bead (vs-wbrz).
         vscode.commands.executeCommand("beads.viewInIssues", message.beadId);
+        break;
+
+      case "focusBeadInActiveTab":
+        // Reveal this bead in whatever panel tab is already showing — no tab
+        // switch, and a no-op if the panel is closed (the Details focus toggle).
+        vscode.commands.executeCommand("beads.focusBeadInActiveTab", message.beadId);
         break;
 
       case "copyBeadId":
@@ -595,6 +648,18 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     if (remaining > 0) {
       await new Promise((resolve) => setTimeout(resolve, remaining));
     }
+  }
+
+  /**
+   * Briefly show the loading spinner, then clear it after the min-hold. Used when
+   * an out-of-band input change (e.g. toggling a favorite's visibility mask)
+   * re-scopes this view's data without a full reload — so the refresh icon spins
+   * to signal "working" during the round-trip (vs-sd5).
+   */
+  public flashLoading(): void {
+    const startedAt = Date.now();
+    this.setLoading(true);
+    void this.waitForMinimumLoading(startedAt).then(() => this.setLoading(false));
   }
 
   /**

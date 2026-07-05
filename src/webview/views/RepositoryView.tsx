@@ -184,7 +184,82 @@ export function RepositoryView({
         </div>
       </section>
 
-      {/* Backend / Dolt card */}
+      {/* Issues card */}
+      <section className="repository-card">
+        <h2 className="repository-card-title">
+          <span>Issues</span>
+          {summary && <span className="repository-card-count">{summary.total}</span>}
+        </h2>
+        {summary ? (
+          <div className="repository-stat-tiles">
+            {Object.entries(summary.byStatus)
+              .filter(([, count]) => count > 0)
+              .map(([status, count]) => (
+                <div key={status} className="repository-stat-tile">
+                  <span
+                    className="repository-stat-dot"
+                    style={{ backgroundColor: statusColor(status) }}
+                    aria-hidden="true"
+                  />
+                  <span className="repository-stat-count">{count}</span>
+                  <span className="repository-stat-label">{statusLabel(status)}</span>
+                </div>
+              ))}
+          </div>
+        ) : (
+          <p className="repository-muted">No issue counts available.</p>
+        )}
+      </section>
+
+      {/* Metrics card grid — build/runtime + on-disk figures, the richer set
+          relocated here from the panel's Active Project card (vs-emyj). */}
+      <section className="repository-card">
+        <h2 className="repository-card-title">
+          <Gauge size={15} strokeWidth={2} />
+          <span>Metrics</span>
+        </h2>
+        <div className="repository-metric-grid">
+          {settings.extensionVersion && (
+            <MetricCard
+              label="Extension"
+              value={`v${settings.extensionVersion}`}
+              caption={settings.buildSha && settings.buildSha !== "unknown" ? `commit ${settings.buildSha}${settings.buildDirty ? " ·dirty" : ""}` : undefined}
+              title="Installed Beads extension version (and the git commit it was built from)."
+            />
+          )}
+          {settings.bundleBytes > 0 && (
+            <MetricCard
+              label="Extension bundle"
+              value={formatBytes(settings.bundleBytes)}
+              caption="on disk"
+              title="On-disk size of the Beads extension bundle (dist/extension.js + webview main.js/css)."
+            />
+          )}
+          <MetricCard
+            label="DB on disk"
+            value={repositoryInfo?.dbSizeBytes != null ? formatBytes(repositoryInfo.dbSizeBytes) : "—"}
+            caption=".beads directory"
+            title="Total on-disk size of this board's .beads directory."
+          />
+          <MetricCard
+            label="Last activity"
+            value={repositoryInfo?.lastActivity ? <Timestamp value={repositoryInfo.lastActivity} format="relative" /> : "—"}
+            caption="most recent update"
+            title="The most recent updatedAt across all beads in this board."
+          />
+          {memoryBytes > 0 && (
+            <MetricCard
+              label="Host RAM"
+              value={formatBytes(memoryBytes)}
+              caption="extension host (RSS)"
+              title="Resident memory (RSS) of the whole VS Code extension-host process — shared by ALL installed extensions plus the Node/V8 runtime, not just Beads. Sampled periodically via process.memoryUsage().rss."
+            />
+          )}
+        </div>
+      </section>
+
+      {/* Backend / Dolt card — after Metrics (the Dolt status dump is the
+          heaviest content, so it sits below the at-a-glance figures). */}
       <section className="repository-card">
         <h2 className="repository-card-title">
           <Server size={15} strokeWidth={2} />
@@ -238,80 +313,6 @@ export function RepositoryView({
                 <span>Open Dolt Log</span>
               </button>
             </>
-          )}
-        </div>
-      </section>
-
-      {/* Issues card */}
-      <section className="repository-card">
-        <h2 className="repository-card-title">
-          <span>Issues</span>
-          {summary && <span className="repository-card-count">{summary.total}</span>}
-        </h2>
-        {summary ? (
-          <div className="repository-stat-tiles">
-            {Object.entries(summary.byStatus)
-              .filter(([, count]) => count > 0)
-              .map(([status, count]) => (
-                <div key={status} className="repository-stat-tile">
-                  <span
-                    className="repository-stat-dot"
-                    style={{ backgroundColor: statusColor(status) }}
-                    aria-hidden="true"
-                  />
-                  <span className="repository-stat-count">{count}</span>
-                  <span className="repository-stat-label">{statusLabel(status)}</span>
-                </div>
-              ))}
-          </div>
-        ) : (
-          <p className="repository-muted">No issue counts available.</p>
-        )}
-      </section>
-
-      {/* Metrics card grid — build/runtime + on-disk figures, the richer set
-          relocated here from the panel's Active Project card (vs-emyj). */}
-      <section className="repository-card">
-        <h2 className="repository-card-title">
-          <Gauge size={15} strokeWidth={2} />
-          <span>Metrics</span>
-        </h2>
-        <div className="repository-metric-grid">
-          {settings.extensionVersion && (
-            <MetricCard
-              label="Extension"
-              value={`v${settings.extensionVersion}`}
-              caption={settings.buildSha && settings.buildSha !== "unknown" ? `commit ${settings.buildSha}${settings.buildDirty ? " ·dirty" : ""}` : undefined}
-              title="Installed Beads extension version (and the git commit it was built from)."
-            />
-          )}
-          {settings.bundleBytes > 0 && (
-            <MetricCard
-              label="Bundle"
-              value={formatBytes(settings.bundleBytes)}
-              caption="on disk"
-              title="On-disk size of the Beads extension bundle (dist/extension.js + webview main.js/css)."
-            />
-          )}
-          <MetricCard
-            label="DB on disk"
-            value={repositoryInfo?.dbSizeBytes != null ? formatBytes(repositoryInfo.dbSizeBytes) : "—"}
-            caption=".beads directory"
-            title="Total on-disk size of this board's .beads directory."
-          />
-          <MetricCard
-            label="Last activity"
-            value={repositoryInfo?.lastActivity ? <Timestamp value={repositoryInfo.lastActivity} format="relative" /> : "—"}
-            caption="most recent update"
-            title="The most recent updatedAt across all beads in this board."
-          />
-          {memoryBytes > 0 && (
-            <MetricCard
-              label="Host RAM"
-              value={formatBytes(memoryBytes)}
-              caption="extension host (RSS)"
-              title="Resident memory (RSS) of the whole VS Code extension-host process — shared by ALL installed extensions plus the Node/V8 runtime, not just Beads. Sampled periodically via process.memoryUsage().rss."
-            />
           )}
         </div>
       </section>

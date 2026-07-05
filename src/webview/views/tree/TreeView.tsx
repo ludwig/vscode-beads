@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight, ChevronDown, Search, ArrowUp, ArrowDown, CornerLeftUp, UnfoldVertical, FoldVertical, Columns3 } from "lucide-react";
+import { ChevronRight, ChevronDown, ArrowUp, ArrowDown, CornerLeftUp, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import {
   Bead,
   BeadType,
@@ -24,7 +24,9 @@ import {
   vscode,
 } from "../../types";
 import { TypeIcon } from "../../common/TypeIcon";
-import { FilterIndicator } from "../../common/FilterIndicator";
+import { FilterBar } from "../../common/FilterBar";
+import { useLocalFilter, type SharedFilterControl } from "../../hooks/useLocalFilter";
+import { intersect } from "../../composeScope";
 import { Loading } from "../../common/Loading";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { ContextMenu, type ContextMenuItem } from "../../common/ContextMenu";
@@ -51,15 +53,19 @@ type ColKey = "status" | "type" | "priority" | "updated" | "created";
 interface TreeColumn {
   key: ColKey;
   label: string;
+  /** Short header label when the full `label` is too wide for the column (e.g.
+   * "Priority" wrapping in a 44px column injects whitespace); falls back to
+   * `label`. The full `label` is still used in the column-toggle menu + tooltip. */
+  headerLabel?: string;
   width: string;
   sortKey: SortKey;
 }
 const TREE_COLUMNS: TreeColumn[] = [
-  { key: "status", label: "Status", width: "92px", sortKey: "status" },
-  { key: "type", label: "Type", width: "64px", sortKey: "type" },
-  { key: "priority", label: "Priority", width: "44px", sortKey: "priority" },
-  { key: "updated", label: "Updated", width: "96px", sortKey: "updated" },
-  { key: "created", label: "Created", width: "96px", sortKey: "created" },
+  { key: "status", label: "Status", width: "84px", sortKey: "status" },
+  { key: "type", label: "Type", width: "56px", sortKey: "type" },
+  { key: "priority", label: "Priority", headerLabel: "P", width: "38px", sortKey: "priority" },
+  { key: "updated", label: "Updated", width: "92px", sortKey: "updated" },
+  { key: "created", label: "Created", width: "92px", sortKey: "created" },
 ];
 // Default visibility: Updated shown, Created hidden, to keep the tree narrow by
 // default (mirrors the Issues table hiding some columns).
@@ -154,18 +160,39 @@ interface TreeViewProps {
   selectedBeadId: string | null;
   /** Favorite bead ids — drives the right-click Add/Remove Favorites item (vs-sd5.5). */
   favoriteIds?: string[];
+  /** Masked favorites (eye-off), excluded from the favorites→relatives seed in
+   * the Tree's own Favorites filter. */
+  maskedIds?: string[];
   /** Accent favorited rows (beads.highlightFavorites, vs-or31). */
   highlightFavorites?: boolean;
   /** Gray out closed (done) row titles (beads.muteClosedIssues, vs-or31). */
   muteClosedIssues?: boolean;
   /**
-   * Ids matching the current Issues filter/search, or null when unknown. The
-   * "Filtered" toggle scopes the tree to this set; null disables the toggle.
+   * The inherited parent scope (panel filter / editor-tab seed), or null for no
+   * inherited scope. The Tree's own FilterBar composes on top of this.
    */
   filteredBeadIds: string[] | null;
-  /** Whether the Issues filter narrows to a strict subset (drives the indicator). */
-  filterActive?: boolean;
-  filteredCount?: number;
+  /**
+   * Editor-tab only: the inherited-scope ribbon controls. When `onToggleParentScope`
+   * is provided, the Tree's FilterBar shows the Show-all/Show-filtered ribbon and
+   * `parentCleared` gates the inherited scope. Omitted in the panel subtab (the
+   * inherited scope simply applies).
+   */
+  parentCleared?: boolean;
+  onToggleParentScope?: () => void;
+  /**
+   * Panel only: controls for the shared filter surface. When provided, the
+   * Tree's FilterBar common controls read/write the shared (panel) spec — linked
+   * with every other panel view. Omitted in an editor tab (self-owned filter).
+   */
+  sharedFilter?: SharedFilterControl;
+  /**
+   * Panel only: shared collapse state for the FilterBar, so collapsing in one
+   * panel tab is reflected in all of them. When provided, overrides the view's
+   * own local collapse. Omitted in an editor tab.
+   */
+  filterBarCollapsed?: boolean;
+  onToggleFilterBar?: () => void;
   totalCount?: number;
   /**
    * A "show in tree" deep-link target (vs-kp67): expand the bead's collapsed
@@ -184,11 +211,15 @@ export function TreeView({
   error,
   selectedBeadId,
   favoriteIds = [],
+  maskedIds = [],
   highlightFavorites = true,
   muteClosedIssues = true,
   filteredBeadIds,
-  filterActive,
-  filteredCount,
+  parentCleared,
+  onToggleParentScope,
+  sharedFilter,
+  filterBarCollapsed,
+  onToggleFilterBar,
   totalCount,
   revealRequest,
   onSelectBead,
@@ -233,12 +264,65 @@ export function TreeView({
     vscode.setState({ ...prev, treeColumns: visibleCols });
   }, [visibleCols]);
   const shownColumns = useMemo(() => TREE_COLUMNS.filter((c) => visibleCols[c.key]), [visibleCols]);
+  // Per-column widths, drag-resizable and persisted (overrides the declared
+  // default width). Only the fixed columns resize; Title stays the flexible 1fr.
+  const [colWidths, setColWidths] = useState<Partial<Record<ColKey, number>>>(() => {
+    const saved = (vscode.getState() as { treeColWidths?: Partial<Record<ColKey, number>> } | undefined)?.treeColWidths;
+    return saved && typeof saved === "object" ? saved : {};
+  });
+  useEffect(() => {
+    const prev = (vscode.getState() as Record<string, unknown>) ?? {};
+    vscode.setState({ ...prev, treeColWidths: colWidths });
+  }, [colWidths]);
+  const colWidthPx = useCallback(
+    (c: TreeColumn) => colWidths[c.key] ?? parseInt(c.width, 10),
+    [colWidths],
+  );
   // The Title (tree) column is the only flexible one; the shown fixed columns
-  // follow at their declared widths. Set inline so header + every row share the
-  // exact same template as columns toggle on/off.
+  // follow at their (resizable) widths. Set inline so header + every row share
+  // the exact same template as columns toggle on/off or resize.
+  // A trailing gutter track holds the column show/hide menu in the header (like
+  // the Issues table). Body rows leave it empty; sharing the template keeps the
+  // fixed columns aligned between header and rows.
   const gridTemplate = useMemo(
-    () => `minmax(0, 1fr) ${shownColumns.map((c) => c.width).join(" ")}`,
-    [shownColumns],
+    () => `minmax(0, 1fr) ${shownColumns.map((c) => `${colWidthPx(c)}px`).join(" ")} 28px`,
+    [shownColumns, colWidthPx],
+  );
+  // Drag-to-resize a fixed column: the handle on a column's right edge widens/
+  // narrows THAT column; the flexible Title track absorbs the delta.
+  const resizeRef = useRef<{ key: ColKey; startX: number; startW: number; dir: 1 | -1 } | null>(null);
+  // Set while (and just after) a resize so the header's sort onClick — which
+  // fires on mouseup inside the button — doesn't also toggle the sort.
+  const didResizeRef = useRef(false);
+  // The handles live on each fixed column's LEFT edge (its boundary with the
+  // previous track), so the Title|Status divider is grabbable. Because the
+  // flexible Title track absorbs the delta, dragging a left-edge handle toward
+  // Title (mouse left) WIDENS the column — hence dir = -1.
+  const startColResize = useCallback(
+    (e: React.MouseEvent, c: TreeColumn, dir: 1 | -1 = -1) => {
+      e.preventDefault();
+      e.stopPropagation();
+      didResizeRef.current = true;
+      resizeRef.current = { key: c.key, startX: e.clientX, startW: colWidthPx(c), dir };
+      const onMove = (ev: MouseEvent) => {
+        const st = resizeRef.current;
+        if (!st) return;
+        const next = Math.max(32, Math.min(400, st.startW + st.dir * (ev.clientX - st.startX)));
+        setColWidths((prev) => ({ ...prev, [st.key]: next }));
+      };
+      const onUp = () => {
+        resizeRef.current = null;
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+        // Clear after the click that follows mouseup has been swallowed.
+        setTimeout(() => {
+          didResizeRef.current = false;
+        }, 0);
+      };
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    },
+    [colWidthPx],
   );
   const [colMenuOpen, setColMenuOpen] = useState(false);
   const colMenuRef = useRef<HTMLDivElement>(null);
@@ -266,6 +350,7 @@ export function TreeView({
   const handleActivate = useCallback(
     (id: string) => {
       setLocalSelectedId(id); // instant highlight, before the extension echoes back
+      bodyRef.current?.focus({ preventScroll: true }); // so arrow-key nav works after a click
       onSelectBead(id);
       const c = clickRef.current;
       if (c.id !== id) {
@@ -279,7 +364,10 @@ export function TreeView({
         c.count = 0;
         c.id = "";
         c.timer = null;
+        // Single-click already selected (passive) above. Double-click reveals
+        // the Details view; triple opens an editor tab.
         if (n >= 3) vscode.postMessage({ type: "openBeadInTab", beadId: id });
+        else if (n === 2) vscode.postMessage({ type: "openBeadDetails", beadId: id });
       }, 320);
     },
     [onSelectBead],
@@ -295,18 +383,55 @@ export function TreeView({
     () => (graph ? buildForest(graph.nodes, graph.edges, comparatorFor(sorts)) : []),
     [graph, sorts],
   );
-  // The Tree always reflects the current Issues filter set (vs-wp5): Issues is
-  // where filters are defined; the Tree scopes to that slice (keeping the
-  // ancestor path so it stays connected). Then narrow further by the text query.
-  const scoped = useMemo(
-    () => (filteredBeadIds != null ? filterForestByIds(forest, new Set(filteredBeadIds)) : forest),
-    [forest, filteredBeadIds],
+
+  // The Tree's own unified FilterBar (structured local filter), composed on top
+  // of the inherited parent scope: (Filtered ? parentScope : all) ∩ resolve(local).
+  const lf = useLocalFilter({
+    persistKey: "treeLocalFilter",
+    beads: graph?.nodes ?? [],
+    edges: graph?.edges ?? [],
+    favoriteIds,
+    maskedIds,
+    hasGraph: !!graph,
+    onRequestGraph,
+    shared: sharedFilter,
+  });
+  const inheritedScope = parentCleared ? null : filteredBeadIds;
+  const finalScope = useMemo(
+    () => intersect(inheritedScope, lf.localScope),
+    [inheritedScope, lf.localScope],
   );
+
+  // Scope the forest to the composed id-set (keeping ancestor paths so nodes stay
+  // connected). Then narrow further by the text query.
+  const scoped = useMemo(
+    () => (finalScope != null ? filterForestByIds(forest, new Set(finalScope)) : forest),
+    [forest, finalScope],
+  );
+
+  const total = totalCount ?? (graph?.nodes.length ?? 0);
+  const scopeCount = finalScope?.length ?? total;
   const visible = useMemo(() => filterForest(scoped, query), [scoped, query]);
   // Only the text query force-expands (to reveal matches); the always-on Issues
   // scope must not, so the user can still collapse/expand within it.
   const filtering = query.trim().length > 0;
   const favoriteIdSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
+
+  // Flattened visible rows in display order, honoring collapse state — the basis
+  // for keyboard row navigation (↑↓ step, ←→ collapse/expand).
+  const flatVisible = useMemo(() => {
+    const out: { id: string; hasChildren: boolean; isCollapsed: boolean }[] = [];
+    const walk = (nodes: TreeNode[]) => {
+      for (const n of nodes) {
+        const hasChildren = n.children.length > 0;
+        const isCollapsed = !filtering && collapsed.has(n.bead.id);
+        out.push({ id: n.bead.id, hasChildren, isCollapsed });
+        if (hasChildren && !isCollapsed) walk(n.children);
+      }
+    };
+    walk(visible);
+    return out;
+  }, [visible, collapsed, filtering]);
 
   // "Show in tree" deep-link (vs-kp67): expand the target's collapsed ancestors,
   // select it, and scroll it into view. Held as pending state and retried as
@@ -380,9 +505,9 @@ export function TreeView({
     },
     [forest],
   );
-  // Disable the control that's already a no-op (everything open / everything shut).
+  // Drives the single fold toggle: when everything's expanded the button
+  // collapses all, otherwise it expands all.
   const allExpanded = [...parentIds].every((id) => !collapsed.has(id));
-  const allCollapsed = parentIds.size > 0 && [...parentIds].every((id) => collapsed.has(id));
 
   // Current parent per bead (first parent-child edge from=child wins).
   const parentOf = useMemo(() => {
@@ -392,6 +517,71 @@ export function TreeView({
     }
     return m;
   }, [graph]);
+
+  // Keyboard row navigation (roving selection). ArrowUp/Down move the cursor and
+  // never scroll the pane; ArrowRight/Left collapse/expand the focused row
+  // (⇧ = whole subtree) or step to first-child / parent; Enter selects.
+  const focusRowId = useCallback((id: string | undefined) => {
+    if (!id) return;
+    setLocalSelectedId(id);
+    requestAnimationFrame(() => {
+      bodyRef.current
+        ?.querySelector(`[data-bead-id="${id}"]`)
+        ?.scrollIntoView({ block: "nearest" });
+    });
+  }, []);
+  const onTreeKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (flatVisible.length === 0) return;
+      const idx = flatVisible.findIndex((r) => r.id === activeSelectedId);
+      const cur = idx >= 0 ? flatVisible[idx] : null;
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          focusRowId(flatVisible[idx < 0 ? 0 : Math.min(flatVisible.length - 1, idx + 1)].id);
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          focusRowId(flatVisible[idx < 0 ? 0 : Math.max(0, idx - 1)].id);
+          break;
+        case "ArrowRight":
+          e.preventDefault();
+          if (!cur) {
+            focusRowId(flatVisible[0].id);
+          } else if (cur.hasChildren && cur.isCollapsed) {
+            toggle(cur.id, e.shiftKey);
+          } else if (cur.hasChildren) {
+            focusRowId(flatVisible[idx + 1]?.id);
+          }
+          break;
+        case "ArrowLeft":
+          e.preventDefault();
+          if (!cur) {
+            focusRowId(flatVisible[0].id);
+          } else if (cur.hasChildren && !cur.isCollapsed) {
+            toggle(cur.id, e.shiftKey);
+          } else {
+            focusRowId(parentOf.get(cur.id));
+          }
+          break;
+        case "Enter":
+          e.preventDefault();
+          if (cur) onSelectBead(cur.id);
+          break;
+        case "Home":
+          e.preventDefault();
+          focusRowId(flatVisible[0].id);
+          break;
+        case "End":
+          e.preventDefault();
+          focusRowId(flatVisible[flatVisible.length - 1].id);
+          break;
+        default:
+          break;
+      }
+    },
+    [flatVisible, activeSelectedId, focusRowId, toggle, parentOf, onSelectBead],
+  );
 
   // Drag-to-reparent (vs-jb6): drop A onto B = make B the parent of A. Illegal
   // if B is A itself, A's current parent (no-op), or in A's subtree (cycle).
@@ -434,6 +624,7 @@ export function TreeView({
         e.stopPropagation();
         if (isLegalTarget(id)) {
           e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
           setDropTargetId(id);
         }
       },
@@ -477,107 +668,60 @@ export function TreeView({
 
   return (
     <div className="beads-tree">
-      <div className="beads-tree-filter">
-        <Search size={13} strokeWidth={2} className="beads-tree-filter-icon" />
-        <input
-          type="text"
-          className="beads-tree-filter-input"
-          placeholder="Filter beads…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          spellCheck={false}
-        />
-        {filterActive && (
-          <FilterIndicator
-            count={filteredCount ?? 0}
-            total={totalCount ?? 0}
-            className="beads-tree-filter-indicator"
-          />
-        )}
-        {parentIds.size > 0 && (
-          <div className="beads-tree-foldctl" role="group" aria-label="Expand or collapse the tree">
-            <button
-              type="button"
-              className="beads-tree-foldbtn"
-              title="Expand all (⇧-click a row's chevron to expand just its subtree)"
-              aria-label="Expand all"
-              disabled={allExpanded || filtering}
-              onClick={expandAll}
-            >
-              <UnfoldVertical size={14} strokeWidth={2} />
-            </button>
-            <button
-              type="button"
-              className="beads-tree-foldbtn"
-              title="Collapse all (⇧-click a row's chevron to collapse just its subtree)"
-              aria-label="Collapse all"
-              disabled={allCollapsed || filtering}
-              onClick={collapseAll}
-            >
-              <FoldVertical size={14} strokeWidth={2} />
-            </button>
-          </div>
-        )}
-        <div className="beads-tree-colmenu" ref={colMenuRef}>
-          <button
-            type="button"
-            className="beads-tree-foldbtn"
-            title="Show or hide columns"
-            aria-label="Show or hide columns"
-            aria-expanded={colMenuOpen}
-            onClick={() => setColMenuOpen((v) => !v)}
-          >
-            <Columns3 size={14} strokeWidth={2} />
-          </button>
-          {colMenuOpen && (
-            <div className="col-menu beads-tree-col-menu">
-              {TREE_COLUMNS.map((c) => (
-                <label key={c.key}>
-                  <input
-                    type="checkbox"
-                    checked={visibleCols[c.key]}
-                    onChange={() => setVisibleCols((prev) => ({ ...prev, [c.key]: !prev[c.key] }))}
-                  />
-                  {c.label}
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-      <div className="beads-tree-colheader" role="row" style={{ gridTemplateColumns: gridTemplate }}>
-        {[
-          { sortKey: "title" as SortKey, label: "Title", colKey: "title" },
-          ...shownColumns.map((c) => ({ sortKey: c.sortKey, label: c.label, colKey: c.key })),
-        ].map(({ sortKey, label, colKey }) => {
-          const idx = sorts.findIndex((s) => s.key === sortKey);
-          const spec = idx >= 0 ? sorts[idx] : null;
-          const active = spec != null;
-          return (
-            <button
-              key={sortKey}
-              type="button"
-              role="columnheader"
-              aria-sort={active ? (spec!.dir === "asc" ? "ascending" : "descending") : "none"}
-              className={`beads-tree-col beads-tree-col-${colKey} ${active ? "active" : ""}`}
-              onClick={(e) => setSorts((prev) => applySort(prev, sortKey, e.shiftKey))}
-              title={`Sort by ${label.toLowerCase()} — click to sort, Shift+click to add as a secondary sort`}
-            >
-              <span>{label}</span>
-              {active ? (
-                spec!.dir === "asc" ? (
-                  <ArrowUp size={11} strokeWidth={2.5} className="beads-tree-sort-dir" />
+      <FilterBar
+        snapshot={lf.snapshot}
+        facets={lf.facets}
+        ops={lf.ops}
+        count={{ shown: scopeCount, total, unit: "beads" }}
+        collapsed={filterBarCollapsed ?? lf.collapsed}
+        onToggleCollapsed={onToggleFilterBar ?? lf.toggleCollapsed}
+        searchTerm={query}
+        onClearSearch={() => setQuery("")}
+        search={
+          <>
+            <input
+              type="text"
+              className="filter-bar-search-input"
+              placeholder="Filter beads…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              spellCheck={false}
+            />
+            {parentIds.size > 0 && (
+              // One toggle: collapse-all when everything's expanded, else
+              // expand-all. The icon reflects the action it will perform.
+              <button
+                type="button"
+                className="beads-tree-foldbtn"
+                title={
+                  allExpanded
+                    ? "Collapse all (⇧-click a row's chevron to collapse just its subtree)"
+                    : "Expand all (⇧-click a row's chevron to expand just its subtree)"
+                }
+                aria-label={allExpanded ? "Collapse all" : "Expand all"}
+                disabled={filtering}
+                onClick={allExpanded ? collapseAll : expandAll}
+              >
+                {allExpanded ? (
+                  <ChevronsDownUp size={15} strokeWidth={2} />
                 ) : (
-                  <ArrowDown size={11} strokeWidth={2.5} className="beads-tree-sort-dir" />
-                )
-              ) : null}
-              {active && sorts.length > 1 ? (
-                <span className="beads-tree-sort-rank">{idx + 1}</span>
-              ) : null}
-            </button>
-          );
-        })}
-      </div>
+                  <ChevronsUpDown size={15} strokeWidth={2} />
+                )}
+              </button>
+            )}
+          </>
+        }
+        inherited={
+          onToggleParentScope
+            ? {
+                filteredCount: filteredBeadIds?.length ?? 0,
+                totalCount: total,
+                cleared: !!parentCleared,
+                onToggle: onToggleParentScope,
+              }
+            : undefined
+        }
+      />
       {canDetach && (
         <div
           className={`beads-tree-rootzone${rootZoneOver ? " over" : ""}`}
@@ -597,13 +741,111 @@ export function TreeView({
           <span>Move to root</span>
         </div>
       )}
+      {/* Header lives INSIDE the scroll container (sticky) so it and the rows
+          share the same scrollbar-narrowed width and their columns stay aligned. */}
       <div
         ref={bodyRef}
         className={`beads-tree-body${canDetach ? " can-detach" : ""}`}
         role="tree"
+        tabIndex={0}
+        onKeyDown={onTreeKeyDown}
         onDragOver={onBodyDragOver}
         onDrop={onBodyDrop}
       >
+      <div className="beads-tree-colheader" role="row" style={{ gridTemplateColumns: gridTemplate }}>
+        {[
+          { sortKey: "title" as SortKey, label: "Title", headerLabel: undefined as string | undefined, colKey: "title" },
+          ...shownColumns.map((c) => ({ sortKey: c.sortKey, label: c.label, headerLabel: c.headerLabel, colKey: c.key })),
+        ].map(({ sortKey, label, headerLabel, colKey }) => {
+          const idx = sorts.findIndex((s) => s.key === sortKey);
+          const spec = idx >= 0 ? sorts[idx] : null;
+          const active = spec != null;
+          return (
+            <button
+              key={sortKey}
+              type="button"
+              role="columnheader"
+              aria-sort={active ? (spec!.dir === "asc" ? "ascending" : "descending") : "none"}
+              className={`beads-tree-col beads-tree-col-${colKey} ${active ? "active" : ""}`}
+              onClick={(e) => {
+                if (didResizeRef.current) return; // just resized — don't also sort
+                setSorts((prev) => applySort(prev, sortKey, e.shiftKey));
+              }}
+              title={`Sort by ${label.toLowerCase()} — click to sort, Shift+click to add as a secondary sort`}
+            >
+              <span>{headerLabel ?? label}</span>
+              {active ? (
+                spec!.dir === "asc" ? (
+                  <ArrowUp size={11} strokeWidth={2.5} className="beads-tree-sort-dir" />
+                ) : (
+                  <ArrowDown size={11} strokeWidth={2.5} className="beads-tree-sort-dir" />
+                )
+              ) : null}
+              {active && sorts.length > 1 ? (
+                <span className="beads-tree-sort-rank">{idx + 1}</span>
+              ) : null}
+              {colKey !== "title" && (
+                <span
+                  className="beads-tree-col-resize"
+                  role="separator"
+                  aria-hidden="true"
+                  title="Drag to resize · double-click to reset"
+                  onMouseDown={(e) => {
+                    const col = TREE_COLUMNS.find((tc) => tc.key === colKey);
+                    if (col) startColResize(e, col);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  onDoubleClick={(e) => {
+                    // Reset BOTH columns adjacent to this divider to their default
+                    // widths. Title is the flexible column — it has no stored width
+                    // (it absorbs the delta), so there's nothing to reset there.
+                    e.stopPropagation();
+                    const key = colKey as ColKey;
+                    const shownIdx = shownColumns.findIndex((c) => c.key === key);
+                    const prevKey = shownIdx > 0 ? shownColumns[shownIdx - 1].key : null;
+                    setColWidths((prev) => {
+                      const next = { ...prev };
+                      delete next[key];
+                      if (prevKey) delete next[prevKey];
+                      return next;
+                    });
+                  }}
+                />
+              )}
+            </button>
+          );
+        })}
+        {/* Column show/hide menu — anchored to the header's right edge (in the
+            trailing gutter track), mirroring the Issues table. */}
+        <div className="beads-tree-colmenu" ref={colMenuRef}>
+          <button
+            type="button"
+            className="beads-tree-colmenu-btn"
+            title="Show or hide columns"
+            aria-label="Show or hide columns"
+            aria-expanded={colMenuOpen}
+            onClick={() => setColMenuOpen((v) => !v)}
+          >
+            {/* Vertical ellipsis — same "show/hide columns" affordance the Issues
+                list uses (⋮), for consistency across the two tables. */}
+            <span className="beads-tree-colmenu-glyph" aria-hidden="true">⋮</span>
+          </button>
+          {colMenuOpen && (
+            <div className="col-menu beads-tree-col-menu">
+              {TREE_COLUMNS.map((c) => (
+                <label key={c.key}>
+                  <input
+                    type="checkbox"
+                    checked={visibleCols[c.key]}
+                    onChange={() => setVisibleCols((prev) => ({ ...prev, [c.key]: !prev[c.key] }))}
+                  />
+                  {c.label}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
         {visible.length === 0 ? (
           <div className="beads-tree-empty">{forest.length === 0 ? "No beads to show." : "No matches."}</div>
         ) : (
@@ -650,12 +892,12 @@ function rowMenuItems(
 ): ContextMenuItem[] {
   return [
     {
-      label: "Open Details (editor tab)",
-      onSelect: () => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id }),
-    },
-    {
       label: "Show Details",
       onSelect: () => vscode.postMessage({ type: "openBeadDetails", beadId: bead.id }),
+    },
+    {
+      label: "Show in editor tab",
+      onSelect: () => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id }),
     },
     {
       label: opts.isFavorite ? "Remove from Favorites" : "Add to Favorites",
@@ -753,6 +995,13 @@ function TreeRow({
         draggable
         onDragStart={(e) => {
           e.stopPropagation();
+          // Explicitly seed the drag payload + allowed effect. Without this,
+          // Chromium can silently refuse to START the drag (no dragstart →
+          // draggedId never set → no drop-target outline, no reparent) — which
+          // regressed once the surrounding DOM changed (sticky header / a
+          // focusable, keyboard-navigable body).
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", bead.id);
           drag.onStart(bead.id);
         }}
         onDragOver={(e) => drag.onOver(bead.id, e)}
@@ -817,13 +1066,13 @@ function TreeRow({
             case "updated":
               return (
                 <span key="updated" className="beads-tree-time">
-                  <Timestamp value={bead.updatedAt} format="auto" />
+                  <Timestamp value={bead.updatedAt} format="date" />
                 </span>
               );
             case "created":
               return (
                 <span key="created" className="beads-tree-time">
-                  <Timestamp value={bead.createdAt} format="auto" />
+                  <Timestamp value={bead.createdAt} format="date" />
                 </span>
               );
             default:

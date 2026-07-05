@@ -1,65 +1,210 @@
 /**
  * StatusPriorityPill Component
  *
- * Displays status and priority as a joined pill badge.
- * Used in dependency lists for consistent rendering.
+ * A joined pill of a bead's type/status/priority. The dependency lists render
+ * [status|priority]; the Details header and the Selection card also lead with a
+ * type segment. Outer corners are rounded generically (first/last/only-child)
+ * so any subset renders correctly.
+ *
+ * When `onChange` is provided, each present segment becomes an inline
+ * click-to-edit control: clicking a segment opens a small dropdown of options
+ * in place and picking one commits immediately (no separate edit mode). Without
+ * `onChange` it's a static read-only badge (dependency lists, etc.).
  */
 
-import React from "react";
+import React, { useState, useRef } from "react";
 import {
   BeadStatus,
   BeadPriority,
+  BeadType,
   statusLabel,
   statusColor,
+  TYPE_COLORS,
+  TYPE_LABELS,
   PRIORITY_COLORS,
   PRIORITY_TEXT_COLORS,
   UNKNOWN_PRIORITY_COLOR,
   UNKNOWN_PRIORITY_TEXT_COLOR,
 } from "../types";
+import { ColoredSelectOption } from "./ColoredSelect";
+import { TYPE_OPTIONS, STATUS_OPTIONS, PRIORITY_OPTIONS } from "./field-options";
+import { useClickOutside } from "../hooks/useClickOutside";
 
-interface StatusPriorityPillProps {
+/** Patch emitted when a segment's value changes. */
+export interface PillFieldPatch {
+  type?: BeadType;
   status?: BeadStatus;
   priority?: BeadPriority;
 }
 
+interface StatusPriorityPillProps {
+  /** Optional leading type segment (e.g. the header/Selection pill: [type|status|priority]). */
+  type?: BeadType;
+  status?: BeadStatus;
+  priority?: BeadPriority;
+  /** When set, each present segment becomes an inline click-to-edit dropdown. */
+  onChange?: (patch: PillFieldPatch) => void;
+  /** Which edge the segment menus anchor to. "start" (default) opens rightward
+   *  — right for a left-aligned pill (Details badges). "end" opens leftward —
+   *  right for a right-aligned pill (the Selection card), so it isn't clipped. */
+  menuAlign?: "start" | "end";
+}
+
+/**
+ * One editable segment: a click-to-edit pill segment that opens a colored
+ * option menu in place. Kept a direct `<span>` child of the pill so the
+ * sibling-based outer-corner rounding still applies; the menu is an absolutely
+ * positioned child so it escapes the 20px pill band without a wrapper.
+ */
+function EditablePillSegment<T extends string | number>({
+  className,
+  label,
+  bg,
+  textColor,
+  value,
+  options,
+  onSelect,
+  menuAlign,
+}: {
+  className: string;
+  label: string;
+  bg?: string;
+  textColor?: string;
+  value: T;
+  options: ColoredSelectOption<T>[];
+  onSelect: (value: T) => void;
+  menuAlign: "start" | "end";
+}): React.ReactElement {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  useClickOutside(ref, () => setOpen(false), open);
+
+  return (
+    <span
+      ref={ref}
+      className={`${className} pill-seg`}
+      role="button"
+      tabIndex={0}
+      aria-haspopup="listbox"
+      aria-expanded={open}
+      style={{ backgroundColor: bg, color: textColor }}
+      onClick={() => setOpen((o) => !o)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          setOpen((o) => !o);
+        } else if (e.key === "Escape") {
+          setOpen(false);
+        }
+      }}
+    >
+      {label}
+      {open && (
+        <div
+          className={`colored-select-menu dropdown-menu pill-seg-menu${menuAlign === "end" ? " pill-seg-menu-end" : ""}`}
+          role="listbox"
+        >
+          {options.map((o) => (
+            <button
+              key={String(o.value)}
+              type="button"
+              className={`colored-select-option dropdown-item ${o.value === value ? "selected" : ""}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect(o.value);
+                setOpen(false);
+              }}
+            >
+              <span
+                className="colored-select-badge"
+                style={{ backgroundColor: o.color, color: o.textColor || "#ffffff" }}
+              >
+                {o.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </span>
+  );
+}
+
 export function StatusPriorityPill({
+  type,
   status,
   priority,
+  onChange,
+  menuAlign = "start",
 }: StatusPriorityPillProps): React.ReactElement | null {
   // Need at least one value to render
-  if (!status && priority === undefined) return null;
+  if (!type && !status && priority === undefined) return null;
 
   const statusText = status ? statusLabel(status) : null;
   const statusBg = status ? statusColor(status) : null;
 
   const priorityLabel = priority !== undefined ? `P${priority}` : "P?";
-  const priorityBgColor = priority !== undefined
-    ? PRIORITY_COLORS[priority]
-    : UNKNOWN_PRIORITY_COLOR;
-  const priorityTextColor = priority !== undefined
-    ? PRIORITY_TEXT_COLORS[priority]
-    : UNKNOWN_PRIORITY_TEXT_COLOR;
+  const priorityBgColor = priority !== undefined ? PRIORITY_COLORS[priority] : UNKNOWN_PRIORITY_COLOR;
+  const priorityTextColor =
+    priority !== undefined ? PRIORITY_TEXT_COLORS[priority] : UNKNOWN_PRIORITY_TEXT_COLOR;
+
+  const editable = !!onChange;
 
   return (
-    <span className="status-priority-pill">
-      {status && (
-        <span
-          className="pill-status"
-          style={{ backgroundColor: statusBg || undefined }}
-        >
-          {statusText}
-        </span>
-      )}
-      <span
-        className="pill-priority"
-        style={{
-          backgroundColor: priorityBgColor,
-          color: priorityTextColor,
-          borderRadius: status ? undefined : "var(--border-radius)",
-        }}
-      >
-        {priorityLabel}
-      </span>
+    <span className={`status-priority-pill${editable ? " editable" : ""}`}>
+      {type &&
+        (editable ? (
+          <EditablePillSegment
+            className="pill-type"
+            label={TYPE_LABELS[type] ?? type}
+            bg={TYPE_COLORS[type]}
+            textColor="#fff"
+            value={type}
+            options={TYPE_OPTIONS}
+            onSelect={(v) => onChange!({ type: v })}
+            menuAlign={menuAlign}
+          />
+        ) : (
+          <span className="pill-type" style={{ backgroundColor: TYPE_COLORS[type] }}>
+            {TYPE_LABELS[type] ?? type}
+          </span>
+        ))}
+      {status &&
+        (editable ? (
+          <EditablePillSegment
+            className="pill-status"
+            label={statusText ?? status}
+            bg={statusBg || undefined}
+            textColor="#fff"
+            value={status}
+            options={STATUS_OPTIONS}
+            onSelect={(v) => onChange!({ status: v })}
+            menuAlign={menuAlign}
+          />
+        ) : (
+          <span className="pill-status" style={{ backgroundColor: statusBg || undefined }}>
+            {statusText}
+          </span>
+        ))}
+      {priority !== undefined &&
+        (editable ? (
+          <EditablePillSegment
+            className="pill-priority"
+            label={priorityLabel}
+            bg={priorityBgColor}
+            textColor={priorityTextColor}
+            value={priority}
+            options={PRIORITY_OPTIONS}
+            onSelect={(v) => onChange!({ priority: v })}
+            menuAlign={menuAlign}
+          />
+        ) : (
+          <span
+            className="pill-priority"
+            style={{ backgroundColor: priorityBgColor, color: priorityTextColor }}
+          >
+            {priorityLabel}
+          </span>
+        ))}
     </span>
   );
 }

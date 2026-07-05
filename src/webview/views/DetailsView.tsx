@@ -12,16 +12,9 @@ import {
   Bead,
   BeadStatus,
   BuiltInStatus,
-  BeadPriority,
   BeadDependency,
   DependencyType,
   BeadType,
-  STATUS_LABELS,
-  PRIORITY_COLORS,
-  STATUS_COLORS,
-  TYPE_COLORS,
-  TYPE_LABELS,
-  getTypeSortOrder,
   sortLabels,
   isBuiltInStatus,
   vscode,
@@ -145,39 +138,13 @@ function sortDependencies(deps: BeadDependency[]): BeadDependency[] {
   });
 }
 import { LabelBadge } from "../common/LabelBadge";
-import { StatusBadge } from "../common/StatusBadge";
-import { PriorityBadge } from "../common/PriorityBadge";
-import { TypeBadge } from "../common/TypeBadge";
 import { TypeIcon } from "../common/TypeIcon";
 import { Icon } from "../common/Icon";
 import { Markdown } from "../common/Markdown";
 import { useToast } from "../common/Toast";
-import { ColoredSelect, ColoredSelectOption } from "../common/ColoredSelect";
 import { Dropdown, DropdownItem } from "../common/Dropdown";
-import { SplitButton } from "../common/SplitButton";
-import { ListTodo, Kanban, Workflow } from "lucide-react";
-
-// Build options for ColoredSelect dropdowns (sorted by TYPE_SORT_ORDER)
-const TYPE_OPTIONS: ColoredSelectOption<BeadType>[] = (Object.keys(TYPE_LABELS) as BeadType[])
-  .sort((a, b) => getTypeSortOrder(a) - getTypeSortOrder(b))
-  .map((t) => ({
-    value: t,
-    label: TYPE_LABELS[t],
-    color: TYPE_COLORS[t],
-  }));
-
-const STATUS_OPTIONS: ColoredSelectOption<BeadStatus>[] = (Object.keys(STATUS_LABELS) as BuiltInStatus[]).map((s) => ({
-  value: s,
-  label: STATUS_LABELS[s],
-  color: STATUS_COLORS[s],
-}));
-
-const PRIORITY_OPTIONS: ColoredSelectOption<BeadPriority>[] = ([0, 1, 2, 3, 4] as BeadPriority[]).map((p) => ({
-  value: p,
-  label: `P${p}`,
-  color: PRIORITY_COLORS[p],
-  textColor: p === 2 ? "#1a1a1a" : "#ffffff", // dark text on yellow
-}));
+import { usePersistedBoolean } from "../hooks/usePersistedBoolean";
+import { ListTodo, Kanban, Workflow, ArrowLeft, Crosshair } from "lucide-react";
 
 interface DetailsViewProps {
   bead: Bead | null;
@@ -186,6 +153,8 @@ interface DetailsViewProps {
   userId?: string;
   /** True when this view is already an editor tab — hides the Open-in-tab action. */
   isEditorTab?: boolean;
+  /** Editor tab only: the active project's display path, for the chrome label. */
+  projectLabel?: string;
   knownAssignees?: string[];
   onUpdateBead: (beadId: string, updates: Partial<Bead>) => void;
   onAddDependency: (beadId: string, targetId: string, dependencyType: DependencyType, reverse: boolean) => void;
@@ -221,6 +190,7 @@ export function DetailsView({
   renderMarkdown = true,
   userId = "",
   isEditorTab = false,
+  projectLabel,
   knownAssignees = [],
   onUpdateBead,
   onAddDependency,
@@ -247,6 +217,12 @@ export function DetailsView({
   const [editMode, setEditMode] = useState(false);
   const [editedBead, setEditedBead] = useState<Partial<Bead>>({});
   const [newLabel, setNewLabel] = useState("");
+  // Focus mode (vs-filterbar): a toggle that changes what the tab-shortcut
+  // buttons do. Off → they just open the tab; On → they open the tab AND reveal
+  // this bead there (the viewIn* deep-links). A "locate this issue" modifier.
+  // Persisted so the mode survives across Details mounts (screen swaps, id
+  // changes, reloads) — you set it once and it stays.
+  const [focusMode, setFocusMode] = usePersistedBoolean("details.focusMode", false);
   const [newDependency, setNewDependency] = useState("");
   const [newDepOptionIndex, setNewDepOptionIndex] = useState(0); // Index into DEPENDENCY_TYPE_OPTIONS
   const [newComment, setNewComment] = useState("");
@@ -288,11 +264,20 @@ export function DetailsView({
         (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable));
       if (typing) return;
       e.preventDefault();
+      // On the sidebar, ← at the start of the trail returns to the Active
+      // Project screen — matching the title-bar Back button (beads.sidebar-
+      // NavigateBack). editMode is false here (the typing guard bailed), so a
+      // plain backToProject is safe. Editor tabs have no project screen, so
+      // they just no-op at the start of their own per-tab trail.
+      if (e.key === "ArrowLeft" && !isEditorTab && !canNavigateBack) {
+        vscode.postMessage({ type: "backToProject" });
+        return;
+      }
       vscode.postMessage({ type: e.key === "ArrowLeft" ? "navigateBack" : "navigateForward" });
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [editMode]);
+  }, [editMode, isEditorTab, canNavigateBack]);
 
   const handleSave = useCallback(() => {
     if (bead && Object.keys(editedBead).length > 0) {
@@ -377,12 +362,13 @@ export function DetailsView({
 
   // Header action controls, composed into two layouts below. The sidebar and
   // the editor tab order their action groups differently (vs-hskp):
-  //   sidebar:    [favorite] [refresh] | [+] [edit] | [show] [open-in-tab]
-  //   editor tab: [favorite] [llm] [show] [edit] | [back] [forward]
+  //   sidebar Lead:  [+] [edit] | [show group] | [refresh] [open-in-tab]
+  //   sidebar Ident: <type> [id] [favorite] … [pill]
+  //   editor tab:    [favorite] [llm] [show] [edit] | [back] [forward]
   const favoriteBtn = (
     <button
-      className={`icon-btn header-icon-btn${isFavorite ? " is-favorite" : ""}`}
-      title={isFavorite ? "Unstar (remove from Favorites)" : "Star (add to Favorites)"}
+      className={`icon-btn header-icon-btn fb-tip${isFavorite ? " is-favorite" : ""}`}
+      data-tip={isFavorite ? "Unstar (remove from Favorites)" : "Star (add to Favorites)"}
       aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
       aria-pressed={isFavorite}
       onClick={() => onToggleFavorite?.(bead.id)}
@@ -392,7 +378,7 @@ export function DetailsView({
   );
 
   const refreshBtn = (
-    <button className="icon-btn header-icon-btn" title="Refresh" aria-label="Refresh" onClick={handleRefresh}>
+    <button className="icon-btn header-icon-btn fb-tip fb-tip-end" data-tip="Refresh" aria-label="Refresh" onClick={handleRefresh}>
       <Icon name="refresh" size={13} className={refreshing ? "spinning" : ""} />
     </button>
   );
@@ -402,8 +388,8 @@ export function DetailsView({
   // would pop open far away in the editor area, so the caller omits the handler.
   const llmToggle = onToggleCompanion ? (
     <button
-      className={`companion-toggle${companionOpen ? " is-on" : ""}`}
-      title={
+      className={`companion-toggle fb-tip${companionOpen ? " is-on" : ""}`}
+      data-tip={
         companionOpen
           ? "Remove this bead from LLM context (closes the companion document)"
           : "Add this bead to your LLM context — opens its contents as a document beside this view so an LLM session (e.g. Claude Code) reads it"
@@ -417,50 +403,90 @@ export function DetailsView({
     </button>
   ) : null;
 
-  // Reveal THIS bead in the Beads panel's matching tab (vs-wbrz). Defaults to
-  // the last-used target (Tree preserves the prior single-button behavior) and
-  // remembers the choice.
-  const showSplitBtn = (
-    <SplitButton
-      persistKey="detailsReveal"
-      defaultOptionId="tree"
-      options={[
-        {
-          id: "issues",
-          label: "Show in Issues",
-          title: "Show in Issues",
-          icon: <ListTodo size={13} strokeWidth={2} />,
-          onSelect: () => vscode.postMessage({ type: "viewInIssues", beadId: bead.id }),
-        },
-        {
-          id: "tree",
-          label: "Show in Tree",
-          title: "Show in Tree",
-          icon: <Icon name="sitemap" size={13} />,
-          onSelect: () => vscode.postMessage({ type: "viewInTree", beadId: bead.id }),
-        },
-        {
-          id: "kanban",
-          label: "Show in Kanban",
-          title: "Show in Kanban",
-          icon: <Kanban size={13} strokeWidth={2} />,
-          onSelect: () => vscode.postMessage({ type: "viewInKanban", beadId: bead.id }),
-        },
-        {
-          id: "graph",
-          label: "Show in Graph",
-          title: "Show in Graph",
-          icon: <Workflow size={13} strokeWidth={2} />,
-          onSelect: () => vscode.postMessage({ type: "viewInGraph", beadId: bead.id }),
-        },
-      ]}
-    />
+  // Panel-tab shortcuts (vs-wbrz): a segmented group of one trigger per tab.
+  // Their behavior is informed by the focus toggle (which leads the group):
+  // focus OFF → just open the tab; focus ON → open the tab AND reveal this bead
+  // there (the viewIn* deep-links). Rendered as a unified segmented control.
+  const showTabBtns = (
+    <div
+      className="header-show-tabs"
+      role="group"
+      aria-label={focusMode ? "Show this issue in a panel tab" : "Open a panel tab"}
+    >
+      <button
+        className="icon-btn header-icon-btn fb-tip"
+        data-tip={focusMode ? "Reveal this issue in the Issues tab" : "Show Issues Tab"}
+        aria-label={focusMode ? "Reveal this issue in the Issues tab" : "Show Issues Tab"}
+        onClick={() =>
+          vscode.postMessage(focusMode ? { type: "viewInIssues", beadId: bead.id } : { type: "showIssues" })
+        }
+      >
+        <ListTodo size={13} strokeWidth={2} />
+      </button>
+      <button
+        className="icon-btn header-icon-btn fb-tip"
+        data-tip={focusMode ? "Reveal this issue in the Tree tab" : "Show Tree Tab"}
+        aria-label={focusMode ? "Reveal this issue in the Tree tab" : "Show Tree Tab"}
+        onClick={() =>
+          vscode.postMessage(focusMode ? { type: "viewInTree", beadId: bead.id } : { type: "showTreePanel" })
+        }
+      >
+        <Icon name="sitemap" size={13} />
+      </button>
+      <button
+        className="icon-btn header-icon-btn fb-tip"
+        data-tip={focusMode ? "Reveal this issue in the Kanban tab" : "Show Kanban Tab"}
+        aria-label={focusMode ? "Reveal this issue in the Kanban tab" : "Show Kanban Tab"}
+        onClick={() =>
+          vscode.postMessage(focusMode ? { type: "viewInKanban", beadId: bead.id } : { type: "showKanban" })
+        }
+      >
+        <Kanban size={13} strokeWidth={2} />
+      </button>
+      <button
+        className="icon-btn header-icon-btn fb-tip"
+        data-tip={focusMode ? "Reveal this issue in the Graph tab" : "Show Graph Tab"}
+        aria-label={focusMode ? "Reveal this issue in the Graph tab" : "Show Graph Tab"}
+        onClick={() =>
+          vscode.postMessage(focusMode ? { type: "viewInGraph", beadId: bead.id } : { type: "showGraphPanel" })
+        }
+      >
+        <Workflow size={13} strokeWidth={2} />
+      </button>
+    </div>
+  );
+
+  // "Focus" toggle — leads the tab-shortcut group. When on, the Show buttons
+  // reveal THIS bead in the tab they open (rather than just switching to it).
+  const focusBtn = (
+    <button
+      className={`icon-btn header-icon-btn fb-tip${focusMode ? " is-on" : ""}`}
+      data-tip={
+        focusMode
+          ? "Focus on — tab buttons reveal this issue in the tab. Click to turn off."
+          : "Focus off — tab buttons just open the tab. Click to reveal this issue in them."
+      }
+      aria-label="Toggle focus mode"
+      aria-pressed={focusMode}
+      onClick={() => {
+        const next = !focusMode;
+        setFocusMode(next);
+        // Turning focus ON acts on the active view right away: reveal this bead
+        // in whatever panel tab is already open. It's a no-op if nothing's open
+        // — then the (now focus-mode) Show buttons reveal it on the next click.
+        if (next && bead) {
+          vscode.postMessage({ type: "focusBeadInActiveTab", beadId: bead.id });
+        }
+      }}
+    >
+      <Crosshair size={13} strokeWidth={2} />
+    </button>
   );
 
   const createBtn = (
     <button
-      className="icon-btn header-icon-btn"
-      title="New issue"
+      className="icon-btn header-icon-btn fb-tip fb-tip-end"
+      data-tip="New issue"
       aria-label="New issue"
       onClick={() => vscode.postMessage({ type: "startCreate" })}
     >
@@ -489,8 +515,8 @@ export function DetailsView({
 
   const openInTabBtn = (
     <button
-      className="icon-btn header-icon-btn"
-      title="Open in editor tab"
+      className="icon-btn header-icon-btn fb-tip fb-tip-end"
+      data-tip="Open in editor tab"
       aria-label="Open in editor tab"
       onClick={() => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id })}
     >
@@ -501,8 +527,8 @@ export function DetailsView({
   const backForwardBtns = (
     <>
       <button
-        className="icon-btn header-icon-btn"
-        title={`Back (${navMod}←)`}
+        className="icon-btn header-icon-btn fb-tip fb-tip-end"
+        data-tip={`Back (${navMod}←)`}
         aria-label="Back"
         disabled={!canNavigateBack}
         onClick={() => onNavigateBack?.()}
@@ -512,8 +538,8 @@ export function DetailsView({
         </svg>
       </button>
       <button
-        className="icon-btn header-icon-btn"
-        title={`Forward (${navMod}→)`}
+        className="icon-btn header-icon-btn fb-tip fb-tip-end"
+        data-tip={`Forward (${navMod}→)`}
         aria-label="Forward"
         disabled={!canNavigateForward}
         onClick={() => onNavigateForward?.()}
@@ -525,16 +551,99 @@ export function DetailsView({
     </>
   );
 
+  // The merged type|status|priority pill — always shown and always inline
+  // click-to-edit (each segment opens its picker in place; a pick commits
+  // immediately, independent of the title/description Save/Cancel edit flow).
+  const pills = (
+    <StatusPriorityPill
+      type={(displayBead.type || "task") as BeadType}
+      status={displayBead.status}
+      priority={displayBead.priority ?? 4}
+      onChange={(patch) => onUpdateBead(bead.id, patch)}
+    />
+  );
+
   return (
     <div className="bead-details">
       {/* Header block — the ID/actions row, title anchor, and metadata
           chiclets, grouped and delimited from the body as one header unit. */}
       <div className="details-headerblock">
-      {/* Header row: type icon, ID chip, action cluster */}
+      {/* Lead line: context on the left — the sidebar takeover shows a labeled
+          "← Project" back button; an editor tab shows an "Issue view for
+          <project>" chrome label. On the right, the action cluster (sidebar) or
+          the back/forward history nav (editor tab, which has no view-title bar
+          to host it). */}
+      <div className="details-lead">
+        {isEditorTab ? (
+          <span
+            className="details-lead-chrome"
+            title={projectLabel ? `Issue details view for ${projectLabel}` : "Issue details view"}
+          >
+            <span className="details-lead-chrome-view">Issue details view</span>
+            {projectLabel && <span className="details-lead-chrome-for">for</span>}
+            {projectLabel && <span className="details-lead-chrome-project">{projectLabel}</span>}
+          </span>
+        ) : (
+          <button
+            className="btn btn-sm details-back-btn fb-tip"
+            data-tip="Back to the project view"
+            aria-label="Back to the project view"
+            onClick={() =>
+              vscode.postMessage(
+                editMode && Object.keys(editedBead).length > 0
+                  ? { type: "confirmDiscard", action: "backToProject" }
+                  : { type: "backToProject" }
+              )
+            }
+          >
+            <ArrowLeft size={14} strokeWidth={2} />
+            <span>Active Project</span>
+          </button>
+        )}
+        {isEditorTab ? (
+          // Editor-tab Lead: chrome label (left), the {tab group · focus}
+          // cluster centered between two spacers, and the back/forward nav right.
+          // (LLM rides on the Ident row, right-aligned.)
+          <>
+            <span className="details-lead-spacer" />
+            <div className="header-actions">
+              {focusBtn}
+              {showTabBtns}
+            </div>
+            <span className="details-lead-spacer" />
+            <div className="header-actions">{backForwardBtns}</div>
+          </>
+        ) : (
+          // Sidebar Lead: ← Project on the left, the centered cluster (the
+          // segmented tab-shortcut group + focus) between two flex spacers, and
+          // the utility cluster (refresh, open-in-tab) on the right. (+/Edit
+          // ride on the Ident row, where the pill used to sit.)
+          <>
+            <span className="details-lead-spacer" />
+            <div className="header-actions">
+              {focusBtn}
+              {showTabBtns}
+            </div>
+            <span className="details-lead-spacer" />
+            <div className="header-actions">
+              {refreshBtn}
+              {openInTabBtn}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Rule between the Lead and the Ident row. */}
+      <hr className="details-rule" />
+
+      {/* Ident row: type icon + ID + favorite star. The editor tab also keeps
+          its Edit control here (after the star) since its Lead carries the
+          centered {llm · tab group · focus} cluster + the back/forward nav. The
+          merged pill now lives in the badges row, under the title. */}
       <div className="details-header">
         <TypeIcon type={(displayBead.type || "task") as BeadType} size={20} />
         <span
-          className="bead-id-badge clickable"
+          className="bead-id-badge clickable fb-tip"
           onClick={() => {
             if (onCopyId) {
               onCopyId(bead.id);
@@ -543,35 +652,32 @@ export function DetailsView({
               navigator.clipboard.writeText(bead.id);
             }
           }}
-          title="Click to copy ID"
+          data-tip="Click to copy ID"
         >
           {bead.id}
         </span>
-        <div className="header-actions">
-          {isEditorTab ? (
-            // [favorite] [llm] [show] [edit] | < >  (one separator)
-            <>
-              {favoriteBtn}
-              {llmToggle}
-              {showSplitBtn}
-              {editControls}
-              <span className="header-actions-sep" />
-              {backForwardBtns}
-            </>
-          ) : (
-            // [favorite] [refresh] | [+] [edit] | [show] [open-in-tab]
-            <>
-              {favoriteBtn}
-              {refreshBtn}
-              <span className="header-actions-sep" />
+        {favoriteBtn}
+        {/* Editor tab keeps Edit down here, right after the star (its Lead is
+            taken by the centered action cluster + nav). */}
+        {isEditorTab && editControls}
+        {/* Editor tab: LLM toggle right-aligned on the Ident row. */}
+        {isEditorTab && (
+          <>
+            <span className="details-header-spacer" />
+            <div className="header-actions">{llmToggle}</div>
+          </>
+        )}
+        {/* Sidebar: +/Edit ride on the right of the Ident, where the pill used
+            to sit (the pill now leads the badges row under the title). */}
+        {!isEditorTab && (
+          <>
+            <span className="details-header-spacer" />
+            <div className="header-actions">
               {createBtn}
               {editControls}
-              <span className="header-actions-sep" />
-              {showSplitBtn}
-              {openInTabBtn}
-            </>
-          )}
-        </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Title - full width */}
@@ -588,25 +694,15 @@ export function DetailsView({
         )}
       </div>
 
-      {/* Type/Status/Priority/Assignee chiclets + Labels */}
+      {/* Assignee chiclet + Labels. (Type/Status/Priority live in the merged
+          pill on the Ident row, which is inline-editable in both modes — so the
+          editable badges row only carries assignee + labels now.) */}
       <div className="details-badges">
+        {/* The merged type|status|priority pill leads the row, under the title
+            and before the assignee — inline click-to-edit in both modes. */}
+        {pills}
         {editMode ? (
           <>
-            <ColoredSelect
-              value={(displayBead.type || "task") as BeadType}
-              options={TYPE_OPTIONS}
-              onChange={(v) => handleFieldChange("type", v)}
-            />
-            <ColoredSelect
-              value={displayBead.status}
-              options={STATUS_OPTIONS}
-              onChange={(v) => handleFieldChange("status", v)}
-            />
-            <ColoredSelect
-              value={displayBead.priority ?? 4}
-              options={PRIORITY_OPTIONS}
-              onChange={(v) => handleFieldChange("priority", v)}
-            />
             <Dropdown
               trigger={
                 <span className="assignee-trigger">
@@ -662,30 +758,8 @@ export function DetailsView({
           </>
         ) : (
           <>
-            <ColoredSelect
-              value={(displayBead.type || "task") as BeadType}
-              options={TYPE_OPTIONS}
-              onChange={(v) => handleInlineUpdate("type", v)}
-              renderTrigger={() => <TypeBadge type={(displayBead.type || "task") as BeadType} size="small" />}
-              renderOption={(opt) => <TypeBadge type={opt.value as BeadType} size="small" />}
-              showChevron={false}
-            />
-            <ColoredSelect
-              value={displayBead.status}
-              options={STATUS_OPTIONS}
-              onChange={(v) => handleInlineUpdate("status", v)}
-              renderTrigger={() => <StatusBadge status={displayBead.status} size="small" />}
-              renderOption={(opt) => <StatusBadge status={opt.value as BeadStatus} size="small" />}
-              showChevron={false}
-            />
-            <ColoredSelect
-              value={displayBead.priority ?? 4}
-              options={PRIORITY_OPTIONS}
-              onChange={(v) => handleInlineUpdate("priority", v)}
-              renderTrigger={() => <PriorityBadge priority={displayBead.priority ?? 4} size="small" />}
-              renderOption={(opt) => <PriorityBadge priority={opt.value as BeadPriority} size="small" />}
-              showChevron={false}
-            />
+            {/* Assignee is inline-editable via this dropdown (commits on pick);
+                the chevron signals it's editable. Labels follow. */}
             <Dropdown
               trigger={
                 <span className="assignee-trigger">
@@ -697,7 +771,6 @@ export function DetailsView({
               }
               className="assignee-menu"
               triggerClassName="assignee-menu-trigger"
-              showChevron={false}
             >
               {userId && displayBead.assignee !== userId && (
                 <DropdownItem onClick={() => handleInlineUpdate("assignee", userId)}>
@@ -720,15 +793,15 @@ export function DetailsView({
                   </DropdownItem>
                 ))}
             </Dropdown>
-            {/* Labels inline in display mode - pushed to right */}
-            {displayBead.labels && displayBead.labels.length > 0 && (
-              <>
-                <span className="badges-spacer" />
-                <Icon name="tag" size={10} className="labels-icon" title="Labels" />
-                {sortLabels(displayBead.labels).map((label) => (
-                  <LabelBadge key={label} label={label} />
-                ))}
-              </>
+            {/* Labels inline in display mode — pushed right. The tag icon always
+                shows (even with none) to mark the labels region; a muted
+                placeholder stands in when there are no labels. */}
+            <span className="badges-spacer" />
+            <Icon name="tag" size={10} className="labels-icon" title="Labels" />
+            {displayBead.labels && displayBead.labels.length > 0 ? (
+              sortLabels(displayBead.labels).map((label) => <LabelBadge key={label} label={label} />)
+            ) : (
+              <span className="labels-empty">No labels</span>
             )}
           </>
         )}

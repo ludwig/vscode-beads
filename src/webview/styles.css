@@ -34,7 +34,12 @@
   --beads-accent-hover: #354f80;
 
   /* Type scale — a small, deliberate set of sizes so text hierarchy is
-     consistent rather than ad-hoc per component. */
+     consistent rather than ad-hoc per component. ALWAYS use these tokens for
+     text font-size; never hardcode px. 11px (--text-label) is the FLOOR —
+     nothing text should go smaller. Hardcoded sub-floor px (8–10px) reads as
+     tiny AND doesn't scale with the user's --vscode-font-size. Compact badges
+     use the --badge-font-* scale above (which bottoms out at 10px) — that's the
+     only place below the text floor, and only for chips, not prose. */
   --text-label: 11px;   /* tracked-out uppercase section captions */
   --text-sm: 12px;      /* secondary / chrome text */
   --text-body: 13px;    /* descriptions, comments, prose */
@@ -58,6 +63,13 @@ body {
      which reads as a "strange font" in rendered markdown. */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* The left-sidebar view matches the native sidebars' shade
+   (--vscode-sideBar-background), a different tone from the editor background;
+   the bottom panel and editor-tab views keep the editor background. */
+body.view-sidebar {
+  background-color: var(--vscode-sideBar-background);
 }
 
 /* Numbers that sit in columns or get scanned/compared — IDs, timestamps,
@@ -148,8 +160,37 @@ body {
 .editor-tab-toolbar-actions {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 8px;
   padding: 3px 6px;
+}
+
+/* Stylish view heading in the tab toolbar (e.g. "Tree view for ~/beads/vs") —
+   fills the otherwise-empty space beside Refresh and reads well in screenshots. */
+.editor-tab-title {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.editor-tab-title-view {
+  font-weight: 600;
+  color: var(--vscode-foreground);
+}
+
+.editor-tab-title-for {
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.8;
+}
+
+.editor-tab-title-project {
+  font-family: var(--vscode-editor-font-family, monospace);
+  color: var(--vscode-textLink-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Snapshot ribbon (vs-zq2): makes an inherited filter on an editor tab
@@ -193,6 +234,257 @@ body {
 
 .filter-snapshot-ribbon-btn:hover {
   background: var(--vscode-button-secondaryHoverBackground);
+}
+
+/* FilterBar hosted in the editor-tab toolbar: fill the strip and shed the
+   standalone-card chrome (the toolbar row supplies the divider). */
+.editor-tab-toolbar .filter-bar {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* The editor-tab bar is fully borderless (no bottom rule), so the search row
+   must be too — otherwise the reserved 1px would re-introduce the funnel nudge
+   here in the opposite direction. */
+.editor-tab-toolbar .filter-bar-search-row {
+  border-bottom: none;
+}
+
+/* Inherited-scope ribbon as an INLINE segment of the bar (not a full-width
+   banner): a compact pill with no divider of its own. Applies wherever a
+   FilterBar hosts the ribbon (editor-tab chrome + the Tree's own FilterBar).
+   Comes after the generic .editor-tab-toolbar .filter-snapshot-ribbon rule so
+   it wins on equal specificity. */
+.filter-bar .filter-snapshot-ribbon {
+  flex: 0 1 auto;
+  padding: 2px 8px;
+  border-bottom: none;
+  border-radius: var(--border-radius);
+}
+
+/* The Tree self-hosts a FilterBar as its top strip: drop the standalone-card
+   chrome so it reads as a header row above the search/fold toolbar. */
+.beads-tree > .filter-bar {
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  background: transparent;
+}
+
+/* Funnel toggle: the single expand/collapse affordance for the FilterBar
+   (unified with the Issues filter icon). Glows blue when filters are set. */
+.filter-bar-funnel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 3px;
+  border: none;
+  border-radius: var(--border-radius);
+  background: transparent;
+  color: var(--vscode-foreground);
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.filter-bar-funnel:hover {
+  opacity: 1;
+  background: var(--vscode-toolbar-hoverBackground);
+}
+
+.filter-bar-funnel.has-filters {
+  opacity: 1;
+  color: var(--vscode-focusBorder);
+}
+
+.filter-bar-funnel.has-filters svg,
+.filter-bar-funnel.has-filters svg path {
+  fill: var(--vscode-focusBorder);
+}
+
+/* Expanded: a moderate glow (the chips already show what's set). */
+.filter-bar-funnel.has-filters svg {
+  filter: drop-shadow(0 0 4px var(--vscode-focusBorder))
+    drop-shadow(0 0 2px var(--vscode-focusBorder));
+}
+
+/* Collapsed: the chips are hidden, so shout — a brighter fill + a much more
+   intense, diffuse halo so the funnel clearly reads as "filters are set". */
+.filter-bar-funnel.has-filters.is-collapsed svg,
+.filter-bar-funnel.has-filters.is-collapsed svg path {
+  fill: var(--vscode-charts-blue, var(--vscode-focusBorder));
+}
+.filter-bar-funnel.has-filters.is-collapsed svg {
+  filter: drop-shadow(0 0 3px var(--vscode-focusBorder))
+    drop-shadow(0 0 6px var(--vscode-focusBorder))
+    drop-shadow(0 0 6px var(--vscode-focusBorder))
+    drop-shadow(0 0 10px var(--vscode-focusBorder))
+    drop-shadow(0 0 14px var(--vscode-focusBorder));
+}
+
+/* Trailing group (view-specific controls + count), pushed to the right edge. */
+.filter-bar-trailing {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Result count "N of M". In the collapsed ribbon it right-aligns via the
+   flex:1 summary before it; in the expanded bar via .filter-bar-trailing. */
+.filter-bar-count {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  white-space: nowrap;
+}
+
+.filter-bar-trailing .filter-bar-count {
+  margin-left: 0;
+}
+
+/* Leading row of the expanded bar: the funnel (master toggle) + the host's
+   search field + any adjacent view controls (Tree fold/columns, Graph clear).
+   Folds away with the rest of the structure when collapsed — the whole block
+   collapses to the ribbon, reclaiming screen real estate during active work. */
+.filter-bar-search-row {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  height: 36px;
+  box-sizing: border-box;
+  /* Reserve the same 1px the collapsed ribbon's border-bottom occupies, so the
+     funnel's centered vertical position is IDENTICAL in both states and it
+     doesn't nudge when you toggle collapse. Transparent → invisible; editor
+     tabs have a borderless bar and opt out below. */
+  border-bottom: 1px solid transparent;
+}
+
+/* Shared search field: one look across Kanban / Tree / Graph. The funnel leads
+   the row and the placeholder carries the context, so no leading loupe glyph. */
+.filter-bar-search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, transparent);
+  border-radius: 3px;
+  padding: 3px 6px;
+  font-size: 12px;
+  outline: none;
+}
+.filter-bar-search-input:focus {
+  border-color: var(--vscode-focusBorder);
+}
+
+/* A second, view-specific row under the main bar (e.g. Graph's graph filters). */
+.filter-bar-extra-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+}
+
+/* Collapsed (ribbon) form: a single non-wrapping summary line. Pin to the same
+   36px box as the expanded search row so the funnel doesn't drift vertically
+   when toggling. */
+.filter-bar-collapsed {
+  flex-wrap: nowrap;
+  gap: 8px;
+  min-height: 36px;
+  box-sizing: border-box;
+}
+
+.filter-bar-summary {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Inherited-scope text (muted) vs. the local filter tokens (foreground). */
+.filter-bar-summary-inherited {
+  flex-shrink: 0;
+  color: var(--vscode-descriptionForeground);
+}
+
+.filter-bar-summary-sep {
+  flex-shrink: 0;
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.6;
+}
+
+.filter-bar-summary-tokens {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+}
+
+/* Demure pill for each active filter in the collapsed ribbon: a muted pastel
+   blue (echoes the "filters are active" blue of the funnel glow), with a hover
+   outline to liven it up. */
+.filter-bar-token-pill {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: var(--badge-radius-pill, 10px);
+  font-size: var(--text-label);
+  line-height: 1.5;
+  color: var(--vscode-foreground);
+  background: color-mix(in srgb, var(--vscode-charts-blue, #4aa3ff) 16%, transparent);
+  border: 1px solid transparent;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+  transition: border-color var(--transition-fast, 0.12s ease),
+    background var(--transition-fast, 0.12s ease);
+}
+.filter-bar-token-pill:hover {
+  background: color-mix(in srgb, var(--vscode-charts-blue, #4aa3ff) 24%, transparent);
+  border-color: color-mix(in srgb, var(--vscode-charts-blue, #4aa3ff) 55%, transparent);
+}
+.filter-bar-token-icon {
+  flex: 0 0 auto;
+  opacity: 0.9;
+}
+
+/* Empty-state affordance: a muted, inviting "Add a filter…" that expands the bar. */
+.filter-bar-add-hint {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.85;
+  cursor: pointer;
+}
+
+.filter-bar-add-hint:hover {
+  opacity: 1;
+  color: var(--vscode-foreground);
 }
 
 /* ==================== Common Components ==================== */
@@ -523,6 +815,7 @@ textarea {
   line-height: 1;
 }
 
+.status-priority-pill .pill-type,
 .status-priority-pill .pill-status,
 .status-priority-pill .pill-priority {
   display: inline-flex;
@@ -535,24 +828,65 @@ textarea {
   font-variant: small-caps;
 }
 
+.status-priority-pill .pill-type,
 .status-priority-pill .pill-status {
   color: #fff;
-  border-radius: var(--border-radius) 0 0 var(--border-radius);
 }
 
 .status-priority-pill .pill-priority {
   font-weight: 600;
-  border-radius: 0 var(--border-radius) var(--border-radius) 0;
 }
 
-/* When only priority is shown (no status), use full border-radius */
-.status-priority-pill .pill-priority:only-child {
+/* Round only the OUTER corners so any subset ([type|status|priority],
+   [status|priority], or a lone segment) reads as one joined pill. */
+.status-priority-pill > span {
+  border-radius: 0;
+}
+.status-priority-pill > span:first-child {
+  border-radius: var(--border-radius) 0 0 var(--border-radius);
+}
+.status-priority-pill > span:last-child {
+  border-radius: 0 var(--border-radius) var(--border-radius) 0;
+}
+.status-priority-pill > span:only-child {
   border-radius: var(--border-radius);
 }
 
 /* Position pill at end of dependency item */
 .dep-item .status-priority-pill {
   margin-left: auto;
+}
+
+/* Inline-editable pill segments (click-to-edit). Each segment stays a direct
+   <span> child so the outer-corner rounding still applies; its option menu is
+   an absolutely-positioned child that escapes the 20px band without a wrapper
+   (which would break the sibling-based rounding). */
+.status-priority-pill.editable .pill-seg {
+  position: relative;
+  cursor: pointer;
+  outline: none;
+}
+.status-priority-pill.editable .pill-seg:hover,
+.status-priority-pill.editable .pill-seg:focus-visible {
+  filter: brightness(1.15);
+}
+/* Higher specificity than .colored-select-menu so these win regardless of
+   source order: widen to fit the option badges and undo the segment's
+   small-caps for the menu text. */
+.status-priority-pill .pill-seg-menu {
+  top: calc(100% + 3px);
+  /* Default: left-anchored, opens rightward — correct for a left-aligned pill
+     (the Details badges row, where the pill leads the row). */
+  left: 0;
+  right: auto;
+  min-width: max-content;
+  font-variant: normal;
+}
+/* Right-anchored, opens leftward — for a right-aligned pill (the Selection
+   card), so a wide menu isn't clipped by the sidebar's right edge. */
+.status-priority-pill .pill-seg-menu.pill-seg-menu-end {
+  left: auto;
+  right: 0;
 }
 
 /* Small badges - used in list view and detail panel */
@@ -852,6 +1186,20 @@ textarea {
   flex-direction: column;
   height: 100%;
   min-height: 0;
+}
+
+/* Issues self-hosts the shared FilterBar as its top strip: drop the standalone
+   card chrome so it reads as header rows above the table (mirrors Kanban/Tree/
+   Graph). The expanded bar keeps a bottom divider; the search row is chromeless. */
+.beads-panel > .filter-bar,
+.beads-panel > .filter-bar-search-row {
+  flex: 0 0 auto;
+}
+.beads-panel > .filter-bar {
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  background: transparent;
 }
 
 /* Compact single-row toolbar */
@@ -1268,34 +1616,35 @@ textarea {
   opacity: 0.8;
 }
 
-/* Active-filter count badge on the filter toggle (vs-dd7). */
-.filter-toggle-badge {
-  position: absolute;
-  top: -3px;
-  right: -3px;
-  min-width: 14px;
-  height: 14px;
-  padding: 0 3px;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 7px;
-  background: var(--vscode-focusBorder);
-  color: var(--vscode-button-foreground, #fff);
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 1;
-}
-
 .filter-toggle:hover {
   background: var(--vscode-toolbar-hoverBackground);
   opacity: 1;
 }
 
-.filter-toggle.active {
+/* Bar is open (but no filters set): just un-dim. */
+.filter-toggle.open {
+  opacity: 1;
+}
+
+/* Filters ARE set: a thick blue glow on the icon signals "active" without
+   needing a count (we only care THAT it's set, not how many). Set fill
+   explicitly — applying `filter:` to the SVG can drop a `fill="currentColor"`,
+   which left the icon grey. */
+.filter-toggle.has-filters {
   opacity: 1;
   color: var(--vscode-focusBorder);
+}
+
+.filter-toggle.has-filters svg,
+.filter-toggle.has-filters svg path {
+  fill: var(--vscode-focusBorder);
+}
+
+.filter-toggle.has-filters svg {
+  filter: drop-shadow(0 0 3px var(--vscode-focusBorder))
+    drop-shadow(0 0 6px var(--vscode-focusBorder))
+    drop-shadow(0 0 6px var(--vscode-focusBorder))
+    drop-shadow(0 0 11px var(--vscode-focusBorder));
 }
 
 .filter-toggle svg {
@@ -1345,6 +1694,49 @@ textarea {
   background: var(--vscode-editorWidget-background, rgba(127, 127, 127, 0.08));
   border: 1px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.2));
   border-radius: var(--border-radius);
+}
+
+/* Fast CSS tooltip for filter-bar controls — the native `title` has a
+   browser-fixed ~1.5s delay we can't shorten. Shows the `data-tip` text below
+   the control after a short 0.35s hover. `.fb-tip-end` right-anchors it (for
+   the rightmost control) so a wide tip doesn't overflow the panel edge. */
+.fb-tip {
+  position: relative;
+}
+.fb-tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 50;
+  width: max-content;
+  max-width: 240px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--vscode-editorHoverWidget-background, var(--vscode-editorWidget-background));
+  color: var(--vscode-editorHoverWidget-foreground, var(--vscode-foreground));
+  border: 1px solid var(--vscode-editorHoverWidget-border, var(--vscode-widget-border, transparent));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.4;
+  white-space: normal;
+  text-align: left;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 0.1s ease, transform 0.1s ease;
+  transition-delay: 0s;
+}
+.fb-tip-end::after {
+  left: auto;
+  right: 0;
+}
+.fb-tip:hover::after,
+.fb-tip:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.35s;
 }
 
 /* Preset dropdown - extends generic .dropdown */
@@ -2154,6 +2546,14 @@ textarea {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
 }
 
+/* The Selection card grows to take the leftover vertical space below Favorites,
+   so the readout breathes and the end marquee settles at the bottom naturally
+   rather than floating just under a compact card. */
+.context-selection-section {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .context-section-head {
   display: flex;
   align-items: center;
@@ -2211,6 +2611,13 @@ textarea {
 .context-heading-action:hover {
   background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
   opacity: 1;
+}
+
+/* Favorites-filter star: lit (full opacity + favorites accent) when the Issues
+   Favorites filter is on, so the card broadcasts the live state. */
+.favorites-filter-star.active {
+  opacity: 1;
+  color: var(--vscode-charts-yellow, var(--vscode-terminal-ansiYellow, #dcc173));
 }
 
 .context-menu-btn {
@@ -2498,8 +2905,8 @@ textarea {
 
 /* Variant: Rule & bead — twin hairlines flanking a center diamond. */
 .view-end-rulebead {
-  width: 220px;
-  max-width: 80%;
+  width: 300px;
+  max-width: 94%;
   height: auto;
 }
 
@@ -3007,8 +3414,22 @@ textarea {
   gap: var(--spacing-sm);
   padding: var(--spacing-sm);
   overflow: auto;
-  flex: 1;
+  /* Fill the pane's height (like .panel-shell / .project-switcher-view). The
+     host — .app-content in the sidebar, .editor-tab-body in a tab — is a plain
+     block with a definite height, so height:100% fills it while `flex:1` would
+     no-op (no flex parent). Filling gives the whitespace above the flourish
+     free space to absorb (see .bead-details > .view-end). Tall issues scroll. */
+  height: 100%;
   min-height: 0;
+}
+
+/* When the issue is short, let the whitespace ABOVE the end flourish flex so
+   the flourish settles at the bottom of the pane as a decorative margin
+   (rather than floating right under the created/updated footer). When the
+   content is tall there's no free space to absorb, so it just scrolls. Scoped
+   to the Details pane so the Project screen's flourish is unaffected. */
+.bead-details > .view-end {
+  margin-top: auto;
 }
 
 /* Spinning indicator for Refresh icons — a short rotation on click so the
@@ -3033,14 +3454,71 @@ textarea {
   border-bottom: 1px solid var(--vscode-panel-border);
 }
 
+/* Leading line: context on the left (← Project button in the sidebar, or an
+   "Issue view for <project>" chrome label in an editor tab), pill or nav on the
+   right. */
+.details-lead {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-height: 24px;
+}
+
+.details-lead-spacer {
+  flex: 1 1 auto;
+}
+
+/* Editor-tab chrome label — mirrors the other editor-tab views' "<view> view
+   for <project>" heading. */
+.details-lead-chrome {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.details-lead-chrome-view {
+  font-weight: 600;
+  color: var(--vscode-foreground);
+}
+.details-lead-chrome-for {
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.8;
+}
+.details-lead-chrome-project {
+  font-family: var(--vscode-editor-font-family, monospace);
+  color: var(--vscode-textLink-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The "← Project" back button — a labeled button (icon + word) rather than a
+   bare icon, so its destination reads at a glance. */
+.details-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Rule between the Lead and the Ident row. */
+.details-rule {
+  margin: 0;
+  border: none;
+  border-top: 1px solid var(--vscode-panel-border);
+}
+
 .details-header {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.details-header .header-actions {
-  margin-left: auto;
+/* Pushes the merged type|status|priority pill to the right edge of the
+   identity row. */
+.details-header-spacer {
+  flex: 1 1 auto;
 }
 
 /* The bead ID reads as a copyable identifier — a quiet bordered monospace chip
@@ -3072,6 +3550,33 @@ textarea {
   align-items: center;
 }
 
+/* Panel-tab shortcut group — one trigger per tab, rendered as one unified
+   segmented control (bordered, hairline dividers, rounded outer corners) while
+   staying separate buttons. */
+.header-show-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: var(--border-radius);
+  /* No overflow:hidden here — it would clip each button's fb-tip tooltip (an
+     absolutely-positioned ::after below the button). Round the outer corners
+     explicitly instead so the segmented look survives without clipping. */
+}
+.header-show-tabs > .header-icon-btn {
+  border-radius: 0;
+  border-right: 1px solid var(--vscode-panel-border);
+}
+.header-show-tabs > .header-icon-btn:first-child {
+  border-top-left-radius: var(--border-radius);
+  border-bottom-left-radius: var(--border-radius);
+}
+.header-show-tabs > .header-icon-btn:last-child {
+  border-right: none;
+  border-top-right-radius: var(--border-radius);
+  border-bottom-right-radius: var(--border-radius);
+}
+
 /* Utility icon buttons in the header (Open in tab, Refresh) — quiet until
    hovered, so the Edit/Save action stays the cluster's focal point. */
 .header-icon-btn {
@@ -3100,6 +3605,14 @@ textarea {
 .header-icon-btn.is-favorite,
 .header-icon-btn.is-favorite:hover:not(:disabled) {
   color: var(--vscode-charts-yellow, #d7ba7d);
+}
+
+/* Toggled-on state for a header icon button (e.g. the focus mode toggle) — an
+   accent tint + subtle fill so an active mode reads at a glance. */
+.header-icon-btn.is-on,
+.header-icon-btn.is-on:hover:not(:disabled) {
+  color: var(--vscode-focusBorder, var(--vscode-button-background));
+  background: color-mix(in srgb, var(--vscode-focusBorder) 16%, transparent);
 }
 
 /* "Seed to Claude" companion toggle (vs-nr3d). A small pill in the Details
@@ -3276,13 +3789,15 @@ textarea {
   transition: box-shadow 0.15s ease, filter 0.15s ease;
 }
 
-/* Show Issues — muted (desaturated) steel blue accent, easier on the eyes than
-   the vivid #2563eb. */
-.context-action-btn.show-issues {
+/* Show Issues / Show Tree — muted (desaturated) steel blue accent, easier on
+   the eyes than the vivid #2563eb. Both open a panel view, so they share it. */
+.context-action-btn.show-issues,
+.context-action-btn.show-tree {
   background: var(--beads-accent);
   color: #fff;
 }
-.context-action-btn.show-issues:hover {
+.context-action-btn.show-issues:hover,
+.context-action-btn.show-tree:hover {
   background: var(--beads-accent-hover);
 }
 
@@ -3496,6 +4011,15 @@ textarea {
 
 .person-icon,
 .labels-icon {
+  opacity: 0.7;
+}
+
+/* Placeholder when a bead has no labels — keeps the tag icon's region legible
+   as intentionally empty rather than a lone floating icon. */
+.labels-empty {
+  font-size: var(--text-label);
+  font-style: italic;
+  color: var(--vscode-descriptionForeground);
   opacity: 0.7;
 }
 
@@ -4365,32 +4889,15 @@ textarea {
 /* Ad-hoc quick-filter bar for the board (mirrors the Tree's filter row). Hosts
    the local card filter and, when scoped to an Issues filter, the "N of M" chip
    (right-aligned). */
-.kanban-filterbar {
+/* The board self-hosts a FilterBar as its top strip (like the Tree). */
+.kanban > .filter-bar {
   flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px var(--spacing-sm);
+  border: none;
+  border-radius: 0;
   border-bottom: 1px solid var(--vscode-panel-border);
+  background: transparent;
 }
-.kanban-filter-icon {
-  flex: 0 0 auto;
-  color: var(--vscode-descriptionForeground);
-}
-.kanban-filter-input {
-  flex: 1 1 auto;
-  min-width: 0;
-  background: var(--vscode-input-background);
-  color: var(--vscode-input-foreground);
-  border: 1px solid var(--vscode-input-border, transparent);
-  border-radius: 3px;
-  padding: 3px 6px;
-  font-size: 12px;
-  outline: none;
-}
-.kanban-filter-input:focus {
-  border-color: var(--vscode-focusBorder);
-}
+
 .kanban-filter-indicator {
   flex: 0 0 auto;
   margin-left: auto;
@@ -4480,6 +4987,16 @@ textarea {
   text-orientation: mixed;
 }
 
+/* Mute a collapsed lane's vertical title so parked/quiet lanes recede during
+   active use. Stronger than the closed-issue muting: descriptionForeground can
+   sit close to foreground in dark themes, so drop the opacity further and thin
+   the weight to make the de-emphasis unmistakable. The count badge stays legible. */
+.kanban-column.collapsed .kanban-column-title {
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.5;
+  font-weight: 400;
+}
+
 .kanban-column-body {
   /* Grow with content (basis auto) AND fill the floored column height (grow 1)
      so the whole lane is a drop target; never an inner scrollbar. */
@@ -4558,6 +5075,16 @@ textarea {
   margin-bottom: 2px;
 }
 
+/* Priority chip pinned to the card's top-right corner — a small color-coded
+   Pn badge (mirrors the graph node's priority dot, but keeps the label). */
+.kanban-card-priority {
+  margin-left: auto;
+  flex: 0 0 auto;
+  padding: 0 5px;
+  height: 16px;
+  font-weight: 600;
+}
+
 .kanban-card-id {
   font-size: 10px;
   font-family: var(--vscode-editor-font-family), monospace;
@@ -4615,8 +5142,9 @@ textarea {
 }
 
 .compact-toggle.active {
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
+  background: var(--vscode-inputOption-activeBackground);
+  color: var(--vscode-inputOption-activeForeground, var(--vscode-foreground));
+  border-color: var(--vscode-inputOption-activeBorder, var(--vscode-panel-border));
 }
 
 .compact-toggle svg {
@@ -4634,41 +5162,37 @@ textarea {
   min-height: 0;
 }
 
+/* The node quick-search is the top row (always visible, Issues-style). */
+/* The graph self-hosts a FilterBar (funnel + search + structured filter); its
+   graph-specific controls (layout/Focus/Auto) are the third row, riding in the
+   FilterBar's extra row so they collapse with the funnel. */
+.graph-view > .filter-bar {
+  flex: 0 0 auto;
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  background: transparent;
+}
+.graph-view > .filter-bar-extra-row {
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  padding: 4px var(--spacing-sm);
+}
+/* The graph toolbar (layout/Focus/Auto) fills the extra row as its own row. Its
+   own padding is dropped here so the first segment (Layered) is flush with the
+   left edge of the row above — the extra-row supplies the 8px inset. */
+.filter-bar-extra-row .graph-toolbar {
+  flex: 1 1 auto;
+  border-bottom: none;
+  padding: 0;
+}
+
 /* Tree view (vs-bw9) — file-explorer-style hierarchical bead tree */
 .beads-tree {
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
-}
-
-.beads-tree-filter {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-bottom: 1px solid var(--vscode-panel-border);
-  flex: 0 0 auto;
-}
-
-.beads-tree-filter-icon {
-  color: var(--vscode-descriptionForeground);
-  flex: 0 0 auto;
-}
-
-.beads-tree-filter-input {
-  flex: 1 1 auto;
-  background: var(--vscode-input-background);
-  color: var(--vscode-input-foreground);
-  border: 1px solid var(--vscode-input-border, transparent);
-  border-radius: 3px;
-  padding: 3px 6px;
-  font-size: 12px;
-  outline: none;
-}
-
-.beads-tree-filter-input:focus {
-  border-color: var(--vscode-focusBorder);
 }
 
 /* Expand-all / collapse-all controls (vs-fpp). */
@@ -4683,8 +5207,8 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border: none;
   border-radius: 3px;
   background: transparent;
@@ -4784,7 +5308,18 @@ textarea {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
-  padding: 4px 0;
+  padding: 0 0 4px;
+  /* Reserve the scrollbar gutter always, so the grid width doesn't shift when
+     rows cross the scroll threshold. The sticky header lives in here too, so
+     header and rows share the identical (gutter-narrowed) width — columns line
+     up exactly (vs-tree). */
+  scrollbar-gutter: stable;
+}
+/* Keyboard focus lives on this container (roving row selection); the selected
+   row's highlight is the visible cursor, so don't also draw a container ring. */
+.beads-tree-body:focus,
+.beads-tree-body:focus-visible {
+  outline: none;
 }
 
 /* Sortable column-header row of the tree-table. MUST keep this grid template
@@ -4793,35 +5328,74 @@ textarea {
    sizes its own columns from its own content and nothing lines up (vs-wp5). */
 .beads-tree-colheader {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 92px 64px 32px;
+  grid-template-columns: minmax(0, 1fr) 84px 56px 38px;
   column-gap: 8px;
   align-items: center;
-  padding: 3px 10px 4px 4px;
+  padding: 3px 8px 4px 4px;
   border-bottom: 1px solid var(--vscode-panel-border);
-  flex: 0 0 auto;
+  /* Sticky, and INSIDE the scrolling body (not a sibling above it): a header
+     outside the scroller keeps full width while the rows lose the scrollbar
+     width, shifting every fixed column left by ~a scrollbar. Sharing the scroll
+     box fixes that. Opaque bg (matches the webview backdrop) so rows scroll
+     under it cleanly. */
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--vscode-editor-background);
 }
 
 /* Matches the Issues table header (.beads-table th): Title-case, weight 600,
    foreground color — not the old uppercase/gray treatment, which read as a
    different control than the Issues tab. */
 .beads-tree-col {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 3px;
+  width: 100%;
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 2px 4px;
+  /* No horizontal padding: header content must sit at the track edge exactly
+     like the row cells (which have none), or the labels drift off their columns
+     — worse the narrower the column. Vertical padding only. */
+  padding: 2px 0;
   border-radius: 3px;
   font-size: 12px;
   font-weight: 600;
   color: var(--vscode-foreground);
-  justify-self: start;
+  justify-content: flex-start;
 }
-/* Status / Type / Priority headers sit over fixed-width tracks; align each
-   header with its column's cell content. */
-.beads-tree-col-priority {
-  justify-self: end;
+
+/* Drag-to-resize handle straddling a fixed column's LEFT edge (into the
+   column-gap with the previous track), so every boundary — including
+   Title|Status — is grabbable. A faint rule shows when the header is hovered
+   (discoverability); it brightens to the focus color on the handle itself. */
+.beads-tree-col-resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -8px;
+  width: 12px;
+  cursor: col-resize;
+  z-index: 2;
+}
+.beads-tree-col-resize::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 5px;
+  width: 2px;
+  border-radius: 1px;
+  background: transparent;
+  transition: background var(--transition-fast, 0.12s ease);
+}
+.beads-tree-colheader:hover .beads-tree-col-resize::after {
+  background: var(--vscode-panel-border);
+}
+.beads-tree-col-resize:hover::after {
+  background: var(--vscode-focusBorder);
 }
 .beads-tree-col:hover {
   background: var(--vscode-toolbar-hoverBackground);
@@ -4848,10 +5422,10 @@ textarea {
 
 .beads-tree-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 92px 64px 32px;
+  grid-template-columns: minmax(0, 1fr) 84px 56px 38px;
   column-gap: 8px;
   align-items: center;
-  padding: 2px 10px 2px 4px;
+  padding: 2px 8px 2px 4px;
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
@@ -4970,12 +5544,13 @@ textarea {
   color: var(--vscode-descriptionForeground);
 }
 
-/* Priority column cell — colored P0–P4 label (tabular for column alignment). */
+/* Priority column cell — colored P0–P4 label. Left-aligned like the other
+   columns (tabular figures keep the digit aligned). */
 .beads-tree-prio {
   font-size: 10px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  text-align: right;
+  text-align: left;
 }
 
 /* Updated/Created timestamp cells (vs-3ie). */
@@ -4987,10 +5562,36 @@ textarea {
   text-overflow: ellipsis;
 }
 
-/* Column show/hide selector — positioned wrapper for the .col-menu popover. */
+/* Column show/hide selector — anchored in the header's trailing gutter track,
+   right-aligned like the Issues table's column menu. */
 .beads-tree-colmenu {
   position: relative;
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.beads-tree-colmenu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  transition: color var(--transition-fast, 0.12s ease), background var(--transition-fast, 0.12s ease);
+}
+.beads-tree-colmenu-btn:hover {
+  color: var(--vscode-foreground);
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+}
+.beads-tree-colmenu-glyph {
+  font-size: 16px;
+  line-height: 1;
 }
 
 .beads-tree-empty {
@@ -5009,40 +5610,8 @@ textarea {
   flex: 0 0 auto;
 }
 
-/* Ad-hoc quick-filter row (vs-v6h) — its own top row above the button toolbar,
-   mirroring the Kanban (.kanban-filterbar) and Tree (.beads-tree-filter) bars so
-   the search glyph stays in the same place across tabs (and the input isn't
-   squished competing with the layout buttons). */
-.graph-filterbar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-bottom: 1px solid var(--vscode-panel-border);
-  flex: 0 0 auto;
-}
-
-.graph-filter-icon {
-  flex: 0 0 auto;
-  color: var(--vscode-descriptionForeground);
-}
-
-.graph-filter-input {
-  flex: 1 1 auto;
-  min-width: 0;
-  background: var(--vscode-input-background);
-  color: var(--vscode-input-foreground);
-  border: 1px solid var(--vscode-input-border, transparent);
-  border-radius: 3px;
-  padding: 3px 6px;
-  font-size: 12px;
-  outline: none;
-}
-
-.graph-filter-input:focus {
-  border-color: var(--vscode-focusBorder);
-}
-
+/* Node quick-search clear (X) button — rides in the FilterBar's search slot
+   (vs-v6h), after the shared search input. */
 .graph-filter-clear {
   display: inline-flex;
   align-items: center;
@@ -5732,6 +6301,13 @@ textarea {
   border: 1px solid var(--vscode-panel-border);
   border-radius: var(--border-radius);
   background: var(--vscode-editorWidget-background, transparent);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+/* Quiet hover lift, matching the Active Project card's stat chips
+ * (.project-switcher-meta-row) — informational, not a clickable cue. */
+.repository-metric-card:hover {
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+  border-color: var(--vscode-focusBorder);
 }
 .repository-metric-label {
   font-size: 0.75em;
@@ -5745,5 +6321,132 @@ textarea {
 }
 .repository-metric-caption {
   font-size: 0.78em;
+  color: var(--vscode-descriptionForeground);
+}
+
+/* --- Left sidebar "Details" section: a PLAIN section (no card framing) whose
+ * body is a flat medium-LOD readout of the selection. The header is a styled
+ * line (no twistie) with a right-aligned action cluster (history back/forward
+ * + open-in-tab / copy / clear). The full bead lives in the Secondary Side
+ * Bar Details view. */
+.context-heading-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+
+/* Flat bead readout: the bead's fields laid out as flowing content. */
+.bead-readout {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+/* The title is the only interactive element — a link that opens the full
+ * Details takeover — so the rest of the readout text stays selectable. */
+.bead-readout-title-link {
+  cursor: pointer;
+}
+.bead-readout-title-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.bead-readout-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+/* Pushes the merged type|status|priority pill to the right edge of the head. */
+.bead-readout-head-spacer {
+  flex: 1 1 auto;
+}
+.bead-readout-id {
+  font-family: var(--vscode-editor-font-family);
+  font-size: var(--text-sm);
+  color: var(--vscode-descriptionForeground);
+}
+.bead-readout-title {
+  font-size: var(--text-title);
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  line-height: 1.3;
+}
+.bead-readout-title.muted-closed {
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.75;
+}
+.bead-readout-meta {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.bead-readout-row {
+  display: flex;
+  gap: 8px;
+  font-size: var(--text-sm);
+  align-items: baseline;
+}
+.bead-readout-row dt {
+  flex: 0 0 58px;
+  color: var(--vscode-descriptionForeground);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: var(--text-label);
+}
+.bead-readout-row dd {
+  margin: 0;
+  min-width: 0;
+  color: var(--vscode-foreground);
+}
+.bead-readout-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.bead-readout-label {
+  font-size: var(--text-label);
+  line-height: 1.4;
+  padding: 0 6px;
+  border-radius: var(--badge-radius-pill, 10px);
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bead-readout-label-more {
+  font-size: var(--text-label);
+  color: var(--vscode-descriptionForeground);
+}
+.bead-readout-desc {
+  margin: 2px 0 0;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--vscode-descriptionForeground);
+  display: -webkit-box;
+  -webkit-line-clamp: 12;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+/* Content sections (Description, Acceptance Criteria) — a labeled block of
+   text, one notch richer than the meta rows but still a flat readout. */
+.bead-readout-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.bead-readout-section-label {
+  font-size: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--vscode-descriptionForeground);
+}
+/* Created/updated footer — the quietest line in the readout. */
+.bead-readout-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: var(--text-label);
   color: var(--vscode-descriptionForeground);
 }

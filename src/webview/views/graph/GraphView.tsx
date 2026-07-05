@@ -24,10 +24,13 @@ import {
   type Edge,
   type Connection,
 } from "@xyflow/react";
-import { GitBranch, Network, Crosshair, Wand2, Filter, ListTree, Radar, Search, X } from "lucide-react";
+import { GitBranch, Network, Crosshair, Wand2, ListTree, Radar, X } from "lucide-react";
 import { Bead, DependencyGraph, statusColor, vscode } from "../../types";
 import { Loading } from "../../common/Loading";
 import { ErrorMessage } from "../../common/ErrorMessage";
+import { FilterBar } from "../../common/FilterBar";
+import { useLocalFilter, type SharedFilterControl } from "../../hooks/useLocalFilter";
+import { intersect } from "../../composeScope";
 import { BeadNode, type BeadNodeData } from "./BeadNode";
 import { ContextMenu, type ContextMenuItem } from "../../common/ContextMenu";
 import { layeredLayout, forceLayout, treeLayout, radialLayout, type LayoutEdge } from "./layout";
@@ -49,21 +52,31 @@ interface GraphViewProps {
   selectedBeadId: string | null;
   /** Favorite bead ids — drives the right-click Add/Remove Favorites item (vs-sd5.5). */
   favoriteIds?: string[];
+  /** Masked favorites (eye-off), excluded from the graph FilterBar's Favorites seed. */
+  maskedIds?: string[];
   /** A bead to focus the neighborhood on (e.g. from a "View in graph" action). */
   focusBeadId: string | null;
   /**
-   * Ids matching the current Issues filter/search, or null when unknown. The
-   * "Filtered" toggle scopes the graph to this set; null disables the toggle.
+   * The inherited parent scope (panel filter / editor-tab seed), or null. The
+   * graph's own FilterBar composes on top of this (mirroring the Tree/Kanban).
    */
   filteredBeadIds: string[] | null;
+  /** Editor-tab inherited-scope ribbon controls (omitted in the panel subtab). */
+  parentCleared?: boolean;
+  onToggleParentScope?: () => void;
   /**
-   * Whether the Issues filter narrows to a strict subset. The "Filtered" toggle
-   * auto-follows this: it enables when a filter is added/updated and clears when
-   * filters are cleared. The user can still toggle it manually between filter
-   * changes (this value only changes on the Issues tab, while this view is
-   * unmounted). Absent on the dedicated graph editor tab (no Issues context).
+   * Panel only: controls for the shared filter surface. When provided, the
+   * graph's FilterBar common controls read/write the shared (panel) spec —
+   * linked with every other panel view. Omitted in an editor tab.
    */
-  issuesFilterActive?: boolean;
+  sharedFilter?: SharedFilterControl;
+  /**
+   * Panel only: shared collapse state for the FilterBar, so collapsing in one
+   * panel tab is reflected in all of them. When provided, overrides the view's
+   * own local collapse. Omitted in an editor tab.
+   */
+  filterBarCollapsed?: boolean;
+  onToggleFilterBar?: () => void;
   onOpenBead: (beadId: string) => void;
   /**
    * Lazily ask the provider for graph data on mount. Used by the multi-tab
@@ -82,22 +95,34 @@ function GraphCanvas({
   graph,
   selectedBeadId,
   favoriteIds = [],
+  maskedIds = [],
   focusBeadId,
   filteredBeadIds,
-  issuesFilterActive,
+  parentCleared,
+  onToggleParentScope,
+  sharedFilter,
+  filterBarCollapsed,
+  onToggleFilterBar,
   onOpenBead,
 }: Omit<GraphViewProps, "loading" | "error" | "onRequestGraph" | "onRetry">): React.ReactElement {
   const [mode, setMode] = useState<LayoutMode>("layered");
   const [focusEnabled, setFocusEnabled] = useState(false);
-  // Scope the graph to the current Issues filter slice (vs-v07). Composes with
-  // Focus: the filter narrows the candidate set, focus narrows to a
-  // neighborhood within it. Auto-follows the Issues filter: on when a filter is
-  // in place, off when cleared — initialized here and re-synced by the effect
-  // below so opening the tab with a filter active starts scoped.
-  const [filterEnabled, setFilterEnabled] = useState<boolean>(issuesFilterActive ?? false);
-  useEffect(() => {
-    setFilterEnabled(issuesFilterActive ?? false);
-  }, [issuesFilterActive]);
+  // The graph's own unified FilterBar (structured local filter), composed on top
+  // of the inherited parent scope: (Filtered ? parentScope : all) ∩ resolve(local).
+  const lf = useLocalFilter({
+    persistKey: "graphLocalFilter",
+    beads: graph?.nodes ?? [],
+    edges: graph?.edges ?? [],
+    favoriteIds,
+    maskedIds,
+    hasGraph: !!graph,
+    shared: sharedFilter,
+  });
+  const inheritedScope = parentCleared ? null : filteredBeadIds;
+  const finalScope = useMemo(
+    () => intersect(inheritedScope, lf.localScope),
+    [inheritedScope, lf.localScope],
+  );
 
   // Ad-hoc quick-filter: narrows the rendered nodes by id/title ON TOP of the
   // shared Issues filter slice — a per-view scratch narrowing, separate from the
@@ -146,19 +171,18 @@ function GraphCanvas({
   // selecting a node with Focus off — so a plain click doesn't relayout/refit.
   const focusRoot = focusEnabled ? activeId : null;
 
-  // The candidate beads the graph draws from: the whole board, or — when the
-  // Filtered toggle is on and we have a filter slice — just the matching beads.
-  // Everything downstream (visible set, layout, neighborhood) works off this.
-  const filterActive = filterEnabled && filteredBeadIds != null;
+  // The candidate beads the graph draws from: the composed scope (inherited ∩
+  // local filter), then narrowed by the node quick-search. Everything downstream
+  // (visible set, layout, neighborhood) works off this.
   const beads: Bead[] = useMemo(() => {
     const all = graph?.nodes ?? [];
-    const scoped = !filterActive ? all : all.filter((b) => new Set(filteredBeadIds).has(b.id));
+    const scoped = finalScope == null ? all : all.filter((b) => new Set(finalScope).has(b.id));
     const q = query.trim().toLowerCase();
     if (!q) return scoped;
     return scoped.filter(
       (b) => b.id.toLowerCase().includes(q) || b.title.toLowerCase().includes(q),
     );
-  }, [graph, filterActive, filteredBeadIds, query]);
+  }, [graph, finalScope, query]);
   const layoutEdges: LayoutEdge[] = useMemo(
     () => (graph?.edges ?? []).map((e) => ({ from: e.from, to: e.to })),
     [graph],
@@ -287,6 +311,9 @@ function GraphCanvas({
         c.timer = null;
         if (n >= 3) vscode.postMessage({ type: "openBeadInTab", beadId: id });
         else if (n === 2) onOpenBead(id);
+        // Single click: passive select — sync the selection surfaces + Details
+        // content without revealing the Details view.
+        else if (n === 1) vscode.postMessage({ type: "selectBead", beadId: id });
       }, 320);
     },
     [onOpenBead],
@@ -333,125 +360,140 @@ function GraphCanvas({
 
   const hasFocusTarget = Boolean(activeId);
 
+  const total = graph?.nodes.length ?? 0;
+  const scopeCount = finalScope?.length ?? total;
+
+  // Node quick-search: the leading slot of the FilterBar (row 1, after the
+  // funnel), folding away with the whole structure when the funnel is pressed.
+  const searchRow = (
+    <>
+      <input
+        type="text"
+        className="filter-bar-search-input"
+        placeholder="Filter nodes…"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") setQuery("");
+        }}
+      />
+      {query && (
+        <button
+          type="button"
+          className="graph-filter-clear"
+          title="Clear filter (Esc)"
+          aria-label="Clear filter"
+          onClick={() => setQuery("")}
+        >
+          <X size={13} strokeWidth={2} />
+        </button>
+      )}
+    </>
+  );
+  // Graph-specific controls (layout/focus/auto) ride in the FilterBar's extraRow
+  // — the "third row" — so they collapse when the funnel is pressed.
+  const graphControls = (
+    <div className="graph-toolbar">
+      <div className="graph-layout-toggle" role="radiogroup" aria-label="Graph layout">
+        <button
+          type="button"
+          role="radio"
+          aria-checked={mode === "layered"}
+          className={`graph-segment ${mode === "layered" ? "active" : ""}`}
+          onClick={() => setMode("layered")}
+          title="Layered (hierarchical) layout"
+        >
+          <GitBranch size={14} strokeWidth={2} />
+          <span>Layered</span>
+        </button>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={mode === "force"}
+          className={`graph-segment ${mode === "force" ? "active" : ""}`}
+          onClick={() => setMode("force")}
+          title="Force-directed (freeform) layout"
+        >
+          <Network size={14} strokeWidth={2} />
+          <span>Force</span>
+        </button>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={mode === "tree"}
+          className={`graph-segment ${mode === "tree" ? "active" : ""}`}
+          onClick={() => setMode("tree")}
+          title="Tidy-tree layout (dependency hierarchy: blocks + parent-child)"
+        >
+          <ListTree size={14} strokeWidth={2} />
+          <span>Tree</span>
+        </button>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={mode === "radial"}
+          className={`graph-segment ${mode === "radial" ? "active" : ""}`}
+          onClick={() => setMode("radial")}
+          title="Radial tree layout (dependency hierarchy: blocks + parent-child)"
+        >
+          <Radar size={14} strokeWidth={2} />
+          <span>Radial</span>
+        </button>
+      </div>
+      <button
+        type="button"
+        className={`graph-toggle-btn ${focusEnabled ? "active" : ""}`}
+        onClick={() => setFocusEnabled((v) => !v)}
+        disabled={!hasFocusTarget}
+        title={
+          hasFocusTarget
+            ? "Show only the selected bead's dependency neighborhood"
+            : "Select a bead to focus its neighborhood"
+        }
+      >
+        <Crosshair size={14} strokeWidth={2} />
+        <span>Focus</span>
+      </button>
+      <button
+        type="button"
+        className="graph-toggle-btn"
+        onClick={autoLayout}
+        title={
+          mode === "force"
+            ? "Shuffle a new force-layout variant and fit to view"
+            : "Re-apply the layout and fit to view (resets manual drags)"
+        }
+      >
+        <Wand2 size={14} strokeWidth={2} />
+        <span>Auto Layout</span>
+      </button>
+    </div>
+  );
+
   return (
     <div className="graph-view">
-      {/* Ad-hoc quick-filter on its own top row, mirroring the Kanban/Tree
-          filter bars (search glyph on the left) so it doesn't shift position
-          when switching tabs and doesn't get squished in the button toolbar
-          (vs-v6h). */}
-      <div className="graph-filterbar">
-        <Search size={13} strokeWidth={2} className="graph-filter-icon" />
-        <input
-          type="text"
-          className="graph-filter-input"
-          placeholder="Filter nodes…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") setQuery("");
-          }}
-        />
-        {query && (
-          <button
-            type="button"
-            className="graph-filter-clear"
-            title="Clear filter (Esc)"
-            aria-label="Clear filter"
-            onClick={() => setQuery("")}
-          >
-            <X size={13} strokeWidth={2} />
-          </button>
-        )}
-      </div>
-      <div className="graph-toolbar">
-        <div className="graph-layout-toggle" role="radiogroup" aria-label="Graph layout">
-          <button
-            type="button"
-            role="radio"
-            aria-checked={mode === "layered"}
-            className={`graph-segment ${mode === "layered" ? "active" : ""}`}
-            onClick={() => setMode("layered")}
-            title="Layered (hierarchical) layout"
-          >
-            <GitBranch size={14} strokeWidth={2} />
-            <span>Layered</span>
-          </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={mode === "force"}
-            className={`graph-segment ${mode === "force" ? "active" : ""}`}
-            onClick={() => setMode("force")}
-            title="Force-directed (freeform) layout"
-          >
-            <Network size={14} strokeWidth={2} />
-            <span>Force</span>
-          </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={mode === "tree"}
-            className={`graph-segment ${mode === "tree" ? "active" : ""}`}
-            onClick={() => setMode("tree")}
-            title="Tidy-tree layout (dependency hierarchy: blocks + parent-child)"
-          >
-            <ListTree size={14} strokeWidth={2} />
-            <span>Tree</span>
-          </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={mode === "radial"}
-            className={`graph-segment ${mode === "radial" ? "active" : ""}`}
-            onClick={() => setMode("radial")}
-            title="Radial tree layout (dependency hierarchy: blocks + parent-child)"
-          >
-            <Radar size={14} strokeWidth={2} />
-            <span>Radial</span>
-          </button>
-        </div>
-        <button
-          type="button"
-          className={`graph-toggle-btn ${focusEnabled ? "active" : ""}`}
-          onClick={() => setFocusEnabled((v) => !v)}
-          disabled={!hasFocusTarget}
-          title={
-            hasFocusTarget
-              ? "Show only the selected bead's dependency neighborhood"
-              : "Select a bead to focus its neighborhood"
-          }
-        >
-          <Crosshair size={14} strokeWidth={2} />
-          <span>Focus</span>
-        </button>
-        <button
-          type="button"
-          className={`graph-toggle-btn ${filterActive ? "active" : ""}`}
-          onClick={() => setFilterEnabled((v) => !v)}
-          disabled={filteredBeadIds == null}
-          title={
-            filteredBeadIds == null
-              ? "Open the Issues tab and set a filter to scope the graph"
-              : "Scope the graph to the current Issues filter"
-          }
-        >
-          <Filter size={14} strokeWidth={2} />
-          <span>Filtered</span>
-        </button>
-        <button
-          type="button"
-          className="graph-toggle-btn"
-          onClick={autoLayout}
-          title={
-            mode === "force"
-              ? "Shuffle a new force-layout variant and fit to view"
-              : "Re-apply the layout and fit to view (resets manual drags)"
-          }
-        >
-          <Wand2 size={14} strokeWidth={2} />
-          <span>Auto Layout</span>
-        </button>
-      </div>
+      <FilterBar
+        snapshot={lf.snapshot}
+        facets={lf.facets}
+        ops={lf.ops}
+        count={{ shown: scopeCount, total, unit: "nodes" }}
+        collapsed={filterBarCollapsed ?? lf.collapsed}
+        onToggleCollapsed={onToggleFilterBar ?? lf.toggleCollapsed}
+        searchTerm={query}
+        onClearSearch={() => setQuery("")}
+        search={searchRow}
+        inherited={
+          onToggleParentScope
+            ? {
+                filteredCount: filteredBeadIds?.length ?? 0,
+                totalCount: total,
+                cleared: !!parentCleared,
+                onToggle: onToggleParentScope,
+              }
+            : undefined
+        }
+        extraRow={graphControls}
+      />
 
       <ReactFlow
         nodes={nodes}
@@ -626,9 +668,14 @@ export function GraphView(props: GraphViewProps): React.ReactElement {
         graph={graph}
         selectedBeadId={props.selectedBeadId}
         favoriteIds={props.favoriteIds}
+        maskedIds={props.maskedIds}
         focusBeadId={props.focusBeadId}
         filteredBeadIds={props.filteredBeadIds}
-        issuesFilterActive={props.issuesFilterActive}
+        parentCleared={props.parentCleared}
+        onToggleParentScope={props.onToggleParentScope}
+        sharedFilter={props.sharedFilter}
+        filterBarCollapsed={props.filterBarCollapsed}
+        onToggleFilterBar={props.onToggleFilterBar}
         onOpenBead={props.onOpenBead}
       />
     </ReactFlowProvider>

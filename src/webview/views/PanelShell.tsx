@@ -9,7 +9,7 @@
  * this shell just routes between them client-side.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LayoutDashboard, ListTodo, Workflow, ListTree, Kanban, RefreshCw, ExternalLink, LucideIcon } from "lucide-react";
 import { Bead, BeadsSummary, DependencyGraph, FilterSnapshot, IssuesFilter, WebviewSettings, vscode } from "../types";
 import { DashboardView } from "./DashboardView";
@@ -18,6 +18,7 @@ import { KanbanBoard } from "./KanbanBoard";
 import { GraphView } from "./graph/GraphView";
 import { TreeView } from "./tree/TreeView";
 import { Loading } from "../common/Loading";
+import { ContextMenu } from "../common/ContextMenu";
 
 type PanelTab = "issues" | "dashboard" | "kanban" | "graph" | "tree";
 
@@ -55,6 +56,14 @@ interface PanelShellProps {
    * (and favorites mask) even while the Issues subview is unmounted.
    */
   parentScope: string[] | null;
+  /**
+   * The shared (panel) filter spec, broadcast by the host (`null` until first
+   * report). Drives the common FilterBar surface of every panel view so they
+   * stay linked: follower views (Kanban/Tree/Graph) render it live and publish
+   * edits back via `setSharedFilter`; the leader (Issues) seeds from it on
+   * (re)mount. Free-text search stays local to each view.
+   */
+  sharedSpec: FilterSnapshot | null;
   settings: WebviewSettings;
   issuesFilterRequest: { filter: IssuesFilter; seq: number } | null;
   // Full Issues-filter snapshot to apply, landed by an "Apply to all" broadcast
@@ -66,6 +75,11 @@ interface PanelShellProps {
   showIssuesBeadRequest: { beadId: string; seq: number } | null;
   focusIssuesSeq: number;
   focusKanbanSeq: number;
+  focusTreeSeq: number;
+  focusGraphSeq: number;
+  // Details "focus" toggle: reveal this bead in whatever tab is currently
+  // active (no tab switch). `seq` re-fires for a repeat of the same bead.
+  revealActiveRequest: { beadId: string; seq: number } | null;
 }
 
 export function PanelShell({
@@ -78,6 +92,7 @@ export function PanelShell({
   favoriteIds,
   maskedIds,
   parentScope,
+  sharedSpec,
   settings,
   issuesFilterRequest,
   applySnapshotRequest,
@@ -87,9 +102,18 @@ export function PanelShell({
   showIssuesBeadRequest,
   focusIssuesSeq,
   focusKanbanSeq,
+  focusTreeSeq,
+  focusGraphSeq,
+  revealActiveRequest,
 }: PanelShellProps): React.ReactElement {
   // Issues is the default view when the panel first opens.
   const [active, setActive] = useState<PanelTab>("issues");
+  // Shared FilterBar collapse across the panel tabs: collapsing in one tab
+  // collapses it in all of them, matching the synced filters (it's confusing to
+  // collapse in one and find it open in the next). Default open. Session-scoped;
+  // each standalone editor-tab view keeps its own local collapse instead.
+  const [filterBarCollapsed, setFilterBarCollapsed] = useState(false);
+  const toggleFilterBar = useCallback(() => setFilterBarCollapsed((v) => !v), []);
   // A Dashboard card click flips to Issues and carries its filter in-shell.
   const [localFilter, setLocalFilter] = useState<{ filter: IssuesFilter; seq: number } | null>(null);
   // Bead to focus on the Graph tab, set by a "View in graph" deep-link. Carried
@@ -110,6 +134,25 @@ export function PanelShell({
   // IssuesView) so it stays correct even while IssuesView is unmounted and
   // updates live when the filter or the favorites mask changes.
   const filteredBeadIds = parentScope;
+
+  // The shared filter control handed to the follower views (Kanban/Tree/Graph):
+  // they render their common FilterBar surface from `sharedSpec` and publish
+  // edits via `setSharedFilter`, so toggling Favorites/Ready/a chip in ANY panel
+  // view updates the host spec → re-scopes → echoes back to all of them. Only
+  // provided once the host has reported a spec (`sharedSpec` non-null); until
+  // then followers fall back to a self-owned local filter. Each view keeps its
+  // own local free-text search + collapse. Issues (the leader) instead seeds
+  // from `sharedSpec` on mount — it owns/publishes rather than being controlled.
+  const sharedFilter = useMemo(
+    () =>
+      sharedSpec
+        ? {
+            snapshot: sharedSpec,
+            onPublish: (next: FilterSnapshot) => vscode.postMessage({ type: "setSharedFilter", snapshot: next }),
+          }
+        : undefined,
+    [sharedSpec],
+  );
 
   // A "View in graph" deep-link: flip to the Graph tab and focus the bead.
   // Keyed on `seq` so a repeat request for the same bead still re-fires.
@@ -188,6 +231,64 @@ export function PanelShell({
     return () => clearTimeout(t);
   }, [focusKanbanSeq]);
 
+  // "Show Tree" (sidebar action): flip to the Tree tab and pulse the same
+  // confirmation ring.
+  const lastFocusTreeSeq = useRef(0);
+  useEffect(() => {
+    if (focusTreeSeq === 0 || lastFocusTreeSeq.current === focusTreeSeq) {
+      return;
+    }
+    lastFocusTreeSeq.current = focusTreeSeq;
+    setActive("tree");
+    setPulsing(true);
+    const t = setTimeout(() => setPulsing(false), 1600);
+    return () => clearTimeout(t);
+  }, [focusTreeSeq]);
+
+  // "Show Graph Tab" (Details shortcut): flip to the Graph tab and pulse the
+  // same confirmation ring. No bead focus (that's the "focus" button's job).
+  const lastFocusGraphSeq = useRef(0);
+  useEffect(() => {
+    if (focusGraphSeq === 0 || lastFocusGraphSeq.current === focusGraphSeq) {
+      return;
+    }
+    lastFocusGraphSeq.current = focusGraphSeq;
+    setActive("graph");
+    setPulsing(true);
+    const t = setTimeout(() => setPulsing(false), 1600);
+    return () => clearTimeout(t);
+  }, [focusGraphSeq]);
+
+  // Details "focus" toggle: reveal the bead in whichever tab is currently
+  // active — route the request to that tab's own reveal channel WITHOUT
+  // switching tabs. Dashboard has no per-bead reveal, so fall back to Issues.
+  const lastRevealActiveSeq = useRef<number | null>(null);
+  useEffect(() => {
+    if (!revealActiveRequest || lastRevealActiveSeq.current === revealActiveRequest.seq) {
+      return;
+    }
+    lastRevealActiveSeq.current = revealActiveRequest.seq;
+    const { beadId, seq } = revealActiveRequest;
+    switch (active) {
+      case "kanban":
+        setKanbanRevealRequest({ beadId, seq });
+        break;
+      case "tree":
+        setTreeRevealRequest({ beadId, seq });
+        break;
+      case "graph":
+        setGraphFocusId(beadId);
+        break;
+      case "issues":
+      case "dashboard":
+      default:
+        // Issues is the sensible landing for the non-bead Dashboard.
+        if (active === "dashboard") setActive("issues");
+        setIssuesRevealRequest({ beadId, seq });
+        break;
+    }
+  }, [revealActiveRequest, active]);
+
   const flipToIssues = (filter: IssuesFilter) => {
     setLocalFilter((prev) => ({ filter, seq: (prev?.seq ?? 0) + 1 }));
     setActive("issues");
@@ -206,11 +307,37 @@ export function PanelShell({
     setTimeout(() => setRefreshing(false), 800);
   }, []);
 
+  // Each downstream subtab (Kanban/Tree/Graph) can independently opt out of the
+  // inherited Issues filter via its FilterBar's Show-all/Show-filtered toggle —
+  // the common "Filtered" capability lives in the base bar, but each instance
+  // carries its own opt-out state. Issues is the source, so it has none.
+  const [clearedViews, setClearedViews] = useState<Set<PanelTab>>(new Set());
+  const toggleCleared = useCallback(
+    (view: PanelTab) =>
+      setClearedViews((prev) => {
+        const next = new Set(prev);
+        if (next.has(view)) next.delete(view);
+        else next.add(view);
+        return next;
+      }),
+    [],
+  );
+  // The toggle is only meaningful when there's an active upstream filter to drop
+  // — otherwise the ribbon would misleadingly read "0 of M". A helper builds the
+  // per-view props, omitting the toggle (→ no ribbon) when nothing is inherited.
+  const parentScopeProps = useCallback(
+    (view: PanelTab) =>
+      filteredBeadIds != null
+        ? { parentCleared: clearedViews.has(view), onToggleParentScope: () => toggleCleared(view) }
+        : {},
+    [filteredBeadIds, clearedViews, toggleCleared],
+  );
+
   const tabs: { id: PanelTab; label: string; Icon: LucideIcon }[] = [
     { id: "dashboard", label: "Dashboard", Icon: LayoutDashboard },
     { id: "issues", label: "Issues", Icon: ListTodo },
-    { id: "kanban", label: "Kanban", Icon: Kanban },
     { id: "tree", label: "Tree", Icon: ListTree },
+    { id: "kanban", label: "Kanban", Icon: Kanban },
     { id: "graph", label: "Graph", Icon: Workflow },
   ];
 
@@ -219,8 +346,22 @@ export function PanelShell({
   // Graph's auto-enabled "Filtered" toggle. Stays accurate while IssuesView is
   // unmounted because filteredBeadIds holds the last published slice.
   const totalCount = beads.length;
-  const filteredCount = filteredBeadIds?.length ?? totalCount;
-  const filterActive = filteredBeadIds != null && filteredCount < totalCount;
+
+  // Open a given tab's view in an editor tab, seeded with the panel's active
+  // filter (Kanban/Tree/Graph inherit the bead-id slice, vs-nme; Issues inherits
+  // the full filter spec, vs-tle). Shared by the toolbar button and the
+  // right-click-a-tab context menu.
+  const openInEditorTab = useCallback(
+    (view: PanelTab) =>
+      vscode.postMessage({
+        type: "openViewInTab",
+        view,
+        filteredBeadIds,
+        issuesFilter: view === "issues" ? readIssuesFilterSnapshot() : null,
+      }),
+    [filteredBeadIds],
+  );
+  const [tabMenu, setTabMenu] = useState<{ id: PanelTab; label: string; x: number; y: number } | null>(null);
 
   return (
     <div className={`panel-shell${pulsing ? " pulsing" : ""}`}>
@@ -234,6 +375,10 @@ export function PanelShell({
               aria-selected={active === id}
               className={`panel-shell-tab ${active === id ? "active" : ""}`}
               onClick={() => setActive(id)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setTabMenu({ id, label, x: e.clientX, y: e.clientY });
+              }}
             >
               <Icon size={15} strokeWidth={2} className="panel-shell-tab-icon" />
               <span>{label}</span>
@@ -244,30 +389,20 @@ export function PanelShell({
           <button
             type="button"
             className="panel-shell-action"
-            title={`Open ${tabs.find((t) => t.id === active)?.label ?? "view"} in an editor tab`}
-            aria-label="Open in editor tab"
-            onClick={() =>
-              // Seed the new tab with the panel's active filter so it opens
-              // scoped, not blank: Kanban/Tree/Graph inherit the bead-id slice
-              // (vs-nme); the Issues tab inherits the full filter spec (vs-tle).
-              vscode.postMessage({
-                type: "openViewInTab",
-                view: active,
-                filteredBeadIds,
-                issuesFilter: active === "issues" ? readIssuesFilterSnapshot() : null,
-              })
-            }
-          >
-            <ExternalLink size={14} strokeWidth={2} />
-          </button>
-          <button
-            type="button"
-            className="panel-shell-action"
             title="Refresh"
             aria-label="Refresh"
             onClick={handleRefresh}
           >
-            <RefreshCw size={14} strokeWidth={2} className={refreshing ? "spinning" : undefined} />
+            <RefreshCw size={14} strokeWidth={2} className={refreshing || loading ? "spinning" : undefined} />
+          </button>
+          <button
+            type="button"
+            className="panel-shell-action"
+            title={`Open ${tabs.find((t) => t.id === active)?.label ?? "view"} in an editor tab`}
+            aria-label="Open in editor tab"
+            onClick={() => openInEditorTab(active)}
+          >
+            <ExternalLink size={14} strokeWidth={2} />
           </button>
         </div>
       </nav>
@@ -276,15 +411,20 @@ export function PanelShell({
         {active === "kanban" ? (
           <KanbanBoard
             beads={beads}
+            graph={graph}
+            onRequestGraph={requestGraph}
             filteredBeadIds={filteredBeadIds}
-            filterActive={filterActive}
-            filteredCount={filteredCount}
+            {...parentScopeProps("kanban")}
+            sharedFilter={sharedFilter}
+            filterBarCollapsed={filterBarCollapsed}
+            onToggleFilterBar={toggleFilterBar}
             totalCount={totalCount}
             selectedBeadId={selectedBeadId}
             favoriteIds={favoriteIds}
+            maskedIds={maskedIds}
             muteClosedIssues={settings.muteClosedIssues}
             revealRequest={kanbanRevealRequest}
-            onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
+            onSelectBead={(beadId) => vscode.postMessage({ type: "selectBead", beadId })}
             onUpdateBead={(beadId, updates) => vscode.postMessage({ type: "updateBead", beadId, updates })}
           />
         ) : active === "tree" ? (
@@ -294,14 +434,17 @@ export function PanelShell({
             error={error}
             selectedBeadId={selectedBeadId}
             favoriteIds={favoriteIds}
+            maskedIds={maskedIds}
             highlightFavorites={settings.highlightFavorites}
             muteClosedIssues={settings.muteClosedIssues}
             filteredBeadIds={filteredBeadIds}
-            filterActive={filterActive}
-            filteredCount={filteredCount}
+            {...parentScopeProps("tree")}
+            sharedFilter={sharedFilter}
+            filterBarCollapsed={filterBarCollapsed}
+            onToggleFilterBar={toggleFilterBar}
             totalCount={totalCount}
             revealRequest={treeRevealRequest}
-            onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
+            onSelectBead={(beadId) => vscode.postMessage({ type: "selectBead", beadId })}
             onRequestGraph={requestGraph}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
           />
@@ -312,9 +455,13 @@ export function PanelShell({
             error={error}
             selectedBeadId={selectedBeadId}
             favoriteIds={favoriteIds}
+            maskedIds={maskedIds}
             focusBeadId={graphFocusId}
             filteredBeadIds={filteredBeadIds}
-            issuesFilterActive={filterActive}
+            {...parentScopeProps("graph")}
+            sharedFilter={sharedFilter}
+            filterBarCollapsed={filterBarCollapsed}
+            onToggleFilterBar={toggleFilterBar}
             onOpenBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onRequestGraph={requestGraph}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
@@ -328,7 +475,7 @@ export function PanelShell({
             version={settings.extensionVersion}
             buildSha={settings.buildSha}
             buildDirty={settings.buildDirty}
-            onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
+            onSelectBead={(beadId) => vscode.postMessage({ type: "selectBead", beadId })}
             onOpenIssues={(filter) => flipToIssues(filter)}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
           />
@@ -347,14 +494,31 @@ export function PanelShell({
             tooltipHoverDelay={settings.tooltipHoverDelay}
             issuesFilterRequest={localFilter ?? issuesFilterRequest}
             applySnapshotRequest={applySnapshotRequest}
+            sharedSpec={sharedSpec}
+            filterBarCollapsed={filterBarCollapsed}
+            onToggleFilterBar={toggleFilterBar}
             revealRequest={issuesRevealRequest}
             graph={graph}
             onRequestGraph={requestGraph}
-            onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
+            onSelectBead={(beadId) => vscode.postMessage({ type: "selectBead", beadId })}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
           />
         )}
       </div>
+
+      {tabMenu && (
+        <ContextMenu
+          x={tabMenu.x}
+          y={tabMenu.y}
+          items={[
+            {
+              label: `Open ${tabMenu.label} in editor tab`,
+              onSelect: () => openInEditorTab(tabMenu.id),
+            },
+          ]}
+          onClose={() => setTabMenu(null)}
+        />
+      )}
     </div>
   );
 }

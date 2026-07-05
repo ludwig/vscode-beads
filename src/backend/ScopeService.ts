@@ -46,6 +46,11 @@ export class ScopeService {
     return this.scope;
   }
 
+  /** The current shared filter spec (host authority; e.g. for the dashboard star). */
+  currentSpec(): FilterSnapshot {
+    return this.spec;
+  }
+
   /** Replace the shared filter spec (from the panel Issues view) and recompute. */
   setSharedFilter(spec: FilterSnapshot): void {
     this.spec = spec;

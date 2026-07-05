@@ -30,7 +30,6 @@ import { DetailsView } from "./views/DetailsView";
 import { ProjectSwitcherView } from "./views/ProjectSwitcherView";
 import { BoardInitWizard } from "./views/BoardInitWizard";
 import { PanelShell } from "./views/PanelShell";
-import { FilterSnapshotRibbon } from "./common/FilterSnapshotRibbon";
 import { CreateBeadForm } from "./views/CreateBeadForm";
 import { Loading } from "./common/Loading";
 import { ToastProvider, triggerToast } from "./common/Toast";
@@ -48,6 +47,11 @@ interface AppState {
   error: string | null;
   settings: WebviewSettings;
   createMode: boolean;
+  // Sidebar only: which screen the unified sidebar view shows — the Project
+  // switcher or the full-height Details takeover. Flipped by the host's
+  // `setScreen` message; a pure client-side React swap (instant, no flash),
+  // replacing the old two-view context-key swap.
+  screen: "project" | "details";
   // Drill-in filter pushed from another view (e.g. a Dashboard card/badge).
   // `seq` changes on every request so the Issues view re-applies even if the
   // filter is identical to last time.
@@ -69,6 +73,12 @@ interface AppState {
   focusIssuesSeq: number;
   // Bumped to switch the panel to the Kanban tab (vs-6xf).
   focusKanbanSeq: number;
+  focusTreeSeq: number;
+  // Bumped to switch the panel to the Graph tab (no bead) — "Show Graph Tab".
+  focusGraphSeq: number;
+  // The Details "focus" toggle: reveal this bead in whatever tab is active.
+  // `seq` re-fires for a repeat of the same bead.
+  revealActiveRequest: { beadId: string; seq: number } | null;
   // Bumped when this (editor-tab) webview is revealed/opened, to flash a
   // confirmation ring so the tab is easy to spot (vs-c59).
   pulseSeq: number;
@@ -89,6 +99,15 @@ interface AppState {
   // active filter (all beads). Replaces the frozen one-time seed — an editor-tab
   // Kanban/Tree/Graph inherits the panel's scope and now tracks it live.
   parentScope: string[] | null;
+  // The shared (panel Issues) Favorites-only filter bit, reported by the host so
+  // the dashboard's Favorites-card star reflects it (full-duplex probe).
+  sharedFavoritesOnly: boolean;
+  // The full shared (panel) filter spec, broadcast by the host so every panel
+  // view renders its common FilterBar surface in sync (the shared base).
+  // `null` until the host reports one — this deliberately carries NO fabricated
+  // default so it never clobbers the leader (Issues) view's own persisted
+  // default at cold-load first render (a stale default here was the old race).
+  sharedSpec: FilterSnapshot | null;
   // True when the user has temporarily dropped the inherited scope via the
   // ribbon's "Show all" (vs-zq2). The scope itself is retained so they can flip
   // back to "Show filtered". Local to this webview (the "Filtered" toggle).
@@ -136,6 +155,7 @@ const initialState: AppState = {
     bundleBytes: 0,
   },
   createMode: false,
+  screen: "project",
   issuesFilterRequest: null,
   showGraphRequest: null,
   showTreeRequest: null,
@@ -143,12 +163,17 @@ const initialState: AppState = {
   showIssuesBeadRequest: null,
   focusIssuesSeq: 0,
   focusKanbanSeq: 0,
+  focusTreeSeq: 0,
+  focusGraphSeq: 0,
+  revealActiveRequest: null,
   pulseSeq: 0,
   memoryBytes: 0,
   tabNav: { canBack: false, canForward: false },
   favorites: [],
   companion: null,
   parentScope: null,
+  sharedFavoritesOnly: false,
+  sharedSpec: null,
   seedFilterCleared: false,
   applySnapshotRequest: null,
   initWizard: { projectsRoot: "", phase: "form" },
@@ -224,6 +249,9 @@ export function App(): React.ReactElement {
       case "setCreateMode":
         setState((prev) => ({ ...prev, createMode: message.value }));
         break;
+      case "setScreen":
+        setState((prev) => ({ ...prev, screen: message.screen }));
+        break;
       case "applyIssuesFilter":
         setState((prev) => ({
           ...prev,
@@ -275,6 +303,21 @@ export function App(): React.ReactElement {
       case "focusKanbanTab":
         setState((prev) => ({ ...prev, focusKanbanSeq: prev.focusKanbanSeq + 1 }));
         break;
+      case "focusTreeTab":
+        setState((prev) => ({ ...prev, focusTreeSeq: prev.focusTreeSeq + 1 }));
+        break;
+      case "focusGraphTab":
+        setState((prev) => ({ ...prev, focusGraphSeq: prev.focusGraphSeq + 1 }));
+        break;
+      case "revealActiveTabBead":
+        setState((prev) => ({
+          ...prev,
+          revealActiveRequest: {
+            beadId: message.beadId,
+            seq: (prev.revealActiveRequest?.seq ?? 0) + 1,
+          },
+        }));
+        break;
       case "pulse":
         setState((prev) => ({ ...prev, pulseSeq: prev.pulseSeq + 1 }));
         break;
@@ -302,6 +345,14 @@ export function App(): React.ReactElement {
         // reset the local "Filtered"/cleared toggle here (that would fight the
         // user's choice); the toggle only flips on explicit user action.
         setState((prev) => ({ ...prev, parentScope: message.beadIds }));
+        break;
+
+      case "setSharedFavoritesOnly":
+        setState((prev) => ({ ...prev, sharedFavoritesOnly: message.on }));
+        break;
+
+      case "setSharedFilterSpec":
+        setState((prev) => ({ ...prev, sharedSpec: message.snapshot }));
         break;
       case "applyIssuesFilterSnapshot":
         setState((prev) => ({
@@ -343,6 +394,15 @@ export function App(): React.ReactElement {
     return () => clearTimeout(t);
   }, [state.pulseSeq]);
 
+  // Match the native left-sidebar background: our sidebar view lives beside the
+  // Explorer/SCM sidebars, which use --vscode-sideBar-background — a different
+  // shade from the editor background the body defaults to. Flag the sidebar
+  // view on <body> so its base surface follows suit; the bottom panel and
+  // editor-tab views keep the editor background.
+  useEffect(() => {
+    document.body.classList.toggle("view-sidebar", state.viewType === "beadsProjectSwitcher");
+  }, [state.viewType]);
+
   // Drive the favorites-highlight accent from the setting (vs-bvk7): publish it
   // as a CSS var on :root so every favorite style (Issues row, Tree row) picks
   // it up. Empty falls back to the theme chart-yellow via the var's CSS default.
@@ -364,16 +424,11 @@ export function App(): React.ReactElement {
   const maskedIds = state.favorites.filter((f) => f.masked).map((f) => f.id);
 
   // Editor-tab filter scope: a Kanban/Tree/Graph tab inherits the panel's LIVE
-  // parent scope (host-computed). The ribbon (vs-zq2) can temporarily drop it
-  // ("Show all"), which only zeroes the ids handed to the view — the live scope
-  // is retained so "Show filtered" restores it.
+  // parent scope (host-computed). Each view self-hosts its own FilterBar and
+  // composes its local filter on top; the ribbon's Show-all/Show-filtered toggle
+  // (driven by `seedFilterCleared`) lets a tab temporarily drop the inherited
+  // scope. So App just hands the views the raw parent scope + the toggle.
   const seedSnapshot = state.parentScope;
-  // A real snapshot narrows to a strict subset; equal length = no-op filter.
-  const hasSeedSnapshot = seedSnapshot != null && seedSnapshot.length < state.beads.length;
-  const effectiveSeed = state.seedFilterCleared ? null : seedSnapshot;
-  const seedFilterActive =
-    effectiveSeed != null && effectiveSeed.length < state.beads.length;
-  const seedFilteredCount = effectiveSeed?.length ?? state.beads.length;
   const toggleSeedFilter = () =>
     setState((prev) => ({ ...prev, seedFilterCleared: !prev.seedFilterCleared }));
 
@@ -389,28 +444,31 @@ export function App(): React.ReactElement {
   }, []);
 
   // Wrap an editor-tab data view with shared chrome: a thin top toolbar holding
-  // a contextual Refresh, plus (for filter-seeded Kanban/Tree/Graph tabs) the
-  // inherited-filter snapshot ribbon (vs-zq2). The flex-column shell keeps the
-  // view's own height/scroll model intact (Graph/React Flow needs a sized body).
-  const withEditorTabChrome = (
-    view: React.ReactElement,
-    opts: { ribbon?: boolean } = {},
-  ): React.ReactElement => {
+  // a contextual Refresh + a "<View> view for <project>" heading. Each view
+  // self-hosts its own FilterBar in its body now, so the chrome no longer injects
+  // one. The flex-column shell keeps the view's own height/scroll model intact
+  // (Graph/React Flow needs a sized body).
+  const VIEW_LABELS: Record<string, string> = {
+    beadsPanel: "Issues",
+    beadsKanban: "Kanban",
+    beadsTree: "Tree",
+    beadsGraph: "Graph",
+  };
+  const withEditorTabChrome = (view: React.ReactElement): React.ReactElement => {
     if (!state.settings.isEditorTab) return view;
-    const showRibbon = opts.ribbon !== false && hasSeedSnapshot;
+    const viewLabel = VIEW_LABELS[state.viewType];
+    const projectName = state.project?.displayPath ?? state.project?.name;
     return (
       <div className="editor-tab-shell">
         <div className="editor-tab-toolbar">
-          {showRibbon ? (
-            <FilterSnapshotRibbon
-              filteredCount={seedSnapshot?.length ?? 0}
-              totalCount={state.beads.length}
-              cleared={state.seedFilterCleared}
-              onToggle={toggleSeedFilter}
-            />
-          ) : (
-            <span className="editor-tab-toolbar-spacer" />
+          {viewLabel && projectName && (
+            <span className="editor-tab-title" title={`${viewLabel} view · ${projectName}`}>
+              <span className="editor-tab-title-view">{viewLabel} view</span>
+              <span className="editor-tab-title-for">for</span>
+              <span className="editor-tab-title-project">{projectName}</span>
+            </span>
           )}
+          <span className="editor-tab-toolbar-spacer" />
           <div className="editor-tab-toolbar-actions">
             <button
               type="button"
@@ -422,13 +480,118 @@ export function App(): React.ReactElement {
               <RefreshCw
                 size={14}
                 strokeWidth={2}
-                className={tabRefreshing ? "spinning" : undefined}
+                className={tabRefreshing || state.loading ? "spinning" : undefined}
               />
             </button>
           </div>
         </div>
         <div className="editor-tab-body">{view}</div>
       </div>
+    );
+  };
+
+  // The Details screen — shared by the sidebar's Details takeover (viewType
+  // beadsProjectSwitcher, screen === "details") and the standalone editor-tab
+  // Details view (viewType beadsDetails).
+  const renderDetails = (): React.ReactElement => {
+    if (state.createMode) {
+      return (
+        <CreateBeadForm
+          userId={state.settings.userId}
+          onCreate={(fields) => vscode.postMessage({ type: "createBead", fields })}
+          onCancel={(dirty) =>
+            vscode.postMessage(
+              dirty ? { type: "confirmDiscard", action: "cancelCreate" } : { type: "cancelCreate" }
+            )
+          }
+        />
+      );
+    }
+    if (!state.selectedBead && !state.loading) {
+      return (
+        <div className="empty-state">
+          <div className="empty-state-icon">🔖</div>
+          <h3>No issue selected</h3>
+          <p>
+            Pick an issue from the <strong>Issues</strong> list in the panel
+            below to see its details here.
+          </p>
+          <div className="empty-state-actions">
+            <button
+              type="button"
+              className="empty-state-action"
+              onClick={() => vscode.postMessage({ type: "startCreate" })}
+            >
+              <span className="empty-state-action-icon">+</span>
+              New Issue
+            </button>
+            <button
+              type="button"
+              className="empty-state-action secondary"
+              onClick={() => vscode.postMessage({ type: "showKanban" })}
+            >
+              Show Kanban
+            </button>
+          </div>
+        </div>
+      );
+    }
+    if (!state.selectedBead) {
+      return <Loading />;
+    }
+    // Extract unique assignees from beads list
+    const knownAssignees = Array.from(
+      new Set(state.beads.map((b) => b.assignee).filter((a): a is string => !!a))
+    ).sort();
+    return (
+      <DetailsView
+        bead={state.selectedBead}
+        loading={state.loading}
+        renderMarkdown={state.settings.renderMarkdown}
+        userId={state.settings.userId}
+        isEditorTab={state.settings.isEditorTab}
+        projectLabel={state.project?.displayPath ?? state.project?.name}
+        knownAssignees={knownAssignees}
+        onUpdateBead={(beadId, updates) =>
+          vscode.postMessage({ type: "updateBead", beadId, updates })
+        }
+        onAddDependency={(beadId, targetId, dependencyType, reverse) =>
+          vscode.postMessage({ type: "addDependency", beadId, targetId, dependencyType, reverse })
+        }
+        onRemoveDependency={(beadId, dependsOnId) =>
+          vscode.postMessage({ type: "removeDependency", beadId, dependsOnId })
+        }
+        onAddComment={(beadId, text) =>
+          vscode.postMessage({ type: "addComment", beadId, text })
+        }
+        onViewInGraph={(beadId) =>
+          vscode.postMessage({ type: "viewInGraph", beadId })
+        }
+        onSelectBead={(beadId) =>
+          // Clicking a child/dependency link is a navigation, not a passive
+          // select — route through openBeadDetails so it records history (the
+          // sidebar's global trail; an editor tab's per-tab trail), making the
+          // back/forward nav meaningful as you click around relatives.
+          vscode.postMessage({ type: "openBeadDetails", beadId })
+        }
+        onCopyId={(beadId) =>
+          vscode.postMessage({ type: "copyBeadId", beadId, toast: true })
+        }
+        isFavorite={state.favorites.some((f) => f.id === state.selectedBead?.id)}
+        onToggleFavorite={(beadId) =>
+          vscode.postMessage({ type: "toggleFavorite", beadId })
+        }
+        canNavigateBack={state.tabNav.canBack}
+        canNavigateForward={state.tabNav.canForward}
+        onNavigateBack={() => vscode.postMessage({ type: "navigateBack" })}
+        onNavigateForward={() => vscode.postMessage({ type: "navigateForward" })}
+        companionOpen={
+          state.companion?.beadId === state.selectedBead.id && state.companion.open
+        }
+        onToggleCompanion={(beadId) =>
+          vscode.postMessage({ type: "toggleBeadCompanion", beadId })
+        }
+      />
     );
   };
 
@@ -462,7 +625,7 @@ export function App(): React.ReactElement {
             buildSha={state.settings.buildSha}
             buildDirty={state.settings.buildDirty}
             onSelectBead={(beadId) =>
-              vscode.postMessage({ type: "openBeadDetails", beadId })
+              vscode.postMessage({ type: "selectBead", beadId })
             }
             onOpenIssues={(filter) =>
               vscode.postMessage({ type: "openIssuesWithFilter", filter })
@@ -503,14 +666,13 @@ export function App(): React.ReactElement {
             graph={state.graph}
             onRequestGraph={() => vscode.postMessage({ type: "requestGraph" })}
             onSelectBead={(beadId) =>
-              vscode.postMessage({ type: "openBeadDetails", beadId })
+              vscode.postMessage({ type: "selectBead", beadId })
             }
             onRetry={() =>
               vscode.postMessage({ type: "refresh" })
             }
           />,
-          // Issues has its own toolbar + "Apply to all"; no snapshot ribbon here.
-          { ribbon: false },
+          // Issues has its own toolbar + "Apply to all"; no sidecar FilterBar here.
         );
 
       case "beadsPanelShell":
@@ -525,6 +687,7 @@ export function App(): React.ReactElement {
             favoriteIds={favoriteIds}
             maskedIds={maskedIds}
             parentScope={state.parentScope}
+            sharedSpec={state.sharedSpec}
             settings={state.settings}
             issuesFilterRequest={state.issuesFilterRequest}
             applySnapshotRequest={state.applySnapshotRequest}
@@ -534,6 +697,9 @@ export function App(): React.ReactElement {
             showIssuesBeadRequest={state.showIssuesBeadRequest}
             focusIssuesSeq={state.focusIssuesSeq}
             focusKanbanSeq={state.focusKanbanSeq}
+            focusTreeSeq={state.focusTreeSeq}
+            focusGraphSeq={state.focusGraphSeq}
+            revealActiveRequest={state.revealActiveRequest}
           />
         );
 
@@ -545,35 +711,45 @@ export function App(): React.ReactElement {
             error={state.error}
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
+            maskedIds={maskedIds}
             focusBeadId={null}
-            filteredBeadIds={effectiveSeed}
-            issuesFilterActive={seedFilterActive}
+            filteredBeadIds={seedSnapshot}
+            parentCleared={state.seedFilterCleared}
+            onToggleParentScope={toggleSeedFilter}
             onOpenBead={(beadId) =>
               vscode.postMessage({ type: "openBeadDetails", beadId })
             }
             onRetry={() => vscode.postMessage({ type: "refresh" })}
-          />
+          />,
         );
 
       case "beadsKanban":
+        // Self-hosts its FilterBar (like the Tree): raw parent scope + ribbon
+        // toggle, own compose; no chrome FilterBar.
         return withEditorTabChrome(
           <KanbanBoard
             beads={state.beads}
+            graph={state.graph}
+            onRequestGraph={() => vscode.postMessage({ type: "requestGraph" })}
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
+            maskedIds={maskedIds}
             muteClosedIssues={state.settings.muteClosedIssues}
-            filteredBeadIds={effectiveSeed}
-            filterActive={seedFilterActive}
-            filteredCount={seedFilteredCount}
+            filteredBeadIds={seedSnapshot}
+            parentCleared={state.seedFilterCleared}
+            onToggleParentScope={toggleSeedFilter}
             totalCount={state.beads.length}
-            onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
+            onSelectBead={(beadId) => vscode.postMessage({ type: "selectBead", beadId })}
             onUpdateBead={(beadId, updates) =>
               vscode.postMessage({ type: "updateBead", beadId, updates })
             }
-          />
+          />,
         );
 
       case "beadsTree":
+        // The Tree self-hosts its FilterBar (so it works in the panel too), so
+        // it gets the RAW parent scope + the inherited-ribbon toggle and does its
+        // own compose; no chrome FilterBar here.
         return withEditorTabChrome(
           <TreeView
             graph={state.graph}
@@ -581,30 +757,35 @@ export function App(): React.ReactElement {
             error={state.error}
             selectedBeadId={state.selectedBeadId}
             favoriteIds={favoriteIds}
+            maskedIds={maskedIds}
             highlightFavorites={state.settings.highlightFavorites}
             muteClosedIssues={state.settings.muteClosedIssues}
-            filteredBeadIds={effectiveSeed}
-            filterActive={seedFilterActive}
-            filteredCount={seedFilteredCount}
+            filteredBeadIds={seedSnapshot}
+            parentCleared={state.seedFilterCleared}
+            onToggleParentScope={toggleSeedFilter}
             totalCount={state.beads.length}
-            onSelectBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
+            onSelectBead={(beadId) => vscode.postMessage({ type: "selectBead", beadId })}
             onRequestGraph={() => vscode.postMessage({ type: "requestGraph" })}
             onRetry={() => vscode.postMessage({ type: "refresh" })}
-          />
+          />,
         );
 
       case "beadsProjectSwitcher":
+        // The unified sidebar: the Details takeover (or create form) when the
+        // host has flipped to the Details screen, otherwise the Project switcher.
+        // A client-side swap — instant, no view/context-key churn.
+        if (state.screen === "details" || state.createMode) {
+          return renderDetails();
+        }
         return (
           <ProjectSwitcherView
             projects={state.projects}
             activeProject={state.project}
             activeBead={state.selectedBead}
+            favoritesFilterOn={state.sharedFavoritesOnly}
+            onToggleFavoritesFilter={(on) => vscode.postMessage({ type: "setFavoritesFilter", on })}
             favorites={state.favorites}
-            version={state.settings.extensionVersion}
-            buildSha={state.settings.buildSha}
-            buildDirty={state.settings.buildDirty}
             muteClosedIssues={state.settings.muteClosedIssues}
-            bundleBytes={state.settings.bundleBytes}
             onSelectProject={(project) =>
               vscode.postMessage({
                 type: "selectProject",
@@ -615,8 +796,9 @@ export function App(): React.ReactElement {
             onOpenProjectFolder={() => vscode.postMessage({ type: "openProjectFolder" })}
             onOpenBead={(beadId) => vscode.postMessage({ type: "openBeadDetails", beadId })}
             onOpenBeadInTab={(beadId) => vscode.postMessage({ type: "openBeadInTab", beadId })}
+            onSelectBead={(beadId) => vscode.postMessage({ type: "selectBead", beadId })}
+            onUpdateBead={(beadId, updates) => vscode.postMessage({ type: "updateBead", beadId, updates })}
             onClearBead={() => vscode.postMessage({ type: "clearActiveBead" })}
-            onUnfavorite={(beadId) => vscode.postMessage({ type: "removeFavorite", beadId })}
             onCopyFavorites={() =>
               vscode.postMessage({
                 type: "copyText",
@@ -625,6 +807,7 @@ export function App(): React.ReactElement {
                 toast: true,
               })
             }
+            onCopyId={(beadId) => vscode.postMessage({ type: "copyBeadId", beadId, toast: true })}
             onToggleFavorite={(beadId) => vscode.postMessage({ type: "toggleFavorite", beadId })}
             onToggleMask={(beadId) => {
               // Optimistic: flip the mask locally so the eye + muted card (and the
@@ -641,6 +824,7 @@ export function App(): React.ReactElement {
             }}
             onPickReady={() => vscode.postMessage({ type: "pickReadyBead" })}
             onShowIssues={() => vscode.postMessage({ type: "showIssues" })}
+            onShowTree={() => vscode.postMessage({ type: "showTreePanel" })}
             onCreateBoard={() => vscode.postMessage({ type: "createBoard" })}
             onOpenRepositoryDetails={() => vscode.postMessage({ type: "openRepositoryDetails" })}
             onChangeRoot={() => vscode.postMessage({ type: "changeProjectsRoot" })}
@@ -653,98 +837,9 @@ export function App(): React.ReactElement {
           />
         );
 
-      case "beadsDetails": {
-        if (state.createMode) {
-          return (
-            <CreateBeadForm
-              userId={state.settings.userId}
-              onCreate={(fields) => vscode.postMessage({ type: "createBead", fields })}
-              onCancel={() => vscode.postMessage({ type: "cancelCreate" })}
-            />
-          );
-        }
-        if (!state.selectedBead && !state.loading) {
-          return (
-            <div className="empty-state">
-              <div className="empty-state-icon">🔖</div>
-              <h3>No issue selected</h3>
-              <p>
-                Pick an issue from the <strong>Issues</strong> list in the panel
-                below to see its details here.
-              </p>
-              <div className="empty-state-actions">
-                <button
-                  type="button"
-                  className="empty-state-action"
-                  onClick={() => vscode.postMessage({ type: "startCreate" })}
-                >
-                  <span className="empty-state-action-icon">+</span>
-                  New Issue
-                </button>
-                <button
-                  type="button"
-                  className="empty-state-action secondary"
-                  onClick={() => vscode.postMessage({ type: "showKanban" })}
-                >
-                  Show Kanban
-                </button>
-              </div>
-            </div>
-          );
-        }
-        if (!state.selectedBead) {
-          return <Loading />;
-        }
-        // Extract unique assignees from beads list
-        const knownAssignees = Array.from(
-          new Set(state.beads.map((b) => b.assignee).filter((a): a is string => !!a))
-        ).sort();
-        return (
-          <DetailsView
-            bead={state.selectedBead}
-            loading={state.loading}
-            renderMarkdown={state.settings.renderMarkdown}
-            userId={state.settings.userId}
-            isEditorTab={state.settings.isEditorTab}
-            knownAssignees={knownAssignees}
-            onUpdateBead={(beadId, updates) =>
-              vscode.postMessage({ type: "updateBead", beadId, updates })
-            }
-            onAddDependency={(beadId, targetId, dependencyType, reverse) =>
-              vscode.postMessage({ type: "addDependency", beadId, targetId, dependencyType, reverse })
-            }
-            onRemoveDependency={(beadId, dependsOnId) =>
-              vscode.postMessage({ type: "removeDependency", beadId, dependsOnId })
-            }
-            onAddComment={(beadId, text) =>
-              vscode.postMessage({ type: "addComment", beadId, text })
-            }
-            onViewInGraph={(beadId) =>
-              vscode.postMessage({ type: "viewInGraph", beadId })
-            }
-            onSelectBead={(beadId) =>
-              vscode.postMessage({ type: "openBeadDetails", beadId })
-            }
-            onCopyId={(beadId) =>
-              vscode.postMessage({ type: "copyBeadId", beadId, toast: true })
-            }
-            isFavorite={state.favorites.some((f) => f.id === state.selectedBead?.id)}
-            onToggleFavorite={(beadId) =>
-              vscode.postMessage({ type: "toggleFavorite", beadId })
-            }
-            canNavigateBack={state.tabNav.canBack}
-            canNavigateForward={state.tabNav.canForward}
-            onNavigateBack={() => vscode.postMessage({ type: "navigateBack" })}
-            onNavigateForward={() => vscode.postMessage({ type: "navigateForward" })}
-            companionOpen={
-              state.companion?.beadId === state.selectedBead.id && state.companion.open
-            }
-            onToggleCompanion={(beadId) =>
-              vscode.postMessage({ type: "toggleBeadCompanion", beadId })
-            }
-          />
-        );
-      }
+      case "beadsDetails":
+        // Standalone editor-tab Details view.
+        return renderDetails();
 
       default:
         return (

@@ -33,14 +33,7 @@ import {
   DependencyGraph,
   IssuesFilter,
   FilterSnapshot,
-  STATUS_LABELS,
   isClosedStatus,
-  statusLabel,
-  statusColor,
-  PRIORITY_COLORS,
-  TYPE_LABELS,
-  TYPE_COLORS,
-  TYPE_SORT_ORDER,
   getTypeSortOrder,
   sortLabels,
   vscode,
@@ -53,9 +46,8 @@ import { PriorityBadge } from "../common/PriorityBadge";
 import { TypeBadge } from "../common/TypeBadge";
 import { TypeIcon } from "../common/TypeIcon";
 import { LabelBadge } from "../common/LabelBadge";
-import { FilterChip } from "../common/FilterChip";
 import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
-import { Rows3, Rows2, Rocket, Star, Share2 } from "lucide-react";
+import { Rows3, Rows2, Share2 } from "lucide-react";
 import {
   NOT_CLOSED,
   matchType,
@@ -65,16 +57,34 @@ import {
   matchAssignee,
   matchSearch,
 } from "../../backend/filterPredicates";
+import { FILTER_PRESETS } from "../filterPresets";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { Loading } from "../common/Loading";
-import { Dropdown, DropdownItem } from "../common/Dropdown";
 import { Timestamp, timestampSortingFn } from "../common/Timestamp";
-import { AutocompleteInput, AutocompleteOption } from "../common/AutocompleteInput";
 import { Markdown } from "../common/Markdown";
 import { triggerToast } from "../common/Toast";
-import { getLabelColorStyle } from "../utils/label-colors";
 import { useClickOutside } from "../hooks/useClickOutside";
 import { useColumnState } from "../hooks/useColumnState";
+import { FilterBar } from "../common/FilterBar";
+import { computeFacets } from "../facets";
+import {
+  applyPreset as snapApplyPreset,
+  addStatus as snapAddStatus,
+  removeStatus as snapRemoveStatus,
+  clearStatus as snapClearStatus,
+  addPriority as snapAddPriority,
+  removePriority as snapRemovePriority,
+  addType as snapAddType,
+  removeType as snapRemoveType,
+  addLabel as snapAddLabel,
+  removeLabel as snapRemoveLabel,
+  addAssignee as snapAddAssignee,
+  removeAssignee as snapRemoveAssignee,
+  toggleReady as snapToggleReady,
+  toggleFavoritesOnly as snapToggleFav,
+  clearAll as snapClearAll,
+  type FilterOps,
+} from "../filterSnapshotOps";
 
 interface IssuesViewProps {
   beads: Bead[];
@@ -103,6 +113,23 @@ interface IssuesViewProps {
    */
   applySnapshotRequest?: { snapshot: FilterSnapshot; seq: number } | null;
   /**
+   * Panel only: the broadcast shared filter spec (`null` until the host reports
+   * one). As the shared-filter LEADER, the panel Issues view seeds its structured
+   * filter from this ONCE at (re)mount — so an edit made in another panel view
+   * (Kanban/Tree/Graph) while Issues was unmounted is picked up on tab-return.
+   * It is NOT a running controlled input (that dual-ownership caused a feedback
+   * race); Issues owns its state and publishes edits via `setSharedFilter`.
+   * Free-text search stays local. Omitted / null in an editor tab (divergent).
+   */
+  sharedSpec?: FilterSnapshot | null;
+  /**
+   * Panel only: shared collapse state for the FilterBar, so collapsing in one
+   * panel tab is reflected in all of them. When provided, overrides this view's
+   * own local collapse. Omitted in an editor tab.
+   */
+  filterBarCollapsed?: boolean;
+  onToggleFilterBar?: () => void;
+  /**
    * A "show in issues" deep-link target (vs-wbrz): select the bead's row and
    * scroll it into view. `seq` re-fires for a repeat of the same bead. If the
    * bead is filtered out of the current view, selection still applies but the
@@ -128,10 +155,6 @@ interface IssuesViewProps {
   onFilteredBeadsChange?: (beadIds: string[]) => void;
 }
 
-// Issue types sorted by TYPE_SORT_ORDER (epic first)
-const ISSUE_TYPES = Object.keys(TYPE_SORT_ORDER).sort(
-  (a, b) => getTypeSortOrder(a) - getTypeSortOrder(b)
-);
 
 // Custom sorting function for type columns (epic first)
 const typeSortingFn = (rowA: { getValue: (id: string) => unknown }, rowB: { getValue: (id: string) => unknown }) => {
@@ -156,21 +179,6 @@ interface PersistedIssuesState {
 // status set grows. Imported from filterPredicates (single source of truth,
 // shared with the host-side resolveScope).
 
-// Filter presets
-interface FilterPreset {
-  id: string;
-  label: string;
-  statuses: BeadStatus[];
-}
-
-const FILTER_PRESETS: FilterPreset[] = [
-  { id: "all", label: "All", statuses: [] },
-  { id: "not-closed", label: "Not Closed", statuses: [NOT_CLOSED] },
-  { id: "active", label: "Active", statuses: ["in_progress", "blocked"] },
-  { id: "blocked", label: "Blocked", statuses: ["blocked"] },
-  { id: "closed", label: "Closed", statuses: ["closed"] },
-];
-
 const columnHelper = createColumnHelper<Bead>();
 
 export function IssuesView({
@@ -185,6 +193,9 @@ export function IssuesView({
   tooltipHoverDelay,
   issuesFilterRequest,
   applySnapshotRequest,
+  sharedSpec,
+  filterBarCollapsed,
+  onToggleFilterBar,
   revealRequest,
   isEditorTab = false,
   graph,
@@ -213,6 +224,7 @@ export function IssuesView({
   } = useColumnState({
     defaultSorting: [{ id: "updatedAt", desc: true }],
     defaultVisibility,
+    defaultCompact: true, // compact (packed rows) is the default; persisted choice wins
   });
 
   // Active filters + search persist across reloads and Panel-tab switches
@@ -220,8 +232,18 @@ export function IssuesView({
   // forget them). Merged into the same shared vscode state blob as the column
   // layout / readyOnly so we don't clobber the Tree's persisted sort (vs-1q1).
   const persisted = (vscode.getState() as PersistedIssuesState | undefined) ?? {};
+  // Shared-filter LEADER seed (panel only). If the host already holds a spec at
+  // mount — i.e. this is a tab-return after another panel view (Kanban/Tree/
+  // Graph) edited the common surface — seed our structured filter from it so we
+  // stay linked. A `null` sharedSpec (cold-load first render, before the host
+  // has reported) falls through to our own persisted default, which the publish
+  // effect below then asserts to the host as canonical. Read ONCE at mount via
+  // the useState initializers — deliberately NOT a running controlled input, so
+  // there's no publish↔echo feedback loop. Free-text search is never seeded here.
+  const sharedSeed = !isEditorTab && sharedSpec ? sharedSpec : null;
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
     () =>
+      (sharedSeed?.columnFilters as ColumnFiltersState | undefined) ??
       persisted.issuesColumnFilters ?? [
         { id: "status", value: [NOT_CLOSED] }, // Default: ¬closed (symbolic)
       ],
@@ -253,7 +275,7 @@ export function IssuesView({
   // active, so plain state would forget it). Merged into the shared state blob so
   // we don't clobber the Tree's persisted sort.
   const [readyOnly, setReadyOnly] = useState<boolean>(
-    () => (vscode.getState() as { issuesReadyOnly?: boolean } | undefined)?.issuesReadyOnly ?? false,
+    () => sharedSeed?.readyOnly ?? (vscode.getState() as { issuesReadyOnly?: boolean } | undefined)?.issuesReadyOnly ?? false,
   );
   useEffect(() => {
     const prev = (vscode.getState() as Record<string, unknown>) ?? {};
@@ -265,28 +287,23 @@ export function IssuesView({
   // graph (fetched lazily on first enable, like Ready). Persisted like readyOnly
   // and composes with it + the column filters/search.
   const [favoritesOnly, setFavoritesOnly] = useState<boolean>(
-    () => (vscode.getState() as { issuesFavoritesOnly?: boolean } | undefined)?.issuesFavoritesOnly ?? false,
+    () =>
+      sharedSeed?.favoritesOnly ??
+      (vscode.getState() as { issuesFavoritesOnly?: boolean } | undefined)?.issuesFavoritesOnly ??
+      false,
   );
   useEffect(() => {
     const prev = (vscode.getState() as Record<string, unknown>) ?? {};
     vscode.setState({ ...prev, issuesFavoritesOnly: favoritesOnly });
   }, [favoritesOnly]);
-  const toggleFavoritesOnly = useCallback(() => {
-    setFavoritesOnly((on) => {
-      // `!on` is the post-toggle state: enabling needs the graph to resolve relatives.
-      if (needsDependencyGraph(!on, !!graph)) onRequestGraph?.();
-      return !on;
-    });
-  }, [graph, onRequestGraph]);
-  // A Ready/Favorites filter restored as active from persisted state needs the
-  // dependency graph just like a freshly-toggled one, but the lazy fetch lives in
-  // the toggle handlers — which never run on mount. Without this, a restored
-  // Favorites filter renders each favorite stripped of its 1-hop relatives (and
-  // Ready can't filter at all) until the user toggles the filter off and on
-  // (vs-mbqc). Mount-only: later enables are handled by the toggle callbacks.
+  // Ready/Favorites need the dependency graph (blocker resolution / relatives).
+  // Fetch it lazily whenever either is active and the graph isn't loaded — this
+  // one effect covers a persisted-active filter on mount AND a fresh toggle from
+  // the shared FilterBar (whose ops just set state, carrying no fetch of their
+  // own), mirroring useLocalFilter (vs-mbqc).
   useEffect(() => {
     if (needsDependencyGraph(readyOnly || favoritesOnly, !!graph)) onRequestGraph?.();
-  }, []); // mount-only by design — see comment above
+  }, [readyOnly, favoritesOnly, graph, onRequestGraph]);
   const readySet = useMemo(() => {
     if (!graph) return null;
     const blocks = graph.edges.filter((e) => e.type === "blocks");
@@ -316,14 +333,9 @@ export function IssuesView({
     if (favoritesScope) rows = rows.filter((b) => favoritesScope.has(b.id));
     return rows;
   }, [readyOnly, readySet, favoritesScope, beads]);
-  const toggleReady = useCallback(() => {
-    setReadyOnly((on) => {
-      // `!on` is the post-toggle state: enabling needs the graph the first time.
-      if (needsDependencyGraph(!on, !!graph)) onRequestGraph?.();
-      return !on;
-    });
-  }, [graph, onRequestGraph]);
-  const [activePreset, setActivePreset] = useState<string>(() => persisted.issuesActivePreset ?? "not-closed");
+  const [activePreset, setActivePreset] = useState<string>(
+    () => sharedSeed?.activePreset ?? persisted.issuesActivePreset ?? "not-closed",
+  );
   // Persist filters + search + preset whenever they change (merge, don't clobber).
   useEffect(() => {
     const prev = (vscode.getState() as Record<string, unknown>) ?? {};
@@ -335,10 +347,8 @@ export function IssuesView({
     });
   }, [columnFilters, globalFilter, activePreset]);
   const [filterBarOpen, setFilterBarOpen] = useState(true);
-  const [filterMenuOpen, setFilterMenuOpen] = useState<string | null>(null);
   const [columnMenuOpen, setColumnMenuOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const filterMenuRef = useRef<HTMLDivElement>(null);
   const columnMenuRef = useRef<HTMLTableCellElement>(null);
 
   // Tooltip state
@@ -410,8 +420,7 @@ export function IssuesView({
     };
   }, []);
 
-  // Click outside to close menus
-  useClickOutside(filterMenuRef, () => setFilterMenuOpen(null), !!filterMenuOpen);
+  // Click outside to close the column menu
   useClickOutside(columnMenuRef, () => setColumnMenuOpen(false), columnMenuOpen);
 
   // Apply a drill-in filter pushed from another view (Dashboard card/badge).
@@ -557,7 +566,7 @@ export function IssuesView({
         filterFn: (row, _columnId, filterValue: BeadStatus[]) => matchStatus(row.original, filterValue),
       }),
       columnHelper.accessor("priority", {
-        header: "Priority",
+        header: "P",
         size: 70,
         minSize: 30,
         cell: (info) =>
@@ -637,6 +646,58 @@ export function IssuesView({
     enableColumnResizing: true,
   });
 
+  // Keyboard row navigation (roving selection), mirroring the Tree: ArrowUp/Down
+  // move a highlight through the visible (sorted + filtered) rows without
+  // scrolling the page; Enter commits the selection; Home/End jump to the ends.
+  const focusRowId = useCallback((id: string | undefined) => {
+    if (!id) return;
+    setLocalSelectedId(id);
+    requestAnimationFrame(() => {
+      tableContainerRef.current
+        ?.querySelector(`[data-bead-id="${id}"]`)
+        ?.scrollIntoView({ block: "nearest" });
+    });
+  }, []);
+  const onTableKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (!["ArrowDown", "ArrowUp", "Enter", "Home", "End"].includes(e.key)) return;
+      // Don't hijack typing in the filter inputs / search box within the table.
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
+      ) {
+        return;
+      }
+      const ids = table.getRowModel().rows.map((r) => r.original.id);
+      if (ids.length === 0) return;
+      const idx = ids.indexOf(activeSelectedId ?? "");
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          focusRowId(ids[idx < 0 ? 0 : Math.min(ids.length - 1, idx + 1)]);
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          focusRowId(ids[idx < 0 ? 0 : Math.max(0, idx - 1)]);
+          break;
+        case "Home":
+          e.preventDefault();
+          focusRowId(ids[0]);
+          break;
+        case "End":
+          e.preventDefault();
+          focusRowId(ids[ids.length - 1]);
+          break;
+        case "Enter":
+          e.preventDefault();
+          if (idx >= 0) selectRow(ids[idx]);
+          break;
+      }
+    },
+    [table, activeSelectedId, focusRowId, selectRow],
+  );
+
   const handleCopyId = useCallback((beadId: string) => {
     vscode.postMessage({ type: "copyBeadId", beadId });
     setCopiedId(beadId);
@@ -648,12 +709,12 @@ export function IssuesView({
   const rowMenuItems = useCallback(
     (bead: Bead): ContextMenuItem[] => [
       {
-        label: "Open Details (editor tab)",
-        onSelect: () => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id }),
-      },
-      {
         label: "Show Details",
         onSelect: () => vscode.postMessage({ type: "openBeadDetails", beadId: bead.id }),
+      },
+      {
+        label: "Show in editor tab",
+        onSelect: () => vscode.postMessage({ type: "openBeadInTab", beadId: bead.id }),
       },
       {
         label: "Focus on Graph",
@@ -692,206 +753,52 @@ export function IssuesView({
   const assigneeFilter = (columnFilters.find((f) => f.id === "assignee")?.value || []) as string[];
   const labelFilter = (columnFilters.find((f) => f.id === "labels")?.value || []) as string[];
   const hasActiveFilters = statusFilter.length > 0 || priorityFilter.length > 0 || typeFilter.length > 0 || assigneeFilter.length > 0 || labelFilter.length > 0;
-  // Count of active filters surfaced on the toggle badge (vs-dd7): every filter
-  // chip (one per value), plus the Ready/Favorites toggles and an active text
-  // search. The preset isn't counted separately — its status values already
-  // show up as chips.
-  const activeFilterCount =
-    statusFilter.length +
-    priorityFilter.length +
-    typeFilter.length +
-    assigneeFilter.length +
-    labelFilter.length +
-    (readyOnly ? 1 : 0) +
-    (favoritesOnly ? 1 : 0) +
-    (globalFilter.trim() ? 1 : 0);
-
-  const applyPreset = (presetId: string) => {
-    const preset = FILTER_PRESETS.find((p) => p.id === presetId);
-    if (preset) {
-      setColumnFilters((prev) =>
-        prev
-          .filter((f) => f.id !== "status")
-          .concat(preset.statuses.length > 0 ? [{ id: "status", value: preset.statuses }] : [])
-      );
-      setActivePreset(presetId);
-    }
-  };
-
-  const addStatusFilter = (status: BeadStatus) => {
-    // Picking an explicit status leaves the symbolic ¬closed preset: drop the
-    // sentinel and start a concrete status list.
-    const base = statusFilter.filter((s) => s !== NOT_CLOSED);
-    if (!base.includes(status)) {
-      setColumnFilters((prev) => {
-        const others = prev.filter((f) => f.id !== "status");
-        return [...others, { id: "status", value: [...base, status] }];
-      });
-      setActivePreset("");
-    }
-    setFilterMenuOpen(null);
-  };
-
-  const removeStatusFilter = (status: BeadStatus) => {
-    const newStatuses = statusFilter.filter((s) => s !== status);
-    setColumnFilters((prev) => {
-      const others = prev.filter((f) => f.id !== "status");
-      return newStatuses.length > 0
-        ? [...others, { id: "status", value: newStatuses }]
-        : others;
-    });
-    setActivePreset("");
-  };
-
-  // Clear the status filter entirely (used by the single ¬closed chip's remove);
-  // semantically equivalent to the "All" preset.
-  const clearStatusFilter = () => {
-    setColumnFilters((prev) => prev.filter((f) => f.id !== "status"));
-    setActivePreset("all");
-  };
-
-  const addPriorityFilter = (priority: BeadPriority) => {
-    if (!priorityFilter.includes(priority)) {
-      setColumnFilters((prev) => {
-        const others = prev.filter((f) => f.id !== "priority");
-        return [...others, { id: "priority", value: [...priorityFilter, priority] }];
-      });
-      setActivePreset("");
-    }
-    setFilterMenuOpen(null);
-  };
-
-  const addTypeFilter = (type: string) => {
-    if (!typeFilter.includes(type)) {
-      setColumnFilters((prev) => {
-        const others = prev.filter((f) => f.id !== "type");
-        return [...others, { id: "type", value: [...typeFilter, type] }];
-      });
-      setActivePreset("");
-    }
-    setFilterMenuOpen(null);
-  };
-
-  const removePriorityFilter = (priority: BeadPriority) => {
-    const newPriorities = priorityFilter.filter((p) => p !== priority);
-    setColumnFilters((prev) => {
-      const others = prev.filter((f) => f.id !== "priority");
-      return newPriorities.length > 0
-        ? [...others, { id: "priority", value: newPriorities }]
-        : others;
-    });
-    setActivePreset("");
-  };
-
-  const removeTypeFilter = (type: string) => {
-    const newTypes = typeFilter.filter((t) => t !== type);
-    setColumnFilters((prev) => {
-      const others = prev.filter((f) => f.id !== "type");
-      return newTypes.length > 0
-        ? [...others, { id: "type", value: newTypes }]
-        : others;
-    });
-    setActivePreset("");
-  };
-
-  const addAssigneeFilter = (assignee: string) => {
-    if (!assigneeFilter.includes(assignee)) {
-      setColumnFilters((prev) => {
-        const others = prev.filter((f) => f.id !== "assignee");
-        return [...others, { id: "assignee", value: [...assigneeFilter, assignee] }];
-      });
-      setActivePreset("");
-    }
-    setFilterMenuOpen(null);
-  };
-
-  const removeAssigneeFilter = (assignee: string) => {
-    const newAssignees = assigneeFilter.filter((a) => a !== assignee);
-    setColumnFilters((prev) => {
-      const others = prev.filter((f) => f.id !== "assignee");
-      return newAssignees.length > 0
-        ? [...others, { id: "assignee", value: newAssignees }]
-        : others;
-    });
-    setActivePreset("");
-  };
-
-  const addLabelFilter = (label: string) => {
-    if (!labelFilter.includes(label)) {
-      setColumnFilters((prev) => {
-        const others = prev.filter((f) => f.id !== "labels");
-        return [...others, { id: "labels", value: [...labelFilter, label] }];
-      });
-      setActivePreset("");
-    }
-    setFilterMenuOpen(null);
-  };
-
-  const removeLabelFilter = (label: string) => {
-    const newLabels = labelFilter.filter((l) => l !== label);
-    setColumnFilters((prev) => {
-      const others = prev.filter((f) => f.id !== "labels");
-      return newLabels.length > 0
-        ? [...others, { id: "labels", value: newLabels }]
-        : others;
-    });
-    setActivePreset("");
-  };
-
-  const clearAllFilters = () => {
-    setColumnFilters([]);
-    setGlobalFilter("");
-    setActivePreset("all");
-    setReadyOnly(false);
-    setFavoritesOnly(false);
-  };
-
   const filteredCount = table.getFilteredRowModel().rows.length;
   const totalCount = beads.length;
 
-  // Get faceted counts for filters (counts based on OTHER active filters, not this column)
-  const statusFacets = table.getColumn("status")?.getFacetedUniqueValues() ?? new Map();
-  const priorityFacets = table.getColumn("priority")?.getFacetedUniqueValues() ?? new Map();
-  const typeFacets = table.getColumn("type")?.getFacetedUniqueValues() ?? new Map();
-  const assigneeFacets = table.getColumn("assignee")?.getFacetedUniqueValues() ?? new Map();
-
-  // Unfiltered counts per status (for kanban empty state messaging)
-  // Get unique assignees from facets for filter menu
-  const uniqueAssignees = useMemo(() => {
-    const assignees = Array.from(assigneeFacets.keys()).filter((a): a is string => typeof a === "string" && a !== "");
-    return assignees.sort();
-  }, [assigneeFacets]);
-
-  // Count unassigned issues
-  const unassignedCount = useMemo(() => {
-    // Count null/undefined/empty assignees
-    let count = 0;
-    for (const [key, value] of assigneeFacets.entries()) {
-      if (!key || key === "") {
-        count += value;
-      }
-    }
-    return count;
-  }, [assigneeFacets]);
-
-  // Get unique labels and counts from filtered rows (labels are arrays, so facets don't work directly)
-  const { uniqueLabels, labelCounts, unlabeledCount } = useMemo(() => {
-    const counts = new Map<string, number>();
-    let unlabeled = 0;
-    const filteredRows = table.getFilteredRowModel().rows;
-    for (const row of filteredRows) {
-      const labels = row.original.labels;
-      if (!labels || labels.length === 0) {
-        unlabeled++;
-      } else {
-        for (const label of labels) {
-          counts.set(label, (counts.get(label) || 0) + 1);
-        }
-      }
-    }
-    const sorted = Array.from(counts.keys()).sort();
-    return { uniqueLabels: sorted, labelCounts: counts, unlabeledCount: unlabeled };
-  }, [table.getFilteredRowModel().rows]);
+  // --- Unified FilterBar wiring -------------------------------------------
+  // IssuesView's filter state is already snapshot-shaped, so assemble it into a
+  // FilterSnapshot and bind the shared FilterBar's ops to the existing setters
+  // via the pure filterSnapshotOps (identical semantics to the old inline
+  // handlers). The tanstack table, publish path, and persistence are untouched.
+  const snapshot: FilterSnapshot = useMemo(
+    () => ({
+      columnFilters: columnFilters as FilterSnapshot["columnFilters"],
+      globalFilter,
+      activePreset,
+      readyOnly,
+      favoritesOnly,
+    }),
+    [columnFilters, globalFilter, activePreset, readyOnly, favoritesOnly],
+  );
+  const commitSnapshot = useCallback((next: FilterSnapshot) => {
+    setColumnFilters(next.columnFilters as ColumnFiltersState);
+    setGlobalFilter(next.globalFilter);
+    setActivePreset(next.activePreset);
+    setReadyOnly(next.readyOnly);
+    setFavoritesOnly(next.favoritesOnly);
+  }, []);
+  const filterOps: FilterOps = useMemo(
+    () => ({
+      applyPreset: (id) => commitSnapshot(snapApplyPreset(snapshot, id)),
+      addStatus: (v) => commitSnapshot(snapAddStatus(snapshot, v)),
+      removeStatus: (v) => commitSnapshot(snapRemoveStatus(snapshot, v)),
+      clearStatus: () => commitSnapshot(snapClearStatus(snapshot)),
+      addPriority: (v) => commitSnapshot(snapAddPriority(snapshot, v)),
+      removePriority: (v) => commitSnapshot(snapRemovePriority(snapshot, v)),
+      addType: (v) => commitSnapshot(snapAddType(snapshot, v)),
+      removeType: (v) => commitSnapshot(snapRemoveType(snapshot, v)),
+      addLabel: (v) => commitSnapshot(snapAddLabel(snapshot, v)),
+      removeLabel: (v) => commitSnapshot(snapRemoveLabel(snapshot, v)),
+      addAssignee: (v) => commitSnapshot(snapAddAssignee(snapshot, v)),
+      removeAssignee: (v) => commitSnapshot(snapRemoveAssignee(snapshot, v)),
+      toggleReady: () => commitSnapshot(snapToggleReady(snapshot)),
+      toggleFavoritesOnly: () => commitSnapshot(snapToggleFav(snapshot)),
+      clearAll: () => commitSnapshot(snapClearAll(snapshot)),
+    }),
+    [snapshot, commitSnapshot],
+  );
+  const facets = useMemo(() => computeFacets(beads), [beads]);
 
   // Publish the filtered bead ids upward so the shell can scope the Graph view
   // to the same slice (vs-v07). Fires whenever the filter/search result changes.
@@ -929,316 +836,53 @@ export function IssuesView({
     vscode.postMessage({ type: "setSharedFilter", snapshot });
   }, [isEditorTab, columnFilters, globalFilter, activePreset, readyOnly, favoritesOnly]);
 
-  // Build label autocomplete options
-  const labelOptions = useMemo((): AutocompleteOption[] => {
-    const options: AutocompleteOption[] = [];
-    // Add "Unlabeled" option first if available
-    if (!labelFilter.includes("__unlabeled__") && unlabeledCount > 0) {
-      options.push({
-        value: "__unlabeled__",
-        label: "Unlabeled",
-        count: unlabeledCount,
-      });
-    }
-    // Add all unique labels not already filtered
-    for (const label of uniqueLabels) {
-      if (!labelFilter.includes(label)) {
-        options.push({
-          value: label,
-          label: label,
-          count: labelCounts.get(label) ?? 0,
-          render: () => (
-            <>
-              <LabelBadge label={label} />
-              <span className="autocomplete-option-count">({labelCounts.get(label) ?? 0})</span>
-            </>
-          ),
-        });
-      }
-    }
-    return options;
-  }, [uniqueLabels, labelCounts, unlabeledCount, labelFilter]);
-
   return (
     <div className="beads-panel">
-      {/* Row 1: search + filter toggle */}
-      <div className="panel-toolbar-compact">
-        <div className="search-input-wrapper">
-          <input
-            type="text"
-            className="search-input-compact"
-            placeholder="Search..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-          />
-          {globalFilter && (
+      {/* Unified filter bar (shared FilterBar). The search input + density toggle
+          + editor-tab "Apply to all" ride in the search slot; the funnel is the
+          master collapse. Issues is the filter SOURCE, so no inherited ribbon. */}
+      <FilterBar
+        snapshot={snapshot}
+        facets={facets}
+        ops={filterOps}
+        count={{ shown: filteredCount, total: totalCount, unit: "issues" }}
+        collapsed={filterBarCollapsed ?? !filterBarOpen}
+        onToggleCollapsed={onToggleFilterBar ?? (() => setFilterBarOpen((v) => !v))}
+        searchTerm={globalFilter}
+        onClearSearch={() => setGlobalFilter("")}
+        search={
+          <>
+            <input
+              type="text"
+              className="filter-bar-search-input"
+              placeholder="Search..."
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+            />
+            {/* Row density toggle — sits right of the search box (mirrors the
+                Tree's fold toggle placement). OFF (default) = compact, ON =
+                comfortable. */}
             <button
-              className="search-clear-btn"
-              onClick={() => setGlobalFilter("")}
-              title="Clear search"
+              className={`compact-toggle ${!compact ? "active" : ""}`}
+              onClick={() => setCompact((c) => !c)}
+              title={compact ? "Comfortable rows" : "Compact rows"}
+              aria-pressed={!compact}
             >
-              ×
+              {compact ? <Rows3 size={14} /> : <Rows2 size={14} />}
             </button>
-          )}
-        </div>
-        <button
-          className={`filter-toggle ${filterBarOpen || hasActiveFilters ? "active" : ""}`}
-          onClick={() => setFilterBarOpen(!filterBarOpen)}
-          title={activeFilterCount > 0 ? `Filters (${activeFilterCount} active)` : "Filters"}
-          aria-label={activeFilterCount > 0 ? `Filters, ${activeFilterCount} active` : "Filters"}
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M6 10.5v-1h4v1H6zm-2-3v-1h8v1H4zm-2-3v-1h12v1H2z" />
-          </svg>
-          {activeFilterCount > 0 && (
-            <span className="filter-toggle-badge">{activeFilterCount}</span>
-          )}
-        </button>
-        <button
-          className={`compact-toggle ${compact ? "active" : ""}`}
-          onClick={() => setCompact((c) => !c)}
-          title={compact ? "Comfortable rows" : "Compact rows"}
-          aria-pressed={compact}
-        >
-          {compact ? <Rows2 size={14} /> : <Rows3 size={14} />}
-        </button>
-        {isEditorTab && (
-          <button
-            className="apply-all-btn"
-            onClick={handleApplyToAll}
-            title="Apply this tab's filter to the panel and every open view"
-          >
-            <Share2 size={13} strokeWidth={2} />
-            <span>Apply to all</span>
-          </button>
-        )}
-      </div>
-
-      {/* Row 2: Filter bar */}
-      {(filterBarOpen || hasActiveFilters) && (
-        <div className="filter-bar">
-          <Dropdown
-            trigger={FILTER_PRESETS.find((p) => p.id === activePreset)?.label || "Custom"}
-            className="preset-dropdown"
-            triggerClassName="preset-dropdown-btn"
-            menuClassName="preset-dropdown-menu"
-          >
-            {FILTER_PRESETS.map((preset) => (
-              <DropdownItem
-                key={preset.id}
-                className="preset-option"
-                active={activePreset === preset.id}
-                onClick={() => applyPreset(preset.id)}
+            {isEditorTab && (
+              <button
+                className="apply-all-btn"
+                onClick={handleApplyToAll}
+                title="Apply this tab's filter to the panel and every open view"
               >
-                {preset.label}
-              </DropdownItem>
-            ))}
-          </Dropdown>
-
-          {/* Ready toggle (vs-bo9) — composes with the presets/filter chips. */}
-          <button
-            type="button"
-            className={`ready-toggle ${readyOnly ? "active" : ""}`}
-            aria-pressed={readyOnly}
-            onClick={toggleReady}
-            title="Show only ready-to-work beads (open, no open blocker). Composes with the other filters."
-          >
-            {readyOnly ? (
-              <span className="ready-toggle-glyph ready-toggle-emoji" aria-hidden="true">🚀</span>
-            ) : (
-              <Rocket size={12} strokeWidth={2.25} className="ready-toggle-glyph" />
+                <Share2 size={13} strokeWidth={2} />
+                <span>Apply to all</span>
+              </button>
             )}
-            <span>Ready</span>
-          </button>
-
-          {/* Favorites toggle (vs-sd5.6/.7) — favorites + their relatives. */}
-          <button
-            type="button"
-            className={`ready-toggle favorites-toggle ${favoritesOnly ? "active" : ""}`}
-            aria-pressed={favoritesOnly}
-            onClick={toggleFavoritesOnly}
-            title="Show favorited (starred) beads and their relatives (direct dependency neighbors). Composes with the other filters."
-          >
-            <Star size={12} strokeWidth={2.25} />
-            <span>Favorites</span>
-          </button>
-
-          {/* Active filter chips */}
-          {statusFilter.includes(NOT_CLOSED) ? (
-            <FilterChip
-              key="status-not-closed"
-              // Plain "not closed" copy (the ¬ logic-notation read poorly here),
-              // kept distinct via the negated styling: green ("open"/active palette
-              // color, not the gray of the closed state it excludes) + bold fill
-              // so it reads as the active working set (vs-th4z).
-              label="not closed"
-              accentColor={statusColor("open")}
-              negated
-              onRemove={clearStatusFilter}
-            />
-          ) : (
-            statusFilter.map((status) => (
-              <FilterChip
-                key={`status-${status}`}
-                label={statusLabel(status)}
-                accentColor={statusColor(status)}
-                onRemove={() => removeStatusFilter(status)}
-              />
-            ))
-          )}
-          {priorityFilter.map((priority) => (
-            <FilterChip
-              key={`priority-${priority}`}
-              label={`p${priority}`}
-              accentColor={PRIORITY_COLORS[priority]}
-              onRemove={() => removePriorityFilter(priority)}
-            />
-          ))}
-          {typeFilter.map((type) => (
-            <FilterChip
-              key={`type-${type}`}
-              label={TYPE_LABELS[type as BeadType] || type}
-              accentColor={TYPE_COLORS[type as BeadType]}
-              onRemove={() => removeTypeFilter(type)}
-            />
-          ))}
-          {assigneeFilter.map((assignee) => (
-            <FilterChip
-              key={`assignee-${assignee}`}
-              label={assignee === "__unassigned__" ? "Unassigned" : assignee}
-              accentColor="#6b7280"
-              onRemove={() => removeAssigneeFilter(assignee)}
-            />
-          ))}
-          {labelFilter.map((label) => (
-            <FilterChip
-              key={`label-${label}`}
-              label={label === "__unlabeled__" ? "Unlabeled" : label}
-              accentColor={label === "__unlabeled__" ? "#6b7280" : getLabelColorStyle(label).backgroundColor}
-              onRemove={() => removeLabelFilter(label)}
-            />
-          ))}
-
-          {/* Add filter dropdown with faceted counts */}
-          <div className="filter-add-wrapper" ref={filterMenuRef}>
-            <button
-              className="filter-add-btn"
-              onClick={() => setFilterMenuOpen(filterMenuOpen === "main" ? null : "main")}
-            >
-              + Filter
-            </button>
-
-            {filterMenuOpen === "main" && (
-              <div className="filter-menu">
-                <button onClick={() => setFilterMenuOpen("status")}>Status <span className="menu-chevron">›</span></button>
-                <button onClick={() => setFilterMenuOpen("priority")}>Priority <span className="menu-chevron">›</span></button>
-                <button onClick={() => setFilterMenuOpen("type")}>Type <span className="menu-chevron">›</span></button>
-                <button onClick={() => setFilterMenuOpen("assignee")}>Assignee <span className="menu-chevron">›</span></button>
-                <button onClick={() => setFilterMenuOpen("label")}>Label <span className="menu-chevron">›</span></button>
-              </div>
-            )}
-
-            {filterMenuOpen === "status" && (
-              <div className="filter-menu">
-                {(Object.keys(STATUS_LABELS) as BeadStatus[])
-                  .filter((s) => !statusFilter.includes(s))
-                  .map((status) => {
-                    const count = statusFacets.get(status) ?? 0;
-                    return (
-                      <button key={status} onClick={() => addStatusFilter(status)}>
-                        <StatusBadge status={status} size="small" />
-                        <span className="facet-count">({count})</span>
-                      </button>
-                    );
-                  })}
-                <button className="back-btn" onClick={() => setFilterMenuOpen("main")}>← Back</button>
-              </div>
-            )}
-
-            {filterMenuOpen === "priority" && (
-              <div className="filter-menu">
-                {([0, 1, 2, 3, 4] as BeadPriority[])
-                  .filter((p) => !priorityFilter.includes(p))
-                  .map((priority) => {
-                    const count = priorityFacets.get(priority) ?? 0;
-                    return (
-                      <button key={priority} onClick={() => addPriorityFilter(priority)}>
-                        <PriorityBadge priority={priority} size="small" />
-                        <span className="facet-count">({count})</span>
-                      </button>
-                    );
-                  })}
-                <button className="back-btn" onClick={() => setFilterMenuOpen("main")}>← Back</button>
-              </div>
-            )}
-
-            {filterMenuOpen === "type" && (
-              <div className="filter-menu">
-                {ISSUE_TYPES
-                  .filter((t) => !typeFilter.includes(t))
-                  .map((type) => {
-                    const count = typeFacets.get(type) ?? 0;
-                    return (
-                      <button key={type} onClick={() => addTypeFilter(type)}>
-                        <TypeBadge type={type as BeadType} size="small" />
-                        <span className="facet-count">({count})</span>
-                      </button>
-                    );
-                  })}
-                <button className="back-btn" onClick={() => setFilterMenuOpen("main")}>← Back</button>
-              </div>
-            )}
-
-            {filterMenuOpen === "assignee" && (
-              <div className="filter-menu">
-                {!assigneeFilter.includes("__unassigned__") && unassignedCount > 0 && (
-                  <button onClick={() => addAssigneeFilter("__unassigned__")}>
-                    <span className="assignee-name">Unassigned</span>
-                    <span className="facet-count">({unassignedCount})</span>
-                  </button>
-                )}
-                {uniqueAssignees
-                  .filter((a) => !assigneeFilter.includes(a))
-                  .map((assignee) => {
-                    const count = assigneeFacets.get(assignee) ?? 0;
-                    return (
-                      <button key={assignee} onClick={() => addAssigneeFilter(assignee)}>
-                        <span className="assignee-name">{assignee}</span>
-                        <span className="facet-count">({count})</span>
-                      </button>
-                    );
-                  })}
-                {uniqueAssignees.length === 0 && unassignedCount === 0 && (
-                  <span className="filter-menu-empty">No assignees</span>
-                )}
-                <button className="back-btn" onClick={() => setFilterMenuOpen("main")}>← Back</button>
-              </div>
-            )}
-
-            {filterMenuOpen === "label" && (
-              <div className="filter-menu filter-menu-label">
-                <AutocompleteInput
-                  placeholder="Search labels..."
-                  options={labelOptions}
-                  onSelect={(value) => {
-                    addLabelFilter(value);
-                    setFilterMenuOpen(null);
-                  }}
-                  autoFocus
-                  showAllOnFocus
-                />
-                <button className="back-btn" onClick={() => setFilterMenuOpen("main")}>← Back</button>
-              </div>
-            )}
-          </div>
-
-          {hasActiveFilters && (
-            <button className="filter-reset" onClick={clearAllFilters}>
-              Clear
-            </button>
-          )}
-        </div>
-      )}
+          </>
+        }
+      />
 
       {/* Error state */}
       {error && !loading && (
@@ -1251,12 +895,21 @@ export function IssuesView({
       {/* Table */}
       {!error && (
         <div className="beads-table-wrapper">
-          {loading && (
+          {/* Only show the full loading block on the INITIAL load (no rows yet).
+              A refresh/re-scope with existing content would otherwise split the
+              wrapper's height and shove the table down — a jarring hop. With rows
+              present, the spinning refresh icon carries the feedback. */}
+          {loading && beads.length === 0 && (
             <div className="issues-loading-state">
               <Loading />
             </div>
           )}
-          <div ref={tableContainerRef} className={`beads-table-container ${table.getState().columnSizingInfo.isResizingColumn ? "resizing" : ""}`}>
+          <div
+            ref={tableContainerRef}
+            className={`beads-table-container ${table.getState().columnSizingInfo.isResizingColumn ? "resizing" : ""}`}
+            tabIndex={0}
+            onKeyDown={onTableKeyDown}
+          >
             <table
               className={`beads-table ${compact ? "compact" : ""}`}
               style={{ minWidth: table.getCenterTotalSize() }}
@@ -1433,7 +1086,13 @@ export function IssuesView({
                       key={row.id}
                       data-bead-id={row.original.id}
                       onClick={() => selectRow(row.original.id)}
-                      onDoubleClick={() => vscode.postMessage({ type: "openBeadInTab", beadId: row.original.id })}
+                      onDoubleClick={(e) =>
+                        vscode.postMessage(
+                          e.metaKey || e.ctrlKey
+                            ? { type: "openBeadInTab", beadId: row.original.id }
+                            : { type: "openBeadDetails", beadId: row.original.id },
+                        )
+                      }
                       onContextMenu={(e) => {
                         e.preventDefault();
                         setRowMenu({ x: e.clientX, y: e.clientY, bead: row.original });

@@ -21,7 +21,9 @@ import { NavigationHistory } from "./NavigationHistory";
 import { pulseOnReveal } from "./pulseOnReveal";
 
 export class BeadDetailsViewProvider extends BaseViewProvider {
-  protected readonly viewType = "beadsDetails";
+  // Typed as `string` (not the literal) so the merged sidebar subclass can
+  // override it with its own view id (vs-filterbar unified sidebar).
+  protected readonly viewType: string = "beadsDetails";
   private currentBeadId: string | null = null;
   private currentProjectId: string | null = null;
   private loadSequence = 0; // Tracks request order to prevent stale responses
@@ -86,7 +88,11 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
    * {@link renderBead} reveals the view so a freshly-resolved webview's "ready"
    * signal consumes it without racing the bead load.
    */
-  public async showBead(beadId: string, opts?: { pulse?: boolean }): Promise<void> {
+  public async showBead(
+    beadId: string,
+    opts?: { pulse?: boolean; reveal?: boolean },
+  ): Promise<void> {
+    const reveal = opts?.reveal ?? true;
     if (this._host?.isEditorTab) {
       this.history.record(beadId);
       this.postNavState();
@@ -98,7 +104,7 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
         pulseWhenReady: () => this.pulseWhenReady(),
       });
     }
-    await this.renderBead(beadId);
+    await this.renderBead(beadId, reveal);
   }
 
   /**
@@ -115,8 +121,13 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
     });
   }
 
-  /** Render a bead without touching the navigation trail. */
-  private async renderBead(beadId: string): Promise<void> {
+  /**
+   * Render a bead without touching the navigation trail. `reveal` controls
+   * whether the view is brought to the foreground: an explicit "Show Details"
+   * (double-click / menu) reveals; a passive selection (single-click) updates
+   * the content silently so it never pops the Secondary Side Bar open.
+   */
+  private async renderBead(beadId: string, reveal = true): Promise<void> {
     if (this.createMode) {
       this.createMode = false;
       this.postMessage({ type: "setCreateMode", value: false });
@@ -132,8 +143,9 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
     // Update context for conditional menu items
     vscode.commands.executeCommand("setContext", "beads.hasSelectedBead", true);
 
-    // Auto-expand the details panel
-    if (this._host) {
+    // Auto-expand the details panel — only on an explicit reveal, so a passive
+    // single-click selection updates the content without popping the sidebar.
+    if (reveal && this._host) {
       this._host.reveal(true); // true = preserve focus
     }
 
@@ -468,6 +480,29 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
           vscode.window.showErrorMessage(`Failed to create bead: ${err}`);
         }
         break;
+
+      case "confirmDiscard": {
+        // The webview posts this only when the edit/create form is dirty. Prompt
+        // to discard (native modal); on confirm, run the requested exit action.
+        const choice = await vscode.window.showWarningMessage(
+          message.action === "cancelCreate"
+            ? "Discard this new issue? Your input will be lost."
+            : "Discard unsaved changes to this issue?",
+          { modal: true },
+          "Discard"
+        );
+        if (choice !== "Discard") {
+          break;
+        }
+        if (message.action === "cancelCreate") {
+          // Route through the normal cancel path (the sidebar override also
+          // restores the prior screen).
+          await this.handleMessage({ type: "cancelCreate" });
+        } else {
+          await vscode.commands.executeCommand("beads.backToProject");
+        }
+        break;
+      }
 
       case "cancelCreate":
         this.createMode = false;

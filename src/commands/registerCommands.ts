@@ -14,8 +14,7 @@ import { IssuesFilter, FilterSnapshot, Bead, issueToWebviewBead } from "../backe
 import { nextReadyBead } from "../backend/readyBeads";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
 import { PanelShellViewProvider } from "../providers/PanelShellViewProvider";
-import { BeadDetailsViewProvider } from "../providers/BeadDetailsViewProvider";
-import { BeadsProjectSwitcherViewProvider } from "../providers/BeadsProjectSwitcherViewProvider";
+import { BeadsSidebarViewProvider } from "../providers/BeadsSidebarViewProvider";
 import { BeadPanelManager } from "../providers/BeadPanelManager";
 import { BeadDocumentProvider } from "../providers/BeadDocumentProvider";
 import { NavigationHistory } from "../providers/NavigationHistory";
@@ -28,9 +27,12 @@ export interface CommandDeps {
   projectManager: BeadsProjectManager;
   /** The consolidated bottom-Panel shell (Dashboard + Issues data + selection). */
   shellProvider: PanelShellViewProvider;
-  detailsProvider: BeadDetailsViewProvider;
-  /** Sidebar context view — pins the active bead as a reference. */
-  switcherProvider: BeadsProjectSwitcherViewProvider;
+  /**
+   * The unified sidebar view (Project switcher + Details takeover in one
+   * webview). It IS the sidebar's Details provider — showBead/clearBead/
+   * startCreate/getCurrentBeadId all live here, plus screen swapping.
+   */
+  switcherProvider: BeadsSidebarViewProvider;
   panelManager: BeadPanelManager;
   log: Logger;
   /** Recompute the Beads status-bar item from current project state. */
@@ -48,7 +50,6 @@ export function registerCommands(
   const {
     projectManager,
     shellProvider,
-    detailsProvider,
     switcherProvider,
     panelManager,
     log,
@@ -68,13 +69,15 @@ export function registerCommands(
     vscode.commands.executeCommand("setContext", "beads.canNavigateForward", navHistory.canForward());
   };
 
-  // Drive every selection surface from one place: the sidebar Details view, the
-  // Issues table highlight, and the Active Bead pin — so traversal keeps them in
-  // sync (the Active Bead follows where the user actually is).
-  const selectBead = (beadId: string, opts?: { pulse?: boolean }): void => {
-    detailsProvider.showBead(beadId, opts);
+  // Drive every selection surface from one place: the sidebar view (which shows
+  // the bead's content + Selection card, and flips to the Details takeover on an
+  // explicit reveal) and the Issues table highlight — so traversal keeps them in
+  // sync. The sidebar view owns screen swapping: showBead(reveal) flips to the
+  // Details screen; showBead(reveal:false) is a passive select that only updates
+  // the content + Selection card without leaving the Project screen.
+  const selectBead = (beadId: string, opts?: { pulse?: boolean; reveal?: boolean }): void => {
+    switcherProvider.showBead(beadId, opts);
     shellProvider.setSelectedBead(beadId);
-    switcherProvider.setActiveBead(beadId);
   };
 
   // Reset history whenever the active project changes — bead ids don't carry
@@ -84,6 +87,7 @@ export function registerCommands(
       navHistory.reset();
       lastReadyId = null;
       updateNavContext();
+      switcherProvider.backToProject(); // back to the Project screen for the new board
     })
   );
 
@@ -105,6 +109,30 @@ export function registerCommands(
     vscode.commands.registerCommand("beads.openKanbanPanel", async () => {
       await vscode.commands.executeCommand("beadsPanelShell.focus");
       shellProvider.focusKanbanTab();
+    }),
+
+    // Reveal the Beads panel with the Tree tab focused (sidebar "Show Tree").
+    vscode.commands.registerCommand("beads.openTreePanel", async () => {
+      await vscode.commands.executeCommand("beadsPanelShell.focus");
+      shellProvider.focusTreeTab();
+    }),
+
+    // Reveal the Beads panel with the Graph tab focused, no bead — the Details
+    // "Show Graph Tab" shortcut.
+    vscode.commands.registerCommand("beads.openGraphPanel", async () => {
+      await vscode.commands.executeCommand("beadsPanelShell.focus");
+      shellProvider.focusGraphTab();
+    }),
+
+    // Locate a bead in the panel's currently-active tab (the Details "focus"
+    // toggle turning on). Deliberately does NOT open the panel: it reveals only
+    // when the panel is already showing, else it's a no-op and the focus-mode
+    // Show buttons reveal on the next click. The shell resolves the active tab.
+    vscode.commands.registerCommand("beads.focusBeadInActiveTab", (beadId?: string) => {
+      if (!beadId) {
+        return;
+      }
+      shellProvider.revealBeadInActiveTab(beadId);
     }),
 
     // Open the Issues panel pre-filtered to a slice (empty filter = all).
@@ -184,13 +212,31 @@ export function registerCommands(
       }
 
       if (beadId) {
-        // A user navigation: record it (truncating any forward branch) and
-        // drive all selection surfaces. Pulse the Details view so "Show Details"
-        // gives visible feedback even when it's already showing (vs-1vxq).
+        // A user navigation: record it (truncating any forward branch) and drive
+        // all selection surfaces. `selectBead` with the default reveal flips the
+        // sidebar to the Details takeover screen (a client-side React swap — no
+        // view/context churn). Pulse so "Show Details" gives visible feedback
+        // even when it's already showing (vs-1vxq).
         navHistory.record(beadId);
         selectBead(beadId, { pulse: true });
         updateNavContext();
       }
+    }),
+
+    // Pop the sidebar takeover back to the Project screen (the Details view's
+    // "← Back" button). Selection is preserved — the Selection card still
+    // reflects it, and re-opening returns to the same bead.
+    vscode.commands.registerCommand("beads.backToProject", () => {
+      switcherProvider.backToProject();
+    }),
+
+    // Passive selection (single-click a row/card/node): drive all selection
+    // surfaces and update the Details content, but DON'T reveal the Details
+    // view — so selecting never pops the Secondary Side Bar open (revealing is
+    // the explicit "Show Details" / double-click job). No history record: only
+    // explicit opens grow the Back/Forward trail.
+    vscode.commands.registerCommand("beads.selectBead", (beadId?: string) => {
+      if (beadId) selectBead(beadId, { reveal: false });
     }),
 
     // Back/Forward through the Details navigation history (vs-xzq). These move
@@ -204,6 +250,36 @@ export function registerCommands(
     }),
 
     vscode.commands.registerCommand("beads.navigateForward", () => {
+      const id = navHistory.forward();
+      if (id) {
+        selectBead(id);
+        updateNavContext();
+      }
+    }),
+
+    // The sidebar Details "Back" is its own trigger, distinct from the pure
+    // history nav above: the sidebar's back stack conceptually bottoms out at
+    // the Active Project screen, so Back steps through the issue trail and,
+    // once it's empty, leaves the Details takeover for the Project screen.
+    // (beads.navigateBack stays pure — it's shared with the editor-tab nav,
+    // which has no project screen to fall back to.) Always enabled.
+    vscode.commands.registerCommand("beads.sidebarNavigateBack", () => {
+      const id = navHistory.back();
+      if (id) {
+        selectBead(id);
+        updateNavContext();
+      } else {
+        vscode.commands.executeCommand("beads.backToProject");
+      }
+    }),
+
+    // The Project screen's title-bar "Forward": re-open the current selection's
+    // Details (the issue you backed out of), else walk the global history
+    // forward. The re-open half is shared with the Project screen's ⌘→ via the
+    // provider; only the fallback lives here. (Back on the Project screen reuses
+    // the plain beads.navigateBack — there's no project-specific twist to it.)
+    vscode.commands.registerCommand("beads.sidebarProjectForward", async () => {
+      if (await switcherProvider.forwardToSelection()) return;
       const id = navHistory.forward();
       if (id) {
         selectBead(id);
@@ -246,9 +322,10 @@ export function registerCommands(
     // Also resets the navigation history — the trail is meaningless once the
     // selection is gone.
     vscode.commands.registerCommand("beads.clearSelection", () => {
-      detailsProvider.clearBead();
+      // clearBead() clears the bead content AND returns the sidebar to the
+      // Project screen in one step.
+      switcherProvider.clearBead();
       shellProvider.setSelectedBead(null);
-      switcherProvider.setActiveBead(null);
       navHistory.reset();
       updateNavContext();
     }),
@@ -256,7 +333,7 @@ export function registerCommands(
     // vs-ask: open a bead's Details as an editor tab. With no argument, use the
     // bead currently shown in the sidebar Details view.
     vscode.commands.registerCommand("beads.openBeadInTab", async (beadId?: string) => {
-      const targetId = beadId ?? detailsProvider.getCurrentBeadId() ?? undefined;
+      const targetId = beadId ?? switcherProvider.getCurrentBeadId() ?? undefined;
       if (!targetId) {
         vscode.window.showInformationMessage("Select a bead first, then open it in a tab.");
         return;
@@ -313,7 +390,7 @@ export function registerCommands(
         vscode.window.showWarningMessage("No active Beads project");
         return;
       }
-      detailsProvider.startCreate();
+      switcherProvider.startCreate();
     }),
 
     // Create + initialize a new Beads board: the polished editor-tab wizard is
@@ -340,7 +417,7 @@ export function registerCommands(
       log.info("Manual refresh triggered");
       await projectManager.refresh();
       shellProvider.hardRefresh();
-      detailsProvider.hardRefresh();
+      switcherProvider.hardRefresh();
       log.info("Refresh complete");
       vscode.window.setStatusBarMessage("$(check) Beads: Refreshed", 2000);
     }),
@@ -393,7 +470,7 @@ export function registerCommands(
         log.info(`Started Dolt server for ${project.name}: ${output || "<no output>"}`);
         await projectManager.refresh();
         shellProvider.refresh();
-        detailsProvider.refresh();
+        switcherProvider.refresh();
         await updateStatusBar();
         vscode.window.showInformationMessage(`Dolt server started for ${project.name}.`);
       } catch (err) {
@@ -414,7 +491,7 @@ export function registerCommands(
         log.info(`Stopped Dolt server for ${project.name}: ${output || "<no output>"}`);
         await projectManager.refresh();
         shellProvider.refresh();
-        detailsProvider.refresh();
+        switcherProvider.refresh();
         await updateStatusBar();
         vscode.window.showInformationMessage(`Dolt server stopped for ${project.name}.`);
       } catch (err) {
@@ -505,7 +582,7 @@ export function registerCommands(
     }),
 
     vscode.commands.registerCommand("beads.copyBeadId", async () => {
-      const beadId = detailsProvider.getCurrentBeadId();
+      const beadId = switcherProvider.getCurrentBeadId();
       if (beadId) {
         await vscode.env.clipboard.writeText(beadId);
         vscode.window.setStatusBarMessage(`$(check) Copied: ${beadId}`, 2000);
@@ -519,7 +596,7 @@ export function registerCommands(
     // seed its content on focus (spike vs-ab3 / epic vs-fkb). Standalone path:
     // proves the seeding mechanism in isolation, independent of the webview tab.
     vscode.commands.registerCommand("beads.openBeadAsDocument", async (beadId?: string) => {
-      const id = beadId ?? detailsProvider.getCurrentBeadId();
+      const id = beadId ?? switcherProvider.getCurrentBeadId();
       if (!id) {
         vscode.window.showWarningMessage("No bead selected");
         return;

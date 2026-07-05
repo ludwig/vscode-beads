@@ -48,7 +48,9 @@ export function hostFromView(view: vscode.WebviewView): WebviewHost {
       view.show(preserveFocus);
     },
     setTitle() {
-      // Sidebar view titles are fixed by the view contribution — no-op.
+      // No-op: the sidebar view's title must NOT track every renderBead call
+      // (that flips it on passive selection). The merged sidebar provider owns
+      // its title directly, screen-aware (see BeadsSidebarViewProvider).
     },
     close() {
       // Sidebar views can't be closed programmatically — no-op.

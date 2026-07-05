@@ -44,11 +44,14 @@ describe("WebviewHost.setTitle (vs-q0e2)", () => {
     expect(panel.title).toBe("vs-other");
   });
 
-  it("is a no-op for a sidebar view (title is fixed by contribution)", () => {
+  it("is a no-op for a sidebar view (the provider owns the title, screen-aware)", () => {
     const view = fakeView();
     const host = hostFromView(view);
     expect(host.isEditorTab).toBe(false);
 
+    // renderBead's unconditional setTitle(beadId) must NOT flip the sidebar
+    // header on passive selection — the sidebar provider sets view.title itself,
+    // only when the screen changes. So the host adapter no-ops it.
     host.setTitle("vs-other");
     expect(view.title).toBe("fixed");
   });

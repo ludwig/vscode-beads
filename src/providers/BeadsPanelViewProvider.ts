@@ -36,6 +36,8 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
   private pendingShowIssuesBead: string | undefined;
   private pendingFocusIssues = false;
   private pendingFocusKanban = false;
+  private pendingFocusTree = false;
+  private pendingFocusGraph = false;
   // Set once the Graph/Tree tab asks for the dependency graph, so a project
   // switch / refresh knows to re-push fresh graph data (not just the bead list).
   // A dedicated graph view (GraphViewProvider) opts in at construction so the
@@ -112,6 +114,37 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     this.flushFocusKanban();
   }
 
+  /**
+   * Switch the panel to the Tree tab. Posts immediately when the webview is
+   * live; otherwise it's flushed once the webview signals ready.
+   */
+  public focusTreeTab(): void {
+    this.pendingFocusTree = true;
+    this.flushFocusTree();
+  }
+
+  /**
+   * Switch the panel to the Graph tab (no bead focus). Posts immediately when
+   * the webview is live; otherwise flushed once it signals ready.
+   */
+  public focusGraphTab(): void {
+    this.pendingFocusGraph = true;
+    this.flushFocusGraph();
+  }
+
+  /**
+   * Reveal/scroll to a bead in whichever tab is currently active (the Details
+   * "focus" toggle turning on). The shell resolves the active tab. Unlike the
+   * focus*Tab helpers this does NOT queue for later or open the panel: it
+   * reveals only when the panel is already visible, so a closed panel is a true
+   * no-op — the focus-mode Show buttons handle that case on the next click.
+   */
+  public revealBeadInActiveTab(beadId: string): void {
+    if (this._host?.visible) {
+      this.postMessage({ type: "revealActiveTabBead", beadId });
+    }
+  }
+
   private flushFilter(): void {
     if (this.pendingFilter !== undefined && this._host?.visible) {
       this.postMessage({ type: "applyIssuesFilter", filter: this.pendingFilter });
@@ -161,6 +194,20 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     }
   }
 
+  private flushFocusTree(): void {
+    if (this.pendingFocusTree && this._host?.visible) {
+      this.postMessage({ type: "focusTreeTab" });
+      this.pendingFocusTree = false;
+    }
+  }
+
+  private flushFocusGraph(): void {
+    if (this.pendingFocusGraph && this._host?.visible) {
+      this.postMessage({ type: "focusGraphTab" });
+      this.pendingFocusGraph = false;
+    }
+  }
+
   protected async initializeView(): Promise<void> {
     await super.initializeView();
     this.flushFilter();
@@ -170,6 +217,8 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
     this.flushShowIssuesBead();
     this.flushFocusIssues();
     this.flushFocusKanban();
+    this.flushFocusTree();
+    this.flushFocusGraph();
   }
 
   constructor(
@@ -336,8 +385,16 @@ export class BeadsPanelViewProvider extends BaseViewProvider {
         nodes = issues.map(issueToWebviewBead).filter((b): b is Bead => b !== null);
         this.projectManager.cacheBeadList(nodes);
       }
-      const edges = await client.getDependencyGraph();
+      // Fetch through the project manager so the host's edge cache is warmed by
+      // the SAME graph the webview receives. Then recompute the shared scope:
+      // the host's favorites-with-relatives / ready resolution needs these edges,
+      // and a cold cache would drop relatives (and degenerate "ready"), so the
+      // follower views (Kanban/Tree/Graph) — which inherit the host scope —
+      // would show a smaller set than the Issues view, which resolves locally
+      // from this graph. Recomputing here keeps all views in agreement.
+      const edges = await this.projectManager.getDependencyEdges();
       this.postMessage({ type: "setGraph", graph: { nodes, edges } });
+      this.scope?.recompute();
     } catch (err) {
       this.handleBackendError("Failed to load dependency graph", err);
     }

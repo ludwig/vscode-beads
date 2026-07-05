@@ -2,7 +2,7 @@
   "name": "vscode-beads-pm",
   "displayName": "Beads (ludwig)",
   "description": "VS Code extension for managing Beads issues",
-  "version": "0.25.0",
+  "version": "0.26.0",
   "publisher": "ludwig",
   "license": "Apache-2.0",
   "icon": "resources/icon.png",
@@ -58,12 +58,6 @@
           "id": "beadsProjectSwitcher",
           "name": "Repository",
           "visibility": "visible"
-        },
-        {
-          "type": "webview",
-          "id": "beadsDetails",
-          "name": "Details",
-          "visibility": "visible"
         }
       ],
       "beadsBottomPanel": [
@@ -103,14 +97,26 @@
         "enablement": "beads.canNavigateBack"
       },
       {
+        "command": "beads.sidebarNavigateBack",
+        "title": "Beads: Back",
+        "icon": "$(arrow-left)"
+      },
+      {
         "command": "beads.navigateForward",
         "title": "Beads: Forward",
         "icon": "$(arrow-right)",
         "enablement": "beads.canNavigateForward"
       },
       {
+        "command": "beads.sidebarProjectForward",
+        "title": "Beads: Forward",
+        "icon": "$(arrow-right)",
+        "enablement": "beads.hasSelectedBead || beads.canNavigateForward"
+      },
+      {
         "command": "beads.refresh",
-        "title": "Beads: Refresh",
+        "title": "Reload beads from db",
+        "category": "Beads",
         "icon": "$(refresh)"
       },
       {
@@ -198,39 +204,24 @@
     "menus": {
       "view/title": [
         {
-          "command": "beads.createIssue",
-          "when": "view == beadsProjectSwitcher",
-          "group": "navigation@0"
-        },
-        {
-          "command": "beads.initRepository",
-          "when": "view == beadsProjectSwitcher",
-          "group": "navigation@2"
-        },
-        {
-          "command": "beads.refresh",
-          "when": "view == beadsProjectSwitcher",
-          "group": "navigation@3"
-        },
-        {
-          "command": "beads.openSettings",
-          "when": "view == beadsProjectSwitcher",
-          "group": "navigation@4"
-        },
-        {
-          "command": "beads.navigateBack",
-          "when": "view == beadsDetails",
+          "command": "beads.sidebarNavigateBack",
+          "when": "view == beadsProjectSwitcher && beads.detailScreen",
           "group": "navigation@0"
         },
         {
           "command": "beads.navigateForward",
-          "when": "view == beadsDetails",
+          "when": "view == beadsProjectSwitcher && beads.detailScreen",
           "group": "navigation@1"
         },
         {
-          "command": "beads.copyBeadId",
-          "when": "view == beadsDetails",
-          "group": "navigation@2"
+          "command": "beads.navigateBack",
+          "when": "view == beadsProjectSwitcher && !beads.detailScreen",
+          "group": "navigation@0"
+        },
+        {
+          "command": "beads.sidebarProjectForward",
+          "when": "view == beadsProjectSwitcher && !beads.detailScreen",
+          "group": "navigation@1"
         }
       ]
     },

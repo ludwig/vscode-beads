@@ -11,15 +11,17 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, X, Rocket, ListTodo, Copy, FolderPlus } from "lucide-react";
-import { Bead, BeadsProject, FavoriteBead, statusColor, isClosedStatus } from "../types";
+import { ChevronDown, ChevronRight, X, Rocket, ListTodo, ListTree, Copy, FolderPlus, Star, Plus, RefreshCw, Settings } from "lucide-react";
+import { Bead, BeadsProject, FavoriteBead, statusColor, isClosedStatus, vscode } from "../types";
 import { ProjectDropdown } from "../common/ProjectDropdown";
 import { Dropdown, DropdownItem, DropdownSeparator } from "../common/Dropdown";
 import { formatBytes } from "../common/formatBytes";
 import { TypeIcon } from "../common/TypeIcon";
+import { BeadSummary } from "../common/BeadSummary";
 import { ContextMenu, type ContextMenuItem } from "../common/ContextMenu";
 import { EndFlourish } from "../common/EndFlourish";
 import { FilterGroup } from "../common/FilterGroup";
+import { usePersistedBoolean } from "../hooks/usePersistedBoolean";
 
 interface ProjectSwitcherViewProps {
   projects: BeadsProject[];
@@ -32,17 +34,26 @@ interface ProjectSwitcherViewProps {
   onOpenProjectFolder: () => void;
   onOpenBead: (beadId: string) => void;
   onOpenBeadInTab: (beadId: string) => void;
+  /** Passive-select a bead (update the Selection card) WITHOUT opening Details. */
+  onSelectBead: (beadId: string) => void;
+  /** Commit a field patch from the Selection card's inline-editable pill. */
+  onUpdateBead: (beadId: string, updates: Partial<Bead>) => void;
   onClearBead: () => void;
-  /** Unstar a favorite from the section's per-row control. */
-  onUnfavorite: (beadId: string) => void;
   /** Copy the favorite bead IDs as a single CSV line to the clipboard (vs-sd5.2). */
   onCopyFavorites: () => void;
+  /** Copy a single bead's ID to the clipboard (card right-click menu). */
+  onCopyId: (beadId: string) => void;
   /** Star/unstar a bead from the card right-click menu (vs-sd5.5). */
   onToggleFavorite: (beadId: string) => void;
   /** Toggle a favorite's mask (eye-off) in the Favorites filter group. */
   onToggleMask: (beadId: string) => void;
+  /** Whether the panel Issues Favorites filter is on (full-duplex star state). */
+  favoritesFilterOn: boolean;
+  /** Drive the panel Issues Favorites filter from the Favorites-card star. */
+  onToggleFavoritesFilter: (on: boolean) => void;
   onPickReady: () => void;
   onShowIssues: () => void;
+  onShowTree: () => void;
   /** Launch the "Initialize Repository" flow (empty-state CTA, vs-r6a1.5). */
   onCreateBoard: () => void;
   /** Open the Repository Details editor-tab page (⋮ menu, vs-beoh). */
@@ -57,13 +68,8 @@ interface ProjectSwitcherViewProps {
   onOpenDoltLog: () => void;
   /** Export the active project's issues to a JSONL file (vs-ln7e.1). */
   onExportIssues: () => void;
-  version?: string;
-  buildSha?: string;
-  buildDirty?: boolean;
   /** When true, gray out the titles of closed (done) favorites/active bead (beads.muteClosedIssues, vs-b0ga). */
   muteClosedIssues?: boolean;
-  /** On-disk size of our built bundle in bytes (0 = unknown). */
-  bundleBytes?: number;
 }
 
 /** Auto-scaled binary size, e.g. 248 MB / 1.5 GB. */
@@ -82,13 +88,18 @@ export function ProjectSwitcherView({
   onOpenProjectFolder,
   onOpenBead,
   onOpenBeadInTab,
+  onSelectBead,
+  onUpdateBead,
   onClearBead,
-  onUnfavorite,
   onCopyFavorites,
+  onCopyId,
   onToggleFavorite,
   onToggleMask,
+  favoritesFilterOn,
+  onToggleFavoritesFilter,
   onPickReady,
   onShowIssues,
+  onShowTree,
   onCreateBoard,
   onOpenRepositoryDetails,
   onChangeRoot,
@@ -98,23 +109,41 @@ export function ProjectSwitcherView({
   onStopDolt,
   onOpenDoltLog,
   onExportIssues,
-  version,
-  buildSha,
-  buildDirty,
   muteClosedIssues = true,
-  bundleBytes = 0,
 }: ProjectSwitcherViewProps): React.ReactElement {
   const backendState = activeProject?.backendStatus ?? "unknown";
-  const [projectCollapsed, setProjectCollapsed] = useState(false);
-  const [beadCollapsed, setBeadCollapsed] = useState(false);
-  const [favoritesCollapsed, setFavoritesCollapsed] = useState(false);
+  // Persisted so collapse survives the Project↔Details screen swap (which
+  // unmounts this view) and webview disposal (vs-filterbar).
+  const [projectCollapsed, setProjectCollapsed] = usePersistedBoolean("sidebar.projectCollapsed", false);
+  const [favoritesCollapsed, setFavoritesCollapsed] = usePersistedBoolean("sidebar.favoritesCollapsed", false);
+  // Optimistic star: `favoritesFilterOn` reflects the host round-trip (star →
+  // command → scope flip → broadcast back), which reads as lag. Flip the star
+  // instantly on click and reconcile the override away once the authoritative
+  // bit catches up. Null = no pending optimism.
+  const [favStarOptimistic, setFavStarOptimistic] = useState<boolean | null>(null);
+  const favStarOn = favStarOptimistic ?? favoritesFilterOn;
+  useEffect(() => {
+    if (favStarOptimistic != null && favoritesFilterOn === favStarOptimistic) setFavStarOptimistic(null);
+  }, [favoritesFilterOn, favStarOptimistic]);
 
-  // We're rearranging the Repository panel (vs-beads visibility work). The
-  // Selection card is pulled from the *view* only — the section JSX and its
-  // handlers stay intact below so we can relocate it later. Flip to `true` to
-  // bring it back. Keep the guarded branch referencing its state/handlers so
-  // esbuild/tsc/lint don't flag them as unused while the card is dark.
-  const SHOW_SELECTION_CARD = false;
+  // Cmd/Ctrl+← / Cmd/Ctrl+→ (and Alt+←/→) walk the GLOBAL Details history from
+  // the Repository screen too — mirroring the Details view's own shortcut, but
+  // routed through historyBack/historyForward since DetailsView (which owns the
+  // in-Details shortcut) isn't mounted here. Ignored while typing in a field.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const navModifier = e.metaKey || e.ctrlKey || e.altKey;
+      if (!navModifier || (e.key !== "ArrowLeft" && e.key !== "ArrowRight")) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+        return;
+      }
+      e.preventDefault();
+      vscode.postMessage({ type: e.key === "ArrowLeft" ? "historyBack" : "historyForward" });
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   // Right-click menu for a bead card/row (vs-sd5.5). `isFavorite` is captured at
   // open time so the toggle label reads correctly for the menu's bead.
@@ -127,38 +156,55 @@ export function ProjectSwitcherView({
     [],
   );
   const cardMenuItems = useCallback(
-    (id: string, isFavorite: boolean): ContextMenuItem[] => [
-      { label: "Show Details", onSelect: () => onOpenBead(id) },
-      { label: "Open in editor tab", onSelect: () => onOpenBeadInTab(id) },
-      {
+    (id: string, isFavorite: boolean): ContextMenuItem[] => {
+      const items: ContextMenuItem[] = [
+        { label: "Copy ID", onSelect: () => onCopyId(id) },
+        { label: "Show Details", onSelect: () => onOpenBead(id) },
+        { label: "Show in editor tab", onSelect: () => onOpenBeadInTab(id) },
+      ];
+      // A hidden (masked) favorite can be un-hidden straight from its card menu —
+      // handy when the muted card makes the eye toggle easy to miss (vs-sd5).
+      if (isFavorite && favorites.some((f) => f.id === id && f.masked)) {
+        items.push({
+          label: "Reset visibility",
+          separatorBefore: true,
+          onSelect: () => onToggleMask(id),
+        });
+      }
+      items.push({
         label: isFavorite ? "Remove from Favorites" : "Add to Favorites",
         separatorBefore: true,
         onSelect: () => onToggleFavorite(id),
-      },
-    ],
-    [onOpenBead, onOpenBeadInTab, onToggleFavorite],
+      });
+      return items;
+    },
+    [onCopyId, onOpenBead, onOpenBeadInTab, onToggleFavorite, onToggleMask, favorites],
   );
 
-  // Click-count router on the Selection card (mirrors the Graph/Tree): 1/2
-  // clicks open it in the sidebar Details, 3 clicks open it in an editor tab.
+  // Click-count router on a favorite card (mirrors the Graph/Tree): 1 click
+  // passively selects it (updating the Selection card, no takeover), 2 clicks
+  // open the Details takeover, 3 clicks open it in an editor tab. The select
+  // fires immediately on the first click so the primary action feels instant;
+  // a second/third click within the window escalates.
   const clickRef = useRef<{ count: number; timer: ReturnType<typeof setTimeout> | null }>({
     count: 0,
     timer: null,
   });
   const activateBead = useCallback(
     (id: string) => {
-      onOpenBead(id);
       const c = clickRef.current;
       c.count += 1;
+      if (c.count === 1) onSelectBead(id);
       if (c.timer) clearTimeout(c.timer);
       c.timer = setTimeout(() => {
         const n = c.count;
         c.count = 0;
         c.timer = null;
-        if (n >= 3) onOpenBeadInTab(id);
+        if (n === 2) onOpenBead(id);
+        else if (n >= 3) onOpenBeadInTab(id);
       }, 320);
     },
-    [onOpenBead, onOpenBeadInTab],
+    [onSelectBead, onOpenBead, onOpenBeadInTab],
   );
   useEffect(
     () => () => {
@@ -185,6 +231,46 @@ export function ProjectSwitcherView({
             <span>Active Project</span>
           </button>
           {activeProject && (
+            <>
+            {/* Quick actions (relocated from the native view-title bar so they
+                can sit on the card): new issue · reload · init · settings, right
+                of the ⋮ overflow. */}
+            <button
+              type="button"
+              className="context-heading-action fb-tip fb-tip-end"
+              data-tip="New issue"
+              aria-label="New issue"
+              onClick={() => vscode.postMessage({ type: "startCreate" })}
+            >
+              <Plus size={13} strokeWidth={2} />
+            </button>
+            <button
+              type="button"
+              className="context-heading-action fb-tip fb-tip-end"
+              data-tip="Reload beads from db"
+              aria-label="Reload beads from db"
+              onClick={() => vscode.postMessage({ type: "refresh" })}
+            >
+              <RefreshCw size={13} strokeWidth={2} />
+            </button>
+            <button
+              type="button"
+              className="context-heading-action fb-tip fb-tip-end"
+              data-tip="Initialize new repository"
+              aria-label="Initialize new repository"
+              onClick={onCreateBoard}
+            >
+              <FolderPlus size={13} strokeWidth={2} />
+            </button>
+            <button
+              type="button"
+              className="context-heading-action fb-tip fb-tip-end"
+              data-tip="Extension settings"
+              aria-label="Extension settings"
+              onClick={onOpenSettings}
+            >
+              <Settings size={13} strokeWidth={2} />
+            </button>
             <Dropdown
               trigger={<span className="context-menu-trigger">⋮</span>}
               className="context-actions-dropdown"
@@ -207,6 +293,7 @@ export function ProjectSwitcherView({
               <DropdownSeparator />
               <DropdownItem onClick={onOpenSettings}>Extension Settings</DropdownItem>
             </Dropdown>
+            </>
           )}
         </div>
 
@@ -221,11 +308,20 @@ export function ProjectSwitcherView({
 
         {activeProject ? (
           <>
+            {/* Active-project metrics only — prefix, bd, backend, DB size. The
+                extension-global figures (version, bundle, project count) live in
+                the Repository Details page, not here. */}
             <dl className="project-switcher-meta">
               {activeProject.prefix && (
                 <div className="project-switcher-meta-row">
                   <dt>Prefix</dt>
                   <dd><code>{activeProject.prefix}-</code></dd>
+                </div>
+              )}
+              {activeProject.bdVersion && (
+                <div className="project-switcher-meta-row">
+                  <dt>bd</dt>
+                  <dd>{activeProject.bdVersion}</dd>
                 </div>
               )}
               <div className="project-switcher-meta-row">
@@ -237,37 +333,14 @@ export function ProjectSwitcherView({
                   </span>
                 </dd>
               </div>
-              {activeProject.bdVersion && (
+              {activeProject.dbSizeBytes != null && activeProject.dbSizeBytes > 0 && (
                 <div className="project-switcher-meta-row">
-                  <dt>bd</dt>
-                  <dd>{activeProject.bdVersion}</dd>
-                </div>
-              )}
-              {version && (
-                <div className="project-switcher-meta-row">
-                  <dt>Extension</dt>
-                  <dd
-                    title={`Beads v${version}${
-                      buildSha && buildSha !== "unknown" ? ` · commit ${buildSha}` : ""
-                    }${buildDirty ? " · built with uncommitted changes" : ""}`}
-                  >
-                    v{version}
-                    {buildDirty ? "✦" : ""}
-                  </dd>
-                </div>
-              )}
-              <div className="project-switcher-meta-row">
-                <dt>Projects</dt>
-                <dd>{projects.length}</dd>
-              </div>
-              {bundleBytes > 0 && (
-                <div className="project-switcher-meta-row">
-                  <dt>Bundle</dt>
+                  <dt>DB size</dt>
                   <dd
                     className="mono-figure"
-                    title="On-disk size of the Beads extension bundle (dist/extension.js + webview main.js/css) — an attributable 'this is Beads' figure (code on disk, not runtime RAM)."
+                    title="Total on-disk size of this board's .beads directory."
                   >
-                    {formatBytes(bundleBytes)}
+                    {formatBytes(activeProject.dbSizeBytes)}
                   </dd>
                 </div>
               )}
@@ -315,66 +388,16 @@ export function ProjectSwitcherView({
           <ListTodo size={14} strokeWidth={2} />
           <span>Show Issues</span>
         </button>
+        <button
+          type="button"
+          className="btn context-action-btn show-tree"
+          onClick={onShowTree}
+          title="Show the Tree panel"
+        >
+          <ListTree size={14} strokeWidth={2} />
+          <span>Show Tree</span>
+        </button>
       </div>
-
-      {SHOW_SELECTION_CARD && (
-      <section className="context-section">
-        <div className="context-section-head">
-          <button
-            type="button"
-            className="context-heading context-heading-toggle"
-            aria-expanded={!beadCollapsed}
-            onClick={() => setBeadCollapsed((v) => !v)}
-          >
-            {beadCollapsed ? (
-              <ChevronRight size={13} strokeWidth={2} className="context-heading-chevron" />
-            ) : (
-              <ChevronDown size={13} strokeWidth={2} className="context-heading-chevron" />
-            )}
-            <span>Selection</span>
-          </button>
-        </div>
-        {!beadCollapsed && (activeBead ? (
-          <div className="context-card-row">
-            <button
-              type="button"
-              className="active-bead context-card-open"
-              title={`${activeBead.id} — ${activeBead.title}\nClick to open in Details · triple-click to open in an editor tab`}
-              onClick={() => activateBead(activeBead.id)}
-              onContextMenu={(e) =>
-                openCardMenu(e, activeBead.id, favorites.some((f) => f.id === activeBead.id))
-              }
-            >
-              <div className="active-bead-main">
-                <div className="active-bead-head">
-                  {activeBead.type && <TypeIcon type={activeBead.type} size={13} />}
-                  <span className="active-bead-id">{activeBead.id}</span>
-                  <span
-                    className="active-bead-status"
-                    style={{ backgroundColor: statusColor(activeBead.status) }}
-                    title={activeBead.status}
-                  />
-                </div>
-                <span className={`active-bead-title${muteClosedIssues && isClosedStatus(activeBead.status) ? " muted-closed" : ""}`}>{activeBead.title}</span>
-              </div>
-            </button>
-            <button
-              type="button"
-              className="context-card-x"
-              title="Clear the selection"
-              aria-label="Clear selection"
-              onClick={onClearBead}
-            >
-              <X size={13} strokeWidth={2} />
-            </button>
-          </div>
-        ) : (
-          <div className="context-empty">
-            <p>No bead selected — click one in the Issues list to show it here.</p>
-          </div>
-        ))}
-      </section>
-      )}
 
       {/* Favorites is a seed-based FilterGroup: the seed list (starred beads)
           expands into relatives in the Issues view, and each seed's eye masks it
@@ -386,15 +409,39 @@ export function ProjectSwitcherView({
         count={favorites.length}
         headerAction={
           favorites.length > 0 ? (
-            <button
-              type="button"
-              className="context-heading-action"
-              title="Copy favorite IDs as CSV"
-              aria-label="Copy favorite IDs as CSV"
-              onClick={onCopyFavorites}
-            >
-              <Copy size={13} strokeWidth={2} />
-            </button>
+            <>
+              {/* Secondary action leads; the primary full-duplex star sits in
+                  the corner (rightmost) as the comfy, reach-for-it default. */}
+              <button
+                type="button"
+                className="context-heading-action fb-tip fb-tip-end"
+                data-tip="Copy favorite IDs as CSV"
+                aria-label="Copy favorite IDs as CSV"
+                onClick={onCopyFavorites}
+              >
+                <Copy size={13} strokeWidth={2} />
+              </button>
+              {/* Full-duplex star: reflects the panel Issues Favorites filter
+                  (filled = on) and toggles it (vs-sd5). Optimistic: flips
+                  instantly, reconciled to the host bit. */}
+              <button
+                type="button"
+                className={`context-heading-action favorites-filter-star fb-tip fb-tip-end${favStarOn ? " active" : ""}`}
+                data-tip={
+                  favStarOn
+                    ? "Favorites filter is ON in Issues — click to turn it off"
+                    : "Favorites filter is OFF — click to show only favorites (and their relatives) in Issues"
+                }
+                aria-label="Toggle the Issues favorites filter"
+                aria-pressed={favStarOn}
+                onClick={() => {
+                  setFavStarOptimistic(!favStarOn);
+                  onToggleFavoritesFilter(!favStarOn);
+                }}
+              >
+                <Star size={13} strokeWidth={2} fill={favStarOn ? "currentColor" : "none"} />
+              </button>
+            </>
           ) : undefined
         }
         items={favorites}
@@ -410,7 +457,7 @@ export function ProjectSwitcherView({
           <button
             type="button"
             className="active-bead context-card-open"
-            title={`${fav.id}${fav.title ? ` — ${fav.title}` : ""}\nClick to open in Details · triple-click to open in an editor tab`}
+            title={`${fav.id}${fav.title ? ` — ${fav.title}` : ""}\nClick to select · double-click to open Details · triple-click for an editor tab`}
             onClick={() => activateBead(fav.id)}
             onContextMenu={(e) => openCardMenu(e, fav.id, true)}
           >
@@ -434,19 +481,45 @@ export function ProjectSwitcherView({
             </div>
           </button>
         )}
-        renderTrailing={(fav) => (
-          <button
-            type="button"
-            className="context-card-x"
-            title="Unstar this bead"
-            aria-label={`Unstar ${fav.id}`}
-            onClick={() => onUnfavorite(fav.id)}
-          >
-            <X size={13} strokeWidth={2} />
-          </button>
-        )}
       />
 
+      {/* Selection card — the current selection captured in the Project view at
+          medium LOD, so it's reachable even after navigating away from the
+          Issues tab. Sits below the Favorites (and above the end marquee) so a
+          selection refresh never shifts the Favorites list. Clicking it loads
+          the full Details takeover. */}
+      {activeBead && (
+        <section className="context-section context-selection-section">
+          <div className="context-section-head">
+            <span className="context-heading">Selection</span>
+            {/* History nav (◂ ▸) lives on the view-title bar for both screens;
+                the card head keeps just Clear. */}
+            <button
+              type="button"
+              className="context-heading-action fb-tip fb-tip-end"
+              data-tip="Clear selection"
+              aria-label="Clear selection"
+              onClick={onClearBead}
+            >
+              <X size={13} strokeWidth={2} />
+            </button>
+          </div>
+          <BeadSummary
+            bead={activeBead}
+            muteClosed={muteClosedIssues}
+            onOpen={onOpenBead}
+            onFieldChange={(patch) => onUpdateBead(activeBead.id, patch)}
+            onCopyId={onCopyId}
+            isFavorite={favorites.some((f) => f.id === activeBead.id)}
+            onToggleFavorite={onToggleFavorite}
+            onContextMenu={(e) =>
+              openCardMenu(e, activeBead.id, favorites.some((f) => f.id === activeBead.id))
+            }
+          />
+        </section>
+      )}
+
+      {/* End-of-view flourish. */}
       <div className="view-end" aria-hidden="true">
         <EndFlourish />
       </div>

@@ -193,6 +193,7 @@ export interface BeadsProject {
   backendPid?: number;
   doltMode?: DoltMode; // Detected on activation: "embedded" | "server"
   bdVersion?: string; // Detected `bd` CLI version (e.g. "1.0.5")
+  dbSizeBytes?: number; // On-disk size of the .beads directory, computed on activation
 }
 
 // Summary statistics for the dashboard.
@@ -295,6 +296,11 @@ export type ExtensionToWebviewMessage =
   | { type: "setError"; error: string | null }
   | { type: "setSettings"; settings: WebviewSettings }
   | { type: "setCreateMode"; value: boolean }
+  // Sidebar only: which screen the merged sidebar view shows — the Project
+  // switcher or the full-height Details takeover. Flipping this is a client-side
+  // React swap (instant, no view/context-key churn), replacing the old two-view
+  // `beads.detailScreen` context-key swap.
+  | { type: "setScreen"; screen: "project" | "details" }
   | { type: "applyIssuesFilter"; filter: IssuesFilter }
   | { type: "showGraph"; beadId: string }
   // Switch the panel to the Tree tab and reveal/scroll-to the bead (vs-kp67).
@@ -305,6 +311,14 @@ export type ExtensionToWebviewMessage =
   | { type: "showIssuesBead"; beadId: string }
   | { type: "focusIssuesTab" }
   | { type: "focusKanbanTab" }
+  | { type: "focusTreeTab" }
+  // Switch the panel to the Graph tab (no bead focus — the "Show Graph Tab"
+  // shortcut, mirroring focusIssues/Kanban/TreeTab).
+  | { type: "focusGraphTab" }
+  // Reveal/scroll to this bead in whichever panel tab is currently active
+  // (the Details "focus" toggle turning on). The shell routes it to the active
+  // tab without switching tabs. Only posted when the panel is already visible.
+  | { type: "revealActiveTabBead"; beadId: string }
   | { type: "pulse" }
   | { type: "setMemoryUsage"; bytes: number }
   // The active project's favorites, in curated order, resolved to lightweight
@@ -315,6 +329,16 @@ export type ExtensionToWebviewMessage =
   // spec). null = no active filter (all beads). Replaces the frozen one-time
   // seedFilter as the way other views inherit the panel's scope.
   | { type: "setParentScope"; beadIds: string[] | null }
+  // The shared filter's Favorites-only bit, broadcast to the dashboard so its
+  // Favorites-card star can reflect the Issues favorites filter (full-duplex
+  // probe: the star reports this and drives it via `setFavoritesFilter`).
+  | { type: "setSharedFavoritesOnly"; on: boolean }
+  // The full shared (panel) filter spec, broadcast so EVERY panel view renders
+  // its common FilterBar surface (preset · Ready · Favorites · structured chips)
+  // in sync. Any panel view edits it via `setSharedFilter`; the host echoes the
+  // new spec back here. Followers (Kanban/Tree/Graph) render it live; the leader
+  // (Issues) seeds from it on (re)mount. Per-view free-text search stays local.
+  | { type: "setSharedFilterSpec"; snapshot: FilterSnapshot }
   // Per-tab Back/Forward enablement for an editor-tab Details view (vs-9u8).
   | { type: "setTabNavState"; canBack: boolean; canForward: boolean }
   // A one-time snapshot of the Issues filter (the matching bead ids), pushed to
@@ -392,6 +416,28 @@ export type WebviewToExtensionMessage =
   | { type: "showIssues" }
   // Reveal the Beads panel shell with the Kanban tab focused (vs-6xf).
   | { type: "showKanban" }
+  // Reveal the Beads panel shell with the Tree tab focused.
+  | { type: "showTreePanel" }
+  // Reveal the Beads panel shell with the Graph tab focused (no bead) — the
+  // "Show Graph Tab" shortcut.
+  | { type: "showGraphPanel" }
+  // Reveal/scroll to this bead in the panel's currently-active tab (the Details
+  // "focus" toggle turning on). Distinct from viewIn* (which each target a
+  // specific tab). A no-op unless the panel is already open — if nothing's
+  // showing, the focus-mode Show buttons reveal on the next click instead.
+  | { type: "focusBeadInActiveTab"; beadId: string }
+  // Leaving Details-edit or New-Issue with unsaved input: prompt to discard
+  // (native modal), then run the exit action if confirmed. Posted only when the
+  // form is dirty; the clean case posts backToProject/cancelCreate directly.
+  | { type: "confirmDiscard"; action: "backToProject" | "cancelCreate" }
+  // Walk the GLOBAL Details navigation history from a non-Details view (the
+  // Repository sidebar's Details section). Distinct from navigateBack/Forward
+  // (the Details editor tab's per-tab history) so they don't double-fire.
+  | { type: "historyBack" }
+  | { type: "historyForward" }
+  // Pop the left sidebar's Details takeover back to the Project view (the
+  // Details view's "← Back" button).
+  | { type: "backToProject" }
   | { type: "requestGraph" }
   | {
       type: "openViewInTab";
@@ -426,6 +472,10 @@ export type WebviewToExtensionMessage =
   // The panel Issues view publishes its current filter snapshot so the host can
   // recompute the shared parent scope authoritatively (live, for all views).
   | { type: "setSharedFilter"; snapshot: FilterSnapshot }
+  // From the dashboard's Favorites-card star: set the shared (panel Issues)
+  // Favorites-only filter. The host flips it on the shared spec + syncs the
+  // panel Issues, closing the full-duplex loop back to `setSharedFavoritesOnly`.
+  | { type: "setFavoritesFilter"; on: boolean }
   // Toggle the companion `bead:` document for `beadId`: open it beside the view
   // (so Claude Code seeds it) if closed, close it if open (vs-nr3d).
   | { type: "toggleBeadCompanion"; beadId: string }
