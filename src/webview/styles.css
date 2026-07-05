@@ -6393,9 +6393,14 @@ textarea {
   color: var(--vscode-foreground);
   line-height: 1.3;
 }
+/* Closed-issue title in the readout. The list/kanban/tree muted rule fades the
+   title to descriptionForeground, but here the body text is ALSO
+   descriptionForeground right below it, so that fade makes the title vanish into
+   the body. Instead blend toward foreground: still visibly "lesser" than a live
+   title, but with real contrast against the body. */
 .bead-readout-title.muted-closed {
-  color: var(--vscode-descriptionForeground);
-  opacity: 0.75;
+  color: color-mix(in srgb, var(--vscode-foreground) 60%, var(--vscode-descriptionForeground));
+  opacity: 1;
 }
 .bead-readout-meta {
   margin: 0;
