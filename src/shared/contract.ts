@@ -296,6 +296,12 @@ export type ExtensionToWebviewMessage =
   | { type: "setError"; error: string | null }
   | { type: "setSettings"; settings: WebviewSettings }
   | { type: "setCreateMode"; value: boolean }
+  // Sidebar only: ask the webview to exit an active New Issue form — fired by
+  // the title-bar Back button (which lives in the extension host and can't read
+  // the form's dirty state). The webview replies with cancelCreate, or
+  // confirmDiscard(cancelCreate) when the form has unsaved input, so the same
+  // discard prompt as the form's own Cancel button fires.
+  | { type: "requestExitCreate" }
   // Sidebar only: which screen the merged sidebar view shows — the Project
   // switcher or the full-height Details takeover. Flipping this is a client-side
   // React swap (instant, no view/context-key churn), replacing the old two-view

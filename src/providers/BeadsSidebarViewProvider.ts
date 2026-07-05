@@ -111,6 +111,19 @@ export class BeadsSidebarViewProvider extends BeadDetailsViewProvider {
   }
 
   /**
+   * If the New Issue form is up, ask the webview to leave it (title-bar Back).
+   * The webview replies with cancelCreate / confirmDiscard, whose handler
+   * restores `screenBeforeCreate` — so Back on the create page returns to the
+   * screen it was launched from (the Project pane) rather than walking the bead
+   * history or getting stuck on the form. Returns true when it handled the back.
+   */
+  public requestExitCreate(): boolean {
+    if (!this.createMode) return false;
+    this.postMessage({ type: "requestExitCreate" });
+    return true;
+  }
+
+  /**
    * Project-screen "Forward": re-open the current selection's Details — the
    * issue you backed out of, still shown on the Selection card. Returns true
    * when it handled the nav (there was a selection to re-open), false when the

@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Empty state for the Selection card** — when no issue is selected, the Project view's Selection slot now shows a stylish empty state (bead icon, "No issue selected", and two CTAs: **New Issue** + **Show Kanban**) instead of collapsing to nothing. Carried over from the old twisties-era Details empty state. Labels shorten responsively ("New" / "Kanban") on a narrow sidebar so the buttons stay on one row
 
+### Fixed
+
+- **Title-bar Back on the New Issue form now returns to the Project pane** — the sidebar's ◂ Back (and ▸ Forward) button used to walk the bead history or strand the create form on screen when pressed during New Issue. It now exits the form back to the screen it was launched from, running the same discard prompt as the form's Cancel when there's unsaved input
+- **Closed-issue title in the Selection card no longer blends into its body** — the muted closed-title used the same `descriptionForeground` as the description excerpt beneath it; it now blends toward `foreground` so the title stays legible above the body
+
 ## [0.26.0] - 2026-07-04
 
 ### Added

@@ -5,7 +5,7 @@
  * Manages global state and message passing with the extension.
  */
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { RefreshCw } from "lucide-react";
 import {
   Bead,
@@ -183,6 +183,11 @@ const initialState: AppState = {
 export function App(): React.ReactElement {
   const [state, setState] = useState<AppState>(initialState);
 
+  // Latest dirty state of the New Issue form, mirrored up so a host-driven exit
+  // (the title-bar Back button → requestExitCreate) can fire the same
+  // discard-if-dirty prompt as the form's own Cancel button.
+  const createDirtyRef = useRef(false);
+
   // Handle messages from the extension
   const handleMessage = useCallback((event: MessageEvent<ExtensionMessage>) => {
     const message = event.data;
@@ -248,6 +253,15 @@ export function App(): React.ReactElement {
         break;
       case "setCreateMode":
         setState((prev) => ({ ...prev, createMode: message.value }));
+        break;
+      case "requestExitCreate":
+        // Host asked us to leave the New Issue form (title-bar Back). Mirror the
+        // form's Cancel: confirm first if there's unsaved input.
+        vscode.postMessage(
+          createDirtyRef.current
+            ? { type: "confirmDiscard", action: "cancelCreate" }
+            : { type: "cancelCreate" }
+        );
         break;
       case "setScreen":
         setState((prev) => ({ ...prev, screen: message.screen }));
@@ -498,6 +512,9 @@ export function App(): React.ReactElement {
       return (
         <CreateBeadForm
           userId={state.settings.userId}
+          onDirtyChange={(dirty) => {
+            createDirtyRef.current = dirty;
+          }}
           onCreate={(fields) => vscode.postMessage({ type: "createBead", fields })}
           onCancel={(dirty) =>
             vscode.postMessage(

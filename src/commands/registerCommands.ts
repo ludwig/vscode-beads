@@ -264,6 +264,9 @@ export function registerCommands(
     // (beads.navigateBack stays pure — it's shared with the editor-tab nav,
     // which has no project screen to fall back to.) Always enabled.
     vscode.commands.registerCommand("beads.sidebarNavigateBack", () => {
+      // If the New Issue form is up, Back leaves it (→ the launching screen)
+      // rather than walking the bead trail or stranding the form on screen.
+      if (switcherProvider.requestExitCreate()) return;
       const id = navHistory.back();
       if (id) {
         selectBead(id);
@@ -279,6 +282,8 @@ export function registerCommands(
     // provider; only the fallback lives here. (Back on the Project screen reuses
     // the plain beads.navigateBack — there's no project-specific twist to it.)
     vscode.commands.registerCommand("beads.sidebarProjectForward", async () => {
+      // Leaving the New Issue form takes precedence over history nav here too.
+      if (switcherProvider.requestExitCreate()) return;
       if (await switcherProvider.forwardToSelection()) return;
       const id = navHistory.forward();
       if (id) {
