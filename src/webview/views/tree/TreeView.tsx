@@ -692,8 +692,8 @@ export function TreeView({
               // expand-all. The icon reflects the action it will perform.
               <button
                 type="button"
-                className="beads-tree-foldbtn"
-                title={
+                className="beads-tree-foldbtn fb-tip fb-tip-end"
+                data-tip={
                   allExpanded
                     ? "Collapse all (⇧-click a row's chevron to collapse just its subtree)"
                     : "Expand all (⇧-click a row's chevron to expand just its subtree)"
@@ -920,7 +920,7 @@ function rowMenuItems(
     {
       label: "Copy ID",
       separatorBefore: true,
-      onSelect: () => vscode.postMessage({ type: "copyBeadId", beadId: bead.id }),
+      onSelect: () => vscode.postMessage({ type: "copyBeadId", beadId: bead.id, toast: true }),
     },
     {
       label: "Copy title",

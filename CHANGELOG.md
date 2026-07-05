@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **"Change Projects Root" button is visually distinct** (vs-y1gn) — a caution (amber) accent sets the disruptive action apart from the neutral footer actions beside it
 - **Action-row buttons shorten responsively** (Pick Ready / Show Issues / Show Tree) — full label → short label → icon-only as the sidebar narrows, so they never wrap
 - **Reordered the active-project ⋮ menu** — grouped as Repository Details / Export Issues / Open Folder in Finder · the Dolt commands under a **Server** heading · Initialize New Board / Change Projects Root / Extension Settings
+- **Copying a bead ID shows the in-view toast everywhere** — the Issues table row, Kanban / Tree / Graph "Copy ID" menus now raise the same "Copied …" toast the Details view already did (not just the status-bar blip)
+- **Fast hover tooltips on the Tree fold toggle and Issues density toggle** — both now use the instant in-app tooltip instead of the slow native `title`
 
 ### Fixed
 
