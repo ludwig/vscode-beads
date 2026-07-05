@@ -10,6 +10,8 @@
 import React, { useState } from "react";
 import { AlertCircle, Database, FolderGit2, Loader, Server } from "lucide-react";
 import { InitBoardMode, InitWizardPhase } from "../types";
+import { Markdown } from "../common/Markdown";
+import { equivalentCliMarkdown } from "../initCliRecipe";
 
 interface BoardInitWizardProps {
   projectsRoot: string;
@@ -170,6 +172,15 @@ export function BoardInitWizard({
                 </span>
               </button>
             </div>
+          </div>
+
+          <div className="init-wizard-field">
+            <span className="init-wizard-label">Equivalent CLI commands</span>
+            <p className="init-wizard-hint">
+              What this wizard runs under the hood for <strong>{mode === "server" ? "Server" : "Embedded"}</strong>{" "}
+              mode — reproduce or adapt it by hand with the <code>bd</code> CLI.
+            </p>
+            <Markdown content={equivalentCliMarkdown(target, mode)} className="init-wizard-cli" />
           </div>
 
           <div className="init-wizard-actions">

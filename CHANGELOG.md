@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Empty state for the Selection card** — when no issue is selected, the Project view's Selection slot now shows a stylish empty state (bead icon, "No issue selected", and two CTAs: **New Issue** + **Show Kanban**) instead of collapsing to nothing. Carried over from the old twisties-era Details empty state. Labels shorten responsively ("New" / "Kanban") on a narrow sidebar so the buttons stay on one row
 - **Confirmation before changing the projects root** (vs-y1gn) — "Change Projects Root" now warns before acting (it unloads the current projects and loads those under the new folder), and flags when the chosen folder contains no `.beads` repositories so an empty view isn't a surprise
+- **"Equivalent CLI commands" on the Initialize Board tab** (vs-4sz5) — a markdown-rendered section shows the raw `bd` commands the wizard runs under the hood, switching between the Server (`bd init --server`) and Embedded (`bd init`) recipes as you toggle mode, so the operation stays transparent and reproducible by hand
 
 ### Changed
 

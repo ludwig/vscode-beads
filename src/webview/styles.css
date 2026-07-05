@@ -6084,6 +6084,16 @@ textarea {
   margin-top: 6px;
 }
 
+/* The "equivalent CLI commands" code block (vs-4sz5): let long paths scroll
+   horizontally inside the block rather than stretching the tab. */
+.init-wizard-cli {
+  margin-top: 4px;
+}
+.init-wizard-cli pre {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 .init-wizard-error {
   display: flex;
   align-items: flex-start;
