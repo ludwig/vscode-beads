@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.26.1] - 2026-07-04
+
+### Added
+
+- **Empty state for the Selection card** — when no issue is selected, the Project view's Selection slot now shows a stylish empty state (bead icon, "No issue selected", and two CTAs: **New Issue** + **Show Kanban**) instead of collapsing to nothing. Carried over from the old twisties-era Details empty state. Labels shorten responsively ("New" / "Kanban") on a narrow sidebar so the buttons stay on one row
+- **Confirmation before changing the projects root** (vs-y1gn) — "Change Projects Root" now warns before acting (it unloads the current projects and loads those under the new folder), and flags when the chosen folder contains no `.beads` repositories so an empty view isn't a surprise
+- **"Equivalent CLI commands" on the Initialize Board tab** (vs-4sz5) — a markdown-rendered section shows the raw `bd` commands the wizard runs under the hood, switching between the Server (`bd init --server`) and Embedded (`bd init`) recipes as you toggle mode, so the operation stays transparent and reproducible by hand
+
+### Changed
+
+- **"Change Projects Root" button is visually distinct** (vs-y1gn) — a caution (amber) accent sets the disruptive action apart from the neutral footer actions beside it
+- **Action-row buttons shorten responsively** (Pick Ready / Show Issues / Show Tree) — full label → short label → icon-only as the sidebar narrows, so they never wrap
+- **Reordered the active-project ⋮ menu** — grouped as Repository Details / Export Issues / Open Folder in Finder · the Dolt commands under a **Server** heading · Initialize New Board / Change Projects Root / Extension Settings
+- **Copying a bead ID shows the in-view toast everywhere** — the Issues table row, Kanban / Tree / Graph "Copy ID" menus now raise the same "Copied …" toast the Details view already did (not just the status-bar blip)
+- **Fast hover tooltips on the Tree fold toggle and Issues density toggle** — both now use the instant in-app tooltip instead of the slow native `title`
+- **Selection card assignee/labels use icons, matching the Details view** — the medium-LOD readout dropped the verbose "ASSIGNEE" / "LABELS" text headings for the same icon vocabulary the Details view uses (a person icon for the assignee, a tag icon for labels). Labels right-align beside the assignee on a wide card and drop to their own full-width row on a narrow one
+
+### Fixed
+
+- **Title-bar Back on the New Issue form now returns to the Project pane** — the sidebar's ◂ Back (and ▸ Forward) button used to walk the bead history or strand the create form on screen when pressed during New Issue. It now exits the form back to the screen it was launched from, running the same discard prompt as the form's Cancel when there's unsaved input
+- **Closed-issue title in the Selection card no longer blends into its body** — the muted closed-title matched the `descriptionForeground` description excerpt beneath it; it's now a light cool blue-grey (`--beads-closed-title`), distinct in hue from the neutral body while still reading as muted + closed
+- **Selection card empty state no longer overflows the end flourish** — at narrow widths the wrapped CTAs used to spill past the flourish; the view now grows and scrolls instead
+- **Right-click menu no longer clips off-screen** — a context menu opened on the bottom rows of a table now flips above the cursor / clamps into the viewport instead of rendering below the fold
+
 ## [0.26.0] - 2026-07-04
 
 ### Added

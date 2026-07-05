@@ -402,7 +402,7 @@ function cardMenuItems(bead: Bead, isFavorite: boolean): ContextMenuItem[] {
     {
       label: "Copy ID",
       separatorBefore: true,
-      onSelect: () => vscode.postMessage({ type: "copyBeadId", beadId: bead.id }),
+      onSelect: () => vscode.postMessage({ type: "copyBeadId", beadId: bead.id, toast: true }),
     },
     {
       label: "Copy title",

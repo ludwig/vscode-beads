@@ -699,7 +699,7 @@ export function IssuesView({
   );
 
   const handleCopyId = useCallback((beadId: string) => {
-    vscode.postMessage({ type: "copyBeadId", beadId });
+    vscode.postMessage({ type: "copyBeadId", beadId, toast: true });
     setCopiedId(beadId);
     setTimeout(() => setCopiedId(null), 1500);
   }, []);
@@ -863,9 +863,10 @@ export function IssuesView({
                 Tree's fold toggle placement). OFF (default) = compact, ON =
                 comfortable. */}
             <button
-              className={`compact-toggle ${!compact ? "active" : ""}`}
+              className={`compact-toggle fb-tip fb-tip-end ${!compact ? "active" : ""}`}
               onClick={() => setCompact((c) => !c)}
-              title={compact ? "Comfortable rows" : "Compact rows"}
+              data-tip={compact ? "Comfortable rows" : "Compact rows"}
+              aria-label={compact ? "Switch to comfortable rows" : "Switch to compact rows"}
               aria-pressed={!compact}
             >
               {compact ? <Rows3 size={14} /> : <Rows2 size={14} />}

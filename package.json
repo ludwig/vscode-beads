@@ -2,7 +2,7 @@
   "name": "vscode-beads-pm",
   "displayName": "Beads (ludwig)",
   "description": "VS Code extension for managing Beads issues",
-  "version": "0.26.0",
+  "version": "0.26.1",
   "publisher": "ludwig",
   "license": "Apache-2.0",
   "icon": "resources/icon.png",

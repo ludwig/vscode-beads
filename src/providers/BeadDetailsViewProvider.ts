@@ -27,7 +27,7 @@ export class BeadDetailsViewProvider extends BaseViewProvider {
   private currentBeadId: string | null = null;
   private currentProjectId: string | null = null;
   private loadSequence = 0; // Tracks request order to prevent stale responses
-  private createMode = false; // True while the create-bead form is shown
+  protected createMode = false; // True while the create-bead form is shown
   // Per-tab Back/Forward trail (vs-9u8). Each editor tab instance owns its own
   // history so navigating within a tab has tab-scoped "memory" — unlike the
   // sidebar, which shares the single global NavigationHistory in registerCommands.

@@ -9,7 +9,7 @@
  * themed ColoredSelect / LabelBadge / TypeBadge / PriorityBadge components.
  */
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   BeadPriority,
   BeadType,
@@ -42,9 +42,12 @@ interface CreateBeadFormProps {
   onCreate: (fields: CreateBeadFields) => void;
   /** `dirty` = the form has unsaved input, so the host can warn before discarding. */
   onCancel: (dirty: boolean) => void;
+  /** Reports the form's dirty state up so a host-driven exit (title-bar Back)
+   *  can run the same discard-if-dirty prompt as the Cancel button. */
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
-export function CreateBeadForm({ userId = "", onCreate, onCancel }: CreateBeadFormProps): React.ReactElement {
+export function CreateBeadForm({ userId = "", onCreate, onCancel, onDirtyChange }: CreateBeadFormProps): React.ReactElement {
   const [title, setTitle] = useState("");
   const [type, setType] = useState<BeadType>("task");
   const [priority, setPriority] = useState<BeadPriority>(2);
@@ -65,6 +68,11 @@ export function CreateBeadForm({ userId = "", onCreate, onCancel }: CreateBeadFo
     assignee.trim().length > 0 ||
     labels.length > 0 ||
     newLabel.trim().length > 0;
+
+  // Keep the host in sync with dirtiness so its title-bar Back can prompt.
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
 
   const handleAddLabel = useCallback(() => {
     const value = newLabel.trim();

@@ -33,6 +33,11 @@
   --beads-accent: #3f5e96;
   --beads-accent-hover: #354f80;
 
+  /* Closed-issue title in the Selection card — a light, cool blue-grey that
+     reads as muted (desaturated, cooler than the body) while implying closed,
+     tinted toward white rather than darkened. */
+  --beads-closed-title: #98a1b4;
+
   /* Type scale — a small, deliberate set of sizes so text hierarchy is
      consistent rather than ad-hoc per component. ALWAYS use these tokens for
      text font-size; never hardcode px. 11px (--text-label) is the FLOOR —
@@ -658,6 +663,19 @@ textarea {
   color: var(--vscode-list-activeSelectionForeground);
 }
 
+/* Non-interactive group heading inside a dropdown (e.g. the "Server" group over
+   the Dolt commands). Reads as a quiet caption, not a clickable item. */
+.dropdown-section-label {
+  padding: 4px 10px 2px;
+  font-size: var(--text-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--vscode-descriptionForeground);
+  cursor: default;
+  user-select: none;
+}
+
 /* Chevron icon */
 .chevron-icon {
   flex-shrink: 0;
@@ -1140,8 +1158,37 @@ textarea {
   color: #fff;
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition: background 0.12s ease;
+}
+
+/* Responsive labels for the empty-state CTAs: full ("New Issue" / "Show Kanban")
+   when the Selection card is wide, short ("New" / "Kanban") when it's narrow, so
+   the two buttons stay on one row instead of wrapping. Driven by a container
+   query on the card (see .context-selection-section) — the two full-label
+   buttons need ~260px of card width, so swap a little above that. */
+.empty-state-action-label-short {
+  display: none;
+}
+
+@container selection-card (max-width: 280px) {
+  .empty-state-action {
+    padding: 6px 12px;
+  }
+  .empty-state-action-label-full {
+    display: none;
+  }
+  .empty-state-action-label-short {
+    display: inline;
+  }
+  /* Too narrow to right-align labels beside the assignee — give them their own
+     full-width row below it, left-aligned. */
+  .bead-readout-labelset {
+    flex-basis: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+  }
 }
 
 .empty-state-action:hover {
@@ -2530,7 +2577,13 @@ textarea {
   flex-direction: column;
   gap: var(--spacing-md);
   padding: var(--spacing-md) var(--spacing-sm);
-  height: 100%;
+  /* min-height (not height) so the view fills the pane when content is short
+     (the Selection section's flex:1 grows, seating the flourish at the bottom),
+     but can grow PAST the pane when content is tall — e.g. the empty-state CTAs
+     wrapping at a narrow width — letting the scroll ancestor (.app-content,
+     overflow:auto) scroll instead of the section shrinking and spilling its
+     buttons over the end flourish. */
+  min-height: 100%;
   box-sizing: border-box;
 }
 
@@ -2552,6 +2605,10 @@ textarea {
 .context-selection-section {
   flex: 1 1 auto;
   min-height: 0;
+  /* A query container so the empty-state CTAs can shorten their labels based on
+     the card's real width (not the viewport, which ≠ this nested card). */
+  container-type: inline-size;
+  container-name: selection-card;
 }
 
 .context-section-head {
@@ -3772,6 +3829,11 @@ textarea {
   flex-direction: row;
   gap: 8px;
   padding: 2px 4px;
+  /* Query container so the action buttons can shorten their labels when the
+     row gets too narrow to fit "Pick Ready Bead" / "Show Issues" / "Show Tree"
+     on one line each (see the @container rule below). */
+  container-type: inline-size;
+  container-name: context-actions;
 }
 
 .context-action-btn {
@@ -3780,13 +3842,47 @@ textarea {
   justify-content: center;
   gap: 7px;
   flex: 1;
+  min-width: 0; /* let the equal-width buttons shrink instead of overflowing the row */
   padding: 10px 14px;
   font-size: 13px;
   font-weight: 600;
+  white-space: nowrap; /* the label swaps to a short form rather than wrapping */
   border: none;
   border-radius: 6px;
   cursor: pointer;
   transition: box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+/* Responsive action-button labels degrade in three tiers as the row narrows:
+   full ("Pick Ready Bead" / "Show Issues" / "Show Tree") → short ("Ready" /
+   "Issues" / "Tree") → icon-only. The three buttons are equal-width (flex:1)
+   and the longest label ("Pick Ready Bead") is the binding constraint, so all
+   three swap together. Each button keeps its `title` tooltip, so the icon-only
+   tier stays understandable. */
+.context-action-btn-label-short {
+  display: none;
+}
+
+/* Tier 2 — short text. */
+@container context-actions (max-width: 440px) {
+  .context-action-btn-label-full {
+    display: none;
+  }
+  .context-action-btn-label-short {
+    display: inline;
+  }
+}
+
+/* Tier 3 — icon only: drop the text entirely and tighten to a compact button.
+   (This rule follows tier 2, so its display:none on the short label wins.) */
+@container context-actions (max-width: 300px) {
+  .context-action-btn-label-short {
+    display: none;
+  }
+  .context-action-btn {
+    gap: 0;
+    padding: 10px 8px;
+  }
 }
 
 /* Show Issues / Show Tree — muted (desaturated) steel blue accent, easier on
@@ -5995,6 +6091,16 @@ textarea {
   margin-top: 6px;
 }
 
+/* The "equivalent CLI commands" code block (vs-4sz5): let long paths scroll
+   horizontally inside the block rather than stretching the tab. */
+.init-wizard-cli {
+  margin-top: 4px;
+}
+.init-wizard-cli pre {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 .init-wizard-error {
   display: flex;
   align-items: flex-start;
@@ -6256,6 +6362,20 @@ textarea {
   background: var(--vscode-button-secondaryHoverBackground, var(--vscode-toolbar-hoverBackground));
 }
 
+/* "Change Projects Root" is disruptive — it swaps the whole set of loaded repos
+   — so it's set apart from the neutral footer actions with a caution accent
+   (amber border + icon), keeping the label neutral so it stays readable. */
+.repository-btn.change-root {
+  border-color: color-mix(in srgb, var(--vscode-editorWarning-foreground, #cca700) 55%, var(--vscode-panel-border));
+}
+.repository-btn.change-root svg {
+  color: var(--vscode-editorWarning-foreground, #cca700);
+}
+.repository-btn.change-root:hover {
+  border-color: var(--vscode-editorWarning-foreground, #cca700);
+  background: color-mix(in srgb, var(--vscode-editorWarning-foreground, #cca700) 14%, transparent);
+}
+
 .repository-stat-tiles {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -6372,9 +6492,14 @@ textarea {
   color: var(--vscode-foreground);
   line-height: 1.3;
 }
+/* Closed-issue title in the Selection card. The list/kanban/tree muted rule
+   fades the title to descriptionForeground — but here the body excerpt is ALSO
+   descriptionForeground right below it, so that made the two uniform. Use a
+   light cool blue-grey instead: distinct in HUE from the neutral body (so it
+   contrasts) while still reading as muted + closed. */
 .bead-readout-title.muted-closed {
-  color: var(--vscode-descriptionForeground);
-  opacity: 0.75;
+  color: var(--beads-closed-title);
+  opacity: 1;
 }
 .bead-readout-meta {
   margin: 0;
@@ -6418,6 +6543,41 @@ textarea {
 .bead-readout-label-more {
   font-size: var(--text-label);
   color: var(--vscode-descriptionForeground);
+}
+
+/* Icon-keyed assignee + labels row (unifies with the Details badges row).
+   Assignee leads; labels are pushed to the right edge on a wide card. On a
+   narrow card the labelset flex-wraps onto its own full-width row (see the
+   @container selection-card rule) rather than crowding the assignee. */
+.bead-readout-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.bead-readout-assignee,
+.bead-readout-labelset {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+  font-size: var(--text-sm);
+}
+.bead-readout-labelset {
+  margin-left: auto; /* right-align beside the assignee on a wide card */
+  justify-content: flex-end;
+}
+.bead-readout-meta-icon {
+  flex: 0 0 auto;
+  color: var(--vscode-descriptionForeground);
+}
+.bead-readout-assignee-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--vscode-foreground);
 }
 .bead-readout-desc {
   margin: 2px 0 0;

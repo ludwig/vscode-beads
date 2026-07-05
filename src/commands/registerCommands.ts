@@ -10,6 +10,7 @@
 import * as vscode from "vscode";
 import { execFile } from "child_process";
 import * as util from "util";
+import * as path from "path";
 import { IssuesFilter, FilterSnapshot, Bead, issueToWebviewBead } from "../backend/types";
 import { nextReadyBead } from "../backend/readyBeads";
 import { BeadsProjectManager } from "../backend/BeadsProjectManager";
@@ -264,6 +265,9 @@ export function registerCommands(
     // (beads.navigateBack stays pure — it's shared with the editor-tab nav,
     // which has no project screen to fall back to.) Always enabled.
     vscode.commands.registerCommand("beads.sidebarNavigateBack", () => {
+      // If the New Issue form is up, Back leaves it (→ the launching screen)
+      // rather than walking the bead trail or stranding the form on screen.
+      if (switcherProvider.requestExitCreate()) return;
       const id = navHistory.back();
       if (id) {
         selectBead(id);
@@ -279,6 +283,8 @@ export function registerCommands(
     // provider; only the fallback lives here. (Back on the Project screen reuses
     // the plain beads.navigateBack — there's no project-specific twist to it.)
     vscode.commands.registerCommand("beads.sidebarProjectForward", async () => {
+      // Leaving the New Issue form takes precedence over history nav here too.
+      if (switcherProvider.requestExitCreate()) return;
       if (await switcherProvider.forwardToSelection()) return;
       const id = navHistory.forward();
       if (id) {
@@ -443,6 +449,24 @@ export function registerCommands(
       });
       const chosen = picked?.[0]?.fsPath;
       if (!chosen) return; // cancelled
+      if (path.resolve(chosen) === path.resolve(current)) return; // unchanged — nothing to do
+
+      // Changing the root is disruptive: it unloads the current projects and
+      // loads whatever is under the chosen folder (which could be nothing).
+      // Confirm first, and flag when the folder has no .beads repos so the user
+      // isn't surprised by an empty view (vs-y1gn).
+      const found = await projectManager.discoverProjectsUnderRoot(chosen);
+      const detail =
+        found.length === 0
+          ? "No Beads repositories were found under this folder — your view will be empty until you initialize or add one."
+          : `Found ${found.length} Beads ${found.length === 1 ? "repository" : "repositories"} here. The currently loaded projects will be replaced.`;
+      const confirm = await vscode.window.showWarningMessage(
+        `Change the Beads projects root to:\n${chosen}`,
+        { modal: true, detail },
+        "Change Root"
+      );
+      if (confirm !== "Change Root") return;
+
       log.info(`Setting beads.projectsRoot to ${chosen}`);
       await vscode.workspace
         .getConfiguration("beads")

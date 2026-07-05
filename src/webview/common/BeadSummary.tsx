@@ -169,39 +169,48 @@ export function BeadSummary({
         )}
       </div>
 
-      <dl className="bead-readout-meta">
-        {bead.assignee && (
-          <div className="bead-readout-row">
-            <dt>Assignee</dt>
-            <dd>{bead.assignee}</dd>
-          </div>
-        )}
-        {shownLabels.length > 0 && (
-          <div className="bead-readout-row">
-            <dt>Labels</dt>
-            <dd className="bead-readout-labels">
+      {/* Assignee + labels — icon-keyed to match the Details view's badges row
+          (user icon → assignee, tag icon → labels), not verbose text headings.
+          Labels right-align beside the assignee on a wide card and drop to their
+          own row on a narrow one (see the .bead-readout-badges @container rule). */}
+      {(bead.assignee || shownLabels.length > 0) && (
+        <div className="bead-readout-badges">
+          {bead.assignee && (
+            <span className="bead-readout-assignee">
+              <Icon name="user" size={11} className="bead-readout-meta-icon" title="Assignee" />
+              <span className="bead-readout-assignee-name">{bead.assignee}</span>
+            </span>
+          )}
+          {shownLabels.length > 0 && (
+            <span className="bead-readout-labelset">
+              <Icon name="tag" size={11} className="bead-readout-meta-icon" title="Labels" />
               {shownLabels.map((l) => (
                 <span key={l} className="bead-readout-label" style={getLabelColorStyle(l)}>
                   {l}
                 </span>
               ))}
               {extraLabels > 0 && <span className="bead-readout-label-more">+{extraLabels}</span>}
-            </dd>
-          </div>
-        )}
-        {bead.estimatedMinutes !== undefined && bead.estimatedMinutes > 0 && (
-          <div className="bead-readout-row">
-            <dt>Estimate</dt>
-            <dd>{formatEstimate(bead.estimatedMinutes)}</dd>
-          </div>
-        )}
-        {bead.externalRef && (
-          <div className="bead-readout-row">
-            <dt>External</dt>
-            <dd>{bead.externalRef}</dd>
-          </div>
-        )}
-      </dl>
+            </span>
+          )}
+        </div>
+      )}
+
+      {((bead.estimatedMinutes !== undefined && bead.estimatedMinutes > 0) || bead.externalRef) && (
+        <dl className="bead-readout-meta">
+          {bead.estimatedMinutes !== undefined && bead.estimatedMinutes > 0 && (
+            <div className="bead-readout-row">
+              <dt>Estimate</dt>
+              <dd>{formatEstimate(bead.estimatedMinutes)}</dd>
+            </div>
+          )}
+          {bead.externalRef && (
+            <div className="bead-readout-row">
+              <dt>External</dt>
+              <dd>{bead.externalRef}</dd>
+            </div>
+          )}
+        </dl>
+      )}
 
       {desc && (
         <div className="bead-readout-section">
