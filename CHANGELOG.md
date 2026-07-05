@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-07-04
+
 ### Added
 
 - **Left sidebar is now a two-screen navigator: Project ↔ Details takeover** — the `beads` sidebar swaps between the **Project** view (active project, actions, Favorites, a Selection card — flush top-to-bottom) and a **full-height Details takeover** (the complete `DetailsView` — description, deps, comments, edit, create) with a **← Back** button. Opening a bead's details (double-click / "Show Details" / clicking the Selection card) swaps to Details; Back returns to Project. It's **one webview** that swaps screens client-side (a React `setState` on a `setScreen` message) — instant, with no flash. (Earlier iterations tried a Secondary Side Bar, then two mutually-exclusive views gated by a `beads.detailScreen` context key; the latter made every flip visibly slow in both directions because VS Code re-lays-out the sidebar viewlet on a view `when`-clause change. The context key survives only to gate the view-title menu items per screen. Min VS Code stays 1.85.)
