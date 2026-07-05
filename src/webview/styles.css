@@ -2552,7 +2552,13 @@ textarea {
   flex-direction: column;
   gap: var(--spacing-md);
   padding: var(--spacing-md) var(--spacing-sm);
-  height: 100%;
+  /* min-height (not height) so the view fills the pane when content is short
+     (the Selection section's flex:1 grows, seating the flourish at the bottom),
+     but can grow PAST the pane when content is tall — e.g. the empty-state CTAs
+     wrapping at a narrow width — letting the scroll ancestor (.app-content,
+     overflow:auto) scroll instead of the section shrinking and spilling its
+     buttons over the end flourish. */
+  min-height: 100%;
   box-sizing: border-box;
 }
 
@@ -6438,14 +6444,14 @@ textarea {
   line-height: 1.3;
 }
 /* Closed-issue title in the Selection card. The list/kanban/tree muted rule
-   fades the title to descriptionForeground, but here the body text is ALSO
-   descriptionForeground right below it, so that fade makes the title vanish into
-   the body. Keep it nearly full-strength foreground (just a hair of mute) so it
-   stays clearly legible above the description; closed-ness still reads from the
-   status pill. (60/40 wasn't enough separation — the theme's fg/description can
-   sit close.) */
+   fades the title to descriptionForeground — but here the body excerpt is ALSO
+   descriptionForeground right below it, so that made the two uniform. Use the
+   theme's semantic "inactive/de-emphasized" grey instead: it reads as muted and
+   implies closed, and computes a notch DARKER than the descriptionForeground
+   body, so the title recedes (not brightens) below the body without vanishing
+   into it. */
 .bead-readout-title.muted-closed {
-  color: color-mix(in srgb, var(--vscode-foreground) 88%, var(--vscode-descriptionForeground));
+  color: var(--vscode-disabledForeground);
   opacity: 1;
 }
 .bead-readout-meta {
