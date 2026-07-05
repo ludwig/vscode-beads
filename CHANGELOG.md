@@ -16,12 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **"Change Projects Root" button is visually distinct** (vs-y1gn) — a caution (amber) accent sets the disruptive action apart from the neutral footer actions beside it
 - **Action-row buttons shorten responsively** (Pick Ready / Show Issues / Show Tree) — full label → short label → icon-only as the sidebar narrows, so they never wrap
+- **Reordered the active-project ⋮ menu** — grouped as Repository Details / Export Issues / Open Folder in Finder · the Dolt commands under a **Server** heading · Initialize New Board / Change Projects Root / Extension Settings
 
 ### Fixed
 
 - **Title-bar Back on the New Issue form now returns to the Project pane** — the sidebar's ◂ Back (and ▸ Forward) button used to walk the bead history or strand the create form on screen when pressed during New Issue. It now exits the form back to the screen it was launched from, running the same discard prompt as the form's Cancel when there's unsaved input
 - **Closed-issue title in the Selection card no longer blends into its body** — the muted closed-title matched the `descriptionForeground` description excerpt beneath it; it's now a light cool blue-grey (`--beads-closed-title`), distinct in hue from the neutral body while still reading as muted + closed
 - **Selection card empty state no longer overflows the end flourish** — at narrow widths the wrapped CTAs used to spill past the flourish; the view now grows and scrolls instead
+- **Right-click menu no longer clips off-screen** — a context menu opened on the bottom rows of a table now flips above the cursor / clamps into the viewport instead of rendering below the fold
 
 ## [0.26.0] - 2026-07-04
 

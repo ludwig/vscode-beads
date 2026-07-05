@@ -663,6 +663,19 @@ textarea {
   color: var(--vscode-list-activeSelectionForeground);
 }
 
+/* Non-interactive group heading inside a dropdown (e.g. the "Server" group over
+   the Dolt commands). Reads as a quiet caption, not a clickable item. */
+.dropdown-section-label {
+  padding: 4px 10px 2px;
+  font-size: var(--text-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--vscode-descriptionForeground);
+  cursor: default;
+  user-select: none;
+}
+
 /* Chevron icon */
 .chevron-icon {
   flex-shrink: 0;

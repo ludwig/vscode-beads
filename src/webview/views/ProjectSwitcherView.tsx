@@ -280,17 +280,18 @@ export function ProjectSwitcherView({
               showChevron={false}
               menuPlacement="bottom-end"
             >
-              <DropdownItem onClick={onCreateBoard}>Initialize New Board</DropdownItem>
               <DropdownItem onClick={onOpenRepositoryDetails}>Repository Details</DropdownItem>
-              <DropdownItem onClick={onChangeRoot}>Change Projects Root</DropdownItem>
-              <DropdownItem onClick={onOpenProjectFolder}>Open Folder in Finder</DropdownItem>
               <DropdownItem onClick={onExportIssues}>Export Issues as JSONL</DropdownItem>
+              <DropdownItem onClick={onOpenProjectFolder}>Open Folder in Finder</DropdownItem>
               <DropdownSeparator />
+              <div className="dropdown-section-label">Server</div>
               <DropdownItem onClick={onShowStatus}>Show Dolt Status</DropdownItem>
               <DropdownItem onClick={onStartDolt}>Start Dolt</DropdownItem>
               <DropdownItem onClick={onStopDolt}>Stop Dolt</DropdownItem>
               <DropdownItem onClick={onOpenDoltLog}>Open Dolt Log</DropdownItem>
               <DropdownSeparator />
+              <DropdownItem onClick={onCreateBoard}>Initialize New Board</DropdownItem>
+              <DropdownItem onClick={onChangeRoot}>Change Projects Root</DropdownItem>
               <DropdownItem onClick={onOpenSettings}>Extension Settings</DropdownItem>
             </Dropdown>
             </>
