@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.26.1] - 2026-07-04
+
 ### Added
 
 - **Empty state for the Selection card** — when no issue is selected, the Project view's Selection slot now shows a stylish empty state (bead icon, "No issue selected", and two CTAs: **New Issue** + **Show Kanban**) instead of collapsing to nothing. Carried over from the old twisties-era Details empty state. Labels shorten responsively ("New" / "Kanban") on a narrow sidebar so the buttons stay on one row
@@ -20,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Reordered the active-project ⋮ menu** — grouped as Repository Details / Export Issues / Open Folder in Finder · the Dolt commands under a **Server** heading · Initialize New Board / Change Projects Root / Extension Settings
 - **Copying a bead ID shows the in-view toast everywhere** — the Issues table row, Kanban / Tree / Graph "Copy ID" menus now raise the same "Copied …" toast the Details view already did (not just the status-bar blip)
 - **Fast hover tooltips on the Tree fold toggle and Issues density toggle** — both now use the instant in-app tooltip instead of the slow native `title`
+- **Selection card assignee/labels use icons, matching the Details view** — the medium-LOD readout dropped the verbose "ASSIGNEE" / "LABELS" text headings for the same icon vocabulary the Details view uses (a person icon for the assignee, a tag icon for labels). Labels right-align beside the assignee on a wide card and drop to their own full-width row on a narrow one
 
 ### Fixed
 
